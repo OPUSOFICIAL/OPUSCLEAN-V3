@@ -1,0 +1,928 @@
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, integer, timestamp, boolean, decimal, jsonb, pgEnum, uniqueIndex, unique, date, time } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Enums baseados no backup real
+export const userRoleEnum = pgEnum('user_role', ['admin', 'gestor_cliente', 'supervisor_site', 'operador', 'auditor']);
+export const userTypeEnum = pgEnum('user_type', ['opus_user', 'customer_user']);
+export const authProviderEnum = pgEnum('auth_provider', ['local', 'microsoft']);
+export const workOrderStatusEnum = pgEnum('work_order_status', ['aberta', 'vencida', 'concluida', 'cancelada']);
+export const workOrderTypeEnum = pgEnum('work_order_type', ['programada', 'corretiva_interna', 'corretiva_publica']);
+export const priorityEnum = pgEnum('priority', ['baixa', 'media', 'alta', 'critica']);
+export const qrCodeTypeEnum = pgEnum('qr_code_type', ['execucao', 'atendimento']);
+export const frequencyEnum = pgEnum('frequency', ['diaria', 'semanal', 'mensal', 'trimestral', 'semestral', 'anual', 'turno', 'custom']);
+export const bathroomCounterActionEnum = pgEnum('bathroom_counter_action', ['increment', 'decrement', 'reset']);
+
+// Sistema de permissões granulares
+export const permissionKeyEnum = pgEnum('permission_key', [
+  'dashboard_view',
+  'workorders_view',
+  'workorders_create', 
+  'workorders_edit',
+  'workorders_delete',
+  'workorders_comment',
+  'workorders_evaluate',
+  'schedule_view',
+  'schedule_create',
+  'schedule_edit', 
+  'schedule_delete',
+  'checklists_view',
+  'checklists_create',
+  'checklists_edit',
+  'checklists_delete',
+  'qrcodes_view',
+  'qrcodes_create',
+  'qrcodes_edit',
+  'qrcodes_delete',
+  'floor_plan_view',
+  'floor_plan_edit',
+  'heatmap_view',
+  'sites_view',
+  'sites_create',
+  'sites_edit',
+  'sites_delete',
+  'users_view',
+  'users_create',
+  'users_edit',
+  'users_delete',
+  'customers_view',
+  'customers_create',
+  'customers_edit',
+  'customers_delete',
+  'reports_view',
+  'audit_logs_view',
+  'service_settings_view',
+  'service_settings_edit',
+  'roles_manage',
+  'opus_users_view',
+  'opus_users_create',
+  'opus_users_edit',
+  'opus_users_delete',
+  'client_users_view',
+  'client_users_create',
+  'client_users_edit',
+  'client_users_delete'
+]);
+
+// 1. TABELA: companies (Empresas)
+export const companies = pgTable("companies", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  cnpj: varchar("cnpj"),
+  email: varchar("email"),
+  phone: varchar("phone"),
+  address: varchar("address"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 2. TABELA: customers (Clientes/Contratantes)
+export const customers = pgTable("customers", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  name: varchar("name").notNull(),
+  email: varchar("email"),
+  phone: varchar("phone"),
+  document: varchar("document"),
+  address: varchar("address"),
+  city: varchar("city"),
+  state: varchar("state"),
+  zipCode: varchar("zip_code"),
+  contactPerson: varchar("contact_person"),
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 3. TABELA: sites (Locais/Sites)
+export const sites = pgTable("sites", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").references(() => customers.id),
+  name: varchar("name").notNull(),
+  address: varchar("address"),
+  description: text("description"),
+  floorPlanImageUrl: varchar("floor_plan_image_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 4. TABELA: zones (Zonas/Áreas)
+export const zones = pgTable("zones", {
+  id: varchar("id").primaryKey(),
+  siteId: varchar("site_id").notNull().references(() => sites.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  areaM2: decimal("area_m2", { precision: 10, scale: 2 }),
+  capacity: integer("capacity"),
+  category: varchar("category"),
+  positionX: decimal("position_x", { precision: 5, scale: 2 }),
+  positionY: decimal("position_y", { precision: 5, scale: 2 }),
+  sizeScale: decimal("size_scale", { precision: 3, scale: 2 }),
+  color: varchar("color"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 5. TABELA: users (Usuários do Sistema)
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").references(() => companies.id),
+  customerId: varchar("customer_id").references(() => customers.id),
+  username: varchar("username").notNull().unique(),
+  email: varchar("email").notNull().unique(),
+  password: varchar("password"),
+  name: varchar("name").notNull(),
+  role: userRoleEnum("role").notNull(),
+  userType: userTypeEnum("user_type").notNull().default('opus_user'),
+  assignedClientId: varchar("assigned_client_id"),
+  authProvider: authProviderEnum("auth_provider").default('local'),
+  externalId: varchar("external_id"),
+  msTenantId: varchar("ms_tenant_id"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 6. TABELA: service_types (Tipos de Serviço)
+export const serviceTypes = pgTable("service_types", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  code: varchar("code").notNull().unique(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+});
+
+// 7. TABELA: service_categories (Categorias de Serviço)
+export const serviceCategories = pgTable("service_categories", {
+  id: varchar("id").primaryKey(),
+  typeId: varchar("type_id").references(() => serviceTypes.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  code: varchar("code").notNull().unique(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+});
+
+// 8. TABELA: services (Serviços Disponíveis)
+export const services = pgTable("services", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  estimatedDurationMinutes: integer("estimated_duration_minutes"),
+  priority: priorityEnum("priority").default('media'),
+  requirements: text("requirements"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  customerId: varchar("customer_id").references(() => customers.id),
+  categoryId: varchar("category_id").references(() => serviceCategories.id),
+  typeId: varchar("type_id").references(() => serviceTypes.id),
+});
+
+// 9. TABELA: cleaning_activities (Atividades de Limpeza)
+export const cleaningActivities = pgTable("cleaning_activities", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  serviceId: varchar("service_id").references(() => services.id),
+  siteId: varchar("site_id").references(() => sites.id),
+  zoneId: varchar("zone_id").references(() => zones.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  frequency: frequencyEnum("frequency").notNull(),
+  frequencyConfig: jsonb("frequency_config"),
+  checklistTemplateId: varchar("checklist_template_id").references(() => checklistTemplates.id),
+  slaConfigId: varchar("sla_config_id").references(() => slaConfigs.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  startTime: time("start_time"),
+  endTime: time("end_time"),
+});
+
+// 10. TABELA: checklist_templates (Templates de Checklist)
+export const checklistTemplates = pgTable("checklist_templates", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  serviceId: varchar("service_id").references(() => services.id),
+  siteId: varchar("site_id").references(() => sites.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  items: jsonb("items").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  zoneId: varchar("zone_id").references(() => zones.id),
+});
+
+// 11. TABELA: work_orders (Ordens de Trabalho)
+export const workOrders = pgTable("work_orders", {
+  id: varchar("id").primaryKey(),
+  number: integer("number").notNull(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  zoneId: varchar("zone_id").references(() => zones.id),
+  serviceId: varchar("service_id").references(() => services.id),
+  cleaningActivityId: varchar("cleaning_activity_id").references(() => cleaningActivities.id),
+  checklistTemplateId: varchar("checklist_template_id").references(() => checklistTemplates.id),
+  type: workOrderTypeEnum("type").notNull(),
+  status: workOrderStatusEnum("status").notNull().default('aberta'),
+  priority: priorityEnum("priority").notNull().default('media'),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  assignedUserId: varchar("assigned_user_id").references(() => users.id),
+  origin: varchar("origin"),
+  qrCodePointId: varchar("qr_code_point_id").references(() => qrCodePoints.id),
+  requesterName: varchar("requester_name"),
+  requesterContact: varchar("requester_contact"),
+  scheduledDate: date("scheduled_date"),
+  dueDate: date("due_date"),
+  scheduledStartAt: timestamp("scheduled_start_at"),
+  scheduledEndAt: timestamp("scheduled_end_at"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  estimatedHours: decimal("estimated_hours", { precision: 5, scale: 2 }),
+  slaStartMinutes: integer("sla_start_minutes"),
+  slaCompleteMinutes: integer("sla_complete_minutes"),
+  observations: text("observations"),
+  checklistData: jsonb("checklist_data"),
+  attachments: jsonb("attachments"),
+  customerRating: integer("customer_rating"),
+  customerRatingComment: text("customer_rating_comment"),
+  ratedAt: timestamp("rated_at"),
+  ratedBy: varchar("rated_by").references(() => users.id),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => ({
+  uniqueWorkOrderNumber: uniqueIndex("work_orders_company_number_unique").on(table.companyId, table.number),
+}));
+
+// 12. TABELA: audit_logs (Logs de Auditoria)
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").references(() => companies.id),
+  userId: varchar("user_id").references(() => users.id),
+  entityType: varchar("entity_type").notNull(),
+  entityId: varchar("entity_id").notNull(),
+  action: varchar("action").notNull(),
+  changes: jsonb("changes"),
+  metadata: jsonb("metadata"),
+  timestamp: timestamp("timestamp").default(sql`now()`),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// 13. TABELA: dashboard_goals (Metas do Dashboard)
+export const dashboardGoals = pgTable("dashboard_goals", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  goalType: varchar("goal_type").notNull(),
+  goalValue: decimal("goal_value", { precision: 10, scale: 2 }).notNull(),
+  currentPeriod: varchar("current_period").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 14. TABELA: custom_roles (Roles Customizados)
+export const customRoles = pgTable("custom_roles", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  isSystemRole: boolean("is_system_role").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 15. TABELA: role_permissions (Permissões por Role)
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id").primaryKey(),
+  roleId: varchar("role_id").notNull().references(() => customRoles.id),
+  permission: permissionKeyEnum("permission").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// 16. TABELA: user_role_assignments (Usuários x Roles)
+export const userRoleAssignments = pgTable("user_role_assignments", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  roleId: varchar("role_id").notNull().references(() => customRoles.id),
+  customerId: varchar("customer_id").references(() => customers.id),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// 17. TABELA: user_site_assignments (Usuários x Sites)
+export const userSiteAssignments = pgTable("user_site_assignments", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  siteId: varchar("site_id").notNull().references(() => sites.id),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 18. TABELA: site_shifts (Turnos por Site)
+export const siteShifts = pgTable("site_shifts", {
+  id: varchar("id").primaryKey(),
+  siteId: varchar("site_id").notNull().references(() => sites.id),
+  name: varchar("name").notNull(),
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 19. TABELA: sla_configs (Configurações de SLA)
+export const slaConfigs = pgTable("sla_configs", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  name: varchar("name").notNull(),
+  category: varchar("category"),
+  timeToStartMinutes: integer("time_to_start_minutes").notNull(),
+  timeToCompleteMinutes: integer("time_to_complete_minutes").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 20. TABELA: webhook_configs (Configurações de Webhooks)
+export const webhookConfigs = pgTable("webhook_configs", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  name: varchar("name").notNull(),
+  url: varchar("url").notNull(),
+  events: jsonb("events").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 21. TABELA: company_counters (Contadores da Empresa)
+export const companyCounters = pgTable("company_counters", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  key: varchar("key").notNull(),
+  nextNumber: integer("next_number").notNull().default(1),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 22. TABELA: qr_code_points (Pontos de QR Code)
+export const qrCodePoints = pgTable("qr_code_points", {
+  id: varchar("id").primaryKey(),
+  zoneId: varchar("zone_id").notNull().references(() => zones.id),
+  serviceId: varchar("service_id").references(() => services.id),
+  code: varchar("code").notNull().unique(),
+  type: qrCodeTypeEnum("type").notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  sizeCm: integer("size_cm").default(5), // Tamanho em centímetros (padrão 5cm)
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 23. TABELA: service_zones (Serviços x Zonas)
+export const serviceZones = pgTable("service_zones", {
+  id: varchar("id").primaryKey(),
+  serviceId: varchar("service_id").notNull().references(() => services.id),
+  zoneId: varchar("zone_id").notNull().references(() => zones.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => ({
+  uniqueServiceZone: unique("unique_service_zone").on(table.serviceId, table.zoneId),
+}));
+
+// 24. TABELA: bathroom_counters (Contadores de Banheiro)
+export const bathroomCounters = pgTable("bathroom_counters", {
+  id: varchar("id").primaryKey(),
+  zoneId: varchar("zone_id").notNull().references(() => zones.id),
+  currentCount: integer("current_count").default(0),
+  limitCount: integer("limit_count").notNull(),
+  lastReset: timestamp("last_reset").default(sql`now()`),
+  autoResetTurn: boolean("auto_reset_turn").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 25. TABELA: bathroom_counter_logs (Logs dos Contadores)
+export const bathroomCounterLogs = pgTable("bathroom_counter_logs", {
+  id: varchar("id").primaryKey(),
+  counterId: varchar("counter_id").notNull().references(() => bathroomCounters.id),
+  userId: varchar("user_id").references(() => users.id),
+  delta: integer("delta").notNull(),
+  action: bathroomCounterActionEnum("action").notNull(),
+  previousValue: integer("previous_value").notNull(),
+  newValue: integer("new_value").notNull(),
+  workOrderId: varchar("work_order_id").references(() => workOrders.id),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// 26. TABELA: public_request_logs (Logs de Solicitações Públicas)
+export const publicRequestLogs = pgTable("public_request_logs", {
+  id: varchar("id").primaryKey(),
+  qrCodePointId: varchar("qr_code_point_id").references(() => qrCodePoints.id),
+  ipHash: varchar("ip_hash").notNull(),
+  userAgent: text("user_agent"),
+  requestData: jsonb("request_data"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// 27. TABELA: work_order_comments (Comentários em Work Orders)
+export const workOrderComments = pgTable("work_order_comments", {
+  id: varchar("id").primaryKey(),
+  workOrderId: varchar("work_order_id").notNull().references(() => workOrders.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  attachments: jsonb("attachments"),
+  isReopenRequest: boolean("is_reopen_request").default(false),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// Relations
+export const companiesRelations = relations(companies, ({ many }) => ({
+  customers: many(customers),
+  sites: many(sites),
+  users: many(users),
+  auditLogs: many(auditLogs),
+  dashboardGoals: many(dashboardGoals),
+  customRoles: many(customRoles),
+  slaConfigs: many(slaConfigs),
+  webhookConfigs: many(webhookConfigs),
+  companyCounters: many(companyCounters),
+  cleaningActivities: many(cleaningActivities),
+  workOrders: many(workOrders),
+  checklistTemplates: many(checklistTemplates),
+}));
+
+export const customersRelations = relations(customers, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [customers.companyId],
+    references: [companies.id],
+  }),
+  sites: many(sites),
+  users: many(users),
+  serviceTypes: many(serviceTypes),
+  serviceCategories: many(serviceCategories),
+  services: many(services),
+  userRoleAssignments: many(userRoleAssignments),
+}));
+
+export const sitesRelations = relations(sites, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [sites.companyId],
+    references: [companies.id],
+  }),
+  customer: one(customers, {
+    fields: [sites.customerId],
+    references: [customers.id],
+  }),
+  zones: many(zones),
+  siteShifts: many(siteShifts),
+  userSiteAssignments: many(userSiteAssignments),
+  checklistTemplates: many(checklistTemplates),
+  cleaningActivities: many(cleaningActivities),
+}));
+
+export const zonesRelations = relations(zones, ({ one, many }) => ({
+  site: one(sites, {
+    fields: [zones.siteId],
+    references: [sites.id],
+  }),
+  qrCodePoints: many(qrCodePoints),
+  serviceZones: many(serviceZones),
+  bathroomCounters: many(bathroomCounters),
+  cleaningActivities: many(cleaningActivities),
+  workOrders: many(workOrders),
+  checklistTemplates: many(checklistTemplates),
+}));
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [users.companyId],
+    references: [companies.id],
+  }),
+  customer: one(customers, {
+    fields: [users.customerId],
+    references: [customers.id],
+  }),
+  auditLogs: many(auditLogs),
+  userRoleAssignments: many(userRoleAssignments),
+  userSiteAssignments: many(userSiteAssignments),
+  assignedWorkOrders: many(workOrders),
+  bathroomCounterLogs: many(bathroomCounterLogs),
+  workOrderComments: many(workOrderComments),
+}));
+
+export const serviceTypesRelations = relations(serviceTypes, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [serviceTypes.customerId],
+    references: [customers.id],
+  }),
+  serviceCategories: many(serviceCategories),
+  services: many(services),
+}));
+
+export const serviceCategoriesRelations = relations(serviceCategories, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [serviceCategories.customerId],
+    references: [customers.id],
+  }),
+  serviceType: one(serviceTypes, {
+    fields: [serviceCategories.typeId],
+    references: [serviceTypes.id],
+  }),
+  services: many(services),
+}));
+
+export const servicesRelations = relations(services, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [services.customerId],
+    references: [customers.id],
+  }),
+  category: one(serviceCategories, {
+    fields: [services.categoryId],
+    references: [serviceCategories.id],
+  }),
+  type: one(serviceTypes, {
+    fields: [services.typeId],
+    references: [serviceTypes.id],
+  }),
+  qrCodePoints: many(qrCodePoints),
+  serviceZones: many(serviceZones),
+  cleaningActivities: many(cleaningActivities),
+  workOrders: many(workOrders),
+  checklistTemplates: many(checklistTemplates),
+}));
+
+export const workOrdersRelations = relations(workOrders, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [workOrders.companyId],
+    references: [companies.id],
+  }),
+  zone: one(zones, {
+    fields: [workOrders.zoneId],
+    references: [zones.id],
+  }),
+  service: one(services, {
+    fields: [workOrders.serviceId],
+    references: [services.id],
+  }),
+  cleaningActivity: one(cleaningActivities, {
+    fields: [workOrders.cleaningActivityId],
+    references: [cleaningActivities.id],
+  }),
+  checklistTemplate: one(checklistTemplates, {
+    fields: [workOrders.checklistTemplateId],
+    references: [checklistTemplates.id],
+  }),
+  assignedUser: one(users, {
+    fields: [workOrders.assignedUserId],
+    references: [users.id],
+  }),
+  qrCodePoint: one(qrCodePoints, {
+    fields: [workOrders.qrCodePointId],
+    references: [qrCodePoints.id],
+  }),
+  comments: many(workOrderComments),
+}));
+
+export const cleaningActivitiesRelations = relations(cleaningActivities, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [cleaningActivities.companyId],
+    references: [companies.id],
+  }),
+  service: one(services, {
+    fields: [cleaningActivities.serviceId],
+    references: [services.id],
+  }),
+  site: one(sites, {
+    fields: [cleaningActivities.siteId],
+    references: [sites.id],
+  }),
+  zone: one(zones, {
+    fields: [cleaningActivities.zoneId],
+    references: [zones.id],
+  }),
+  checklistTemplate: one(checklistTemplates, {
+    fields: [cleaningActivities.checklistTemplateId],
+    references: [checklistTemplates.id],
+  }),
+  slaConfig: one(slaConfigs, {
+    fields: [cleaningActivities.slaConfigId],
+    references: [slaConfigs.id],
+  }),
+  workOrders: many(workOrders),
+}));
+
+export const checklistTemplatesRelations = relations(checklistTemplates, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [checklistTemplates.companyId],
+    references: [companies.id],
+  }),
+  service: one(services, {
+    fields: [checklistTemplates.serviceId],
+    references: [services.id],
+  }),
+  site: one(sites, {
+    fields: [checklistTemplates.siteId],
+    references: [sites.id],
+  }),
+  zone: one(zones, {
+    fields: [checklistTemplates.zoneId],
+    references: [zones.id],
+  }),
+  cleaningActivities: many(cleaningActivities),
+  workOrders: many(workOrders),
+}));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  company: one(companies, {
+    fields: [auditLogs.companyId],
+    references: [companies.id],
+  }),
+  user: one(users, {
+    fields: [auditLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const qrCodePointsRelations = relations(qrCodePoints, ({ one, many }) => ({
+  zone: one(zones, {
+    fields: [qrCodePoints.zoneId],
+    references: [zones.id],
+  }),
+  service: one(services, {
+    fields: [qrCodePoints.serviceId],
+    references: [services.id],
+  }),
+  workOrders: many(workOrders),
+  publicRequestLogs: many(publicRequestLogs),
+}));
+
+export const customRolesRelations = relations(customRoles, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [customRoles.companyId],
+    references: [companies.id],
+  }),
+  rolePermissions: many(rolePermissions),
+  userRoleAssignments: many(userRoleAssignments),
+}));
+
+export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
+  role: one(customRoles, {
+    fields: [rolePermissions.roleId],
+    references: [customRoles.id],
+  }),
+}));
+
+export const userRoleAssignmentsRelations = relations(userRoleAssignments, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoleAssignments.userId],
+    references: [users.id],
+  }),
+  role: one(customRoles, {
+    fields: [userRoleAssignments.roleId],
+    references: [customRoles.id],
+  }),
+  customer: one(customers, {
+    fields: [userRoleAssignments.customerId],
+    references: [customers.id],
+  }),
+}));
+
+export const userSiteAssignmentsRelations = relations(userSiteAssignments, ({ one }) => ({
+  user: one(users, {
+    fields: [userSiteAssignments.userId],
+    references: [users.id],
+  }),
+  site: one(sites, {
+    fields: [userSiteAssignments.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const siteShiftsRelations = relations(siteShifts, ({ one }) => ({
+  site: one(sites, {
+    fields: [siteShifts.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const slaConfigsRelations = relations(slaConfigs, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [slaConfigs.companyId],
+    references: [companies.id],
+  }),
+  cleaningActivities: many(cleaningActivities),
+}));
+
+export const webhookConfigsRelations = relations(webhookConfigs, ({ one }) => ({
+  company: one(companies, {
+    fields: [webhookConfigs.companyId],
+    references: [companies.id],
+  }),
+}));
+
+export const companyCountersRelations = relations(companyCounters, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyCounters.companyId],
+    references: [companies.id],
+  }),
+}));
+
+export const dashboardGoalsRelations = relations(dashboardGoals, ({ one }) => ({
+  company: one(companies, {
+    fields: [dashboardGoals.companyId],
+    references: [companies.id],
+  }),
+}));
+
+export const serviceZonesRelations = relations(serviceZones, ({ one }) => ({
+  service: one(services, {
+    fields: [serviceZones.serviceId],
+    references: [services.id],
+  }),
+  zone: one(zones, {
+    fields: [serviceZones.zoneId],
+    references: [zones.id],
+  }),
+}));
+
+export const bathroomCountersRelations = relations(bathroomCounters, ({ one, many }) => ({
+  zone: one(zones, {
+    fields: [bathroomCounters.zoneId],
+    references: [zones.id],
+  }),
+  logs: many(bathroomCounterLogs),
+}));
+
+export const bathroomCounterLogsRelations = relations(bathroomCounterLogs, ({ one }) => ({
+  counter: one(bathroomCounters, {
+    fields: [bathroomCounterLogs.counterId],
+    references: [bathroomCounters.id],
+  }),
+  user: one(users, {
+    fields: [bathroomCounterLogs.userId],
+    references: [users.id],
+  }),
+  workOrder: one(workOrders, {
+    fields: [bathroomCounterLogs.workOrderId],
+    references: [workOrders.id],
+  }),
+}));
+
+export const publicRequestLogsRelations = relations(publicRequestLogs, ({ one }) => ({
+  qrCodePoint: one(qrCodePoints, {
+    fields: [publicRequestLogs.qrCodePointId],
+    references: [qrCodePoints.id],
+  }),
+}));
+
+export const workOrderCommentsRelations = relations(workOrderComments, ({ one }) => ({
+  workOrder: one(workOrders, {
+    fields: [workOrderComments.workOrderId],
+    references: [workOrders.id],
+  }),
+  user: one(users, {
+    fields: [workOrderComments.userId],
+    references: [users.id],
+  }),
+}));
+
+// Insert schemas
+export const insertCompanySchema = createInsertSchema(companies).omit({ id: true });
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true });
+export const insertSiteSchema = createInsertSchema(sites).omit({ id: true });
+export const insertZoneSchema = createInsertSchema(zones).omit({ id: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({ id: true });
+export const insertServiceCategorySchema = createInsertSchema(serviceCategories).omit({ id: true });
+export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
+export const insertCleaningActivitySchema = createInsertSchema(cleaningActivities).omit({ id: true });
+export const insertChecklistTemplateSchema = createInsertSchema(checklistTemplates).omit({ id: true });
+export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({ id: true, number: true }).extend({
+  completedAt: z.union([z.date(), z.string().datetime()]).optional(),
+  startedAt: z.union([z.date(), z.string().datetime()]).optional(),
+  scheduledStartAt: z.union([z.date(), z.string().datetime()]).optional(),
+  scheduledEndAt: z.union([z.date(), z.string().datetime()]).optional(),
+});
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
+export const insertDashboardGoalSchema = createInsertSchema(dashboardGoals).omit({ id: true });
+export const insertCustomRoleSchema = createInsertSchema(customRoles);
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions);
+export const insertUserRoleAssignmentSchema = createInsertSchema(userRoleAssignments);
+export const insertUserSiteAssignmentSchema = createInsertSchema(userSiteAssignments);
+export const insertSiteShiftSchema = createInsertSchema(siteShifts);
+export const insertSlaConfigSchema = createInsertSchema(slaConfigs);
+export const insertWebhookConfigSchema = createInsertSchema(webhookConfigs);
+export const insertCompanyCounterSchema = createInsertSchema(companyCounters);
+export const insertQrCodePointSchema = createInsertSchema(qrCodePoints).omit({ 
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).partial({
+  code: true,
+  serviceId: true,
+  description: true,
+  sizeCm: true,
+  isActive: true
+});
+export const insertServiceZoneSchema = createInsertSchema(serviceZones);
+export const insertBathroomCounterSchema = createInsertSchema(bathroomCounters);
+export const insertBathroomCounterLogSchema = createInsertSchema(bathroomCounterLogs);
+export const insertPublicRequestLogSchema = createInsertSchema(publicRequestLogs);
+export const insertWorkOrderCommentSchema = createInsertSchema(workOrderComments);
+
+// Types
+export type Company = typeof companies.$inferSelect;
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+
+export type Site = typeof sites.$inferSelect;
+export type InsertSite = z.infer<typeof insertSiteSchema>;
+
+export type Zone = typeof zones.$inferSelect;
+export type InsertZone = z.infer<typeof insertZoneSchema>;
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type ServiceType = typeof serviceTypes.$inferSelect;
+export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;
+
+export type ServiceCategory = typeof serviceCategories.$inferSelect;
+export type InsertServiceCategory = z.infer<typeof insertServiceCategorySchema>;
+
+export type Service = typeof services.$inferSelect;
+export type InsertService = z.infer<typeof insertServiceSchema>;
+
+export type CleaningActivity = typeof cleaningActivities.$inferSelect;
+export type InsertCleaningActivity = z.infer<typeof insertCleaningActivitySchema>;
+
+export type ChecklistTemplate = typeof checklistTemplates.$inferSelect;
+export type InsertChecklistTemplate = z.infer<typeof insertChecklistTemplateSchema>;
+
+export type WorkOrder = typeof workOrders.$inferSelect;
+export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
+export type DashboardGoal = typeof dashboardGoals.$inferSelect;
+export type InsertDashboardGoal = z.infer<typeof insertDashboardGoalSchema>;
+
+export type CustomRole = typeof customRoles.$inferSelect;
+export type CustomRoleWithPermissions = CustomRole & { permissions: string[] };
+export type InsertCustomRole = z.infer<typeof insertCustomRoleSchema>;
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+export type UserRoleAssignment = typeof userRoleAssignments.$inferSelect;
+export type InsertUserRoleAssignment = z.infer<typeof insertUserRoleAssignmentSchema>;
+
+export type UserSiteAssignment = typeof userSiteAssignments.$inferSelect;
+export type InsertUserSiteAssignment = z.infer<typeof insertUserSiteAssignmentSchema>;
+
+export type SiteShift = typeof siteShifts.$inferSelect;
+export type InsertSiteShift = z.infer<typeof insertSiteShiftSchema>;
+
+export type SlaConfig = typeof slaConfigs.$inferSelect;
+export type InsertSlaConfig = z.infer<typeof insertSlaConfigSchema>;
+
+export type WebhookConfig = typeof webhookConfigs.$inferSelect;
+export type InsertWebhookConfig = z.infer<typeof insertWebhookConfigSchema>;
+
+export type CompanyCounter = typeof companyCounters.$inferSelect;
+export type InsertCompanyCounter = z.infer<typeof insertCompanyCounterSchema>;
+
+export type QrCodePoint = typeof qrCodePoints.$inferSelect;
+export type InsertQrCodePoint = z.infer<typeof insertQrCodePointSchema>;
+
+export type ServiceZone = typeof serviceZones.$inferSelect;
+export type InsertServiceZone = z.infer<typeof insertServiceZoneSchema>;
+
+export type BathroomCounter = typeof bathroomCounters.$inferSelect;
+export type InsertBathroomCounter = z.infer<typeof insertBathroomCounterSchema>;
+
+export type BathroomCounterLog = typeof bathroomCounterLogs.$inferSelect;
+export type InsertBathroomCounterLog = z.infer<typeof insertBathroomCounterLogSchema>;
+
+export type PublicRequestLog = typeof publicRequestLogs.$inferSelect;
+export type InsertPublicRequestLog = z.infer<typeof insertPublicRequestLogSchema>;
+
+export type WorkOrderComment = typeof workOrderComments.$inferSelect;
+export type InsertWorkOrderComment = z.infer<typeof insertWorkOrderCommentSchema>;
