@@ -1549,6 +1549,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: string): Promise<void> {
+    // Deletar registros relacionados primeiro para evitar violação de chave estrangeira
+    
+    // 1. Deletar atribuições de funções (roles)
+    await db.delete(userRoleAssignments).where(eq(userRoleAssignments.userId, id));
+    
+    // 2. Deletar atribuições de sites
+    await db.delete(userSiteAssignments).where(eq(userSiteAssignments.userId, id));
+    
+    // 3. Deletar o usuário
     await db.delete(users).where(eq(users.id, id));
   }
 

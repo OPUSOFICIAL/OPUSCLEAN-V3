@@ -18,3 +18,5 @@
 [x] 18. Refactored "Cliente Ativo" selector to use ClientContext directly
 [x] 19. Removed duplicate queries - now using shared context for customer list
 [x] 20. Sidebar now shows only customers the user has access to (filtered by company and active status)
+[x] 21. Fixed alignment of "Total OS" text in dashboard donut chart - perfectly centered
+[x] 22. Fixed user deletion error - now deletes related records (roles, sites) before deleting user
