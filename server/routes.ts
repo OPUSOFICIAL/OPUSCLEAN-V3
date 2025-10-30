@@ -928,7 +928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         id: userId,
         role: 'operador', // Role padrão, as permissões virão do custom role
-      });
+      } as any);
 
       // Se foi enviado um customRoleId, criar userRoleAssignment via storage
       if (customRoleId && customRoleId.startsWith('role-')) {
@@ -941,12 +941,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(sanitizeUser(newUser));
-    } catch (error) {
+    } catch (error: any) {
+      // Tratamento de erros do Zod (validação)
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+        return res.status(400).json({ 
+          message: "Dados inválidos",
+          details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          errors: error.errors 
+        });
       }
+      
+      // Tratamento de erros do PostgreSQL
+      if (error.code === '23505') {
+        // Unique constraint violation
+        if (error.constraint === 'users_email_unique') {
+          return res.status(400).json({ 
+            message: "Email já cadastrado",
+            details: `O email "${error.detail?.match(/\(([^)]+)\)/)?.[1] || 'informado'}" já está sendo usado por outro usuário. Por favor, use um email diferente.`
+          });
+        }
+        if (error.constraint === 'users_username_unique') {
+          return res.status(400).json({ 
+            message: "Nome de usuário já existe",
+            details: `O nome de usuário "${error.detail?.match(/\(([^)]+)\)/)?.[1] || 'informado'}" já está em uso. Por favor, escolha outro nome de usuário.`
+          });
+        }
+        // Outras violações de unique constraint
+        return res.status(400).json({ 
+          message: "Valor duplicado",
+          details: "Um campo único já possui esse valor no sistema. Verifique os dados e tente novamente."
+        });
+      }
+      
+      if (error.code === '23503') {
+        // Foreign key violation
+        return res.status(400).json({ 
+          message: "Referência inválida",
+          details: "Um dos campos referencia um registro que não existe. Verifique cliente, empresa ou outros relacionamentos."
+        });
+      }
+      
+      if (error.code === '23502') {
+        // Not null violation
+        return res.status(400).json({ 
+          message: "Campo obrigatório faltando",
+          details: `O campo "${error.column || 'desconhecido'}" é obrigatório e não pode ser vazio.`
+        });
+      }
+      
+      // Erro genérico
       console.error("Error creating user:", error);
-      res.status(500).json({ message: "Failed to create user" });
+      res.status(500).json({ 
+        message: "Erro ao criar usuário",
+        details: process.env.NODE_ENV === 'development' ? error.message : "Ocorreu um erro inesperado. Tente novamente ou contate o suporte."
+      });
     }
   });
 

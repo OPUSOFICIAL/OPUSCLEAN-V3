@@ -20,3 +20,7 @@
 [x] 20. Sidebar now shows only customers the user has access to (filtered by company and active status)
 [x] 21. Fixed alignment of "Total OS" text in dashboard donut chart - perfectly centered
 [x] 22. Fixed user deletion error - now deletes related records (roles, sites) before deleting user
+[x] 23. Fixed authentication middleware to check custom role permissions instead of just base role
+[x] 24. Users created via interface now get proper permissions based on their assigned custom roles
+[x] 25. Improved error handling for user creation with specific messages for duplicate email/username
+[x] 26. Frontend now shows detailed error messages including the specific problem (email duplicado, etc)

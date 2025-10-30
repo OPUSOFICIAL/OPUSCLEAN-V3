@@ -85,9 +85,12 @@ export default function Users({ customerId }: UsersProps) {
       setUserRole("");
     },
     onError: (error: any) => {
+      const errorMessage = error?.message || "Erro ao criar usuário";
+      const errorDetails = error?.details || "Verifique se todos os campos estão preenchidos corretamente";
+      
       toast({ 
-        title: "Erro ao criar usuário",
-        description: error?.message || "Verifique se todos os campos estão preenchidos corretamente",
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive" 
       });
     },
