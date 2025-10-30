@@ -38,7 +38,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function AuthenticatedAdminRouter() {
-  const { activeClientId, setActiveClientId, isLoading } = useClient();
+  const { activeClientId, isLoading } = useClient();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const isMobile = useIsMobile();
   const { user } = useAuth();
@@ -63,8 +63,6 @@ function AuthenticatedAdminRouter() {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar 
-        selectedCompanyId={activeClientId}
-        onCompanyChange={setActiveClientId}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />

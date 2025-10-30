@@ -30,32 +30,19 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useClient } from "@/contexts/ClientContext";
 
 interface SidebarProps {
-  selectedCompanyId: string;
-  onCompanyChange: (companyId: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
 
-export default function Sidebar({ selectedCompanyId, onCompanyChange, isCollapsed, onToggleCollapse }: SidebarProps) {
+export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, canManageClients } = useAuth();
   const { can } = usePermissions();
-  const { activeClientId } = useClient();
+  const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
   
   // Usuários do tipo customer_user não podem alterar o cliente
   const isCustomerUser = user?.userType === 'customer_user';
-  
-  // Get all customers from OPUS
-  const OPUS_COMPANY_ID = "company-opus-default";
-  const { data: companies } = useQuery({
-    queryKey: ["/api/companies", OPUS_COMPANY_ID, "customers"],
-  });
-
-  const { data: selectedCompany } = useQuery({
-    queryKey: ["/api/customers", selectedCompanyId],
-    enabled: !!selectedCompanyId,
-  });
 
   const handleLogout = async () => {
     try {
@@ -78,26 +65,26 @@ export default function Sidebar({ selectedCompanyId, onCompanyChange, isCollapse
   // Criar menu baseado em permissões granulares
   const menuItems = [
     // Dashboard - sempre disponível se tiver acesso ao sistema
-    ...(can.viewDashboard(selectedCompanyId) ? [{ path: "/", label: "Dashboard", icon: Home }] : []),
+    ...(can.viewDashboard(activeClientId) ? [{ path: "/", label: "Dashboard", icon: Home }] : []),
     
     // Ordens de Serviço
-    ...(can.viewWorkOrders(selectedCompanyId) ? [{ path: "/workorders", label: "Ordens de Serviço", icon: ClipboardList }] : []),
+    ...(can.viewWorkOrders(activeClientId) ? [{ path: "/workorders", label: "Ordens de Serviço", icon: ClipboardList }] : []),
     
     // Plano de Limpeza
-    ...(can.viewSchedule(selectedCompanyId) ? [{ path: "/schedule", label: "Plano de Limpeza", icon: Calendar }] : []),
+    ...(can.viewSchedule(activeClientId) ? [{ path: "/schedule", label: "Plano de Limpeza", icon: Calendar }] : []),
     
     // Checklists
-    ...(can.viewChecklists(selectedCompanyId) ? [{ path: "/checklists", label: "Checklists", icon: Fan }] : []),
+    ...(can.viewChecklists(activeClientId) ? [{ path: "/checklists", label: "Checklists", icon: Fan }] : []),
     
     // QR Codes
-    ...(can.viewQRCodes(selectedCompanyId) ? [{ path: "/qrcodes", label: "QR Codes", icon: QrCode }] : []),
+    ...(can.viewQRCodes(activeClientId) ? [{ path: "/qrcodes", label: "QR Codes", icon: QrCode }] : []),
     
     // Planta dos Locais
-    ...(can.viewFloorPlan(selectedCompanyId) ? [{ path: "/floor-plan", label: "Planta dos Locais", icon: Map }] : []),
+    ...(can.viewFloorPlan(activeClientId) ? [{ path: "/floor-plan", label: "Planta dos Locais", icon: Map }] : []),
     
     
     // Relatórios
-    ...(can.viewReports(selectedCompanyId) ? [{ path: "/reports", label: "Relatórios", icon: ChartBar }] : []),
+    ...(can.viewReports(activeClientId) ? [{ path: "/reports", label: "Relatórios", icon: ChartBar }] : []),
     
     // Usuários OPUS (apenas para quem tem permissão)
     ...(can.viewOpusUsers() ? [{ path: "/users", label: "Usuários OPUS", icon: Users }] : []),
@@ -152,17 +139,17 @@ export default function Sidebar({ selectedCompanyId, onCompanyChange, isCollapse
       </div>
 
       {/* Company Selector - apenas para admin/opus users */}
-      {!isCollapsed && !isCustomerUser && (
+      {!isCollapsed && !isCustomerUser && customers.length > 0 && (
         <div className="px-6 pt-1 pb-3 border-b border-border">
           <label className="block text-sm font-medium text-foreground mb-2">Cliente Ativo</label>
-          <Select value={selectedCompanyId} onValueChange={onCompanyChange}>
+          <Select value={activeClientId} onValueChange={setActiveClientId}>
             <SelectTrigger data-testid="company-selector">
               <SelectValue placeholder="Selecione um cliente" />
             </SelectTrigger>
             <SelectContent>
-              {(companies as any[])?.map((company: any) => (
-                <SelectItem key={company.id} value={company.id}>
-                  {company.name}
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -171,11 +158,11 @@ export default function Sidebar({ selectedCompanyId, onCompanyChange, isCollapse
       )}
       
       {/* Nome do Cliente fixo para customer_user */}
-      {!isCollapsed && isCustomerUser && selectedCompany && (
+      {!isCollapsed && isCustomerUser && activeClient && (
         <div className="px-6 pt-1 pb-3 border-b border-border">
           <label className="block text-sm font-medium text-muted-foreground mb-2">Cliente</label>
           <div className="px-3 py-2 bg-muted rounded-md">
-            <p className="text-sm font-medium text-foreground">{(selectedCompany as any)?.name}</p>
+            <p className="text-sm font-medium text-foreground">{activeClient.name}</p>
           </div>
         </div>
       )}

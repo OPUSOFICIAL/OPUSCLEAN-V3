@@ -15,3 +15,6 @@
 [x] 15. Database populated successfully with 687 work orders, 19 users, 4 customers, 7 sites, 28 zones
 [x] 16. Application restarted and running correctly with database connection
 [x] 17. Project import and database setup completed - ready for development
+[x] 18. Refactored "Cliente Ativo" selector to use ClientContext directly
+[x] 19. Removed duplicate queries - now using shared context for customer list
+[x] 20. Sidebar now shows only customers the user has access to (filtered by company and active status)
