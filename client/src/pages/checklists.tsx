@@ -837,6 +837,19 @@ export default function Checklists() {
                                   {item.description && (
                                     <p className="text-sm text-slate-600">{item.description}</p>
                                   )}
+                                  {/* Mostrar opções do checkbox */}
+                                  {item.type === 'checkbox' && item.options && item.options.length > 0 && (
+                                    <div className="mt-2">
+                                      <p className="text-xs text-slate-500 mb-1">Opções:</p>
+                                      <div className="flex flex-wrap gap-1">
+                                        {item.options.map((option, optIndex) => (
+                                          <Badge key={optIndex} variant="secondary" className="text-xs">
+                                            {option}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                   {/* Mostrar configurações de validação aplicadas */}
                                   {item.validation && Object.keys(item.validation).length > 0 && (
                                     <div className="flex flex-wrap gap-1 mt-1">
@@ -873,6 +886,16 @@ export default function Checklists() {
                                       {item.validation.photoRequired && (
                                         <Badge variant="outline" className="text-xs bg-orange-50">
                                           Foto obrigatória
+                                        </Badge>
+                                      )}
+                                      {item.validation.minChecked && (
+                                        <Badge variant="outline" className="text-xs bg-indigo-50">
+                                          Mín: {item.validation.minChecked} checks
+                                        </Badge>
+                                      )}
+                                      {item.validation.maxChecked && (
+                                        <Badge variant="outline" className="text-xs bg-indigo-50">
+                                          Máx: {item.validation.maxChecked} checks
                                         </Badge>
                                       )}
                                     </div>
