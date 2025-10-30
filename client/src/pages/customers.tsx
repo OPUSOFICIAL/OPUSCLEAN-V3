@@ -157,11 +157,13 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
     }
   };
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (customer.document && customer.document.includes(searchTerm))
-  );
+  const filteredCustomers = customers
+    .filter(customer => customer.isActive) // Mostrar apenas clientes ativos
+    .filter(customer =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (customer.document && customer.document.includes(searchTerm))
+    );
 
   if (isLoading) {
     return (
