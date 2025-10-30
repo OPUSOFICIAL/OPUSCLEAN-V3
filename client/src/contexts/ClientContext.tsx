@@ -48,6 +48,13 @@ export function ClientProvider({ children }: ClientProviderProps) {
     enabled: !!activeClientId,
   });
 
+  // Resetar activeClientId quando o companyId mudar (quando user loga)
+  useEffect(() => {
+    if (companyId && !isCustomerUser) {
+      setActiveClientId("");
+    }
+  }, [companyId]);
+
   // COMBINADO: Definir activeClientId corretamente baseado no tipo de usuário
   useEffect(() => {
     // Se é customer_user, SEMPRE usar o customerId dele (PRIORIDADE)

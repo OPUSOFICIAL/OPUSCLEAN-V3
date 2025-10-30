@@ -7,4 +7,7 @@
 [x] 7. Import database dump (db_dump_2025-10-29_165255.sql)
 [x] 8. Verify database populated with all data (27 tables, 687+ records)
 [x] 9. Import and setup completed successfully
-[x] 10. Fixed customer listing - now using logged user's companyId instead of hardcoded value
+[x] 10. Fixed customer listing - using logged user's companyId (App.tsx)
+[x] 11. Fixed ClientContext - using logged user's companyId for customer selector
+[x] 12. Added filter to show only active customers in dropdown and customer page
+[x] 13. Verified FAURECIA and TECNOFIBRA appearing correctly for admin user
