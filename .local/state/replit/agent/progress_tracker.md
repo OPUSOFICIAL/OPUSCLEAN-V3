@@ -7,3 +7,4 @@
 [x] 7. Import database dump (db_dump_2025-10-29_165255.sql)
 [x] 8. Verify database populated with all data (27 tables, 687+ records)
 [x] 9. Import and setup completed successfully
+[x] 10. Fixed customer listing - now using logged user's companyId instead of hardcoded value

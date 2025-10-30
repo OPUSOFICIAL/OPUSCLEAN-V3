@@ -41,9 +41,10 @@ function AuthenticatedAdminRouter() {
   const { activeClientId, setActiveClientId, isLoading } = useClient();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   
-  // ID fixo da empresa prestadora OPUS CLEAN
-  const OPUS_COMPANY_ID = "company-opus-default";
+  // Usar o companyId do usuário logado
+  const companyId = user?.companyId || "company-opus-default";
 
   if (isLoading) {
     return (
@@ -55,7 +56,7 @@ function AuthenticatedAdminRouter() {
 
   // Se é mobile, mostrar interface móvel otimizada
   if (isMobile) {
-    return <AdminMobile companyId={OPUS_COMPANY_ID} />;
+    return <AdminMobile companyId={companyId} />;
   }
 
   // Interface desktop
@@ -79,10 +80,10 @@ function AuthenticatedAdminRouter() {
           <Route path="/sites" component={() => <Sites customerId={activeClientId} />} />
           <Route path="/floor-plan" component={() => <FloorPlan />} />
           <Route path="/users" component={() => <SystemUsers />} />
-          <Route path="/customers" component={() => <Customers companyId={OPUS_COMPANY_ID} />} />
+          <Route path="/customers" component={() => <Customers companyId={companyId} />} />
           <Route path="/roles" component={() => <Roles />} />
           <Route path="/reports" component={() => <Reports />} />
-          <Route path="/audit-logs" component={() => <AuditLogs companyId={OPUS_COMPANY_ID} />} />
+          <Route path="/audit-logs" component={() => <AuditLogs companyId={companyId} />} />
           
           {/* Redirecionar rotas de login para dashboard se já autenticado */}
           <Route path="/login">
