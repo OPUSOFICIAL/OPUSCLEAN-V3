@@ -245,7 +245,9 @@ export interface IStorage {
   updateCustomRole(id: string, role: Partial<InsertCustomRole>): Promise<CustomRoleWithPermissions>;
   deleteCustomRole(id: string): Promise<void>;
   setRolePermissions(roleId: string, permissions: string[]): Promise<void>;
+  getUserRoles(userId: string): Promise<UserRoleAssignment[]>;
   getUserRoleAssignments(userId: string): Promise<UserRoleAssignment[]>;
+  getRolePermissions(roleId: string): Promise<RolePermission[]>;
   createUserRoleAssignment(assignment: InsertUserRoleAssignment): Promise<UserRoleAssignment>;
 
   // System Users (OPUS employees)
@@ -3144,6 +3146,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUserRoles(userId: string): Promise<UserRoleAssignment[]> {
+    return this.getUserRoleAssignments(userId);
+  }
+
   async getUserRoleAssignments(userId: string): Promise<UserRoleAssignment[]> {
     const assignments = await db.select({
       id: userRoleAssignments.id,
@@ -3186,6 +3192,12 @@ export class DatabaseStorage implements IStorage {
     );
 
     return assignmentsWithPermissions as UserRoleAssignment[];
+  }
+
+  async getRolePermissions(roleId: string): Promise<RolePermission[]> {
+    return await db.select()
+      .from(rolePermissions)
+      .where(eq(rolePermissions.roleId, roleId));
   }
 
   async createUserRoleAssignment(assignment: InsertUserRoleAssignment): Promise<UserRoleAssignment> {

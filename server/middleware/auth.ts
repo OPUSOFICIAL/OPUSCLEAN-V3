@@ -26,6 +26,36 @@ declare global {
 }
 
 /**
+ * Determina o role efetivo baseado nas permissões dos custom roles
+ */
+function getEffectiveRole(baseRole: UserRole, permissions: string[]): UserRole {
+  // Se já tem role de admin na tabela users, manter
+  if (baseRole === 'admin') {
+    return 'admin';
+  }
+  
+  // Mapear permissões para roles
+  if (permissions.includes('customers_create') || permissions.includes('customers_edit') || permissions.includes('customers_delete')) {
+    return 'admin';
+  }
+  
+  if (permissions.includes('users_create') || permissions.includes('users_edit') || permissions.includes('users_delete')) {
+    return 'gestor_cliente';
+  }
+  
+  if (permissions.includes('workorders_create') || permissions.includes('workorders_edit') || permissions.includes('sites_create')) {
+    return 'supervisor_site';
+  }
+  
+  if (permissions.includes('audit_logs_view') || permissions.includes('reports_view')) {
+    return 'auditor';
+  }
+  
+  // Default: operador
+  return baseRole;
+}
+
+/**
  * Helper function to extract user from Authorization header
  */
 async function getUserFromToken(req: Request): Promise<SessionUser | null> {
@@ -45,14 +75,26 @@ async function getUserFromToken(req: Request): Promise<SessionUser | null> {
         return null;
       }
       
+      // Buscar custom roles e suas permissões do usuário
+      const userRoles = await storage.getUserRoles(user.id);
+      const permissions: string[] = [];
+      
+      for (const roleAssignment of userRoles) {
+        const rolePerms = await storage.getRolePermissions(roleAssignment.roleId);
+        permissions.push(...rolePerms.map((p: any) => p.permission).filter((p: string | null) => p !== null));
+      }
+      
+      // Determinar role efetivo baseado nas permissões
+      const effectiveRole = getEffectiveRole(user.role as UserRole, permissions);
+      
       return {
         id: user.id,
-        companyId: user.companyId,
+        companyId: user.companyId || '',
         customerId: user.customerId || undefined,
         username: user.username,
         email: user.email,
         name: user.name,
-        role: user.role as UserRole,
+        role: effectiveRole,
         isActive: user.isActive
       };
     } catch (jwtError) {
@@ -65,14 +107,26 @@ async function getUserFromToken(req: Request): Promise<SessionUser | null> {
           return null;
         }
         
+        // Buscar custom roles e suas permissões do usuário
+        const userRoles = await storage.getUserRoles(user.id);
+        const permissions: string[] = [];
+        
+        for (const roleAssignment of userRoles) {
+          const rolePerms = await storage.getRolePermissions(roleAssignment.roleId);
+          permissions.push(...rolePerms.map((p: any) => p.permission).filter((p: string | null) => p !== null));
+        }
+        
+        // Determinar role efetivo baseado nas permissões
+        const effectiveRole = getEffectiveRole(user.role as UserRole, permissions);
+        
         return {
           id: user.id,
-          companyId: user.companyId,
+          companyId: user.companyId || '',
           customerId: user.customerId || undefined,
           username: user.username,
           email: user.email,
           name: user.name,
-          role: user.role as UserRole,
+          role: effectiveRole,
           isActive: user.isActive
         };
       }
