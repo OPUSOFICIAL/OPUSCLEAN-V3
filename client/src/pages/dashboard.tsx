@@ -676,11 +676,11 @@ export default function Dashboard() {
                     <div 
                       className="absolute inset-0 flex items-center justify-center pointer-events-none"
                     >
-                      <div className="text-center flex flex-col items-center justify-center">
-                        <div className="text-4xl font-bold text-gray-900 leading-tight">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-4xl font-bold text-gray-900 leading-none tabular-nums text-center" style={{ letterSpacing: '-0.02em' }}>
                           {((analytics as any)?.statusBreakdown || []).reduce((total: number, item: any) => total + item.count, 0)}
                         </div>
-                        <div className="text-sm text-gray-500 font-medium mt-1">Total OS</div>
+                        <div className="text-sm text-gray-500 font-medium mt-1.5 text-center">Total OS</div>
                       </div>
                     </div>
                     
