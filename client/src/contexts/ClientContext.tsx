@@ -26,18 +26,21 @@ export function ClientProvider({ children }: ClientProviderProps) {
   const [activeClientId, setActiveClientId] = useState<string>("");
   const { user } = useAuth();
   
-  // OPUS CLEAN é sempre a empresa prestadora (ID fixo)
-  const OPUS_COMPANY_ID = "company-opus-default";
+  // Usar o companyId do usuário logado ao invés de um valor fixo
+  const companyId = user?.companyId || "company-opus-default";
 
   // Se o usuário é customer_user, ele só vê seu próprio cliente
   const isCustomerUser = user?.userType === 'customer_user';
   const userCustomerId = user?.customerId;
 
-  // Buscar todos os clientes da OPUS (apenas para admin/opus users)
-  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ["/api/companies", OPUS_COMPANY_ID, "customers"],
-    enabled: !isCustomerUser, // Só buscar se não for customer_user
+  // Buscar todos os clientes da empresa do usuário (apenas para admin/opus users)
+  const { data: allCustomers = [], isLoading: isLoadingCustomers } = useQuery({
+    queryKey: ["/api/companies", companyId, "customers"],
+    enabled: !isCustomerUser && !!companyId, // Só buscar se não for customer_user e tiver companyId
   });
+
+  // Filtrar apenas clientes ativos
+  const customers = (allCustomers as Customer[]).filter(customer => customer.isActive);
 
   // Buscar cliente ativo específico  
   const { data: activeClient } = useQuery({
@@ -56,8 +59,8 @@ export function ClientProvider({ children }: ClientProviderProps) {
     }
     
     // Se é admin/opus_user e não tem cliente selecionado, selecionar o primeiro
-    if (!isCustomerUser && !activeClientId && (customers as any[]).length > 0) {
-      setActiveClientId((customers as any[])[0].id);
+    if (!isCustomerUser && !activeClientId && customers.length > 0) {
+      setActiveClientId(customers[0].id);
     }
   }, [isCustomerUser, userCustomerId, activeClientId, customers]);
 
