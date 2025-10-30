@@ -174,15 +174,20 @@ export default function WorkOrders() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "atrasada":
+      case "aberta":
+        return <Badge className="bg-blue-600 text-white border-0">Aberta</Badge>;
+      case "em_execucao":
+        return <Badge className="bg-yellow-600 text-white border-0">Em Execução</Badge>;
+      case "pausada":
+        return <Badge className="bg-orange-600 text-white border-0">Pausada</Badge>;
       case "vencida":
-        return <Badge className="bg-gray-600 text-white border-0">Aberta</Badge>;
+        return <Badge className="bg-red-600 text-white border-0">Vencida</Badge>;
       case "concluida":
         return <Badge className="bg-green-600 text-white border-0">Concluída</Badge>;
       case "cancelada":
         return <Badge className="bg-gray-500 text-white border-0">Cancelada</Badge>;
       default:
-        return <Badge className="bg-gray-600 text-white border-0">Aberta</Badge>;
+        return <Badge className="bg-blue-600 text-white border-0">Aberta</Badge>;
     }
   };
 

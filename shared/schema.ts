@@ -8,7 +8,7 @@ import { z } from "zod";
 export const userRoleEnum = pgEnum('user_role', ['admin', 'gestor_cliente', 'supervisor_site', 'operador', 'auditor']);
 export const userTypeEnum = pgEnum('user_type', ['opus_user', 'customer_user']);
 export const authProviderEnum = pgEnum('auth_provider', ['local', 'microsoft']);
-export const workOrderStatusEnum = pgEnum('work_order_status', ['aberta', 'vencida', 'concluida', 'cancelada']);
+export const workOrderStatusEnum = pgEnum('work_order_status', ['aberta', 'em_execucao', 'pausada', 'vencida', 'concluida', 'cancelada']);
 export const workOrderTypeEnum = pgEnum('work_order_type', ['programada', 'corretiva_interna', 'corretiva_publica']);
 export const priorityEnum = pgEnum('priority', ['baixa', 'media', 'alta', 'critica']);
 export const qrCodeTypeEnum = pgEnum('qr_code_type', ['execucao', 'atendimento']);
