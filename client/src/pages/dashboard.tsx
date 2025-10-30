@@ -674,13 +674,13 @@ export default function Dashboard() {
                     
                     {/* Texto no Centro do Donut */}
                     <div 
-                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
                     >
-                      <div className="text-center">
-                        <div className="text-4xl font-bold text-gray-900 leading-none">
+                      <div className="text-center flex flex-col items-center justify-center">
+                        <div className="text-4xl font-bold text-gray-900 leading-tight">
                           {((analytics as any)?.statusBreakdown || []).reduce((total: number, item: any) => total + item.count, 0)}
                         </div>
-                        <div className="text-sm text-gray-500 font-medium leading-none mt-1">Total OS</div>
+                        <div className="text-sm text-gray-500 font-medium mt-1">Total OS</div>
                       </div>
                     </div>
                     
