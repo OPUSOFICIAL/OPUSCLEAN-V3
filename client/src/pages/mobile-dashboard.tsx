@@ -11,6 +11,7 @@ import { logout } from "@/lib/auth";
 
 interface WorkOrder {
   id: string;
+  number: number;
   title: string;
   description: string;
   status: string;
@@ -316,7 +317,16 @@ export default function MobileDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+          <Card 
+            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+            onClick={() => {
+              document.getElementById('disponiveis-section')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+              });
+            }}
+            data-testid="card-disponiveis"
+          >
             <CardContent className="p-3">
               <div className="flex flex-col items-center justify-center space-y-1">
                 <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
@@ -328,7 +338,16 @@ export default function MobileDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+          <Card 
+            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+            onClick={() => {
+              document.getElementById('pendentes-section')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+              });
+            }}
+            data-testid="card-pendentes"
+          >
             <CardContent className="p-3">
               <div className="flex flex-col items-center justify-center space-y-1">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -340,7 +359,16 @@ export default function MobileDashboard() {
             </CardContent>
           </Card>
           
-          <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+          <Card 
+            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+            onClick={() => {
+              document.getElementById('concluidas-section')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+              });
+            }}
+            data-testid="card-concluidas"
+          >
             <CardContent className="p-3">
               <div className="flex flex-col items-center justify-center space-y-1">
                 <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -377,7 +405,7 @@ export default function MobileDashboard() {
 
         {/* Work Orders List - Disponíveis */}
         {availableOrders.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-4" id="disponiveis-section">
             <h2 className="text-xl font-bold text-orange-900 flex items-center gap-2">
               <AlertCircle className="w-6 h-6" />
               OS Disponíveis ({availableOrders.length})
@@ -430,7 +458,7 @@ export default function MobileDashboard() {
         )}
 
         {/* Work Orders List - Minhas Pendentes */}
-        <div className="space-y-4">
+        <div className="space-y-4" id="pendentes-section">
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <ClipboardList className="w-6 h-6" />
             Minhas Pendentes
@@ -497,7 +525,7 @@ export default function MobileDashboard() {
 
         {/* Work Orders List - Minhas Concluídas */}
         {myCompletedOrders.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-4" id="concluidas-section">
             <h2 className="text-xl font-bold text-emerald-900 flex items-center gap-2">
               <CheckCircle className="w-6 h-6" />
               Minhas Concluídas ({myCompletedOrders.length})
