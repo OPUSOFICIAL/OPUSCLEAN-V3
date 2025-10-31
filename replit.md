@@ -57,6 +57,20 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
 # Recent Changes
 
 ## October 31, 2025
+- **HISTÓRICO MOVIDO PARA DETALHES**: Histórico da OS movido da tela de execução para detalhes
+  - Histórico não aparece mais na tela de execução (operadores não veem)
+  - Histórico agora está na tela de detalhes da OS (apenas administradores/clientes veem)
+  - Timeline visual mostra: abertura, pausas, retomadas, conclusão
+  - Cada evento mostra data/hora completa e nome do operador responsável
+  - Ícones coloridos identificam tipo de ação (azul: início, laranja: pausa, verde: conclusão)
+
+- **LÓGICA "INICIOU" VS "RETOMOU"**: Corrigida diferenciação de mensagens
+  - Primeira execução mostra: "⏯️ [Nome] iniciou a execução da OS"
+  - Retomada após pausa mostra: "⏯️ [Nome] retomou a execução da OS"
+  - Sistema verifica histórico de comentários para determinar se é primeira vez
+  - Se não existe comentário anterior de início/retomada → usa "iniciou"
+  - Se já existe comentário anterior de início/retomada → usa "retomou"
+
 - **TEMPO REAL DE EXECUÇÃO**: Campo "Horas Estimadas" substituído por cálculo automático
   - Novo campo "Tempo Real de Execução" mostra tempo que OS ficou em execução
   - Cálculo considera pausas automaticamente (desconta tempo pausado)
