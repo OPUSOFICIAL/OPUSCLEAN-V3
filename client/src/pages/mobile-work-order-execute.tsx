@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function MobileWorkOrderExecute() {
@@ -18,8 +20,20 @@ export default function MobileWorkOrderExecute() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [pauseReason, setPauseReason] = useState("");
+  const [pausePhoto, setPausePhoto] = useState<any>(null);
+  const [isPausing, setIsPausing] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    // Carregar usuário do localStorage
+    const authStr = localStorage.getItem('opus_clean_auth');
+    if (authStr) {
+      const authData = JSON.parse(authStr);
+      setCurrentUser(authData.user);
+    }
+    
     if (params?.id) {
       loadWorkOrder(params.id);
     }
@@ -39,23 +53,23 @@ export default function MobileWorkOrderExecute() {
       console.log('[MOBILE] workOrder.site:', woData.site);
       console.log('[MOBILE] workOrder.zone:', woData.zone);
       
-      // Se a OS está aberta (não atribuída), atribuir ao usuário atual e marcar como em andamento
-      if (woData.status === 'aberta' && !woData.assignedUserId) {
+      // Se a OS está aberta ou pausada, iniciar execução
+      if (woData.status === 'aberta' || woData.status === 'pausada') {
         try {
-          // Pegar usuário do localStorage
           const authStr = localStorage.getItem('opus_clean_auth');
           if (authStr) {
             const authData = JSON.parse(authStr);
-            const currentUser = authData.user;
+            const user = authData.user;
             
-            if (currentUser?.id) {
-              // Atribuir OS ao usuário e mudar para em_andamento
+            if (user?.id) {
+              // Mudar status para em_execucao e registrar início
               const updateResponse = await fetch(`/api/work-orders/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  assignedUserId: currentUser.id,
-                  status: 'em_andamento',
+                  assignedUserId: user.id,
+                  status: 'em_execucao',
+                  startedAt: woData.status === 'aberta' ? new Date().toISOString() : woData.startedAt,
                 }),
               });
               
@@ -63,12 +77,23 @@ export default function MobileWorkOrderExecute() {
                 const updatedWo = await updateResponse.json();
                 woData.assignedUserId = updatedWo.assignedUserId;
                 woData.status = updatedWo.status;
+                woData.startedAt = updatedWo.startedAt;
+                
+                // Criar comentário de início/retomada
+                const actionText = woData.status === 'aberta' ? 'iniciou' : 'retomou';
+                await fetch(`/api/work-orders/${id}/comments`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId: user.id,
+                    comment: `⏯️ ${user.name} ${actionText} a execução da OS`,
+                  }),
+                });
               }
             }
           }
         } catch (assignError) {
-          console.error('Erro ao atribuir OS:', assignError);
-          // Continuar mesmo se falhar a atribuição
+          console.error('Erro ao iniciar OS:', assignError);
         }
       }
       
@@ -176,6 +201,88 @@ export default function MobileWorkOrderExecute() {
       });
     });
     return Promise.all(promises);
+  };
+
+  const handlePausePhotoUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    setPausePhoto({
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name
+    });
+  };
+
+  const handlePause = async () => {
+    if (!pauseReason.trim()) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Por favor, informe o motivo da pausa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPausing(true);
+    try {
+      // Converter foto para base64 se houver
+      let photoBase64 = null;
+      if (pausePhoto) {
+        photoBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(pausePhoto.file);
+        });
+      }
+
+      // Atualizar status da OS para pausada
+      const response = await fetch(`/api/work-orders/${workOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'pausada',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao pausar ordem de serviço');
+      }
+
+      // Criar comentário com motivo e foto
+      await fetch(`/api/work-orders/${workOrder.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          comment: `⏸️ ${currentUser?.name || 'Operador'} pausou a OS\n\n📝 Motivo: ${pauseReason}`,
+          attachments: photoBase64 ? [photoBase64] : null,
+        }),
+      });
+
+      toast({
+        title: "✅ OS Pausada",
+        description: "A ordem de serviço foi pausada com sucesso.",
+      });
+
+      // Voltar para o scanner
+      setTimeout(() => {
+        setLocation('/mobile/qr-scanner');
+      }, 1500);
+    } catch (error) {
+      console.error('Erro ao pausar OS:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível pausar a ordem de serviço.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPausing(false);
+      setIsPauseModalOpen(false);
+      setPauseReason("");
+      setPausePhoto(null);
+    }
   };
 
   const handleFinish = async () => {
@@ -541,12 +648,23 @@ export default function MobileWorkOrderExecute() {
           </Card>
         )}
 
-        {/* Botão Finalizar */}
+        {/* Botões de Ação */}
         <Card className="sticky bottom-4 shadow-lg">
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-3">
+            <Button
+              onClick={() => setIsPauseModalOpen(true)}
+              disabled={isSubmitting || isPausing}
+              variant="outline"
+              className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 py-6 text-lg font-semibold"
+              data-testid="button-pause-wo"
+            >
+              <PauseCircle className="w-5 h-5 mr-2" />
+              Pausar Ordem de Serviço
+            </Button>
+            
             <Button
               onClick={handleFinish}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isPausing}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold"
               data-testid="button-finish-wo"
             >
@@ -564,6 +682,110 @@ export default function MobileWorkOrderExecute() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Modal de Pausa */}
+        <Dialog open={isPauseModalOpen} onOpenChange={setIsPauseModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <PauseCircle className="w-5 h-5 text-orange-600" />
+                Pausar Ordem de Serviço
+              </DialogTitle>
+              <DialogDescription>
+                Informe o motivo da pausa. Você ou outro operador poderá retomar depois.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="pause-reason">Motivo da Pausa *</Label>
+                <Textarea
+                  id="pause-reason"
+                  placeholder="Ex: Falta de material, equipamento quebrado, intervalo..."
+                  value={pauseReason}
+                  onChange={(e) => setPauseReason(e.target.value)}
+                  rows={4}
+                  data-testid="textarea-pause-reason"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pause-photo">Foto (opcional)</Label>
+                {pausePhoto ? (
+                  <div className="relative">
+                    <img 
+                      src={pausePhoto.preview} 
+                      alt="Foto da pausa"
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={() => {
+                        URL.revokeObjectURL(pausePhoto.preview);
+                        setPausePhoto(null);
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => handlePausePhotoUpload(e.target.files)}
+                      data-testid="input-pause-photo"
+                    />
+                    <div className="flex items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer">
+                      <Camera className="w-5 h-5 text-slate-600" />
+                      <span className="text-sm text-slate-600">Tirar/Anexar Foto</span>
+                    </div>
+                  </label>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsPauseModalOpen(false);
+                    setPauseReason("");
+                    if (pausePhoto) {
+                      URL.revokeObjectURL(pausePhoto.preview);
+                      setPausePhoto(null);
+                    }
+                  }}
+                  disabled={isPausing}
+                  className="flex-1"
+                  data-testid="button-cancel-pause"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handlePause}
+                  disabled={isPausing || !pauseReason.trim()}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700"
+                  data-testid="button-confirm-pause"
+                >
+                  {isPausing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Pausando...
+                    </>
+                  ) : (
+                    "Confirmar Pausa"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
