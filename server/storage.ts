@@ -1210,9 +1210,27 @@ export class DatabaseStorage implements IStorage {
 
 
   async getUsersByCustomer(customerId: string): Promise<User[]> {
-    // Get users directly associated with this customer
+    // Get the customer's company ID
+    const customer = await db.select().from(customers)
+      .where(eq(customers.id, customerId))
+      .limit(1);
+    
+    if (customer.length === 0) {
+      return [];
+    }
+    
+    const companyId = customer[0].companyId;
+    
+    // Get both:
+    // 1. Users directly associated with this customer (customer_user)
+    // 2. All users from the company (opus_user) who can be assigned to work orders
     return await db.select().from(users)
-      .where(eq(users.customerId, customerId))
+      .where(
+        or(
+          eq(users.customerId, customerId),
+          eq(users.companyId, companyId)
+        )
+      )
       .orderBy(users.name);
   }
 
