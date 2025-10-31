@@ -364,6 +364,7 @@ export default function MobileWorkOrderExecute() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            userId: currentUser?.id,
             comment: checklistSummary,
             attachments: allPhotos,
           }),

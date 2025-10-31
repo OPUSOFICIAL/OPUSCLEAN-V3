@@ -1368,14 +1368,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/work-orders", async (req, res) => {
     try {
-      console.log('📥 Recebendo work order:', JSON.stringify(req.body, null, 2));
-      console.log('👤 assignedUserId recebido:', req.body.assignedUserId);
       const workOrder = insertWorkOrderSchema.parse(req.body);
-      console.log('✅ Work order após validação:', JSON.stringify(workOrder, null, 2));
-      console.log('👤 assignedUserId após validação:', workOrder.assignedUserId);
       const newWorkOrder = await storage.createWorkOrder(workOrder);
-      console.log('✅ Work order criada:', JSON.stringify(newWorkOrder, null, 2));
-      console.log('👤 assignedUserId na resposta:', newWorkOrder.assignedUserId);
       
       // Send webhook notification if configured
       // TODO: Implement webhook sending logic
