@@ -37,3 +37,9 @@
 [x] 37. Corrected date field handling to properly send null or valid date strings
 [x] 38. Fixed schema validation to accept null values for scheduledStartAt and scheduledEndAt
 [x] 39. Work order creation now fully functional with proper date/time handling
+[x] 40. Implemented pause work order functionality with reason and photo attachment
+[x] 41. Work orders now change to 'em_execucao' status when operator starts execution
+[x] 42. Added pause button in execution screen with modal for reason and optional photo
+[x] 43. Paused work orders can be resumed by any operator (retomada)
+[x] 44. All work order actions (start, pause, resume, finish) are logged in comments with userId
+[x] 45. Complete history tracking of all operators who worked on each work order
