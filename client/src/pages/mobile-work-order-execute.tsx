@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle, Clock, PlayCircle, Flag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function MobileWorkOrderExecute() {
@@ -25,6 +25,7 @@ export default function MobileWorkOrderExecute() {
   const [pausePhoto, setPausePhoto] = useState<any>(null);
   const [isPausing, setIsPausing] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
 
   useEffect(() => {
     // Carregar usuário do localStorage
@@ -98,6 +99,17 @@ export default function MobileWorkOrderExecute() {
       }
       
       setWorkOrder(woData);
+
+      // Buscar comentários da OS para histórico
+      try {
+        const commentsResponse = await fetch(`/api/work-orders/${id}/comments`);
+        if (commentsResponse.ok) {
+          const commentsData = await commentsResponse.json();
+          setComments(commentsData);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar comentários:', err);
+      }
 
       // Buscar checklist do serviço
       if (woData.serviceId) {
@@ -484,6 +496,83 @@ export default function MobileWorkOrderExecute() {
                 </Badge>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Histórico de Status */}
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
+              <Clock className="w-5 h-5" />
+              Histórico da Ordem
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Abertura da OS */}
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                  <Flag className="w-4 h-4 text-white" />
+                </div>
+                <div className="w-0.5 h-full bg-blue-300 mt-1"></div>
+              </div>
+              <div className="flex-1 pb-4">
+                <p className="font-semibold text-slate-900">OS Criada</p>
+                <p className="text-sm text-slate-600">
+                  {new Date(workOrder.createdAt).toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* Histórico de comentários (mudanças de status) */}
+            {comments.map((comment, index) => {
+              const isLastItem = index === comments.length - 1;
+              let icon = <PlayCircle className="w-4 h-4 text-white" />;
+              let bgColor = "bg-green-500";
+              
+              if (comment.comment.includes('pausou')) {
+                icon = <PauseCircle className="w-4 h-4 text-white" />;
+                bgColor = "bg-orange-500";
+              } else if (comment.comment.includes('retomou')) {
+                icon = <PlayCircle className="w-4 h-4 text-white" />;
+                bgColor = "bg-blue-500";
+              } else if (comment.comment.includes('finalizou') || comment.comment.includes('concluiu')) {
+                icon = <CheckCircle className="w-4 h-4 text-white" />;
+                bgColor = "bg-green-600";
+              }
+
+              return (
+                <div key={comment.id} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center`}>
+                      {icon}
+                    </div>
+                    {!isLastItem && <div className="w-0.5 h-full bg-blue-300 mt-1"></div>}
+                  </div>
+                  <div className={`flex-1 ${!isLastItem ? 'pb-4' : ''}`}>
+                    <p className="font-semibold text-slate-900">{comment.comment.split('\n')[0]}</p>
+                    <p className="text-sm text-slate-600">
+                      {new Date(comment.createdAt).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                    {comment.user?.name && (
+                      <p className="text-xs text-slate-500 mt-1">Por: {comment.user.name}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
