@@ -789,13 +789,31 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
             <div className="mt-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Comentários</h3>
-                <Badge variant="outline">{(comments as any[])?.length || 0}</Badge>
+                <Badge variant="outline">
+                  {(comments as any[])?.filter((c: any) => {
+                    // Filtrar apenas comentários de usuários (não de sistema)
+                    const text = c.comment || '';
+                    const isSystemComment = text.includes('⏯️') || text.includes('⏸️') || text.includes('▶️') || 
+                                          text.includes('iniciou a execução') || text.includes('pausou a OS') || 
+                                          text.includes('retomou a execução') || text.includes('finalizou');
+                    return !isSystemComment;
+                  }).length || 0}
+                </Badge>
               </div>
               
               {/* Comments List */}
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {(comments as any[])  && (comments as any[]).length > 0 ? (
-                  (comments as any[]).map((comment: any) => (
+                  (comments as any[])
+                    .filter((comment: any) => {
+                      // Filtrar comentários de sistema
+                      const text = comment.comment || '';
+                      const isSystemComment = text.includes('⏯️') || text.includes('⏸️') || text.includes('▶️') || 
+                                            text.includes('iniciou a execução') || text.includes('pausou a OS') || 
+                                            text.includes('retomou a execução') || text.includes('finalizou');
+                      return !isSystemComment;
+                    })
+                    .map((comment: any) => (
                     <div key={comment.id} className="border rounded-lg p-4 space-y-2">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-2">

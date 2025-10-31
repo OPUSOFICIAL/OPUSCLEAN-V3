@@ -56,7 +56,28 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
 
 # Recent Changes
 
-## October 31, 2025
+## October 31, 2025 (Parte 2)
+- **HISTÓRICO ADICIONADO NO MODAL WEB**: Modal de detalhes da OS agora inclui histórico completo
+  - Histórico adicionado à seção direita do modal (após "Dados da Finalização")
+  - Timeline visual idêntica ao mobile com ícones coloridos
+  - Mostra: criação, início, pausas, retomadas e conclusão da OS
+  - "Dados da Finalização" mantido intacto como solicitado
+
+- **FIX DE TIMEZONE**: Corrigido problema de data agendada salvando dia anterior
+  - Problema: datas sem hora eram interpretadas como UTC causando -1 dia
+  - Solução backend: transformação no schema para manter strings YYYY-MM-DD sem conversão
+  - Solução frontend: função `formatDateOnly()` que formata datas sem criar Date object
+  - Campos afetados: `scheduledDate` e `dueDate`
+  - Agora datas são salvas e exibidas corretamente
+
+- **SEPARAÇÃO HISTÓRICO vs COMENTÁRIOS**: Comentários de sistema movidos para histórico
+  - Comentários automáticos (iniciou, pausou, retomou) aparecem APENAS no Histórico
+  - Seção "Comentários" mostra apenas comentários reais de usuários
+  - Filtro automático detecta emojis de sistema (⏯️, ⏸️, ▶️)
+  - Badge de contador de comentários agora mostra apenas comentários de usuários
+  - UX mais limpa e organizada
+
+## October 31, 2025 (Parte 1)
 - **HISTÓRICO MOVIDO PARA DETALHES**: Histórico da OS movido da tela de execução para detalhes
   - Histórico não aparece mais na tela de execução (operadores não veem)
   - Histórico agora está na tela de detalhes da OS (apenas administradores/clientes veem)
