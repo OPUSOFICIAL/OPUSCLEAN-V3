@@ -118,8 +118,29 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
       onSuccess();
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "Erro ao criar ordem de serviço";
-      const errorDetails = error?.details || "Verifique se todos os campos obrigatórios foram preenchidos corretamente.";
+      let errorMessage = "Erro ao criar ordem de serviço";
+      let errorDetails = "Verifique se todos os campos obrigatórios foram preenchidos corretamente.";
+      
+      // Tentar extrair mensagem do erro
+      if (error?.message) {
+        // Se a mensagem for um JSON string, fazer parse
+        if (error.message.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(error.message);
+            errorMessage = parsed.message || errorMessage;
+            errorDetails = parsed.details || errorDetails;
+          } catch (e) {
+            errorMessage = error.message;
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      // Se já tiver details separado, usar ele
+      if (error?.details) {
+        errorDetails = error.details;
+      }
       
       toast({ 
         title: errorMessage,

@@ -31,3 +31,5 @@
 [x] 31. Improved work order creation error handling with clear, detailed messages
 [x] 32. Backend now translates field names to Portuguese in error messages
 [x] 33. Frontend displays specific error details including which fields are missing/invalid
+[x] 34. Enhanced error display to parse JSON errors and show clean messages only
+[x] 35. Removed technical error codes (500, 400) from user-facing messages
