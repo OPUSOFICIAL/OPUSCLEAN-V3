@@ -28,3 +28,6 @@
 [x] 28. Updated status badges with proper colors for all 6 statuses
 [x] 29. Fixed status filter to show all 6 options (Abertas, Em Execução, Pausadas, Vencidas, Concluídas, Canceladas)
 [x] 30. Added checkbox options visualization in checklist editor - now shows all created options
+[x] 31. Improved work order creation error handling with clear, detailed messages
+[x] 32. Backend now translates field names to Portuguese in error messages
+[x] 33. Frontend displays specific error details including which fields are missing/invalid

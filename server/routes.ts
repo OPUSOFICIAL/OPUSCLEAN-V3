@@ -1375,11 +1375,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // TODO: Implement webhook sending logic
       
       res.status(201).json(newWorkOrder);
-    } catch (error) {
+    } catch (error: any) {
+      // Tratamento de erros do Zod (validação)
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+        const fieldErrors = error.errors.map(e => {
+          const field = e.path.join('.');
+          const fieldNames: Record<string, string> = {
+            'title': 'Título',
+            'description': 'Descrição',
+            'type': 'Tipo',
+            'status': 'Status',
+            'priority': 'Prioridade',
+            'zoneId': 'Zona/Local',
+            'serviceId': 'Serviço',
+            'companyId': 'Empresa',
+            'scheduledDate': 'Data agendada',
+            'dueDate': 'Data de vencimento',
+          };
+          const friendlyField = fieldNames[field] || field;
+          return `${friendlyField}: ${e.message}`;
+        });
+        
+        return res.status(400).json({ 
+          message: "Dados inválidos na ordem de serviço",
+          details: fieldErrors.join('; '),
+          errors: error.errors 
+        });
       }
-      res.status(500).json({ message: "Failed to create work order" });
+      
+      // Tratamento de erros do PostgreSQL
+      if (error.code === '23505') {
+        return res.status(400).json({ 
+          message: "Registro duplicado",
+          details: "Já existe uma ordem de serviço com esses dados."
+        });
+      }
+      
+      if (error.code === '23503') {
+        return res.status(400).json({ 
+          message: "Referência inválida",
+          details: "A zona, serviço ou usuário selecionado não existe. Por favor, verifique os dados e tente novamente."
+        });
+      }
+      
+      console.error('Erro ao criar ordem de serviço:', error);
+      res.status(500).json({ 
+        message: "Erro ao criar ordem de serviço",
+        details: "Ocorreu um erro inesperado. Por favor, tente novamente."
+      });
     }
   });
 

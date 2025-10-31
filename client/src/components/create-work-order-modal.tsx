@@ -117,9 +117,13 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
       toast({ title: "Ordem de serviço criada com sucesso!" });
       onSuccess();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Erro ao criar ordem de serviço";
+      const errorDetails = error?.details || "Verifique se todos os campos obrigatórios foram preenchidos corretamente.";
+      
       toast({ 
-        title: "Erro ao criar ordem de serviço", 
+        title: errorMessage,
+        description: errorDetails,
         variant: "destructive" 
       });
     },
