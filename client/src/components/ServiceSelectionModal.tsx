@@ -29,7 +29,7 @@ export default function ServiceSelectionModal({
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [availableWorkOrders, setAvailableWorkOrders] = useState<any[]>([]);
   const [isLoadingWorkOrders, setIsLoadingWorkOrders] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all'>('all');
+  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('all');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,11 +70,11 @@ export default function ServiceSelectionModal({
       if (response.ok) {
         const allWorkOrders = await response.json();
         
-        // Filtrar work orders do serviço selecionado e zona atual que estão pendentes
+        // Filtrar work orders do serviço selecionado e zona atual que estão pendentes ou pausadas
         const filtered = allWorkOrders.filter((wo: any) => 
           wo.serviceId === serviceId && 
           wo.zoneId === resolvedContext.zone.id &&
-          (wo.status === 'aberta' || wo.status === 'em_andamento')
+          (wo.status === 'aberta' || wo.status === 'em_execucao' || wo.status === 'pausada')
         );
         
         console.log('[SERVICE MODAL] Work orders filtradas:', filtered);
@@ -88,7 +88,9 @@ export default function ServiceSelectionModal({
   };
 
   const filteredWorkOrders = availableWorkOrders.filter((wo) => {
-    if (dateFilter === 'today') {
+    if (dateFilter === 'paused') {
+      return wo.status === 'pausada';
+    } else if (dateFilter === 'today') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const scheduledDate = wo.scheduledDate ? new Date(wo.scheduledDate) : null;
@@ -234,12 +236,15 @@ export default function ServiceSelectionModal({
                   
                   {/* Filtros por data */}
                   <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as any)} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="today" className="text-xs">
                         Hoje
                       </TabsTrigger>
                       <TabsTrigger value="upcoming" className="text-xs">
                         Próximos
+                      </TabsTrigger>
+                      <TabsTrigger value="paused" className="text-xs">
+                        Pausadas
                       </TabsTrigger>
                       <TabsTrigger value="all" className="text-xs">
                         Todos
@@ -252,6 +257,7 @@ export default function ServiceSelectionModal({
                     <div className="text-center py-6 text-slate-500 text-sm">
                       {dateFilter === 'today' && 'Nenhuma ordem agendada para hoje'}
                       {dateFilter === 'upcoming' && 'Nenhuma ordem agendada'}
+                      {dateFilter === 'paused' && 'Nenhuma ordem pausada'}
                       {dateFilter === 'all' && 'Nenhuma ordem pendente'}
                     </div>
                   ) : (
@@ -279,6 +285,11 @@ export default function ServiceSelectionModal({
                                   <span className="font-semibold text-slate-900">
                                     OS #{wo.number}
                                   </span>
+                                  {wo.status === 'pausada' && (
+                                    <Badge className="bg-orange-600 text-white text-xs">
+                                      ⏸ PAUSADA
+                                    </Badge>
+                                  )}
                                   {isToday && (
                                     <Badge className="bg-green-600 text-white text-xs">
                                       HOJE
