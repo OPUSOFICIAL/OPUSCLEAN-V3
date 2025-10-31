@@ -795,7 +795,8 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                     const text = c.comment || '';
                     const isSystemComment = text.includes('⏯️') || text.includes('⏸️') || text.includes('▶️') || 
                                           text.includes('iniciou a execução') || text.includes('pausou a OS') || 
-                                          text.includes('retomou a execução') || text.includes('finalizou');
+                                          text.includes('retomou a execução') || text.includes('finalizou') ||
+                                          text.includes('OS Finalizada!') || text.includes('✅ Checklist');
                     return !isSystemComment;
                   }).length || 0}
                 </Badge>
@@ -810,7 +811,8 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                       const text = comment.comment || '';
                       const isSystemComment = text.includes('⏯️') || text.includes('⏸️') || text.includes('▶️') || 
                                             text.includes('iniciou a execução') || text.includes('pausou a OS') || 
-                                            text.includes('retomou a execução') || text.includes('finalizou');
+                                            text.includes('retomou a execução') || text.includes('finalizou') ||
+                                            text.includes('OS Finalizada!') || text.includes('✅ Checklist');
                       return !isSystemComment;
                     })
                     .map((comment: any) => (
