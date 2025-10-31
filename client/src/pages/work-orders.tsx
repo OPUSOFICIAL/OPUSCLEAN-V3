@@ -289,6 +289,19 @@ export default function WorkOrders() {
     return user?.name || "Não atribuído";
   };
 
+  // Formata data sem problemas de timezone
+  const formatDateOnly = (dateString: string | null | undefined) => {
+    if (!dateString) return '-';
+    // Se já é uma string no formato YYYY-MM-DD, formata diretamente
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+    // Fallback para conversão normal
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
   return (
     <>
       <Header 
@@ -499,7 +512,7 @@ export default function WorkOrders() {
                             {getStatusBadge(wo.status)}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600" data-testid={`text-date-${wo.id}`}>
-                            {wo.scheduledDate ? new Date(wo.scheduledDate).toLocaleDateString('pt-BR') : '-'}
+                            {formatDateOnly(wo.scheduledDate)}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600" data-testid={`text-created-${wo.id}`}>
                             {wo.createdAt ? new Date(wo.createdAt).toLocaleDateString('pt-BR') : '-'}
