@@ -56,6 +56,23 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
 
 # Recent Changes
 
+## October 31, 2025
+- **TEMPO REAL DE EXECUÇÃO**: Campo "Horas Estimadas" substituído por cálculo automático
+  - Novo campo "Tempo Real de Execução" mostra tempo que OS ficou em execução
+  - Cálculo considera pausas automaticamente (desconta tempo pausado)
+  - Lógica detecta pausas/retomadas através dos comentários
+  - Campo read-only calculado em tempo real (não é mais input manual)
+  - Exibição em formato legível: "1h 23min" ou "45min"
+  - Para OSs não iniciadas mostra: "Não iniciada"
+  - Para OSs em execução: calcula tempo até momento atual
+  - Para OSs concluídas: calcula tempo total de execução
+
+- **FILTRO "PAUSADAS"**: Adicionado quarto filtro no modal de seleção de serviço
+  - Modal QR code agora tem 4 filtros: Hoje / Próximos / Pausadas / Todos
+  - Filtro "Pausadas" mostra apenas OSs com status pausada
+  - Badge visual laranja "⏸ PAUSADA" para identificar OSs pausadas
+  - Sistema busca automaticamente OSs pausadas junto com abertas e em execução
+
 ## October 17, 2025
 - **MULTISELECT FILTERS**: Implementado sistema de filtros multiselect para Status e Zona
   - Criado componente reutilizável MultiSelect com Popover e Checkbox

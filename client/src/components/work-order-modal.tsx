@@ -25,8 +25,7 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
     priority: "",
     observations: "",
     scheduledDate: "",
-    dueDate: "",
-    estimatedHours: ""
+    dueDate: ""
   });
   const [checklistItems, setChecklistItems] = useState<any[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -39,6 +38,60 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Função para calcular tempo real de execução
+  const calculateExecutionTime = () => {
+    if (!(workOrder as any)?.startedAt) {
+      return "Não iniciada";
+    }
+
+    const startedAt = new Date((workOrder as any).startedAt);
+    const endTime = (workOrder as any)?.completedAt 
+      ? new Date((workOrder as any).completedAt) 
+      : new Date();
+
+    // Calcular períodos de pausa a partir dos comentários
+    let totalPauseTime = 0;
+    if (comments && Array.isArray(comments)) {
+      let lastPauseTime: Date | null = null;
+      
+      for (const comment of comments as any[]) {
+        const commentText = comment.comment || "";
+        
+        // Detectar quando foi pausada
+        if (commentText.includes("⏸️") && commentText.includes("pausou a OS")) {
+          lastPauseTime = new Date(comment.createdAt);
+        }
+        
+        // Detectar quando foi retomada
+        if (commentText.includes("▶️") && commentText.includes("retomou a execução") && lastPauseTime) {
+          const resumeTime = new Date(comment.createdAt);
+          const pauseDuration = resumeTime.getTime() - lastPauseTime.getTime();
+          totalPauseTime += pauseDuration;
+          lastPauseTime = null;
+        }
+      }
+      
+      // Se ainda está pausada, calcular até agora
+      if (lastPauseTime && (workOrder as any)?.status === 'pausada') {
+        const pauseDuration = new Date().getTime() - lastPauseTime.getTime();
+        totalPauseTime += pauseDuration;
+      }
+    }
+
+    // Tempo total menos pausas
+    const totalTime = endTime.getTime() - startedAt.getTime() - totalPauseTime;
+    
+    // Converter para horas e minutos
+    const hours = Math.floor(totalTime / (1000 * 60 * 60));
+    const minutes = Math.floor((totalTime % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}min`;
+    } else {
+      return `${minutes}min`;
+    }
+  };
   
   // Get current user
   const authStr = localStorage.getItem('opus_clean_auth');
@@ -95,8 +148,7 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
         priority: (workOrder as any).priority || "media",
         observations: (workOrder as any).observations || "",
         scheduledDate: (workOrder as any).scheduledDate ? new Date((workOrder as any).scheduledDate).toISOString().split('T')[0] : "",
-        dueDate: (workOrder as any).dueDate ? new Date((workOrder as any).dueDate).toISOString().split('T')[0] : "",
-        estimatedHours: (workOrder as any).estimatedHours?.toString() || ""
+        dueDate: (workOrder as any).dueDate ? new Date((workOrder as any).dueDate).toISOString().split('T')[0] : ""
       });
 
       // Initialize checklist items from the work order or template
@@ -501,16 +553,14 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                 <div>
                   <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                     <Timer className="w-4 h-4" />
-                    Horas Estimadas
+                    Tempo Real de Execução
                   </label>
-                  <Input 
-                    type="number"
-                    step="0.5"
-                    placeholder="Ex: 2.5"
-                    value={formData.estimatedHours}
-                    onChange={(e) => setFormData(prev => ({...prev, estimatedHours: e.target.value}))}
-                    data-testid="input-estimated-hours"
-                  />
+                  <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-900">
+                    {calculateExecutionTime()}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Tempo que a OS ficou em execução (pausas descontadas)
+                  </p>
                 </div>
               </div>
 
