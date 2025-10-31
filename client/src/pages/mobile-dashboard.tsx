@@ -4,10 +4,11 @@ import { getAuthState, canOnlyViewOwnWorkOrders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter } from "lucide-react";
+import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
 
 interface WorkOrder {
   id: string;
@@ -29,6 +30,7 @@ export default function MobileDashboard() {
   const { toast } = useToast();
   const { user } = getAuthState();
   const [dateFilter, setDateFilter] = useState<'hoje' | 'ontem' | 'semana' | 'todos'>('todos');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Get customerId - some users may not have customerId, use assignedClientId as fallback
   const effectiveCustomerId = user ? ((user as any).customerId || (user as any).assignedClientId) : null;
@@ -127,6 +129,18 @@ export default function MobileDashboard() {
     wo.assignedUserId === user.id && wo.status === 'concluida'
   );
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({ 
+      queryKey: ["/api/customers", effectiveCustomerId, "work-orders"] 
+    });
+    setTimeout(() => setIsRefreshing(false), 1000);
+    toast({
+      title: "Atualizado!",
+      description: "Lista de ordens de serviço atualizada.",
+    });
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -207,14 +221,25 @@ export default function MobileDashboard() {
                 <p className="text-sm text-slate-600">Colaborador</p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleLogout}
-              className="text-slate-600"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleRefresh}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                data-testid="button-refresh-mobile"
+              >
+                <RefreshCw className={`w-5 h-5 transition-transform duration-1000 ${isRefreshing ? 'rotate-360' : ''}`} />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleLogout}
+                className="text-slate-600"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
