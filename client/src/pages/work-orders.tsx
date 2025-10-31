@@ -490,7 +490,7 @@ export default function WorkOrders() {
                             {wo.title || 'Sem título'}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600" data-testid={`text-operator-${wo.id}`}>
-                            {getUserName(wo.operatorId)}
+                            {getUserName(wo.assignedUserId)}
                           </td>
                           <td className="py-3 px-4" data-testid={`badge-priority-${wo.id}`}>
                             {getPriorityBadge(wo.priority)}
