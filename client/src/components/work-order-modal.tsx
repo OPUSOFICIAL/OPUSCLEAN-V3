@@ -671,9 +671,16 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
                   {Object.entries((workOrder as any).checklistData).map(([itemId, answer]: [string, any]) => {
-                    // Encontrar o item do template para pegar o título
-                    const templateItem = (checklistTemplate as any[])?.[0]?.items?.find((t: any) => t.id === itemId);
-                    const itemTitle = templateItem?.title || templateItem?.label || itemId;
+                    // Buscar o template correto da OS
+                    const currentTemplate = (checklistTemplate as any[])?.find(
+                      (t: any) => t.id === (workOrder as any).checklistTemplateId
+                    );
+                    
+                    // Encontrar o item do template para pegar o rótulo
+                    const templateItem = currentTemplate?.items?.find((item: any) => item.id === itemId);
+                    
+                    // Tentar diferentes campos para o rótulo
+                    const itemTitle = templateItem?.label || templateItem?.title || templateItem?.name || templateItem?.text || itemId;
                     
                     return (
                       <div key={itemId} className="space-y-2">
