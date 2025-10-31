@@ -35,3 +35,5 @@
 [x] 35. Removed technical error codes (500, 400) from user-facing messages
 [x] 36. Fixed "toISOString is not a function" error when creating work orders
 [x] 37. Corrected date field handling to properly send null or valid date strings
+[x] 38. Fixed schema validation to accept null values for scheduledStartAt and scheduledEndAt
+[x] 39. Work order creation now fully functional with proper date/time handling

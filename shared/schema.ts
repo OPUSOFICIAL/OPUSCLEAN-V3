@@ -812,10 +812,10 @@ export const insertServiceSchema = createInsertSchema(services).omit({ id: true 
 export const insertCleaningActivitySchema = createInsertSchema(cleaningActivities).omit({ id: true });
 export const insertChecklistTemplateSchema = createInsertSchema(checklistTemplates).omit({ id: true });
 export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({ id: true, number: true }).extend({
-  completedAt: z.union([z.date(), z.string().datetime()]).optional(),
-  startedAt: z.union([z.date(), z.string().datetime()]).optional(),
-  scheduledStartAt: z.union([z.date(), z.string().datetime()]).optional(),
-  scheduledEndAt: z.union([z.date(), z.string().datetime()]).optional(),
+  completedAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
+  startedAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
+  scheduledStartAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
+  scheduledEndAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
 });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 export const insertDashboardGoalSchema = createInsertSchema(dashboardGoals).omit({ id: true });
