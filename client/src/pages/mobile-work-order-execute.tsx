@@ -79,8 +79,27 @@ export default function MobileWorkOrderExecute() {
                 woData.status = updatedWo.status;
                 woData.startedAt = updatedWo.startedAt;
                 
+                // Buscar comentários anteriores para determinar se é "iniciou" ou "retomou"
+                let actionText = 'iniciou'; // Padrão: primeira vez
+                try {
+                  const commentsResponse = await fetch(`/api/work-orders/${id}/comments`);
+                  if (commentsResponse.ok) {
+                    const existingComments = await commentsResponse.json();
+                    // Verificar se já existe comentário de início/retomada anterior
+                    const hasStartedBefore = existingComments.some((c: any) => 
+                      c.comment.includes('iniciou a execução') || 
+                      c.comment.includes('retomou a execução')
+                    );
+                    // Se já foi iniciada antes, usar "retomou"
+                    if (hasStartedBefore) {
+                      actionText = 'retomou';
+                    }
+                  }
+                } catch (err) {
+                  console.error('Erro ao verificar histórico:', err);
+                }
+                
                 // Criar comentário de início/retomada
-                const actionText = woData.status === 'aberta' ? 'iniciou' : 'retomou';
                 await fetch(`/api/work-orders/${id}/comments`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
