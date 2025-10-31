@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { X, Check, TriangleAlert, Clock, Camera, MapPin, User, AlertCircle, Calendar, Timer, Eye, Star } from "lucide-react";
+import { X, Check, TriangleAlert, Clock, Camera, MapPin, User, AlertCircle, Calendar, Timer, Eye, Star, Flag, PlayCircle, PauseCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -715,6 +715,75 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                 </div>
               </div>
             )}
+
+            {/* Histórico da Ordem */}
+            <div className="mt-6 space-y-4 border-t pt-4">
+              <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Histórico da Ordem
+              </h3>
+              
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                <div className="space-y-3">
+                  {/* Abertura da OS */}
+                  <div className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                        <Flag className="w-4 h-4 text-white" />
+                      </div>
+                      {(comments as any[])?.length > 0 && <div className="w-0.5 h-full bg-blue-300 mt-1"></div>}
+                    </div>
+                    <div className={`flex-1 ${(comments as any[])?.length > 0 ? 'pb-4' : ''}`}>
+                      <p className="font-semibold text-slate-900">OS Criada</p>
+                      <p className="text-sm text-slate-600">
+                        {(workOrder as any)?.createdAt 
+                          ? format(new Date((workOrder as any).createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                          : "--"
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Histórico de comentários (mudanças de status) */}
+                  {(comments as any[])?.map((comment: any, index: number) => {
+                    const isLastItem = index === (comments as any[]).length - 1;
+                    let icon = <PlayCircle className="w-4 h-4 text-white" />;
+                    let bgColor = "bg-green-500";
+                    
+                    if (comment.comment.includes('pausou')) {
+                      icon = <PauseCircle className="w-4 h-4 text-white" />;
+                      bgColor = "bg-orange-500";
+                    } else if (comment.comment.includes('retomou') || comment.comment.includes('iniciou')) {
+                      icon = <PlayCircle className="w-4 h-4 text-white" />;
+                      bgColor = "bg-blue-500";
+                    } else if (comment.comment.includes('finalizou') || comment.comment.includes('concluiu')) {
+                      icon = <Check className="w-4 h-4 text-white" />;
+                      bgColor = "bg-green-600";
+                    }
+
+                    return (
+                      <div key={comment.id} className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-8 h-8 rounded-full ${bgColor} flex items-center justify-center`}>
+                            {icon}
+                          </div>
+                          {!isLastItem && <div className="w-0.5 h-full bg-blue-300 mt-1"></div>}
+                        </div>
+                        <div className={`flex-1 ${!isLastItem ? 'pb-4' : ''}`}>
+                          <p className="font-semibold text-slate-900">{comment.comment.split('\n')[0]}</p>
+                          <p className="text-sm text-slate-600">
+                            {format(new Date(comment.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </p>
+                          {comment.user?.name && (
+                            <p className="text-xs text-slate-500 mt-1">Por: {comment.user.name}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
 
             {/* Comments Section */}
             <div className="mt-6 space-y-4">
