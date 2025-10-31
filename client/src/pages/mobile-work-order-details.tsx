@@ -3,7 +3,7 @@ import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Building2, Clock, CheckCircle, AlertCircle, Calendar, User } from "lucide-react";
+import { ArrowLeft, MapPin, Building2, Clock, CheckCircle, AlertCircle, Calendar, User, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function MobileWorkOrderDetails() {
@@ -216,16 +216,25 @@ export default function MobileWorkOrderDetails() {
           </CardContent>
         </Card>
 
-        {/* Info: Execution only via QR Code */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <div className="text-center text-blue-700">
-              <CheckCircle className="w-12 h-12 mx-auto mb-3 text-blue-600" />
-              <p className="font-semibold mb-2">Execução via QR Code</p>
-              <p className="text-sm">
-                Para executar esta ordem de serviço, escaneie o QR Code do local usando o scanner.
-              </p>
-            </div>
+        {/* QR Scanner Button */}
+        <Card className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-0 shadow-xl">
+          <CardContent className="p-6">
+            <Button 
+              onClick={() => setLocation('/mobile/qr-scanner')}
+              data-testid="button-qr-scanner"
+              className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 h-16 text-lg font-semibold"
+              size="lg"
+            >
+              <div className="flex items-center space-x-3 justify-center">
+                <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center">
+                  <QrCode className="w-6 h-6" />
+                </div>
+                <div className="text-left">
+                  <div className="text-lg font-bold">Escanear QR Code</div>
+                  <div className="text-sm opacity-90">Iniciar execução da ordem</div>
+                </div>
+              </div>
+            </Button>
           </CardContent>
         </Card>
       </div>
