@@ -79,38 +79,38 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
 
   const createWorkOrderMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Calcular scheduledStartAt com horário personalizado se fornecido
-      let scheduledStartAt = new Date().toISOString();
-      let scheduledEndAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      // Preparar dados para envio - converter strings de data para Date objects ou null
+      const submitData: any = {
+        title: data.title,
+        description: data.description || null,
+        type: data.type,
+        priority: data.priority,
+        status: "aberta",
+        zoneId: data.zoneId,
+        serviceId: data.serviceId || null,
+        companyId: (customer as any)?.companyId || "company-opus-default",
+        assignedUserId: data.assignedUserId === "unassigned" ? null : data.assignedUserId,
+        scheduledDate: data.scheduledDate || null,
+        dueDate: data.dueDate || null,
+        scheduledStartAt: null,
+        scheduledEndAt: null,
+      };
       
-      if (data.scheduledDate) {
+      // Calcular scheduledStartAt e scheduledEndAt se tiver horários
+      if (data.scheduledDate && data.startTime) {
         const baseDate = new Date(data.scheduledDate);
-        
-        if (data.startTime) {
-          const [hours, minutes] = data.startTime.split(':');
-          baseDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-          scheduledStartAt = baseDate.toISOString();
-        }
-        
-        if (data.endTime) {
-          const endDate = new Date(data.scheduledDate);
-          const [hours, minutes] = data.endTime.split(':');
-          endDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-          scheduledEndAt = endDate.toISOString();
-        }
+        const [hours, minutes] = data.startTime.split(':');
+        baseDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        submitData.scheduledStartAt = baseDate.toISOString();
       }
       
-      const submitData = {
-        ...data,
-        companyId: (customer as any)?.companyId || "company-opus-default",
-        status: "aberta",
-        assignedUserId: data.assignedUserId === "unassigned" ? null : data.assignedUserId,
-        serviceId: data.serviceId || null,
-        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate).toISOString() : null,
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : null,
-        scheduledStartAt,
-        scheduledEndAt,
-      };
+      if (data.scheduledDate && data.endTime) {
+        const endDate = new Date(data.scheduledDate);
+        const [hours, minutes] = data.endTime.split(':');
+        endDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        submitData.scheduledEndAt = endDate.toISOString();
+      }
+      
       return await apiRequest("POST", "/api/work-orders", submitData);
     },
     onSuccess: () => {

@@ -33,3 +33,5 @@
 [x] 33. Frontend displays specific error details including which fields are missing/invalid
 [x] 34. Enhanced error display to parse JSON errors and show clean messages only
 [x] 35. Removed technical error codes (500, 400) from user-facing messages
+[x] 36. Fixed "toISOString is not a function" error when creating work orders
+[x] 37. Corrected date field handling to properly send null or valid date strings
