@@ -24,3 +24,7 @@
 [x] 24. Users created via interface now get proper permissions based on their assigned custom roles
 [x] 25. Improved error handling for user creation with specific messages for duplicate email/username
 [x] 26. Frontend now shows detailed error messages including the specific problem (email duplicado, etc)
+[x] 27. Added new work order statuses: em_execucao and pausada (6 total status now)
+[x] 28. Updated status badges with proper colors for all 6 statuses
+[x] 29. Fixed status filter to show all 6 options (Abertas, Em Execução, Pausadas, Vencidas, Concluídas, Canceladas)
+[x] 30. Added checkbox options visualization in checklist editor - now shows all created options

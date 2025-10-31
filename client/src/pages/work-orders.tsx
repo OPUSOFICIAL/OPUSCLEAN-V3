@@ -342,6 +342,8 @@ export default function WorkOrders() {
                 <MultiSelect
                   options={[
                     { value: "aberta", label: "Abertas" },
+                    { value: "em_execucao", label: "Em Execução" },
+                    { value: "pausada", label: "Pausadas" },
                     { value: "vencida", label: "Vencidas" },
                     { value: "concluida", label: "Concluídas" },
                     { value: "cancelada", label: "Canceladas" }
