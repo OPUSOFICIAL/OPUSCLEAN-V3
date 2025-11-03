@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Customer, InsertCustomer } from "@shared/schema";
@@ -28,6 +29,7 @@ const customerFormSchema = z.object({
   zipCode: z.string().optional(),
   contactPerson: z.string().optional(),
   notes: z.string().optional(),
+  modules: z.array(z.enum(['clean', 'maintenance'])).min(1, "Selecione pelo menos um módulo"),
 });
 
 type CustomerFormData = z.infer<typeof customerFormSchema>;
@@ -106,6 +108,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
       zipCode: "",
       contactPerson: "",
       notes: "",
+      modules: ['clean'],
     },
   });
 
@@ -122,6 +125,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
       zipCode: "",
       contactPerson: "",
       notes: "",
+      modules: [],
     },
   });
 
@@ -142,6 +146,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
       zipCode: customer.zipCode || "",
       contactPerson: customer.contactPerson || "",
       notes: customer.notes || "",
+      modules: customer.modules || ['clean'],
     });
     setIsEditDialogOpen(true);
   };
@@ -445,6 +450,55 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
 
                 <FormField
                   control={createForm.control}
+                  name="modules"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Módulos Disponíveis *</FormLabel>
+                      <div className="flex items-center space-x-4 pt-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="create-module-clean"
+                            checked={field.value?.includes('clean')}
+                            onCheckedChange={(checked) => {
+                              const currentModules = field.value || [];
+                              if (checked) {
+                                field.onChange([...currentModules, 'clean']);
+                              } else {
+                                field.onChange(currentModules.filter((m: string) => m !== 'clean'));
+                              }
+                            }}
+                            data-testid="checkbox-create-customer-module-clean"
+                          />
+                          <label htmlFor="create-module-clean" className="text-sm font-medium">
+                            OPUS Clean
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="create-module-maintenance"
+                            checked={field.value?.includes('maintenance')}
+                            onCheckedChange={(checked) => {
+                              const currentModules = field.value || [];
+                              if (checked) {
+                                field.onChange([...currentModules, 'maintenance']);
+                              } else {
+                                field.onChange(currentModules.filter((m: string) => m !== 'maintenance'));
+                              }
+                            }}
+                            data-testid="checkbox-create-customer-module-maintenance"
+                          />
+                          <label htmlFor="create-module-maintenance" className="text-sm font-medium">
+                            OPUS Manutenção
+                          </label>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={createForm.control}
                   name="notes"
                   render={({ field }) => (
                     <FormItem className="col-span-2">
@@ -604,6 +658,55 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                       <FormControl>
                         <Input placeholder="00000-000" {...field} data-testid="input-edit-customer-zip" />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="modules"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Módulos Disponíveis *</FormLabel>
+                      <div className="flex items-center space-x-4 pt-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="edit-module-clean"
+                            checked={field.value?.includes('clean')}
+                            onCheckedChange={(checked) => {
+                              const currentModules = field.value || [];
+                              if (checked) {
+                                field.onChange([...currentModules, 'clean']);
+                              } else {
+                                field.onChange(currentModules.filter((m: string) => m !== 'clean'));
+                              }
+                            }}
+                            data-testid="checkbox-edit-customer-module-clean"
+                          />
+                          <label htmlFor="edit-module-clean" className="text-sm font-medium">
+                            OPUS Clean
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="edit-module-maintenance"
+                            checked={field.value?.includes('maintenance')}
+                            onCheckedChange={(checked) => {
+                              const currentModules = field.value || [];
+                              if (checked) {
+                                field.onChange([...currentModules, 'maintenance']);
+                              } else {
+                                field.onChange(currentModules.filter((m: string) => m !== 'maintenance'));
+                              }
+                            }}
+                            data-testid="checkbox-edit-customer-module-maintenance"
+                          />
+                          <label htmlFor="edit-module-maintenance" className="text-sm font-medium">
+                            OPUS Manutenção
+                          </label>
+                        </div>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
