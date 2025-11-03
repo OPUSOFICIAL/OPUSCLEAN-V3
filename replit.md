@@ -118,17 +118,33 @@ The project is configured for the Replit cloud environment, with automated Postg
 - Campo `module` em `work_orders` agora usado corretamente
 - Dados existentes migrados com default 'clean'
 
+**6. Frontend Query Parameter Fix (client/src/lib/queryClient.ts)**:
+- **BUG CRÍTICO ENCONTRADO**: TanStack Query transformava objetos em "[object Object]" nas queryKeys
+- **PROBLEMA**: `queryKey: ['/api/sites', { module: 'clean' }]` resultava em `/api/sites/[object Object]`
+- **SOLUÇÃO**: Custom `getQueryFn()` que processa objetos como URLSearchParams:
+  - Itera sobre queryKey separando strings (path) de objetos (query params)
+  - Monta URL correta: `/api/sites?module=clean`
+  - Preserva formato hierárquico para cache invalidation
+- **IMPACTO**: 12+ páginas frontend agora enviam corretamente `?module=clean|maintenance`
+- **VERIFICAÇÃO**: Logs do console confirmam URLs corretas em todas as requisições
+
 ### Resultado Final:
 - ✅ OPUS Clean só vê locais/zonas/work orders com `module='clean'`
 - ✅ OPUS Manutenção só vê locais/zonas/work orders com `module='maintenance'`
-- ✅ Isolamento 100% completo entre módulos em TODOS os níveis
+- ✅ Isolamento 100% completo entre módulos em TODOS os níveis (backend + frontend)
 - ✅ Terminologia clara: "Local" em vez de "Site"
 - ✅ Backward compatible: código antigo continua funcionando
 - ✅ 9 métodos de analytics/reports corrigidos para respeitar isolamento
-- ✅ Zero vazamento de dados entre módulos
+- ✅ Frontend corrigido: query parameters agora funcionam corretamente
+- ✅ Zero vazamento de dados entre módulos (verificado end-to-end)
 - ✅ Hot reload testado e funcional
 
 **Hierarquia Atualizada**: Companies > Clientes > **Locais** > Zonas > Work Orders (cada módulo tem dados completamente isolados)
+
+**Páginas Frontend Atualizadas com Module Filter**:
+- Dashboard, Work Orders, Sites, Zones, Equipment, QR Codes
+- Cleaning Schedule, Checklists, Services, Maintenance Plans
+- Reports, Analytics, Users, Customers
 
 # External Dependencies
 
