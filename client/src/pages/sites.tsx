@@ -77,7 +77,7 @@ export default function Sites({ customerId }: SitesProps) {
       return await apiRequest("POST", `/api/customers/${customerId}/sites`, { ...data, customerId });
     },
     onSuccess: () => {
-      toast({ title: "Site criado com sucesso" });
+      toast({ title: "Local criado com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "sites"] });
       setIsCreateDialogOpen(false);
       setSiteName("");
@@ -86,7 +86,7 @@ export default function Sites({ customerId }: SitesProps) {
     },
     onError: () => {
       toast({ 
-        title: "Erro ao criar site", 
+        title: "Erro ao criar local", 
         variant: "destructive" 
       });
     },
@@ -144,7 +144,7 @@ export default function Sites({ customerId }: SitesProps) {
       return await apiRequest("PUT", `/api/sites/${data.id}`, data);
     },
     onSuccess: () => {
-      toast({ title: "Site atualizado com sucesso" });
+      toast({ title: "Local atualizado com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "sites"] });
       setIsEditSiteDialogOpen(false);
       setEditingSite(null);
@@ -154,7 +154,7 @@ export default function Sites({ customerId }: SitesProps) {
     },
     onError: () => {
       toast({ 
-        title: "Erro ao atualizar site", 
+        title: "Erro ao atualizar local", 
         variant: "destructive" 
       });
     },
@@ -165,13 +165,13 @@ export default function Sites({ customerId }: SitesProps) {
       return await apiRequest("DELETE", `/api/sites/${id}`);
     },
     onSuccess: () => {
-      toast({ title: "Site excluído com sucesso" });
+      toast({ title: "Local excluído com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "sites"] });
       setSelectedSiteId("");
     },
     onError: () => {
       toast({ 
-        title: "Erro ao excluir site", 
+        title: "Erro ao excluir local", 
         variant: "destructive" 
       });
     },
@@ -197,7 +197,7 @@ export default function Sites({ customerId }: SitesProps) {
     if (!siteName.trim()) {
       toast({ 
         title: "Erro de validação",
-        description: "Nome do site é obrigatório", 
+        description: "Nome do local é obrigatório", 
         variant: "destructive" 
       });
       return;
@@ -299,7 +299,7 @@ export default function Sites({ customerId }: SitesProps) {
   const handleUpdateSite = () => {
     if (!editingSite || !editSiteName.trim()) {
       toast({ 
-        title: "Nome do site é obrigatório", 
+        title: "Nome do local é obrigatório", 
         variant: "destructive" 
       });
       return;
@@ -314,7 +314,7 @@ export default function Sites({ customerId }: SitesProps) {
   };
 
   const handleDeleteSite = (site: any) => {
-    if (confirm(`Tem certeza que deseja excluir o site "${site.name}"?`)) {
+    if (confirm(`Tem certeza que deseja excluir o local "${site.name}"?`)) {
       deleteSiteMutation.mutate(site.id);
     }
   };
@@ -339,7 +339,7 @@ export default function Sites({ customerId }: SitesProps) {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div>Carregando sites...</div>
+        <div>Carregando locais...</div>
       </div>
     );
   }
@@ -405,7 +405,7 @@ export default function Sites({ customerId }: SitesProps) {
                     Descrição e Observações
                   </label>
                   <Textarea
-                    placeholder="Detalhes sobre o site: horário de funcionamento, responsável, características especiais..."
+                    placeholder="Detalhes sobre o local: horário de funcionamento, responsável, características especiais..."
                     value={siteDescription}
                     onChange={(e) => setSiteDescription(e.target.value)}
                     data-testid="textarea-site-description"
@@ -444,9 +444,9 @@ export default function Sites({ customerId }: SitesProps) {
             {!sites || (sites as any[]).length === 0 ? (
               <div className="text-center py-8">
                 <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Nenhum site cadastrado</p>
+                <p className="text-muted-foreground">Nenhum local cadastrado</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Crie seu primeiro site para começar
+                  Crie seu primeiro local para começar
                 </p>
                 <Button 
                   className="mt-4"
@@ -646,9 +646,9 @@ export default function Sites({ customerId }: SitesProps) {
               {!zones || (zones as any[]).length === 0 ? (
                 <div className="text-center py-8">
                   <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Nenhum local cadastrado neste site</p>
+                  <p className="text-muted-foreground">Nenhuma zona cadastrada neste local</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Crie o primeiro local para este site
+                    Crie a primeira zona para este local
                   </p>
                   <Button 
                     className="mt-4"
@@ -723,12 +723,12 @@ export default function Sites({ customerId }: SitesProps) {
         <Dialog open={isEditSiteDialogOpen} onOpenChange={setIsEditSiteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Editar Site - {editingSite?.name}</DialogTitle>
+              <DialogTitle>Editar Local - {editingSite?.name}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Nome do Site *
+                  Nome do Local *
                 </label>
                 <Input
                   placeholder="Ex: Fábrica Principal"
@@ -753,7 +753,7 @@ export default function Sites({ customerId }: SitesProps) {
                   Descrição
                 </label>
                 <Textarea
-                  placeholder="Descrição opcional do site"
+                  placeholder="Descrição opcional do local"
                   value={editSiteDescription}
                   onChange={(e) => setEditSiteDescription(e.target.value)}
                   data-testid="textarea-edit-site-description"
@@ -772,7 +772,7 @@ export default function Sites({ customerId }: SitesProps) {
                   disabled={updateSiteMutation.isPending}
                   data-testid="button-save-edit-site"
                 >
-                  {updateSiteMutation.isPending ? "Salvando..." : "Salvar Site"}
+                  {updateSiteMutation.isPending ? "Salvando..." : "Salvar Local"}
                 </Button>
               </div>
             </div>

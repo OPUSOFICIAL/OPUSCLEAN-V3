@@ -102,10 +102,10 @@ export default function ManualSelectionModal({
           {/* Site Selection */}
           <div className="space-y-2">
             <Label htmlFor="site-select" className="text-sm font-medium text-gray-700">
-              1. Selecione o Site
+              1. Selecione o Local
             </Label>
             {sitesLoading ? (
-              <div className="text-sm text-gray-500 p-3 text-center">Carregando sites...</div>
+              <div className="text-sm text-gray-500 p-3 text-center">Carregando locais...</div>
             ) : (
               <Select
                 value={selectedSiteId}
@@ -117,7 +117,7 @@ export default function ManualSelectionModal({
                   className="w-full"
                   data-testid="select-site"
                 >
-                  <SelectValue placeholder="Escolha um site..." />
+                  <SelectValue placeholder="Escolha um local..." />
                 </SelectTrigger>
                 <SelectContent>
                   {sites.map((site) => (
@@ -137,13 +137,13 @@ export default function ManualSelectionModal({
             </Label>
             {!selectedSiteId ? (
               <div className="text-sm text-gray-400 p-3 text-center bg-gray-50 rounded-md">
-                Primeiro selecione um site
+                Primeiro selecione um local
               </div>
             ) : zonesLoading ? (
               <div className="text-sm text-gray-500 p-3 text-center">Carregando zonas...</div>
             ) : zones.length === 0 ? (
               <div className="text-sm text-orange-600 p-3 text-center bg-orange-50 rounded-md">
-                Nenhuma zona encontrada para este site
+                Nenhuma zona encontrada para este local
               </div>
             ) : (
               <Select

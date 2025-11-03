@@ -458,7 +458,7 @@ export default function SiteMap({ companyId }: SiteMapProps) {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Carregando sites...</p>
+            <p className="text-muted-foreground">Carregando locais...</p>
           </div>
         </CardContent>
       </Card>
@@ -512,7 +512,7 @@ export default function SiteMap({ companyId }: SiteMapProps) {
           <div className="mb-6">
             <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Selecione um site" />
+                <SelectValue placeholder="Selecione um local" />
               </SelectTrigger>
               <SelectContent>
                 {(sites as any[]).map((site: any) => (
@@ -528,9 +528,9 @@ export default function SiteMap({ companyId }: SiteMapProps) {
         {!sites || (sites as any[]).length === 0 ? (
           <div className="text-center py-8">
             <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhum site cadastrado</p>
+            <p className="text-muted-foreground">Nenhum local cadastrado</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Cadastre sites para visualizar o mapa de metragem
+              Cadastre locais para visualizar o mapa de metragem
             </p>
           </div>
         ) : !zones || (zones as any[]).length === 0 ? (
@@ -538,7 +538,7 @@ export default function SiteMap({ companyId }: SiteMapProps) {
             <Ruler className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Nenhuma zona cadastrada</p>
             <p className="text-sm text-muted-foreground mt-2">
-              {selectedSite ? `Cadastre zonas para ${selectedSite.name}` : 'Selecione um site'}
+              {selectedSite ? `Cadastre zonas para ${selectedSite.name}` : 'Selecione um local'}
             </p>
           </div>
         ) : (

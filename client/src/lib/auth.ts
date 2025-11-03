@@ -210,7 +210,7 @@ export function getRoleDisplayName(role: string): string {
   const roleMap: Record<string, string> = {
     admin: "Administrador",
     gestor_cliente: "Gestor do Cliente",
-    supervisor_site: "Supervisor de Site",
+    supervisor_site: "Supervisor de Local",
     operador: "Operador",
     auditor: "Auditor"
   };

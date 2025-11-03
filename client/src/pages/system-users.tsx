@@ -222,7 +222,7 @@ export default function SystemUsers() {
       case 'gestor_cliente':
         return 'Gestor de Cliente';
       case 'supervisor_site':
-        return 'Supervisor de Site';
+        return 'Supervisor de Local';
       case 'operador':
         return 'Operador';
       case 'auditor':
@@ -273,7 +273,7 @@ export default function SystemUsers() {
       case 'gestor_cliente':
         return 'Gestor de Cliente';
       case 'supervisor_site':
-        return 'Supervisor de Site';
+        return 'Supervisor de Local';
       case 'operador':
         return 'Operador';
       case 'auditor':
@@ -416,7 +416,7 @@ export default function SystemUsers() {
                         <SelectContent>
                           <SelectItem value="admin">Administrador</SelectItem>
                           <SelectItem value="gestor_cliente">Gestor de Cliente</SelectItem>
-                          <SelectItem value="supervisor_site">Supervisor de Site</SelectItem>
+                          <SelectItem value="supervisor_site">Supervisor de Local</SelectItem>
                           <SelectItem value="operador">Operador</SelectItem>
                           <SelectItem value="auditor">Auditor</SelectItem>
                         </SelectContent>

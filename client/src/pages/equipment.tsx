@@ -252,10 +252,10 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="site">Site *</Label>
+                      <Label htmlFor="site">Local *</Label>
                       <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
                         <SelectTrigger data-testid="select-site">
-                          <SelectValue placeholder="Selecione um site" />
+                          <SelectValue placeholder="Selecione um local" />
                         </SelectTrigger>
                         <SelectContent>
                           {Array.isArray(sites) && sites.map((site: any) => (
@@ -448,7 +448,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     <TableHead>Código</TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Site</TableHead>
+                    <TableHead>Local</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Fabricante</TableHead>
                     <TableHead>Modelo</TableHead>
@@ -520,10 +520,10 @@ export default function Equipment({ customerId }: EquipmentProps) {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-site">Site *</Label>
+                  <Label htmlFor="edit-site">Local *</Label>
                   <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um site" />
+                      <SelectValue placeholder="Selecione um local" />
                     </SelectTrigger>
                     <SelectContent>
                       {Array.isArray(sites) && sites.map((site: any) => (

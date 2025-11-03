@@ -318,7 +318,7 @@ export default function Users({ customerId }: UsersProps) {
       const roleLabels: any = {
         'admin': 'Administrador',
         'gestor_cliente': 'Gestor de Cliente',
-        'supervisor_site': 'Supervisor de Site',
+        'supervisor_site': 'Supervisor de Local',
         'operador': 'Operador',
         'auditor': 'Auditor'
       };

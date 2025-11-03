@@ -257,11 +257,11 @@ export function usePermissions() {
     // Mapa de Calor
     { key: 'heatmap_view', label: 'Visualizar Mapa de Calor', category: 'Mapa de Calor' },
     
-    // Sites
-    { key: 'sites_view', label: 'Visualizar Sites', category: 'Sites' },
-    { key: 'sites_create', label: 'Criar Sites', category: 'Sites' },
-    { key: 'sites_edit', label: 'Editar Sites', category: 'Sites' },
-    { key: 'sites_delete', label: 'Excluir Sites', category: 'Sites' },
+    // Locais
+    { key: 'sites_view', label: 'Visualizar Locais', category: 'Locais' },
+    { key: 'sites_create', label: 'Criar Locais', category: 'Locais' },
+    { key: 'sites_edit', label: 'Editar Locais', category: 'Locais' },
+    { key: 'sites_delete', label: 'Excluir Locais', category: 'Locais' },
     
     // Usuários
     { key: 'users_view', label: 'Visualizar Usuários', category: 'Usuários' },

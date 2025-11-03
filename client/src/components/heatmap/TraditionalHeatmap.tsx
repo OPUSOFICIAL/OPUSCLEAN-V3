@@ -684,7 +684,7 @@ export default function TraditionalHeatmap({ data, selectedSite, onZoneClick }: 
               <Thermometer className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">Nenhuma zona disponível</p>
               <p className="text-sm text-muted-foreground mt-2">
-                Selecione um site para visualizar o mapa de calor
+                Selecione um local para visualizar o mapa de calor
               </p>
             </div>
           ) : (

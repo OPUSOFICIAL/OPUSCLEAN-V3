@@ -365,7 +365,7 @@ export default function FloorPlanPage() {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <Building className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-muted-foreground">Carregando sites...</p>
+          <p className="text-muted-foreground">Carregando locais...</p>
         </div>
       </div>
     );

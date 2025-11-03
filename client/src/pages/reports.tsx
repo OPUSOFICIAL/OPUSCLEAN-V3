@@ -453,7 +453,7 @@ export default function Reports() {
     else if (data.locations) {
       if (data.locations.sites && Array.isArray(data.locations.sites)) {
         const sitesData: any[][] = [
-          ['SITES'],
+          ['LOCAIS'],
           [''],
           ['Nome', 'Zonas', 'OS Total', 'Concluídas', 'Eficiência (%)', 'Área (m²)', 'Utilização (%)']
         ];
@@ -461,14 +461,14 @@ export default function Reports() {
           sitesData.push([site.name, site.totalZones, site.totalWorkOrders, site.completedWorkOrders, site.efficiency, site.area, site.utilizationRate]);
         });
         const sitesSheet = XLSX.utils.aoa_to_sheet(sitesData);
-        XLSX.utils.book_append_sheet(workbook, sitesSheet, "Sites");
+        XLSX.utils.book_append_sheet(workbook, sitesSheet, "Locais");
       }
       
       if (data.locations.zones && Array.isArray(data.locations.zones)) {
         const zonesData: any[][] = [
           ['ZONAS'],
           [''],
-          ['Nome', 'Site', 'OS Total', 'Concluídas', 'Tempo Médio (min)', 'Prioridade', 'Última Limpeza']
+          ['Nome', 'Local', 'OS Total', 'Concluídas', 'Tempo Médio (min)', 'Prioridade', 'Última Limpeza']
         ];
         data.locations.zones.forEach((zone: any) => {
           zonesData.push([zone.name, zone.siteName, zone.totalWorkOrders, zone.completedWorkOrders, zone.averageTime, zone.priority, zone.lastCleaning]);

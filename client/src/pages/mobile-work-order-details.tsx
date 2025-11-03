@@ -170,7 +170,7 @@ export default function MobileWorkOrderDetails() {
             {/* Location */}
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Building2 className="w-4 h-4" />
-              <span>{workOrder.site?.name || 'Site não especificado'}</span>
+              <span>{workOrder.site?.name || 'Local não especificado'}</span>
             </div>
 
             {workOrder.zone && (

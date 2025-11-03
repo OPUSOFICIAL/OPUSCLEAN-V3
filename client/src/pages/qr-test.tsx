@@ -242,7 +242,7 @@ export default function QrTest() {
                 <div>
                   <p className="font-medium">Localização:</p>
                   <p className="text-sm">Zona: {result.zone.name}</p>
-                  <p className="text-sm">Site: {result.site.name}</p>
+                  <p className="text-sm">Local: {result.site.name}</p>
                   <p className="text-sm">Empresa: {result.company.name}</p>
                 </div>
                 

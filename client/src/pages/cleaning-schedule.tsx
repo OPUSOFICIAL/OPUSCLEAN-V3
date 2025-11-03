@@ -346,10 +346,10 @@ export default function CleaningSchedule() {
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <Select value={siteFilter} onValueChange={setSiteFilter}>
                 <SelectTrigger className="w-48" data-testid="select-site-filter">
-                  <SelectValue placeholder="Filtrar por site" />
+                  <SelectValue placeholder="Filtrar por local" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os Sites</SelectItem>
+                  <SelectItem value="todos">Todos os Locais</SelectItem>
                   {(sites as any[])?.map((site: any) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.name}

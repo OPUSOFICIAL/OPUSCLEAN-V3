@@ -36,7 +36,7 @@ export default function SettingsMobile({ onNavigate }: SettingsMobileProps) {
     { 
       icon: Building, 
       label: "Locais e Zonas", 
-      description: "Sites, plantas e áreas de limpeza",
+      description: "Locais, plantas e áreas de limpeza",
       page: "sites", 
       color: "text-green-600", 
       bg: "bg-green-50",

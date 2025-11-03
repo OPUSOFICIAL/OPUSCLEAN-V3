@@ -174,7 +174,7 @@ export default function Roles() {
     qrcodes: { label: 'QR Codes', icon: QrCode, viewPerm: 'qrcodes_view' },
     floorplan: { label: 'Planta dos Locais', icon: Map, viewPerm: 'floor_plan_view' },
     heatmap: { label: 'Mapa de Calor', icon: Thermometer, viewPerm: 'heatmap_view' },
-    sites: { label: 'Sites/Locais', icon: Building2, viewPerm: 'sites_view' },
+    sites: { label: 'Locais', icon: Building2, viewPerm: 'sites_view' },
     reports: { label: 'Relatórios', icon: BarChart3, viewPerm: 'reports_view' },
     settings: { label: 'Configurações', icon: Settings2, viewPerm: 'service_settings_view' },
     users: { label: 'Usuários', icon: UserCog, viewPerm: 'users_view' },
