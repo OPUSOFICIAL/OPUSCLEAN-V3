@@ -356,7 +356,7 @@ export default function Users({ customerId }: UsersProps) {
   };
 
   const getModulesBadges = (user: any) => {
-    const modules = user.modules || ['clean'];
+    const modules = user.modules || [];
     
     return (
       <div className="flex flex-wrap gap-1">
