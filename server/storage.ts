@@ -44,15 +44,15 @@ export interface IStorage {
   updateCompany(id: string, company: Partial<InsertCompany>): Promise<Company>;
 
   // Sites
-  getSitesByCompany(companyId: string): Promise<Site[]>;
-  getSitesByCustomer(customerId: string): Promise<Site[]>;
+  getSitesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<Site[]>;
+  getSitesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Site[]>;
   getSite(id: string): Promise<Site | undefined>;
   createSite(site: InsertSite): Promise<Site>;
   updateSite(id: string, site: Partial<InsertSite>): Promise<Site>;
   deleteSite(id: string): Promise<void>;
 
   // Customer-filtered data methods
-  getZonesByCustomer(customerId: string): Promise<Zone[]>;
+  getZonesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]>;
   getWorkOrdersByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]>;
   getDashboardStatsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any>;
   getAnalyticsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any>;
@@ -66,8 +66,8 @@ export interface IStorage {
   getTemporalAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
 
   // Zones
-  getZonesByCompany(companyId: string): Promise<Zone[]>;
-  getZonesBySite(siteId: string): Promise<Zone[]>;
+  getZonesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]>;
+  getZonesBySite(siteId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]>;
   getZone(id: string): Promise<Zone | undefined>;
   createZone(zone: InsertZone): Promise<Zone>;
   updateZone(id: string, zone: Partial<InsertZone>): Promise<Zone>;
@@ -76,9 +76,6 @@ export interface IStorage {
   // QR Code Points
   getQrCodePointsByCompany(companyId: string): Promise<QrCodePoint[]>;
   getQrCodePointsByCustomer(customerId: string): Promise<any[]>;
-  
-  // Zones by Customer
-  getZonesByCustomer(customerId: string): Promise<Zone[]>;
   
   // Customer-specific resources
   getCleaningActivitiesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]>;
@@ -388,15 +385,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Sites
-  async getSitesByCompany(companyId: string): Promise<Site[]> {
+  async getSitesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<Site[]> {
+    const whereCondition = module
+      ? and(eq(sites.companyId, companyId), eq(sites.module, module))
+      : eq(sites.companyId, companyId);
+    
     return await db.select().from(sites)
-      .where(eq(sites.companyId, companyId))
+      .where(whereCondition)
       .orderBy(sites.name);
   }
 
-  async getSitesByCustomer(customerId: string): Promise<Site[]> {
+  async getSitesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Site[]> {
+    const whereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+    
     return await db.select().from(sites)
-      .where(eq(sites.customerId, customerId))
+      .where(whereCondition)
       .orderBy(sites.name);
   }
 
@@ -1334,9 +1339,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Zones
-  async getZonesByCompany(companyId: string): Promise<Zone[]> {
-    // Get sites for this company
-    const companySites = await db.select().from(sites).where(eq(sites.companyId, companyId));
+  async getZonesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]> {
+    // Get sites for this company, filtering by module if provided
+    const siteWhereCondition = module
+      ? and(eq(sites.companyId, companyId), eq(sites.module, module))
+      : eq(sites.companyId, companyId);
+    
+    const companySites = await db.select().from(sites).where(siteWhereCondition);
     
     // Filter zones by company sites
     const siteIds = companySites.map(site => site.id);
@@ -1357,9 +1366,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(zones.name);
   }
 
-  async getZonesByCustomer(customerId: string): Promise<Zone[]> {
-    // Get sites for this customer
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+  async getZonesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]> {
+    // Get sites for this customer, filtering by module if provided
+    const siteWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+    
+    const customerSites = await db.select().from(sites).where(siteWhereCondition);
     
     // Filter zones by customer sites
     const siteIds = customerSites.map(site => site.id);
@@ -1463,9 +1476,13 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async getZonesBySite(siteId: string): Promise<Zone[]> {
+  async getZonesBySite(siteId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]> {
+    const whereCondition = module
+      ? and(eq(zones.siteId, siteId), eq(zones.module, module))
+      : eq(zones.siteId, siteId);
+    
     return await db.select().from(zones)
-      .where(eq(zones.siteId, siteId))
+      .where(whereCondition)
       .orderBy(zones.name);
   }
 
