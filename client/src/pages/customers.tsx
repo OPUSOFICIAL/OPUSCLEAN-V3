@@ -146,7 +146,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
       zipCode: customer.zipCode || "",
       contactPerson: customer.contactPerson || "",
       notes: customer.notes || "",
-      modules: customer.modules || ['clean'],
+      modules: (customer.modules || ['clean']) as ('clean' | 'maintenance')[],
     });
     setIsEditDialogOpen(true);
   };
@@ -160,6 +160,25 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
     if (confirm("Tem certeza que deseja remover este cliente?")) {
       deleteCustomerMutation.mutate(customerId);
     }
+  };
+
+  const getModulesBadges = (customer: Customer) => {
+    const modules = customer.modules || [];
+    
+    return (
+      <div className="flex flex-wrap gap-1">
+        {modules.includes('clean') && (
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" data-testid={`badge-module-clean-${customer.id}`}>
+            Clean
+          </Badge>
+        )}
+        {modules.includes('maintenance') && (
+          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" data-testid={`badge-module-maintenance-${customer.id}`}>
+            Manutenção
+          </Badge>
+        )}
+      </div>
+    );
   };
 
   const filteredCustomers = customers
@@ -263,6 +282,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                   <TableHead>Telefone</TableHead>
                   <TableHead>Documento</TableHead>
                   <TableHead>Cidade</TableHead>
+                  <TableHead>Módulos</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -275,6 +295,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                     <TableCell>{customer.phone || "-"}</TableCell>
                     <TableCell>{customer.document || "-"}</TableCell>
                     <TableCell>{customer.city || "-"}</TableCell>
+                    <TableCell>{getModulesBadges(customer)}</TableCell>
                     <TableCell>
                       {customer.isActive ? (
                         <Badge className="bg-chart-2/10 text-chart-2">Ativo</Badge>
