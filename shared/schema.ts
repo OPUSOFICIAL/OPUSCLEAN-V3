@@ -396,6 +396,7 @@ export const qrCodePoints = pgTable("qr_code_points", {
   name: varchar("name").notNull(),
   description: text("description"),
   sizeCm: integer("size_cm").default(5), // Tamanho em centímetros (padrão 5cm)
+  module: moduleEnum("module").notNull().default('clean'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
