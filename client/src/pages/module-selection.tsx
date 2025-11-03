@@ -22,7 +22,8 @@ export default function ModuleSelection() {
   useEffect(() => {
     // If user only has access to one module, redirect automatically
     if (availableModules.length === 1) {
-      handleModuleSelect(availableModules[0]);
+      const module = availableModules[0] as 'clean' | 'maintenance';
+      handleModuleSelect(module);
     }
   }, [availableModules]);
 
