@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
   CheckCircle2,
@@ -38,6 +39,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const [checklistItems, setChecklistItems] = useState("[]");
 
   const { toast } = useToast();
+  const { currentModule } = useModule();
 
   // Fetch customer data
   const { data: customer } = useQuery({
@@ -47,13 +49,13 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
   // Fetch templates
   const { data: templates, isLoading } = useQuery({
-    queryKey: [`/api/customers/${customerId}/maintenance-checklist-templates`],
+    queryKey: [`/api/customers/${customerId}/maintenance-checklist-templates`, { module: currentModule }],
     enabled: !!customerId,
   });
 
   // Fetch equipment for dropdown
   const { data: equipment } = useQuery({
-    queryKey: [`/api/customers/${customerId}/equipment`],
+    queryKey: [`/api/customers/${customerId}/equipment`, { module: currentModule }],
     enabled: !!customerId,
   });
 

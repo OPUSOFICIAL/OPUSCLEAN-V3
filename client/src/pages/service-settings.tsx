@@ -32,6 +32,7 @@ import Sites from "./sites";
 import Users from "./users";
 import Services from "./services";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { useEffect } from "react";
 
 // Schemas para validação
@@ -64,6 +65,7 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { activeClientId: customerId } = useClient();
+  const { currentModule } = useModule();
 
   // Invalidate cache when customer changes
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function Settings() {
   });
 
   const { data: serviceCategories = [], isLoading: loadingCategories } = useQuery({
-    queryKey: ["/api/customers", customerId, "service-categories"],
+    queryKey: ["/api/customers", customerId, "service-categories", { module: currentModule }],
     enabled: !!customerId,
   });
 

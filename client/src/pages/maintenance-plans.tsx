@@ -12,6 +12,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
   Calendar,
@@ -44,6 +45,7 @@ export default function MaintenancePlans({ customerId }: MaintenancePlansProps) 
   const [frequency, setFrequency] = useState("mensal");
 
   const { toast } = useToast();
+  const { currentModule } = useModule();
 
   // Fetch customer data
   const { data: customer } = useQuery({
@@ -53,19 +55,19 @@ export default function MaintenancePlans({ customerId }: MaintenancePlansProps) 
 
   // Fetch maintenance plans
   const { data: plans, isLoading } = useQuery({
-    queryKey: [`/api/customers/${customerId}/maintenance-plans`],
+    queryKey: [`/api/customers/${customerId}/maintenance-plans`, { module: currentModule }],
     enabled: !!customerId,
   });
 
   // Fetch equipment for selected customer
   const { data: equipment } = useQuery({
-    queryKey: [`/api/customers/${customerId}/equipment`],
+    queryKey: [`/api/customers/${customerId}/equipment`, { module: currentModule }],
     enabled: !!customerId,
   });
 
   // Fetch checklist templates
   const { data: templates } = useQuery({
-    queryKey: [`/api/customers/${customerId}/maintenance-checklist-templates`],
+    queryKey: [`/api/customers/${customerId}/maintenance-checklist-templates`, { module: currentModule }],
     enabled: !!customerId,
   });
 
