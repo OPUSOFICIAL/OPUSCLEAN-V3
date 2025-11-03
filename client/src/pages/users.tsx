@@ -41,6 +41,7 @@ export default function Users({ customerId }: UsersProps) {
   const [userUsername, setUserUsername] = useState("");
   const [userRole, setUserRole] = useState<string>("");
   const [userPassword, setUserPassword] = useState("");
+  const [userModules, setUserModules] = useState<string[]>(['clean']);
   
   // Edit user states
   const [editName, setEditName] = useState("");
@@ -83,6 +84,7 @@ export default function Users({ customerId }: UsersProps) {
       setUserUsername("");
       setUserPassword("");
       setUserRole("");
+      setUserModules(['clean']);
     },
     onError: (error: any) => {
       const errorMessage = error?.message || "Erro ao criar usuário";
@@ -202,6 +204,15 @@ export default function Users({ customerId }: UsersProps) {
       return;
     }
 
+    if (userModules.length === 0) {
+      toast({ 
+        title: "Selecione pelo menos um módulo", 
+        description: "O usuário precisa ter acesso a pelo menos um módulo",
+        variant: "destructive" 
+      });
+      return;
+    }
+
     createUserMutation.mutate({
       companyId: (customer as any).companyId,
       customerId,
@@ -212,6 +223,7 @@ export default function Users({ customerId }: UsersProps) {
       role: userRole,
       authProvider: 'local',
       userType: 'customer_user',
+      modules: userModules,
     });
   };
 
@@ -451,6 +463,60 @@ export default function Users({ customerId }: UsersProps) {
                     Nenhum perfil disponível. Crie perfis em "Funções" primeiro.
                   </div>
                 )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  Módulos de Acesso * 
+                </label>
+                <div className="space-y-3 border rounded-lg p-4 bg-slate-50 dark:bg-slate-900">
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="module-clean"
+                      checked={userModules.includes('clean')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setUserModules([...userModules, 'clean']);
+                        } else {
+                          setUserModules(userModules.filter(m => m !== 'clean'));
+                        }
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      data-testid="checkbox-module-clean"
+                    />
+                    <div className="flex-1">
+                      <label htmlFor="module-clean" className="cursor-pointer">
+                        <div className="font-medium text-blue-900 dark:text-blue-300">OPUS Clean</div>
+                        <div className="text-sm text-muted-foreground">Gestão de Limpeza e Facilities</div>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="module-maintenance"
+                      checked={userModules.includes('maintenance')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setUserModules([...userModules, 'maintenance']);
+                        } else {
+                          setUserModules(userModules.filter(m => m !== 'maintenance'));
+                        }
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                      data-testid="checkbox-module-maintenance"
+                    />
+                    <div className="flex-1">
+                      <label htmlFor="module-maintenance" className="cursor-pointer">
+                        <div className="font-medium text-orange-900 dark:text-orange-300">OPUS Manutenção</div>
+                        <div className="text-sm text-muted-foreground">Gestão de Manutenção</div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Selecione um ou mais módulos que o usuário poderá acessar
+                </p>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button 
