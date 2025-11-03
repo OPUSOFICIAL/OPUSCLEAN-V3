@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
   Settings, 
@@ -25,6 +26,7 @@ interface EquipmentProps {
 }
 
 export default function Equipment({ customerId }: EquipmentProps) {
+  const { currentModule } = useModule();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<any>(null);
@@ -53,13 +55,13 @@ export default function Equipment({ customerId }: EquipmentProps) {
 
   // Fetch sites
   const { data: sites } = useQuery({
-    queryKey: [`/api/customers/${customerId}/sites`],
+    queryKey: [`/api/customers/${customerId}/sites`, { module: currentModule }],
     enabled: !!customerId,
   });
 
   // Fetch zones for selected site
   const { data: zones } = useQuery({
-    queryKey: [`/api/sites/${selectedSiteId}/zones`],
+    queryKey: [`/api/sites/${selectedSiteId}/zones`, { module: currentModule }],
     enabled: !!selectedSiteId,
   });
 

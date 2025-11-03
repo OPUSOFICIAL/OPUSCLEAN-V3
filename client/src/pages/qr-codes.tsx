@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import QRCode from "qrcode";
 import { 
   QrCode, 
@@ -30,6 +31,7 @@ const cmToPixels = (cm: number) => Math.round(cm * 28.35);
 
 export default function QrCodes() {
   const { activeClientId } = useClient();
+  const { currentModule } = useModule();
   const [selectedSite, setSelectedSite] = useState("");
   const [selectedZone, setSelectedZone] = useState("");
   const [pointName, setPointName] = useState("");
@@ -43,12 +45,12 @@ export default function QrCodes() {
   const queryClient = useQueryClient();
 
   const { data: sites } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "sites"],
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
   const { data: zones } = useQuery({
-    queryKey: ["/api/sites", selectedSite, "zones"],
+    queryKey: ["/api/sites", selectedSite, "zones", { module: currentModule }],
     enabled: !!selectedSite,
   });
 

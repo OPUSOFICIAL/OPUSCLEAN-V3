@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
   Building, 
@@ -29,6 +30,7 @@ interface SitesProps {
 }
 
 export default function Sites({ customerId }: SitesProps) {
+  const { currentModule } = useModule();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreateZoneDialogOpen, setIsCreateZoneDialogOpen] = useState(false);
   const [isEditZoneDialogOpen, setIsEditZoneDialogOpen] = useState(false);
@@ -57,7 +59,7 @@ export default function Sites({ customerId }: SitesProps) {
   const queryClient = useQueryClient();
 
   const { data: sites, isLoading } = useQuery({
-    queryKey: ["/api/customers", customerId, "sites"],
+    queryKey: ["/api/customers", customerId, "sites", { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -68,7 +70,7 @@ export default function Sites({ customerId }: SitesProps) {
   });
 
   const { data: zones } = useQuery({
-    queryKey: ["/api/sites", selectedSiteId, "zones"],
+    queryKey: ["/api/sites", selectedSiteId, "zones", { module: currentModule }],
     enabled: !!selectedSiteId,
   });
 

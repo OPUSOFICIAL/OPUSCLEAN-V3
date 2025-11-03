@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   Home, 
   ClipboardList, 
@@ -56,6 +57,7 @@ interface AdminMobileProps {
 }
 
 function DashboardsBI({ customerId }: { customerId: string }) {
+  const { currentModule } = useModule();
   const [period, setPeriod] = useState("hoje");
   const [siteFilter, setSiteFilter] = useState("todos");
 
@@ -73,7 +75,7 @@ function DashboardsBI({ customerId }: { customerId: string }) {
 
   // Buscar sites para filtro
   const { data: sites } = useQuery({
-    queryKey: ["/api/customers", customerId, "sites"],
+    queryKey: ["/api/customers", customerId, "sites", { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -430,6 +432,7 @@ function DashboardsBI({ customerId }: { customerId: string }) {
 }
 
 export default function AdminMobile({ companyId }: AdminMobileProps) {
+  const { currentModule } = useModule();
   const [, setLocation] = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
@@ -458,12 +461,12 @@ export default function AdminMobile({ companyId }: AdminMobileProps) {
   });
 
   const { data: workOrders = [] } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "work-orders"],
+    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
   const { data: sites = [] } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "sites"],
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
     enabled: !!activeClientId,
   });
 

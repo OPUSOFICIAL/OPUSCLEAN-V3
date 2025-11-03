@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
+import { useModule } from "@/contexts/ModuleContext";
 
 interface WorkOrder {
   id: string;
@@ -26,6 +27,7 @@ interface WorkOrder {
 }
 
 export default function MobileDashboard() {
+  const { currentModule } = useModule();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = getAuthState();
@@ -40,7 +42,7 @@ export default function MobileDashboard() {
   
   // Buscar as OS - o hook precisa ser chamado antes de qualquer return
   const { data: workOrders = [], isLoading } = useQuery({
-    queryKey: ["/api/customers", effectiveCustomerId, "work-orders", user?.id, currentLocation?.zoneId],
+    queryKey: ["/api/customers", effectiveCustomerId, "work-orders", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
     queryFn: async () => {
       let url = `/api/customers/${effectiveCustomerId}/work-orders`;

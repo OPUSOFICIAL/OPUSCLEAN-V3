@@ -12,9 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Building, Edit3, X, RotateCcw, MapPin, Palette, Plus, Minus, Save, AlertCircle, Thermometer } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useClient } from '@/contexts/ClientContext';
+import { useModule } from '@/contexts/ModuleContext';
 
 export default function FloorPlanPage() {
   const { activeClientId } = useClient();
+  const { currentModule } = useModule();
   const [selectedSiteId, setSelectedSiteId] = React.useState<string>('');
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [isHeatmapMode, setIsHeatmapMode] = React.useState(false);
@@ -43,13 +45,13 @@ export default function FloorPlanPage() {
 
   // Get sites for the active customer only
   const { data: sites, isLoading } = useQuery({
-    queryKey: ['/api/customers', activeClientId, 'sites'],
+    queryKey: ['/api/customers', activeClientId, 'sites', { module: currentModule }],
     enabled: !!activeClientId,
   });
 
   // Get zones for selected site
   const { data: zones } = useQuery({
-    queryKey: ["/api/sites", selectedSiteId, "zones"],
+    queryKey: ["/api/sites", selectedSiteId, "zones", { module: currentModule }],
     enabled: !!selectedSiteId,
   });
 

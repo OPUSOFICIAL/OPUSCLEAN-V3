@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   BarChart, 
   Bar, 
@@ -42,6 +43,7 @@ interface AdminDashboardsProps {
 }
 
 export default function AdminDashboards({ companyId }: AdminDashboardsProps) {
+  const { currentModule } = useModule();
   const [timeFilter, setTimeFilter] = useState("7d");
   const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
@@ -52,12 +54,12 @@ export default function AdminDashboards({ companyId }: AdminDashboardsProps) {
   });
 
   const { data: workOrders = [] } = useQuery({
-    queryKey: ["/api/companies", companyId, "work-orders"],
+    queryKey: ["/api/companies", companyId, "work-orders", { module: currentModule }],
     enabled: !!companyId,
   });
 
   const { data: sites = [] } = useQuery({
-    queryKey: ["/api/companies", companyId, "sites"],
+    queryKey: ["/api/companies", companyId, "sites", { module: currentModule }],
     enabled: !!companyId,
   });
 

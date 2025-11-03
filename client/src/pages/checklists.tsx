@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { Plus, Edit3, Trash2, FileText, List, Eye, ChevronDown } from "lucide-react";
 import type { ChecklistTemplate } from "@shared/schema";
 
@@ -136,6 +137,7 @@ interface Checklist {
 
 export default function Checklists() {
   const { activeClientId } = useClient();
+  const { currentModule } = useModule();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingChecklist, setEditingChecklist] = useState<Checklist | null>(null);
   const [checklistForm, setChecklistForm] = useState({
@@ -164,7 +166,7 @@ export default function Checklists() {
   });
 
   const { data: sites = [] } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "sites"],
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
@@ -175,7 +177,7 @@ export default function Checklists() {
 
   // Buscar zonas quando um site é selecionado
   const { data: zones = [] } = useQuery({
-    queryKey: ["/api/zones", (checklistForm.siteIds || []).join(",")],
+    queryKey: ["/api/zones", (checklistForm.siteIds || []).join(","), { module: currentModule }],
     enabled: Array.isArray(checklistForm.siteIds) && checklistForm.siteIds.length > 0,
     queryFn: async () => {
       const ids = checklistForm.siteIds;

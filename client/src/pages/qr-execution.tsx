@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useLocation } from "wouter";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   QrCode, 
   Camera, 
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 
 export default function QrExecution() {
+  const { currentModule } = useModule();
   const { code } = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
   const [observations, setObservations] = useState("");
@@ -39,7 +41,7 @@ export default function QrExecution() {
 
   // Get zone details
   const { data: zone } = useQuery({
-    queryKey: ["/api/zones", (qrData as any)?.point?.zoneId],
+    queryKey: ["/api/zones", (qrData as any)?.point?.zoneId, { module: currentModule }],
     enabled: !!(qrData as any)?.point?.zoneId,
   });
 

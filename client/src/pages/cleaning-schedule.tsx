@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
   Calendar, 
@@ -33,6 +34,7 @@ import { useEffect } from "react";
 
 export default function CleaningSchedule() {
   const { activeClientId } = useClient();
+  const { currentModule } = useModule();
   const [viewMode, setViewMode] = useState<"monthly" | "list">("monthly");
   const [siteFilter, setSiteFilter] = useState("todos");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -58,12 +60,12 @@ export default function CleaningSchedule() {
   // Removido: useEffect que estava gerando OSs automaticamente a cada carregamento
 
   const { data: sites } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "sites"],
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
   const { data: zones } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "zones"],
+    queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
@@ -1208,6 +1210,7 @@ interface CreateCleaningActivityModalProps {
 }
 
 function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: CreateCleaningActivityModalProps) {
+  const { currentModule } = useModule();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -1238,12 +1241,12 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
   });
 
   const { data: sites } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "sites"],
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
   const { data: zones } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "zones"],
+    queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
     enabled: !!activeClientId,
   });
 

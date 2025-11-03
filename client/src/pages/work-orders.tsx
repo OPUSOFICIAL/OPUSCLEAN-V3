@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
   Eye, 
@@ -116,6 +117,7 @@ function MultiSelect({ options, selected, onChange, placeholder, testId }: Multi
 
 export default function WorkOrders() {
   const { activeClientId } = useClient();
+  const { currentModule } = useModule();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -129,12 +131,12 @@ export default function WorkOrders() {
   const queryClient = useQueryClient();
 
   const { data: workOrders, isLoading, refetch } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "work-orders"],
+    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
   const { data: zones } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "zones"],
+    queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
     enabled: !!activeClientId,
   });
 

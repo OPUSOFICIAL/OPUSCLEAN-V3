@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ interface SLAPerformanceData {
 
 export default function Reports() {
   const { activeClientId } = useClient();
+  const { currentModule } = useModule();
   const [dateRange, setDateRange] = useState("30");
   const [selectedReportType, setSelectedReportType] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
@@ -75,14 +77,14 @@ export default function Reports() {
 
   // API Queries with proper array-based keys
   const { data: reportsMetrics, isLoading: isLoadingMetrics, error: errorMetrics, refetch: refetchMetrics } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "metrics", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/metrics?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "metrics", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/metrics?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
   const { data: workOrdersStatus, isLoading: isLoadingStatus, error: errorStatus, refetch: refetchStatus } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "work-orders-status", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/work-orders-status?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "work-orders-status", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/work-orders-status?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
