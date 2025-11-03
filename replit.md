@@ -120,6 +120,81 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
 
 **Resultado**: Relatórios agora exibem dados consistentes e calculados do PostgreSQL, sem valores aleatórios.
 
+## November 3, 2025 - Modelo de Dados Manutenção (Equipment-Based)
+**Implementação completa da arquitetura de manutenção baseada em equipamentos**
+
+### Novo Modelo de Dados (5 Tabelas):
+
+**1. equipment** - Registro centralizado de equipamentos
+- Multi-tenant (companyId + customerId + siteId + zoneId)
+- Especificações técnicas (JSONB)
+- QR Code próprio
+- Campos: internalCode, equipmentType, manufacturer, model, serialNumber, warranty, etc.
+
+**2. maintenance_checklist_templates** - Templates de checklist específicos
+- Pode ser genérico (equipmentType) ou específico (equipmentId)
+- Versionamento de checklists
+- Estrutura de itens flexível (JSONB)
+- Reutilizável entre múltiplos equipamentos
+
+**3. maintenance_checklist_executions** - Histórico de execuções
+- Rastreabilidade completa (quem, quando, qual equipamento)
+- Vinculado a Work Order ou standalone
+- Suporta anexos (fotos de evidências)
+- Registro de início e fim para métricas
+
+**4. maintenance_plans** - Planos de manutenção
+- Container lógico para agrupar equipamentos
+- Tipos: preventiva, preditiva, corretiva
+- Multi-tenant
+
+**5. maintenance_plan_equipments** - Link N:N Planos ↔ Equipamentos
+- Define checklist específico para cada equipamento no plano
+- Frequência configurável (diaria, semanal, mensal, etc.)
+- Auto-agendamento (nextExecutionAt/lastExecutionAt)
+- UNIQUE constraint (planId, equipmentId)
+
+### Alterações em Tabelas Existentes:
+
+**work_orders**:
+- Novos campos: `equipmentId`, `maintenancePlanEquipmentId`
+- OPUS Clean: usa `zoneId` + `cleaningActivityId`
+- OPUS Manutenção: usa `equipmentId` + `maintenancePlanEquipmentId`
+
+**qr_code_points**:
+- Novo campo: `equipmentId`
+- `zoneId` agora é opcional (antes obrigatório)
+- QR de Zona (Clean): `zoneId` preenchido
+- QR de Equipamento (Manutenção): `equipmentId` preenchido
+
+### Storage Layer Implementado:
+
+**Interface IStorage**: 27 novos métodos CRUD
+- Equipment: 7 métodos (getByCustomer, getBySite, getByZone, get, create, update, delete)
+- MaintenanceChecklistTemplates: 7 métodos
+- MaintenanceChecklistExecutions: 6 métodos
+- MaintenancePlans: 5 métodos
+- MaintenancePlanEquipments: 6 métodos
+
+**DatabaseStorage**: Todas implementações concretas usando Drizzle ORM
+- Queries otimizados com filtros adequados
+- Timestamps automáticos (createdAt, updatedAt)
+- Suporte completo a JSONB para dados flexíveis
+
+### Diferenças Arquiteturais: Clean vs Manutenção
+
+| Aspecto | OPUS Clean | OPUS Manutenção |
+|---------|------------|-----------------|
+| **Entidade Base** | Zone | Equipment |
+| **Atividades** | cleaning_activities | maintenance_plan_equipments |
+| **Checklists** | checklistTemplates (genéricos) | maintenance_checklist_templates (específicos) |
+| **QR Codes** | qr_code_points.zoneId | qr_code_points.equipmentId |
+| **Work Orders** | cleaningActivityId | equipmentId + maintenancePlanEquipmentId |
+
+**Documentação Completa**: `MODELO_DADOS_MANUTENCAO.md`
+
+**Status**: Schema e Storage prontos. Pendente: API Routes, Frontend, Push DB.
+
 # Documentação Técnica
 
 Para entender o fluxo completo do sistema OPUS (desde autenticação até execução final), consulte:
