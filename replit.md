@@ -191,9 +191,30 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
 | **QR Codes** | qr_code_points.zoneId | qr_code_points.equipmentId |
 | **Work Orders** | cleaningActivityId | equipmentId + maintenancePlanEquipmentId |
 
+### API Routes Implementadas (server/routes.ts):
+
+**31 rotas RESTful completas** ✅
+- **Equipment**: 7 endpoints (GET by customer/site/zone, GET by id, POST, PUT, DELETE)
+- **MaintenanceChecklistTemplates**: 7 endpoints (GET by customer/equipmentType/equipment, GET by id, POST, PUT, DELETE)
+- **MaintenanceChecklistExecutions**: 6 endpoints (GET by equipment/workOrder, GET by id, POST, PUT, DELETE)
+- **MaintenancePlans**: 5 endpoints (GET by customer, GET by id, POST, PUT, DELETE)
+- **MaintenancePlanEquipments**: 6 endpoints (GET by plan/equipment, GET by id, POST, PUT, DELETE)
+
+**Validação e Segurança**:
+- Todas rotas com validação Zod usando insert schemas
+- Error handling apropriado (400, 404, 500)
+- Seguindo padrão RESTful do projeto
+
+**Database Push**: Schema aplicado ao PostgreSQL com sucesso ✅
+
 **Documentação Completa**: `MODELO_DADOS_MANUTENCAO.md`
 
-**Status**: Schema e Storage prontos. Pendente: API Routes, Frontend, Push DB.
+**Status Backend**: 100% completo, testado e aprovado pelo architect ✅
+- Schema, Storage Layer, e API Routes funcionais
+- Servidor rodando sem erros
+- Pronto para implementação do frontend
+
+**Próximos Passos**: Implementar páginas frontend para gerenciar equipamentos, checklists e planos de manutenção.
 
 # Documentação Técnica
 
