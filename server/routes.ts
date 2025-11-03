@@ -2117,6 +2117,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get available modules for the authenticated user
+  app.get("/api/auth/available-modules", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      
+      let user;
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        user = await storage.getUser(decoded.userId);
+      } catch (jwtError) {
+        // Fallback for old token format
+        const parts = token.split('_');
+        if (parts.length >= 2 && parts[0] === 'token') {
+          const userId = parts[1];
+          user = await storage.getUser(userId);
+        }
+      }
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const availableModules: string[] = [];
+      
+      // Check if user has access to customer data
+      if (user.customerId) {
+        // Check for Clean module data
+        const cleanSites = await storage.getSitesByCustomer(user.customerId, 'clean');
+        if (cleanSites && cleanSites.length > 0) {
+          availableModules.push('clean');
+        }
+        
+        // Check for Maintenance module data
+        const maintenanceSites = await storage.getSitesByCustomer(user.customerId, 'maintenance');
+        if (maintenanceSites && maintenanceSites.length > 0) {
+          availableModules.push('maintenance');
+        }
+        
+        // If no sites exist yet, allow access to both modules (for new customers)
+        if (availableModules.length === 0) {
+          availableModules.push('clean', 'maintenance');
+        }
+      } else {
+        // Opus users have access to all modules
+        availableModules.push('clean', 'maintenance');
+      }
+      
+      res.json({ modules: availableModules });
+    } catch (error) {
+      console.error("Get available modules error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // === ROLES MANAGEMENT ===
   
   // Listar todas as funções
