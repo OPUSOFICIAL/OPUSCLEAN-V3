@@ -1,6 +1,7 @@
 import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,25 +58,26 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
 
   const { activeClientId } = useClient();
+  const { currentModule } = useModule();
 
   // Queries
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: [`/api/customers/${activeClientId}/dashboard-stats/${selectedPeriod}/${selectedSite}`],
+    queryKey: [`/api/customers/${activeClientId}/dashboard-stats/${selectedPeriod}/${selectedSite}?module=${currentModule}`],
     enabled: !!activeClientId,
   });
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
-    queryKey: [`/api/customers/${activeClientId}/analytics/${selectedPeriod}/${selectedSite}`],
+    queryKey: [`/api/customers/${activeClientId}/analytics/${selectedPeriod}/${selectedSite}?module=${currentModule}`],
     enabled: !!activeClientId,
   });
 
   const { data: workOrders } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "work-orders"],
+    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
   const { data: sites } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "sites"],
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
@@ -85,7 +87,7 @@ export default function Dashboard() {
   });
 
   const { data: zones } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "zones"],
+    queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
