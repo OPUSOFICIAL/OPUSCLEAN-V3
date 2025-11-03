@@ -454,8 +454,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardStatsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any> {
-    // Get customer sites for filtering
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    // Get customer sites for filtering (filter by module if provided)
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+    
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return {
         openWorkOrders: 0,
@@ -473,9 +477,13 @@ export class DatabaseStorage implements IStorage {
 
     const siteIds = customerSites.map(site => site.id);
     
-    // Get zones for customer sites only
+    // Get zones for customer sites only (filter by module if provided)
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+    
     const customerZones = await db.select().from(zones)
-      .where(inArray(zones.siteId, siteIds));
+      .where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
 
     if (zoneIds.length === 0) {
