@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useClient } from "@/contexts/ClientContext";
+import { useModule, MODULE_CONFIGS } from "@/contexts/ModuleContext";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -40,6 +41,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   const { user, canManageClients } = useAuth();
   const { can } = usePermissions();
   const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
+  const { currentModule, setModule, moduleConfig } = useModule();
   
   // Usuários do tipo customer_user não podem alterar o cliente
   const isCustomerUser = user?.userType === 'customer_user';
@@ -164,6 +166,32 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           <div className="px-3 py-2 bg-muted rounded-md">
             <p className="text-sm font-medium text-foreground">{activeClient.name}</p>
           </div>
+        </div>
+      )}
+
+      {/* Module/Platform Selector */}
+      {!isCollapsed && (
+        <div className="px-6 pt-1 pb-3 border-b border-border">
+          <label className="block text-sm font-medium text-foreground mb-2">Plataforma</label>
+          <Select value={currentModule} onValueChange={(value) => setModule(value as 'clean' | 'maintenance')}>
+            <SelectTrigger data-testid="module-selector">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="clean">
+                <span className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-blue-600" />
+                  {MODULE_CONFIGS.clean.displayName}
+                </span>
+              </SelectItem>
+              <SelectItem value="maintenance">
+                <span className="flex items-center gap-2">
+                  <Cog className="w-4 h-4 text-orange-600" />
+                  {MODULE_CONFIGS.maintenance.displayName}
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
 
