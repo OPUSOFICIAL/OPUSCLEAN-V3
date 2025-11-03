@@ -56,21 +56,21 @@ The project is configured for the Replit cloud environment, with automated Postg
 
 # Recent Changes
 
-## November 3, 2025 - Isolamento Completo de Locais, Zonas e Ordens de Serviço por Módulo
+## November 3, 2025 - Isolamento Completo de Dados por Módulo (Sites, Zonas, Work Orders e QR Codes)
 **Separação total de dados entre OPUS Clean e OPUS Manutenção + Renomeação "Site" para "Local"**
 
 ### Problema Identificado:
-- Locais (Sites), Zonas e Ordens de Serviço eram compartilhados entre os módulos Clean e Manutenção
+- Locais (Sites), Zonas, Ordens de Serviço e QR Codes eram compartilhados entre os módulos Clean e Manutenção
 - Usuários podiam ver dados de um módulo quando estavam em outro
 - Terminologia "Site" não era clara para usuários finais
-- **CRÍTICO**: Work Orders não respeitavam isolamento de módulo mesmo com campo `module` existente
+- **CRÍTICO**: Work Orders e QR Codes não respeitavam isolamento de módulo mesmo com campo `module` existente
 
 ### Implementação Completa:
 
 **1. Schema Database (shared/schema.ts)**:
-- Adicionado campo `module: moduleEnum('module').notNull().default('clean')` nas tabelas `sites` e `zones`
+- Adicionado campo `module: moduleEnum('module').notNull().default('clean')` nas tabelas `sites`, `zones` e `qr_code_points`
 - Tabela `work_orders` já possuía campo `module` mas não era usado corretamente
-- Isolamento completo: cada módulo tem seus próprios locais, zonas e work orders independentes
+- Isolamento completo: cada módulo tem seus próprios locais, zonas, work orders e QR codes independentes
 - Renomeação de comentários: "Sites" → "Locais" em toda documentação
 
 **2. Storage Layer (server/storage.ts)**:
@@ -80,6 +80,8 @@ The project is configured for the Replit cloud environment, with automated Postg
   - `getZonesByCompany(companyId, module?)`
   - `getZonesByCustomer(customerId, module?)`
   - `getZonesBySite(siteId, module?)`
+  - `getQrCodePointsByCompany(companyId, module?)`
+  - `getQrCodePointsByCustomer(customerId, module?)`
 - **CORREÇÃO CRÍTICA** - Work Orders agora filtram Sites e Zones por módulo ANTES de buscar WOs:
   - `getWorkOrdersByCustomer()` - filtra sites e zones por módulo primeiro
   - `getDashboardStatsByCustomer()` - filtra sites e zones por módulo primeiro
@@ -99,6 +101,8 @@ The project is configured for the Replit cloud environment, with automated Postg
   - `GET /api/customers/:customerId/sites?module=maintenance`
   - `GET /api/sites/:siteId/zones?module=clean`
   - `GET /api/customers/:customerId/work-orders?module=clean`
+  - `GET /api/companies/:companyId/qr-points?module=clean`
+  - `GET /api/customers/:customerId/qr-points?module=maintenance`
 - Rotas POST defaultam para 'clean': `module: req.body.module || 'clean'`
 - Filtro propagado corretamente do routes → storage → database
 
@@ -129,20 +133,21 @@ The project is configured for the Replit cloud environment, with automated Postg
 - **VERIFICAÇÃO**: Logs do console confirmam URLs corretas em todas as requisições
 
 ### Resultado Final:
-- ✅ OPUS Clean só vê locais/zonas/work orders com `module='clean'`
-- ✅ OPUS Manutenção só vê locais/zonas/work orders com `module='maintenance'`
+- ✅ OPUS Clean só vê locais/zonas/work orders/QR codes com `module='clean'`
+- ✅ OPUS Manutenção só vê locais/zonas/work orders/QR codes com `module='maintenance'`
 - ✅ Isolamento 100% completo entre módulos em TODOS os níveis (backend + frontend)
 - ✅ Terminologia clara: "Local" em vez de "Site"
 - ✅ Backward compatible: código antigo continua funcionando
 - ✅ 9 métodos de analytics/reports corrigidos para respeitar isolamento
+- ✅ QR Codes completamente isolados: filtro em 3 camadas (Sites → Zones → QR Codes)
 - ✅ Frontend corrigido: query parameters agora funcionam corretamente
 - ✅ Zero vazamento de dados entre módulos (verificado end-to-end)
 - ✅ Hot reload testado e funcional
 
-**Hierarquia Atualizada**: Companies > Clientes > **Locais** > Zonas > Work Orders (cada módulo tem dados completamente isolados)
+**Hierarquia Atualizada**: Companies > Clientes > **Locais** > Zonas > Work Orders + QR Codes (cada módulo tem dados completamente isolados)
 
 **Páginas Frontend Atualizadas com Module Filter**:
-- Dashboard, Work Orders, Sites, Zones, Equipment, QR Codes
+- Dashboard, Work Orders, Sites, Zones, Equipment, **QR Codes**
 - Cleaning Schedule, Checklists, Services, Maintenance Plans
 - Reports, Analytics, Users, Customers
 
