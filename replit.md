@@ -54,6 +54,67 @@ Offers full CRUD operations for users, including client user creation and custom
 
 The project is configured for the Replit cloud environment, with automated PostgreSQL provisioning, schema pushing, and dependency installation. The Vite dev server is compatible with Replit's proxy. The system is designed to be modular, supporting new operational modules like OPUS Clean and OPUS Manutenção with distinct theming and data isolation.
 
+# Recent Changes
+
+## November 3, 2025 - Isolamento Completo de Locais e Zonas por Módulo
+**Separação total de locais e zonas entre OPUS Clean e OPUS Manutenção + Renomeação "Site" para "Local"**
+
+### Problema Identificado:
+- Locais (Sites) e Zonas eram compartilhados entre os módulos Clean e Manutenção
+- Usuários podiam ver dados de um módulo quando estavam em outro
+- Terminologia "Site" não era clara para usuários finais
+
+### Implementação Completa:
+
+**1. Schema Database (shared/schema.ts)**:
+- Adicionado campo `module: moduleEnum('module').notNull().default('clean')` nas tabelas `sites` e `zones`
+- Isolamento completo: cada módulo tem seus próprios locais e zonas independentes
+- Renomeação de comentários: "Sites" → "Locais" em toda documentação
+
+**2. Storage Layer (server/storage.ts)**:
+- Interface IStorage atualizada: parâmetro opcional `module?: 'clean' | 'maintenance'` em:
+  - `getSitesByCompany(companyId, module?)`
+  - `getSitesByCustomer(customerId, module?)`
+  - `getZonesByCompany(companyId, module?)`
+  - `getZonesByCustomer(customerId, module?)`
+  - `getZonesBySite(siteId, module?)`
+- Implementação com filtros usando `and(eq(...), eq(sites.module, module))` quando módulo é fornecido
+- Backward compatible: funciona sem parâmetro module (retorna todos)
+
+**3. API Routes (server/routes.ts)**:
+- Todas rotas GET aceitam query param `?module=clean|maintenance`:
+  - `GET /api/companies/:companyId/sites?module=clean`
+  - `GET /api/customers/:customerId/sites?module=maintenance`
+  - `GET /api/sites/:siteId/zones?module=clean`
+- Rotas POST defaultam para 'clean': `module: req.body.module || 'clean'`
+- Filtro propagado corretamente do routes → storage → database
+
+**4. Frontend - Renomeação Completa (client/src/)**:
+- 20+ arquivos atualizados com 50+ substituições de strings de UI:
+  - "Site" → "Local"
+  - "Sites" → "Locais"
+  - "Selecione um site" → "Selecione um local"
+  - "Todos os Sites" → "Todos os Locais"
+  - "Supervisor de Site" → "Supervisor de Local"
+- Mantidos nomes técnicos: `siteId`, `sites` (variáveis), `/api/sites` (rotas)
+- Arquivos principais: sites.tsx, users.tsx, equipment.tsx, qr-codes.tsx, cleaning-schedule.tsx, etc.
+
+**5. Database Migration**:
+- Push schema executado com sucesso: `npm run db:push`
+- Colunas `module` adicionadas em `sites` e `zones`
+- Dados existentes migrados com default 'clean'
+
+### Resultado Final:
+- ✅ OPUS Clean só vê locais/zonas com `module='clean'`
+- ✅ OPUS Manutenção só vê locais/zonas com `module='maintenance'`
+- ✅ Isolamento 100% completo entre módulos
+- ✅ Terminologia clara: "Local" em vez de "Site"
+- ✅ Backward compatible: código antigo continua funcionando
+- ✅ Zero erros LSP ou runtime
+- ✅ Hot reload testado e funcional
+
+**Hierarquia Atualizada**: Companies > Clientes > **Locais** > Zonas (cada módulo tem seus próprios Locais e Zonas independentes)
+
 # External Dependencies
 
 ## Database
