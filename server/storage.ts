@@ -621,33 +621,131 @@ export class DatabaseStorage implements IStorage {
       return { productivity: {}, efficiency: {}, trends: [] };
     }
 
+    // Calcular data limite baseado no período
+    const periodDays = parseInt(period) || 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - periodDays);
+
+    // Buscar WOs no período
     const customerWorkOrders = await db.select().from(workOrders).where(inArray(workOrders.zoneId, zoneIds));
-    const completed = customerWorkOrders.filter(wo => wo.status === 'concluida').length;
+    const periodWorkOrders = customerWorkOrders.filter(wo => {
+      const woDate = wo.createdAt ? new Date(wo.createdAt) : new Date();
+      return woDate >= startDate;
+    });
+
+    const completed = periodWorkOrders.filter(wo => wo.status === 'concluida');
+    const completedCount = completed.length;
+    const total = periodWorkOrders.length;
+
+    // Buscar operadores ativos
+    const companyId = customerSites[0].companyId;
+    const allUsers = await db.select().from(users).where(eq(users.companyId, companyId));
+    const operators = allUsers.filter(u => u.role === 'operador' || u.role === 'supervisor_site');
+    const operatorCount = operators.length || 1;
+
+    // MÉTRICAS DE PRODUTIVIDADE REAIS
+    
+    // 1. OS por Dia (REAL)
+    const workOrdersPerDay = periodDays > 0 ? Math.round(completedCount / periodDays) : 0;
+
+    // 2. Tempo Médio de Conclusão (REAL - calculado de startedAt até completedAt)
+    let averageCompletionTime = 0;
+    const completedWithTimes = completed.filter(wo => wo.startedAt && wo.completedAt);
+    if (completedWithTimes.length > 0) {
+      const totalMinutes = completedWithTimes.reduce((sum, wo) => {
+        const start = new Date(wo.startedAt!).getTime();
+        const end = new Date(wo.completedAt!).getTime();
+        const minutes = (end - start) / (1000 * 60);
+        return sum + (minutes > 0 ? minutes : 0);
+      }, 0);
+      averageCompletionTime = Math.round(totalMinutes / completedWithTimes.length);
+    }
+
+    // 3. Área Limpa por Hora (REAL - baseado em áreas das zonas)
+    const totalArea = customerZones.reduce((sum, zone) => sum + (zone.area || 0), 0);
+    const totalHours = completedWithTimes.length > 0 ? completedWithTimes.reduce((sum, wo) => {
+      const start = new Date(wo.startedAt!).getTime();
+      const end = new Date(wo.completedAt!).getTime();
+      return sum + ((end - start) / (1000 * 60 * 60));
+    }, 0) : 1;
+    const areaCleanedPerHour = totalHours > 0 ? Math.round(totalArea / totalHours) : 0;
+
+    // 4. Tarefas por Operador (REAL)
+    const tasksPerOperator = Math.round(completedCount / operatorCount);
+
+    // 5. Score de Qualidade (REAL - baseado em % de conclusão sem reabertura)
+    const reopened = periodWorkOrders.filter(wo => wo.reopenedAt !== null).length;
+    const qualityScore = total > 0 ? Math.round(((total - reopened) / total) * 100) : 0;
 
     const productivity = {
-      workOrdersPerDay: Math.round(completed / 30), // Assumindo 30 dias
-      averageCompletionTime: Math.round(Math.random() * 30 + 90), // 90-120 min
-      areaCleanedPerHour: Math.round(completed * 25 / 8), // m²/hora
-      tasksPerOperator: Math.round(completed / 3), // Assumindo 3 operadores
-      qualityScore: Math.round(Math.random() * 15 + 85) // 85-100
+      workOrdersPerDay,
+      averageCompletionTime,
+      areaCleanedPerHour,
+      tasksPerOperator,
+      qualityScore
     };
+
+    // MÉTRICAS DE EFICIÊNCIA (baseadas em dados reais)
+    
+    // 1. Utilização de Recursos (% de operadores com WOs ativas)
+    const activeOperators = new Set(periodWorkOrders.filter(wo => wo.operatorId).map(wo => wo.operatorId)).size;
+    const resourceUtilization = operatorCount > 0 ? Math.round((activeOperators / operatorCount) * 100) : 0;
+
+    // 2. Uptime de Equipamentos (% de WOs sem reabertura = equipamentos funcionais)
+    const equipmentUptime = total > 0 ? Math.round(((total - reopened) / total) * 100) : 0;
+
+    // 3. Desperdício de Material (% de WOs com problemas/reabertura)
+    const materialWaste = total > 0 ? Math.round((reopened / total) * 100) : 0;
+
+    // 4. Consumo de Energia (estimativa baseada em horas trabalhadas * consumo médio)
+    const energyConsumption = Math.round(totalHours * 15); // 15 kWh por hora de trabalho
+
+    // 5. Eficiência de Custo (baseado em SLA compliance)
+    const onTime = periodWorkOrders.filter(wo => {
+      if (!wo.dueDate || !wo.completedAt) return false;
+      return new Date(wo.completedAt) <= new Date(wo.dueDate);
+    }).length;
+    const costEfficiency = total > 0 ? Math.round((onTime / total) * 100) : 0;
 
     const efficiency = {
-      resourceUtilization: Math.round(Math.random() * 20 + 75), // 75-95%
-      equipmentUptime: Math.round(Math.random() * 10 + 88), // 88-98%
-      materialWaste: Math.round(Math.random() * 5 + 2), // 2-7%
-      energyConsumption: Math.round(Math.random() * 50 + 200), // 200-250 kWh
-      costEfficiency: Math.round(Math.random() * 15 + 82) // 82-97%
+      resourceUtilization,
+      equipmentUptime,
+      materialWaste,
+      energyConsumption,
+      costEfficiency
     };
 
-    const trends = [
-      { month: "Jan", productivity: 85, efficiency: 78 },
-      { month: "Fev", productivity: 88, efficiency: 82 },
-      { month: "Mar", productivity: 92, efficiency: 85 },
-      { month: "Abr", productivity: 89, efficiency: 88 },
-      { month: "Mai", productivity: 94, efficiency: 91 },
-      { month: "Jun", productivity: 96, efficiency: 93 }
-    ];
+    // TENDÊNCIAS MENSAIS (REAIS - últimos 6 meses)
+    const trends = [];
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date();
+      monthDate.setMonth(monthDate.getMonth() - i);
+      const month = monthDate.getMonth();
+      const year = monthDate.getFullYear();
+      
+      const monthWorkOrders = customerWorkOrders.filter(wo => {
+        const woDate = wo.createdAt ? new Date(wo.createdAt) : new Date();
+        return woDate.getMonth() === month && woDate.getFullYear() === year;
+      });
+      
+      const monthCompleted = monthWorkOrders.filter(wo => wo.status === 'concluida').length;
+      const monthTotal = monthWorkOrders.length;
+      const monthReopened = monthWorkOrders.filter(wo => wo.reopenedAt !== null).length;
+      
+      // Produtividade do mês (% de conclusão)
+      const monthProductivity = monthTotal > 0 ? Math.round((monthCompleted / monthTotal) * 100) : 0;
+      
+      // Eficiência do mês (qualidade sem reabertura)
+      const monthEfficiency = monthTotal > 0 ? Math.round(((monthTotal - monthReopened) / monthTotal) * 100) : 0;
+      
+      trends.push({
+        month: monthNames[month],
+        productivity: monthProductivity,
+        efficiency: monthEfficiency
+      });
+    }
 
     return { productivity, efficiency, trends };
   }
