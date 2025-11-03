@@ -179,6 +179,7 @@ export default function Reports() {
             metrics: reportsMetrics || {},
             workOrders: workOrdersStatus || [],
             slaData: slaPerformance || {},
+            generalData: generalReport || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório Geral'
@@ -187,6 +188,7 @@ export default function Reports() {
         case 'sla':
           reportData = {
             slaData: slaPerformance || {},
+            slaAnalysisData: slaAnalysis || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório de SLA'
@@ -194,7 +196,7 @@ export default function Reports() {
           break;
         case 'produtividade':
           reportData = {
-            metrics: reportsMetrics || {},
+            productivity: productivityReport || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório de Produtividade'
@@ -202,8 +204,7 @@ export default function Reports() {
           break;
         case 'operadores':
           reportData = {
-            workOrders: workOrdersStatus || [],
-            metrics: reportsMetrics || {},
+            operators: operatorPerformance || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório de Operadores'
@@ -211,7 +212,7 @@ export default function Reports() {
           break;
         case 'locais':
           reportData = {
-            metrics: reportsMetrics || {},
+            locations: locationAnalysis || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório por Locais'
@@ -219,8 +220,7 @@ export default function Reports() {
           break;
         case 'temporal':
           reportData = {
-            metrics: reportsMetrics || {},
-            workOrders: workOrdersStatus || [],
+            temporal: temporalAnalysis || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório Temporal'
@@ -259,6 +259,85 @@ export default function Reports() {
     csv += `Período,${data.period}\n`;
     csv += `Gerado em,${new Date(data.generatedAt).toLocaleString('pt-BR')}\n\n`;
 
+    // Relatório de Produtividade
+    if (data.productivity) {
+      csv += "MÉTRICAS DE PRODUTIVIDADE\n";
+      csv += `Métrica,Valor\n`;
+      csv += `OS por Dia,${safeGet(data.productivity.productivity, 'workOrdersPerDay', 0)}\n`;
+      csv += `Tempo Médio de Conclusão (min),${safeGet(data.productivity.productivity, 'averageCompletionTime', 0)}\n`;
+      csv += `Área Limpa por Hora (m²/h),${safeGet(data.productivity.productivity, 'areaCleanedPerHour', 0)}\n`;
+      csv += `Tarefas por Operador,${safeGet(data.productivity.productivity, 'tasksPerOperator', 0)}\n`;
+      csv += `Score de Qualidade (%),${safeGet(data.productivity.productivity, 'qualityScore', 0)}\n\n`;
+      
+      csv += "MÉTRICAS DE EFICIÊNCIA\n";
+      csv += `Métrica,Valor\n`;
+      csv += `Utilização de Recursos (%),${safeGet(data.productivity.efficiency, 'resourceUtilization', 0)}\n`;
+      csv += `Uptime de Equipamentos (%),${safeGet(data.productivity.efficiency, 'equipmentUptime', 0)}\n`;
+      csv += `Desperdício de Material (%),${safeGet(data.productivity.efficiency, 'materialWaste', 0)}\n`;
+      csv += `Consumo de Energia (kWh),${safeGet(data.productivity.efficiency, 'energyConsumption', 0)}\n`;
+      csv += `Eficiência de Custo (%),${safeGet(data.productivity.efficiency, 'costEfficiency', 0)}\n\n`;
+      
+      if (data.productivity.monthlyTrends && Array.isArray(data.productivity.monthlyTrends)) {
+        csv += "TENDÊNCIAS MENSAIS\n";
+        csv += "Mês,Produtividade (%),Eficiência (%)\n";
+        data.productivity.monthlyTrends.forEach((trend: any) => {
+          csv += `${trend.month},${trend.productivity},${trend.efficiency}\n`;
+        });
+      }
+    }
+
+    // Relatório de Operadores
+    if (data.operators) {
+      if (data.operators.topPerformers && Array.isArray(data.operators.topPerformers)) {
+        csv += "TOP PERFORMERS\n";
+        csv += "Operador,Rank,Pontuação,Melhoria\n";
+        data.operators.topPerformers.forEach((performer: any) => {
+          csv += `${performer.name},${performer.rank},${performer.score},${performer.improvement}\n`;
+        });
+        csv += "\n";
+      }
+      
+      if (data.operators.operators && Array.isArray(data.operators.operators)) {
+        csv += "OPERADORES INDIVIDUAIS\n";
+        csv += "Nome,Tarefas,Eficiência (%),Qualidade,Pontualidade (%),Experiência,Certificação\n";
+        data.operators.operators.slice(0, 10).forEach((op: any) => {
+          csv += `${op.name},${op.tasksCompleted},${op.efficiency},${op.qualityScore},${op.punctuality},${op.experienceLevel},${op.certification}\n`;
+        });
+      }
+    }
+
+    // Relatório de Locais
+    if (data.locations) {
+      if (data.locations.sites && Array.isArray(data.locations.sites)) {
+        csv += "SITES\n";
+        csv += "Nome,Zonas,OS Total,Concluídas,Eficiência (%),Área (m²),Utilização (%)\n";
+        data.locations.sites.forEach((site: any) => {
+          csv += `${site.name},${site.totalZones},${site.totalWorkOrders},${site.completedWorkOrders},${site.efficiency},${site.area},${site.utilizationRate}\n`;
+        });
+        csv += "\n";
+      }
+      
+      if (data.locations.zones && Array.isArray(data.locations.zones)) {
+        csv += "ZONAS\n";
+        csv += "Nome,Site,OS Total,Concluídas,Tempo Médio (min),Prioridade,Última Limpeza\n";
+        data.locations.zones.forEach((zone: any) => {
+          csv += `${zone.name},${zone.siteName},${zone.totalWorkOrders},${zone.completedWorkOrders},${zone.averageTime},${zone.priority},${zone.lastCleaning}\n`;
+        });
+      }
+    }
+
+    // Relatório Temporal
+    if (data.temporal) {
+      if (data.temporal.historicalTrends && Array.isArray(data.temporal.historicalTrends)) {
+        csv += "TENDÊNCIAS HISTÓRICAS\n";
+        csv += "Período,OS Concluídas,SLA (%),Eficiência (%)\n";
+        data.temporal.historicalTrends.forEach((trend: any) => {
+          csv += `${trend.period},${trend.workOrders},${trend.sla},${trend.efficiency}\n`;
+        });
+      }
+    }
+
+    // Dados gerais (para relatórios que ainda usam o formato antigo)
     if (data.metrics) {
       csv += "MÉTRICAS GERAIS\n";
       csv += `Métrica,Valor\n`;
@@ -293,57 +372,162 @@ export default function Reports() {
     const workbook = XLSX.utils.book_new();
 
     // Create summary sheet
-    const summaryData = [
+    const summaryData: any[][] = [
       ['GRUPO OPUS - RELATÓRIO DE LIMPEZA'],
       [''],
       ['Tipo', data.reportType],
       ['Período', data.period],
       ['Gerado em', new Date(data.generatedAt).toLocaleString('pt-BR')],
-      [''],
-      ['RESUMO EXECUTIVO'],
-      [''],
-      ['Métrica', 'Valor'],
-      ['OS Concluídas', safeGet(data.metrics, 'completedWorkOrders', 0)],
-      ['SLA Médio (%)', safeGet(data.metrics, 'averageSLA', 0)],
-      ['Área Limpa (m²)', safeGet(data.metrics, 'totalAreaCleaned', 0)],
-      ['Tempo Médio (min)', safeGet(data.metrics, 'averageExecutionTime', 0)]
+      ['']
     ];
 
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
-
-    // Create work orders sheet if data exists
-    if (data.workOrders && Array.isArray(data.workOrders)) {
-      const workOrdersData = [
-        ['ORDENS DE SERVIÇO POR STATUS'],
-        [''],
-        ['Status', 'Quantidade']
-      ];
+    // Relatório de Produtividade
+    if (data.productivity) {
+      summaryData.push(['MÉTRICAS DE PRODUTIVIDADE']);
+      summaryData.push(['']);
+      summaryData.push(['Métrica', 'Valor']);
+      summaryData.push(['OS por Dia', safeGet(data.productivity.productivity, 'workOrdersPerDay', 0)]);
+      summaryData.push(['Tempo Médio de Conclusão (min)', safeGet(data.productivity.productivity, 'averageCompletionTime', 0)]);
+      summaryData.push(['Área Limpa por Hora (m²/h)', safeGet(data.productivity.productivity, 'areaCleanedPerHour', 0)]);
+      summaryData.push(['Tarefas por Operador', safeGet(data.productivity.productivity, 'tasksPerOperator', 0)]);
+      summaryData.push(['Score de Qualidade (%)', safeGet(data.productivity.productivity, 'qualityScore', 0)]);
+      summaryData.push(['']);
+      summaryData.push(['MÉTRICAS DE EFICIÊNCIA']);
+      summaryData.push(['']);
+      summaryData.push(['Métrica', 'Valor']);
+      summaryData.push(['Utilização de Recursos (%)', safeGet(data.productivity.efficiency, 'resourceUtilization', 0)]);
+      summaryData.push(['Uptime de Equipamentos (%)', safeGet(data.productivity.efficiency, 'equipmentUptime', 0)]);
+      summaryData.push(['Desperdício de Material (%)', safeGet(data.productivity.efficiency, 'materialWaste', 0)]);
+      summaryData.push(['Consumo de Energia (kWh)', safeGet(data.productivity.efficiency, 'energyConsumption', 0)]);
+      summaryData.push(['Eficiência de Custo (%)', safeGet(data.productivity.efficiency, 'costEfficiency', 0)]);
       
-      data.workOrders.forEach((wo: WorkOrderStatusData) => {
-        workOrdersData.push([wo.label || wo.status, wo.count.toString()]);
-      });
-
-      const workOrdersSheet = XLSX.utils.aoa_to_sheet(workOrdersData);
-      XLSX.utils.book_append_sheet(workbook, workOrdersSheet, "Ordens de Serviço");
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
+      
+      // Tendências mensais
+      if (data.productivity.monthlyTrends && Array.isArray(data.productivity.monthlyTrends)) {
+        const trendsData: any[][] = [
+          ['TENDÊNCIAS MENSAIS'],
+          [''],
+          ['Mês', 'Produtividade (%)', 'Eficiência (%)']
+        ];
+        data.productivity.monthlyTrends.forEach((trend: any) => {
+          trendsData.push([trend.month, trend.productivity, trend.efficiency]);
+        });
+        const trendsSheet = XLSX.utils.aoa_to_sheet(trendsData);
+        XLSX.utils.book_append_sheet(workbook, trendsSheet, "Tendências Mensais");
+      }
     }
-
-    // Create SLA sheet if data exists
-    if (data.slaData && safeGet(data.slaData, 'categories', null)) {
-      const slaData = [
-        ['PERFORMANCE SLA'],
-        [''],
-        ['SLA Total (%)', safeGet(data.slaData, 'totalSLA', 0)],
-        [''],
-        ['Categoria', 'Percentual (%)']
-      ];
+    // Relatório de Operadores
+    else if (data.operators) {
+      if (data.operators.topPerformers && Array.isArray(data.operators.topPerformers)) {
+        const topPerformersData: any[][] = [
+          ['TOP PERFORMERS'],
+          [''],
+          ['Operador', 'Rank', 'Pontuação', 'Melhoria']
+        ];
+        data.operators.topPerformers.forEach((performer: any) => {
+          topPerformersData.push([performer.name, performer.rank, performer.score, performer.improvement]);
+        });
+        const topPerformersSheet = XLSX.utils.aoa_to_sheet(topPerformersData);
+        XLSX.utils.book_append_sheet(workbook, topPerformersSheet, "Top Performers");
+      }
       
-      safeGet(data.slaData, 'categories', []).forEach((cat: any) => {
-        slaData.push([cat.label, cat.percentage]);
-      });
+      if (data.operators.operators && Array.isArray(data.operators.operators)) {
+        const operatorsData: any[][] = [
+          ['OPERADORES INDIVIDUAIS'],
+          [''],
+          ['Nome', 'Tarefas', 'Eficiência (%)', 'Qualidade', 'Pontualidade (%)', 'Experiência', 'Certificação']
+        ];
+        data.operators.operators.forEach((op: any) => {
+          operatorsData.push([op.name, op.tasksCompleted, op.efficiency, op.qualityScore, op.punctuality, op.experienceLevel, op.certification]);
+        });
+        const operatorsSheet = XLSX.utils.aoa_to_sheet(operatorsData);
+        XLSX.utils.book_append_sheet(workbook, operatorsSheet, "Operadores");
+      }
+      
+      const summarySheet = XLSX.utils.aoa_to_sheet([['Relatório de Operadores']]);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
+    }
+    // Relatório de Locais
+    else if (data.locations) {
+      if (data.locations.sites && Array.isArray(data.locations.sites)) {
+        const sitesData: any[][] = [
+          ['SITES'],
+          [''],
+          ['Nome', 'Zonas', 'OS Total', 'Concluídas', 'Eficiência (%)', 'Área (m²)', 'Utilização (%)']
+        ];
+        data.locations.sites.forEach((site: any) => {
+          sitesData.push([site.name, site.totalZones, site.totalWorkOrders, site.completedWorkOrders, site.efficiency, site.area, site.utilizationRate]);
+        });
+        const sitesSheet = XLSX.utils.aoa_to_sheet(sitesData);
+        XLSX.utils.book_append_sheet(workbook, sitesSheet, "Sites");
+      }
+      
+      if (data.locations.zones && Array.isArray(data.locations.zones)) {
+        const zonesData: any[][] = [
+          ['ZONAS'],
+          [''],
+          ['Nome', 'Site', 'OS Total', 'Concluídas', 'Tempo Médio (min)', 'Prioridade', 'Última Limpeza']
+        ];
+        data.locations.zones.forEach((zone: any) => {
+          zonesData.push([zone.name, zone.siteName, zone.totalWorkOrders, zone.completedWorkOrders, zone.averageTime, zone.priority, zone.lastCleaning]);
+        });
+        const zonesSheet = XLSX.utils.aoa_to_sheet(zonesData);
+        XLSX.utils.book_append_sheet(workbook, zonesSheet, "Zonas");
+      }
+      
+      const summarySheet = XLSX.utils.aoa_to_sheet([['Relatório por Locais']]);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
+    }
+    // Dados gerais (para relatórios que ainda usam o formato antigo)
+    else {
+      summaryData.push(['RESUMO EXECUTIVO']);
+      summaryData.push(['']);
+      summaryData.push(['Métrica', 'Valor']);
+      if (data.metrics) {
+        summaryData.push(['OS Concluídas', safeGet(data.metrics, 'completedWorkOrders', 0)]);
+        summaryData.push(['SLA Médio (%)', safeGet(data.metrics, 'averageSLA', 0)]);
+        summaryData.push(['Área Limpa (m²)', safeGet(data.metrics, 'totalAreaCleaned', 0)]);
+        summaryData.push(['Tempo Médio (min)', safeGet(data.metrics, 'averageExecutionTime', 0)]);
+      }
+      
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
 
-      const slaSheet = XLSX.utils.aoa_to_sheet(slaData);
-      XLSX.utils.book_append_sheet(workbook, slaSheet, "SLA Performance");
+      // Create work orders sheet if data exists
+      if (data.workOrders && Array.isArray(data.workOrders)) {
+        const workOrdersData = [
+          ['ORDENS DE SERVIÇO POR STATUS'],
+          [''],
+          ['Status', 'Quantidade']
+        ];
+        
+        data.workOrders.forEach((wo: WorkOrderStatusData) => {
+          workOrdersData.push([wo.label || wo.status, wo.count.toString()]);
+        });
+
+        const workOrdersSheet = XLSX.utils.aoa_to_sheet(workOrdersData);
+        XLSX.utils.book_append_sheet(workbook, workOrdersSheet, "Ordens de Serviço");
+      }
+
+      // Create SLA sheet if data exists
+      if (data.slaData && safeGet(data.slaData, 'categories', null)) {
+        const slaData = [
+          ['PERFORMANCE SLA'],
+          [''],
+          ['SLA Total (%)', safeGet(data.slaData, 'totalSLA', 0)],
+          [''],
+          ['Categoria', 'Percentual (%)']
+        ];
+        
+        safeGet(data.slaData, 'categories', []).forEach((cat: any) => {
+          slaData.push([cat.label, cat.percentage]);
+        });
+
+        const slaSheet = XLSX.utils.aoa_to_sheet(slaData);
+        XLSX.utils.book_append_sheet(workbook, slaSheet, "SLA Performance");
+      }
     }
 
     // Download the Excel file
