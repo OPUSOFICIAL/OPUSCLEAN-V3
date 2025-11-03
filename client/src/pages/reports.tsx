@@ -196,7 +196,7 @@ export default function Reports() {
           break;
         case 'produtividade':
           reportData = {
-            productivity: productivityReport || {},
+            ...(productivityReport || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório de Produtividade'
@@ -204,7 +204,7 @@ export default function Reports() {
           break;
         case 'operadores':
           reportData = {
-            operators: operatorPerformance || {},
+            ...(operatorPerformance || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório de Operadores'
@@ -212,7 +212,7 @@ export default function Reports() {
           break;
         case 'locais':
           reportData = {
-            locations: locationAnalysis || {},
+            ...(locationAnalysis || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório por Locais'
@@ -220,7 +220,7 @@ export default function Reports() {
           break;
         case 'temporal':
           reportData = {
-            temporal: temporalAnalysis || {},
+            ...(temporalAnalysis || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: 'Relatório Temporal'
@@ -263,24 +263,24 @@ export default function Reports() {
     if (data.productivity) {
       csv += "MÉTRICAS DE PRODUTIVIDADE\n";
       csv += `Métrica,Valor\n`;
-      csv += `OS por Dia,${safeGet(data.productivity.productivity, 'workOrdersPerDay', 0)}\n`;
-      csv += `Tempo Médio de Conclusão (min),${safeGet(data.productivity.productivity, 'averageCompletionTime', 0)}\n`;
-      csv += `Área Limpa por Hora (m²/h),${safeGet(data.productivity.productivity, 'areaCleanedPerHour', 0)}\n`;
-      csv += `Tarefas por Operador,${safeGet(data.productivity.productivity, 'tasksPerOperator', 0)}\n`;
-      csv += `Score de Qualidade (%),${safeGet(data.productivity.productivity, 'qualityScore', 0)}\n\n`;
+      csv += `OS por Dia,${safeGet(data.productivity, 'workOrdersPerDay', 0)}\n`;
+      csv += `Tempo Médio de Conclusão (min),${safeGet(data.productivity, 'averageCompletionTime', 0)}\n`;
+      csv += `Área Limpa por Hora (m²/h),${safeGet(data.productivity, 'areaCleanedPerHour', 0)}\n`;
+      csv += `Tarefas por Operador,${safeGet(data.productivity, 'tasksPerOperator', 0)}\n`;
+      csv += `Score de Qualidade (%),${safeGet(data.productivity, 'qualityScore', 0)}\n\n`;
       
       csv += "MÉTRICAS DE EFICIÊNCIA\n";
       csv += `Métrica,Valor\n`;
-      csv += `Utilização de Recursos (%),${safeGet(data.productivity.efficiency, 'resourceUtilization', 0)}\n`;
-      csv += `Uptime de Equipamentos (%),${safeGet(data.productivity.efficiency, 'equipmentUptime', 0)}\n`;
-      csv += `Desperdício de Material (%),${safeGet(data.productivity.efficiency, 'materialWaste', 0)}\n`;
-      csv += `Consumo de Energia (kWh),${safeGet(data.productivity.efficiency, 'energyConsumption', 0)}\n`;
-      csv += `Eficiência de Custo (%),${safeGet(data.productivity.efficiency, 'costEfficiency', 0)}\n\n`;
+      csv += `Utilização de Recursos (%),${safeGet(data.efficiency, 'resourceUtilization', 0)}\n`;
+      csv += `Uptime de Equipamentos (%),${safeGet(data.efficiency, 'equipmentUptime', 0)}\n`;
+      csv += `Desperdício de Material (%),${safeGet(data.efficiency, 'materialWaste', 0)}\n`;
+      csv += `Consumo de Energia (kWh),${safeGet(data.efficiency, 'energyConsumption', 0)}\n`;
+      csv += `Eficiência de Custo (%),${safeGet(data.efficiency, 'costEfficiency', 0)}\n\n`;
       
-      if (data.productivity.monthlyTrends && Array.isArray(data.productivity.monthlyTrends)) {
+      if (data.trends && Array.isArray(data.trends)) {
         csv += "TENDÊNCIAS MENSAIS\n";
         csv += "Mês,Produtividade (%),Eficiência (%)\n";
-        data.productivity.monthlyTrends.forEach((trend: any) => {
+        data.trends.forEach((trend: any) => {
           csv += `${trend.month},${trend.productivity},${trend.efficiency}\n`;
         });
       }
@@ -386,32 +386,32 @@ export default function Reports() {
       summaryData.push(['MÉTRICAS DE PRODUTIVIDADE']);
       summaryData.push(['']);
       summaryData.push(['Métrica', 'Valor']);
-      summaryData.push(['OS por Dia', safeGet(data.productivity.productivity, 'workOrdersPerDay', 0)]);
-      summaryData.push(['Tempo Médio de Conclusão (min)', safeGet(data.productivity.productivity, 'averageCompletionTime', 0)]);
-      summaryData.push(['Área Limpa por Hora (m²/h)', safeGet(data.productivity.productivity, 'areaCleanedPerHour', 0)]);
-      summaryData.push(['Tarefas por Operador', safeGet(data.productivity.productivity, 'tasksPerOperator', 0)]);
-      summaryData.push(['Score de Qualidade (%)', safeGet(data.productivity.productivity, 'qualityScore', 0)]);
+      summaryData.push(['OS por Dia', safeGet(data.productivity, 'workOrdersPerDay', 0)]);
+      summaryData.push(['Tempo Médio de Conclusão (min)', safeGet(data.productivity, 'averageCompletionTime', 0)]);
+      summaryData.push(['Área Limpa por Hora (m²/h)', safeGet(data.productivity, 'areaCleanedPerHour', 0)]);
+      summaryData.push(['Tarefas por Operador', safeGet(data.productivity, 'tasksPerOperator', 0)]);
+      summaryData.push(['Score de Qualidade (%)', safeGet(data.productivity, 'qualityScore', 0)]);
       summaryData.push(['']);
       summaryData.push(['MÉTRICAS DE EFICIÊNCIA']);
       summaryData.push(['']);
       summaryData.push(['Métrica', 'Valor']);
-      summaryData.push(['Utilização de Recursos (%)', safeGet(data.productivity.efficiency, 'resourceUtilization', 0)]);
-      summaryData.push(['Uptime de Equipamentos (%)', safeGet(data.productivity.efficiency, 'equipmentUptime', 0)]);
-      summaryData.push(['Desperdício de Material (%)', safeGet(data.productivity.efficiency, 'materialWaste', 0)]);
-      summaryData.push(['Consumo de Energia (kWh)', safeGet(data.productivity.efficiency, 'energyConsumption', 0)]);
-      summaryData.push(['Eficiência de Custo (%)', safeGet(data.productivity.efficiency, 'costEfficiency', 0)]);
+      summaryData.push(['Utilização de Recursos (%)', safeGet(data.efficiency, 'resourceUtilization', 0)]);
+      summaryData.push(['Uptime de Equipamentos (%)', safeGet(data.efficiency, 'equipmentUptime', 0)]);
+      summaryData.push(['Desperdício de Material (%)', safeGet(data.efficiency, 'materialWaste', 0)]);
+      summaryData.push(['Consumo de Energia (kWh)', safeGet(data.efficiency, 'energyConsumption', 0)]);
+      summaryData.push(['Eficiência de Custo (%)', safeGet(data.efficiency, 'costEfficiency', 0)]);
       
       const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
       
       // Tendências mensais
-      if (data.productivity.monthlyTrends && Array.isArray(data.productivity.monthlyTrends)) {
+      if (data.trends && Array.isArray(data.trends)) {
         const trendsData: any[][] = [
           ['TENDÊNCIAS MENSAIS'],
           [''],
           ['Mês', 'Produtividade (%)', 'Eficiência (%)']
         ];
-        data.productivity.monthlyTrends.forEach((trend: any) => {
+        data.trends.forEach((trend: any) => {
           trendsData.push([trend.month, trend.productivity, trend.efficiency]);
         });
         const trendsSheet = XLSX.utils.aoa_to_sheet(trendsData);
