@@ -226,6 +226,7 @@ export default function Sites({ customerId }: SitesProps) {
     createSiteMutation.mutate({
       companyId: (customer as any).companyId,
       customerId,
+      module: currentModule,
       name: siteName.trim(),
       address: siteAddress.trim(),
       description: siteDescription.trim() || null,
@@ -247,6 +248,7 @@ export default function Sites({ customerId }: SitesProps) {
 
     const dataToSend = {
       siteId: selectedSiteId,
+      module: currentModule,
       name: zoneName.trim(),
       description: zoneDescription?.trim() || null,
       areaM2: zoneAreaM2 ? zoneAreaM2 : null,
