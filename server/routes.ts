@@ -233,7 +233,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cleaning Activities by Customer (filtrado por cliente)
   app.get("/api/customers/:customerId/cleaning-activities", async (req, res) => {
     try {
-      const activities = await storage.getCleaningActivitiesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const activities = await storage.getCleaningActivitiesByCustomer(req.params.customerId, module);
       res.json(activities);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer cleaning activities" });
@@ -243,7 +244,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Services by Customer (filtrado por cliente)
   app.get("/api/customers/:customerId/services", async (req, res) => {
     try {
-      const services = await storage.getServicesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const services = await storage.getServicesByCustomer(req.params.customerId, module);
       res.json(services);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer services" });
@@ -372,7 +374,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get all work orders for this customer
-      let workOrders = await storage.getWorkOrdersByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      let workOrders = await storage.getWorkOrdersByCustomer(req.params.customerId, module);
       
       // Apply filters from query params
       const { zoneId, assignedTo, status, serviceId } = req.query;
@@ -408,6 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/:customerId/dashboard-stats/:period/:siteId", async (req, res) => {
     try {
       const { customerId, period, siteId } = req.params;
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
       
       // Verify customer exists
       const customer = await storage.getCustomer(customerId);
@@ -416,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get stats filtered by customer's sites (pode ser vazio se não houver sites)
-      const stats = await storage.getDashboardStatsByCustomer(customerId, period, siteId === 'todos' ? undefined : siteId);
+      const stats = await storage.getDashboardStatsByCustomer(customerId, period, siteId === 'todos' ? '' : siteId, module);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching customer dashboard stats:", error);
@@ -428,6 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/:customerId/analytics/:period/:siteId", async (req, res) => {
     try {
       const { customerId, period, siteId } = req.params;
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
       
       // Verify customer exists
       const customer = await storage.getCustomer(customerId);
@@ -436,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get analytics filtered by customer (pode ser vazio se não houver sites/work orders)
-      const analytics = await storage.getAnalyticsByCustomer(customerId, period, siteId === 'todos' ? undefined : siteId);
+      const analytics = await storage.getAnalyticsByCustomer(customerId, period, siteId === 'todos' ? '' : siteId, module);
       res.json(analytics);
     } catch (error) {
       console.error("Error fetching customer analytics:", error);
@@ -495,6 +500,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get zone first, then site
+      if (!workOrder.zoneId) {
+        return res.status(400).json({ message: "Work order has no zone" });
+      }
       const zone = await storage.getZone(workOrder.zoneId);
       if (!zone) {
         return res.status(404).json({ message: "Zone not found" });
@@ -606,7 +614,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const period = req.query.period as string || '30';
-      const productivityReport = await storage.getProductivityReport(customerId, period);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const productivityReport = await storage.getProductivityReport(customerId, period, module);
       res.json(productivityReport);
     } catch (error) {
       res.status(500).json({ message: "Failed to get productivity report" });
@@ -1037,7 +1046,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Services
   app.get("/api/customers/:customerId/services", async (req, res) => {
     try {
-      const services = await storage.getServicesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const services = await storage.getServicesByCustomer(req.params.customerId, module);
       res.json(services);
     } catch (error) {
       res.status(500).json({ message: "Failed to get services" });
@@ -1058,8 +1068,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/services", async (req, res) => {
     try {
-      console.log("Creating service with data:", req.body);
-      const service = insertServiceSchema.parse(req.body);
+      const dataWithModule = {
+        ...req.body,
+        module: req.body.module || 'clean'
+      };
+      console.log("Creating service with data:", dataWithModule);
+      const service = insertServiceSchema.parse(dataWithModule);
       console.log("Validated service:", service);
       const newService = await storage.createService(service);
       res.status(201).json(newService);
@@ -1177,7 +1191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Service Types
   app.get("/api/customers/:customerId/service-types", async (req, res) => {
     try {
-      const serviceTypes = await storage.getServiceTypesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const serviceTypes = await storage.getServiceTypesByCustomer(req.params.customerId, module);
       res.json(serviceTypes);
     } catch (error) {
       res.status(500).json({ message: "Failed to get service types" });
@@ -1194,7 +1209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dataToValidate = {
         ...req.body,
         code,
-        customerId: req.params.customerId
+        customerId: req.params.customerId,
+        module: req.body.module || 'clean'
       };
       
       console.log("Data to validate:", dataToValidate);
@@ -1327,7 +1343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/companies/:companyId/work-orders", async (req, res) => {
     try {
       const { zoneId, assignedTo } = req.query;
-      let workOrders = await storage.getWorkOrdersByCompany(req.params.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      let workOrders = await storage.getWorkOrdersByCompany(req.params.companyId, module);
       
       // Filter by zone if provided
       if (zoneId) {
@@ -1368,7 +1385,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/work-orders", async (req, res) => {
     try {
-      const workOrder = insertWorkOrderSchema.parse(req.body);
+      const dataWithModule = {
+        ...req.body,
+        module: req.body.module || 'clean'
+      };
+      const workOrder = insertWorkOrderSchema.parse(dataWithModule);
       const newWorkOrder = await storage.createWorkOrder(workOrder);
       
       // Send webhook notification if configured
@@ -1698,11 +1719,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: `Solicitação de Atendimento - ${zone.name}`,
         description: description || 'Solicitação via QR Code público',
         origin: 'QR Atendimento',
-        attachments: photo ? [photo] : undefined
+        attachments: photo ? [photo] : undefined,
+        scheduledDate: null,
+        dueDate: null
       });
 
       // Log the public request for spam control
       await storage.createPublicRequestLog({
+        id: crypto.randomUUID(),
         ipHash,
         qrCodePointId: point.id,
         userAgent: req.get('User-Agent') || 'unknown',
@@ -1758,7 +1782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard Goals Configuration
   app.get("/api/companies/:companyId/dashboard-goals", async (req, res) => {
     try {
-      const goals = await storage.getDashboardGoals(req.params.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const goals = await storage.getDashboardGoals(req.params.companyId, module);
       res.json(goals);
     } catch (error) {
       res.status(500).json({ message: "Failed to get dashboard goals" });
@@ -1769,7 +1794,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const goal = insertDashboardGoalSchema.parse({
         ...req.body,
-        companyId: req.params.companyId
+        companyId: req.params.companyId,
+        module: req.body.module || 'clean'
       });
       const newGoal = await storage.createDashboardGoal(goal);
       res.status(201).json(newGoal);
@@ -1810,7 +1836,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
-      const goals = await storage.getDashboardGoals(customer.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const goals = await storage.getDashboardGoals(customer.companyId, module);
       res.json(goals);
     } catch (error) {
       res.status(500).json({ message: "Failed to get dashboard goals" });
@@ -1828,7 +1855,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const dataToValidate = {
         ...req.body,
-        companyId: customer.companyId
+        companyId: customer.companyId,
+        module: req.body.module || 'clean'
       };
       
       console.log("Dashboard goal data to validate:", dataToValidate);
@@ -2194,7 +2222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get cleaning activities by company
   app.get("/api/companies/:companyId/cleaning-activities", async (req, res) => {
     try {
-      const activities = await storage.getCleaningActivitiesByCompany(req.params.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const activities = await storage.getCleaningActivitiesByCompany(req.params.companyId, module);
       res.json(activities);
     } catch (error) {
       console.error("Error fetching cleaning activities:", error);
@@ -2220,7 +2249,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cleaning-activities", async (req, res) => {
     try {
       // Limpar campos que podem ter valores inválidos
-      const cleanedData = { ...req.body };
+      const cleanedData = { 
+        ...req.body,
+        module: req.body.module || 'clean'
+      };
       
       if (cleanedData.checklistTemplateId === "none" || cleanedData.checklistTemplateId === "") {
         cleanedData.checklistTemplateId = null;

@@ -12,9 +12,9 @@
   --card-foreground: hsl(215 25% 15%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(215 25% 15%);
-  --primary: hsl(215 84% 27%); /* OPUS Navy Blue */
+  --primary: hsl(215 84% 27%);
   --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(215 14% 34%); /* OPUS Slate Blue */
+  --secondary: hsl(215 14% 34%);
   --secondary-foreground: hsl(0 0% 100%);
   --muted: hsl(215 20% 92%);
   --muted-foreground: hsl(215 14% 45%);
@@ -25,25 +25,47 @@
   --border: hsl(215 20% 88%);
   --input: hsl(215 20% 88%);
   --ring: hsl(215 84% 27%);
-  --chart-1: hsl(215 84% 27%); /* OPUS Navy */
-  --chart-2: hsl(215 14% 34%); /* OPUS Slate */
+  --chart-1: hsl(215 84% 27%);
+  --chart-2: hsl(215 14% 34%);
   --chart-3: hsl(215 20% 50%);
   --chart-4: hsl(43 74% 66%);
   --chart-5: hsl(215 30% 65%);
   --sidebar: hsl(215 25% 98%);
   --sidebar-foreground: hsl(215 25% 15%);
-  --sidebar-primary: hsl(215 84% 27%); /* OPUS Navy */
+  --sidebar-primary: hsl(215 84% 27%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
   --sidebar-accent: hsl(215 20% 92%);
   --sidebar-accent-foreground: hsl(215 84% 27%);
   --sidebar-border: hsl(215 20% 88%);
   --sidebar-ring: hsl(215 84% 27%);
-  --opus-navy: hsl(215 84% 27%); /* Primary OPUS Navy Blue */
-  --opus-slate: hsl(215 14% 34%); /* Secondary OPUS Slate Blue */
-  --opus-light: hsl(215 20% 92%); /* Light accent */
+  --module-primary: #1e3a8a;
+  --module-secondary: #3b82f6;
+  --module-accent: #60a5fa;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
+}
+
+[data-module="clean"] {
+  --primary: hsl(215 84% 27%);
+  --ring: hsl(215 84% 27%);
+  --chart-1: hsl(215 84% 27%);
+  --sidebar-primary: hsl(215 84% 27%);
+  --sidebar-ring: hsl(215 84% 27%);
+  --module-primary: #1e3a8a;
+  --module-secondary: #3b82f6;
+  --module-accent: #60a5fa;
+}
+
+[data-module="maintenance"] {
+  --primary: hsl(26 100% 50%);
+  --ring: hsl(26 100% 50%);
+  --chart-1: hsl(26 98% 50%);
+  --sidebar-primary: hsl(26 100% 50%);
+  --sidebar-ring: hsl(26 100% 50%);
+  --module-primary: #FF9800;
+  --module-secondary: #FB8C00;
+  --module-accent: #FFB74D;
 }
 
 .dark {

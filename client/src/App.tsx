@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ClientProvider, useClient } from "@/contexts/ClientContext";
+import { ModuleProvider, useModule } from "@/contexts/ModuleContext";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import WorkOrders from "@/pages/work-orders";
@@ -20,6 +21,7 @@ import AuditLogs from "@/pages/audit-logs";
 import AdminMobile from "@/pages/admin-mobile";
 import Customers from "@/pages/customers";
 import Roles from "@/pages/roles";
+import ModuleSelector from "@/pages/module-selector";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QrExecution from "@/pages/qr-execution";
 import QrPublic from "@/pages/qr-public";
@@ -37,16 +39,28 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-function AuthenticatedAdminRouter() {
-  const { activeClientId, isLoading } = useClient();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  const isMobile = useIsMobile();
+function ModuleRouteHandler({ params }: { params: { module: string } }) {
+  const { setModule } = useModule();
+  const { activeClientId, isLoading: clientLoading } = useClient();
   const { user } = useAuth();
-  
-  // Usar o companyId do usuário logado
-  const companyId = user?.companyId || "company-opus-default";
+  const [, setLocation] = useLocation();
 
-  if (isLoading) {
+  const companyId = user?.companyId || "company-opus-default";
+  const moduleParam = params.module;
+
+  useEffect(() => {
+    if (moduleParam === 'clean' || moduleParam === 'maintenance') {
+      setModule(moduleParam);
+    } else {
+      setLocation('/');
+    }
+  }, [moduleParam, setModule, setLocation]);
+
+  if (moduleParam !== 'clean' && moduleParam !== 'maintenance') {
+    return <Redirect to="/" />;
+  }
+
+  if (clientLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div>Carregando...</div>
@@ -54,12 +68,40 @@ function AuthenticatedAdminRouter() {
     );
   }
 
-  // Se é mobile, mostrar interface móvel otimizada
+  return (
+    <Switch>
+      <Route path="/:module/dashboard" component={() => <Dashboard />} />
+      <Route path="/:module/workorders" component={() => <WorkOrders />} />
+      <Route path="/:module/schedule" component={() => <CleaningSchedule />} />
+      <Route path="/:module/checklists" component={() => <Checklists />} />
+      <Route path="/:module/services" component={() => <Services customerId={activeClientId} />} />
+      <Route path="/:module/service-settings" component={() => <ServiceSettings />} />
+      <Route path="/:module/qrcodes" component={() => <QrCodes />} />
+      <Route path="/:module/sites" component={() => <Sites customerId={activeClientId} />} />
+      <Route path="/:module/floor-plan" component={() => <FloorPlan />} />
+      <Route path="/:module/users" component={() => <SystemUsers />} />
+      <Route path="/:module/customers" component={() => <Customers companyId={companyId} />} />
+      <Route path="/:module/roles" component={() => <Roles />} />
+      <Route path="/:module/reports" component={() => <Reports />} />
+      <Route path="/:module/audit-logs" component={() => <AuditLogs companyId={companyId} />} />
+      <Route>
+        <Redirect to={`/${moduleParam}/dashboard`} />
+      </Route>
+    </Switch>
+  );
+}
+
+function AuthenticatedAdminRouter() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const isMobile = useIsMobile();
+  const { user } = useAuth();
+  
+  const companyId = user?.companyId || "company-opus-default";
+
   if (isMobile) {
     return <AdminMobile companyId={companyId} />;
   }
 
-  // Interface desktop
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar 
@@ -68,22 +110,56 @@ function AuthenticatedAdminRouter() {
       />
       <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <Switch>
-          <Route path="/" component={() => <Dashboard />} />
-          <Route path="/workorders" component={() => <WorkOrders />} />
-          <Route path="/schedule" component={() => <CleaningSchedule />} />
-          <Route path="/checklists" component={() => <Checklists />} />
-          <Route path="/services" component={() => <Services customerId={activeClientId} />} />
-          <Route path="/service-settings" component={() => <ServiceSettings />} />
-          <Route path="/qrcodes" component={() => <QrCodes />} />
-          <Route path="/sites" component={() => <Sites customerId={activeClientId} />} />
-          <Route path="/floor-plan" component={() => <FloorPlan />} />
-          <Route path="/users" component={() => <SystemUsers />} />
-          <Route path="/customers" component={() => <Customers companyId={companyId} />} />
-          <Route path="/roles" component={() => <Roles />} />
-          <Route path="/reports" component={() => <Reports />} />
-          <Route path="/audit-logs" component={() => <AuditLogs companyId={companyId} />} />
+          <Route path="/" component={ModuleSelector} />
+          <Route path="/:module/:rest*">
+            {(params) => <ModuleRouteHandler params={params} />}
+          </Route>
           
-          {/* Redirecionar rotas de login para dashboard se já autenticado */}
+          {/* Redirects para rotas antigas (sem módulo) -> /clean/... */}
+          <Route path="/dashboard">
+            <Redirect to="/clean/dashboard" />
+          </Route>
+          <Route path="/workorders">
+            <Redirect to="/clean/workorders" />
+          </Route>
+          <Route path="/schedule">
+            <Redirect to="/clean/schedule" />
+          </Route>
+          <Route path="/checklists">
+            <Redirect to="/clean/checklists" />
+          </Route>
+          <Route path="/services">
+            <Redirect to="/clean/services" />
+          </Route>
+          <Route path="/service-settings">
+            <Redirect to="/clean/service-settings" />
+          </Route>
+          <Route path="/qrcodes">
+            <Redirect to="/clean/qrcodes" />
+          </Route>
+          <Route path="/sites">
+            <Redirect to="/clean/sites" />
+          </Route>
+          <Route path="/floor-plan">
+            <Redirect to="/clean/floor-plan" />
+          </Route>
+          <Route path="/users">
+            <Redirect to="/clean/users" />
+          </Route>
+          <Route path="/customers">
+            <Redirect to="/clean/customers" />
+          </Route>
+          <Route path="/roles">
+            <Redirect to="/clean/roles" />
+          </Route>
+          <Route path="/reports">
+            <Redirect to="/clean/reports" />
+          </Route>
+          <Route path="/audit-logs">
+            <Redirect to="/clean/audit-logs" />
+          </Route>
+          
+          {/* Redirecionar rotas de login para home se já autenticado */}
           <Route path="/login">
             <Redirect to="/" />
           </Route>
@@ -91,7 +167,7 @@ function AuthenticatedAdminRouter() {
             <Redirect to="/" />
           </Route>
           
-          {/* Redirecionar qualquer outra rota inválida para dashboard */}
+          {/* Redirecionar qualquer outra rota inválida para home */}
           <Route>
             <Redirect to="/" />
           </Route>
@@ -154,12 +230,14 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ClientProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </ClientProvider>
+        <ModuleProvider>
+          <ClientProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </ClientProvider>
+        </ModuleProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

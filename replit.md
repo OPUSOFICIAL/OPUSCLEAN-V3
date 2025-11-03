@@ -1,6 +1,6 @@
 # Overview
 
-OPUS CLEAN is a comprehensive cleaning and facilities management system for multi-tenant, multi-site operations. It offers web-based administration and mobile applications for managing cleaning schedules, work orders, QR code-based task execution, and public service requests. The system supports multiple companies, sites, and zones, aiming to streamline facilities management, enhance operational efficiency, and provide real-time analytics through a modern full-stack architecture.
+OPUS is a **modular facilities management platform** with multiple specialized modules for different operational domains. The platform currently includes **OPUS Clean** (cleaning and facilities management) and **OPUS Manutenção** (maintenance management). It offers web-based administration and mobile applications for managing schedules, work orders, QR code-based task execution, and public service requests. The modular system supports multiple companies, sites, and zones, aiming to streamline facilities management, enhance operational efficiency, and provide real-time analytics through a modern full-stack architecture.
 
 # User Preferences
 
@@ -55,6 +55,44 @@ Offers full CRUD operations for users, including client user creation and custom
 The project is configured for the Replit cloud environment, with PostgreSQL provisioning, schema pushing, and dependency installation. The Vite dev server is compatible with Replit's proxy.
 
 # Recent Changes
+
+## November 3, 2025 - Arquitetura Modular OPUS (Clean + Manutenção)
+**Transformação do sistema em plataforma modular multi-domínio**
+
+### Módulos Implementados:
+- **OPUS Clean**: Gestão de limpeza e facilities (tema azul navy #1e3a8a)
+- **OPUS Manutenção**: Gestão de manutenção (tema laranja #FF9800)
+
+### Implementações Técnicas:
+
+**1. Schema Database (shared/schema.ts)**:
+- Criado ENUM `module: 'clean' | 'maintenance'`
+- Discriminador adicionado em tabelas: work_orders, services, service_types, cleaning_activities, dashboard_goals
+- Todos os novos registros incluem módulo (default: 'clean')
+
+**2. Storage Layer (server/storage.ts)**:
+- Interface IStorage atualizada com parâmetro `module?: 'clean' | 'maintenance'` em todos os métodos relevantes
+- Filtros aplicados em: getWorkOrders, getServices, getCleaningActivities, getDashboardStats, getAnalytics, todos os reports
+- Isolamento completo de dados entre módulos
+- Backward compatible: sem module = retorna dados de todos os módulos
+
+**3. API Routes (server/routes.ts)**:
+- GET routes aceitam `?module=clean|maintenance` via query params
+- POST routes aceitam `module` no body (default: 'clean')
+- 100% das rotas module-aware implementadas
+
+**4. Frontend Modular (client/src/)**:
+- **ModuleProvider** (contexts/ModuleContext.tsx): contexto global de módulo com temas dinâmicos
+- **CSS Theming** (index.css): variáveis CSS por módulo usando `data-module="clean"|"maintenance"`
+- **Module Selector** (pages/module-selector.tsx): landing page para escolha de módulo
+- **Rotas Modulares** (App.tsx): `/clean/*` e `/maintenance/*` com mesmo código, dados isolados
+
+**5. Sistema de Temas**:
+- Clean: Navy Blue (#1e3a8a), Blue (#3b82f6), Light Blue (#60a5fa)
+- Manutenção: Orange (#FF9800), Dark Orange (#FB8C00), Light Orange (#FFB74D)
+- Aplicação dinâmica via CSS custom properties
+
+**Resultado**: Sistema totalmente modular, escalável para novos módulos, com isolamento completo de dados e temas diferenciados.
 
 ## November 3, 2025 - Relatório de Produtividade com Dados Reais
 **Problema identificado**: Todos os dados do relatório de produtividade estavam mockados/aleatórios, gerando valores diferentes a cada exportação.

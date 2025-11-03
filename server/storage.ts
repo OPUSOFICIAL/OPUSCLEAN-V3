@@ -46,9 +46,17 @@ export interface IStorage {
 
   // Customer-filtered data methods
   getZonesByCustomer(customerId: string): Promise<Zone[]>;
-  getWorkOrdersByCustomer(customerId: string): Promise<WorkOrder[]>;
-  getDashboardStatsByCustomer(customerId: string, period: string, site: string): Promise<any>;
-  getAnalyticsByCustomer(customerId: string, period: string, site: string): Promise<any>;
+  getWorkOrdersByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]>;
+  getDashboardStatsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  getAnalyticsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  
+  // Customer Report Methods
+  getGeneralReport(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  getSLAAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  getProductivityReport(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  getOperatorPerformance(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  getLocationAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  getTemporalAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
 
   // Zones
   getZonesByCompany(companyId: string): Promise<Zone[]>;
@@ -66,8 +74,8 @@ export interface IStorage {
   getZonesByCustomer(customerId: string): Promise<Zone[]>;
   
   // Customer-specific resources
-  getCleaningActivitiesByCustomer(customerId: string): Promise<CleaningActivity[]>;
-  getServicesByCustomer(customerId: string): Promise<Service[]>;
+  getCleaningActivitiesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]>;
+  getServicesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Service[]>;
   getUsersByCustomer(customerId: string): Promise<User[]>;
   getChecklistTemplatesByCustomer(customerId: string): Promise<ChecklistTemplate[]>;
   getQrCodePointsByZone(zoneId: string): Promise<QrCodePoint[]>;
@@ -100,7 +108,6 @@ export interface IStorage {
   deleteUser(id: string): Promise<void>;
 
   // Services
-  getServicesByCustomer(customerId: string): Promise<Service[]>;
   getServicesByZone(customerId: string, zoneId: string): Promise<Service[]>;
   getService(id: string): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
@@ -114,7 +121,7 @@ export interface IStorage {
   deleteServiceZone(serviceId: string, zoneId: string): Promise<void>;
 
   // Service Types
-  getServiceTypesByCustomer(customerId: string): Promise<ServiceType[]>;
+  getServiceTypesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceType[]>;
   getServiceType(id: string): Promise<ServiceType | undefined>;
   createServiceType(serviceType: InsertServiceType): Promise<ServiceType>;
   updateServiceType(id: string, serviceType: Partial<InsertServiceType>): Promise<ServiceType>;
@@ -144,7 +151,7 @@ export interface IStorage {
   updateSlaConfig(id: string, slaConfig: Partial<InsertSlaConfig>): Promise<SlaConfig>;
 
   // Cleaning Activities
-  getCleaningActivitiesByCompany(companyId: string): Promise<CleaningActivity[]>;
+  getCleaningActivitiesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]>;
   getCleaningActivity(id: string): Promise<CleaningActivity | undefined>;
   createCleaningActivity(activity: InsertCleaningActivity): Promise<CleaningActivity>;
   updateCleaningActivity(id: string, activity: Partial<InsertCleaningActivity>): Promise<CleaningActivity>;
@@ -155,7 +162,7 @@ export interface IStorage {
   generateScheduledWorkOrders(companyId: string, windowStart: Date, windowEnd: Date): Promise<WorkOrder[]>;
 
   // Work Orders
-  getWorkOrdersByCompany(companyId: string): Promise<WorkOrder[]>;
+  getWorkOrdersByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]>;
   getWorkOrdersByUser(userId: string): Promise<WorkOrder[]>;
   getWorkOrder(id: string): Promise<WorkOrder | undefined>;
   createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
@@ -226,7 +233,7 @@ export interface IStorage {
   }>;
 
   // Dashboard Goals
-  getDashboardGoals(companyId: string): Promise<DashboardGoal[]>;
+  getDashboardGoals(companyId: string, module?: 'clean' | 'maintenance'): Promise<DashboardGoal[]>;
   createDashboardGoal(goal: InsertDashboardGoal): Promise<DashboardGoal>;
   updateDashboardGoal(id: string, goal: Partial<InsertDashboardGoal>): Promise<DashboardGoal>;
   deleteDashboardGoal(id: string): Promise<void>;
@@ -345,7 +352,7 @@ export class DatabaseStorage implements IStorage {
 
   // Customer-filtered methods
 
-  async getWorkOrdersByCustomer(customerId: string): Promise<WorkOrder[]> {
+  async getWorkOrdersByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]> {
     // Get sites for this customer
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     const siteIds = customerSites.map(site => site.id);
@@ -373,13 +380,18 @@ export class DatabaseStorage implements IStorage {
       zoneWhereCondition = sql`${zoneWhereCondition} OR ${workOrders.zoneId} = ${zoneIds[i]}`;
     }
     
+    // Apply module filter if provided
+    const whereConditions = module 
+      ? and(zoneWhereCondition, eq(workOrders.module, module))
+      : zoneWhereCondition;
+    
     return await db.select()
       .from(workOrders)
-      .where(zoneWhereCondition)
+      .where(whereConditions)
       .orderBy(desc(workOrders.createdAt));
   }
 
-  async getDashboardStatsByCustomer(customerId: string, period: string, site: string): Promise<any> {
+  async getDashboardStatsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any> {
     // Get customer sites for filtering
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
@@ -432,11 +444,15 @@ export class DatabaseStorage implements IStorage {
     }
     // If period is 'total' or 'todos', no date filter
 
-    // Get work orders only for customer zones with period filter
+    // Module filter - apply to all queries
+    const moduleFilter = module ? eq(workOrders.module, module) : sql`true`;
+
+    // Get work orders only for customer zones with period filter and module filter
     const [openWO] = await db.select({ count: count() })
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'aberta'),
         dateFilter
       ));
@@ -445,6 +461,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'concluida'),
         dateFilter
       ));
@@ -454,6 +471,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'aberta'),
         sql`${workOrders.dueDate} < NOW()`,
         dateFilter
@@ -468,6 +486,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         isNotNull(workOrders.customerRating)
       ));
     
@@ -485,6 +504,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'concluida'),
         sql`${workOrders.completedAt} <= ${workOrders.dueDate}`,
         dateFilter
@@ -510,7 +530,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // 1. RELATÓRIO GERAL - Visão completa das operações com todos os KPIs principais
-  async getGeneralReport(customerId: string, period: string): Promise<any> {
+  async getGeneralReport(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
       return {
@@ -529,7 +549,12 @@ export class DatabaseStorage implements IStorage {
       return { overview: {}, efficiency: {}, financial: {}, compliance: {} };
     }
 
-    const customerWorkOrders = await db.select().from(workOrders).where(inArray(workOrders.zoneId, zoneIds));
+    // Filter by module if provided
+    const whereConditions = module 
+      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      : inArray(workOrders.zoneId, zoneIds);
+      
+    const customerWorkOrders = await db.select().from(workOrders).where(whereConditions);
     const total = customerWorkOrders.length;
     const completed = customerWorkOrders.filter(wo => wo.status === 'concluida').length;
     const pending = customerWorkOrders.filter(wo => wo.status === 'aberta').length;
@@ -566,7 +591,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // 2. ANÁLISE DE SLA - Performance detalhada de cumprimento de prazos
-  async getSLAAnalysis(customerId: string, period: string): Promise<any> {
+  async getSLAAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
       return { slaBreakdown: [], timeDistribution: [], criticalAlerts: [] };
@@ -580,7 +605,12 @@ export class DatabaseStorage implements IStorage {
       return { slaBreakdown: [], timeDistribution: [], criticalAlerts: [] };
     }
 
-    const customerWorkOrders = await db.select().from(workOrders).where(inArray(workOrders.zoneId, zoneIds));
+    // Filter by module if provided
+    const whereConditions = module 
+      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      : inArray(workOrders.zoneId, zoneIds);
+      
+    const customerWorkOrders = await db.select().from(workOrders).where(whereConditions);
     const total = customerWorkOrders.length;
 
     const slaBreakdown = [
@@ -607,7 +637,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // 3. PRODUTIVIDADE - Métricas de eficiência e produtividade operacional
-  async getProductivityReport(customerId: string, period: string): Promise<any> {
+  async getProductivityReport(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
       return { productivity: {}, efficiency: {}, trends: [] };
@@ -626,8 +656,13 @@ export class DatabaseStorage implements IStorage {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - periodDays);
 
+    // Filter by module if provided
+    const whereConditions = module 
+      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      : inArray(workOrders.zoneId, zoneIds);
+
     // Buscar WOs no período
-    const customerWorkOrders = await db.select().from(workOrders).where(inArray(workOrders.zoneId, zoneIds));
+    const customerWorkOrders = await db.select().from(workOrders).where(whereConditions);
     const periodWorkOrders = customerWorkOrders.filter(wo => {
       const woDate = wo.createdAt ? new Date(wo.createdAt) : new Date();
       return woDate >= startDate;
@@ -761,7 +796,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // 4. PERFORMANCE DE OPERADORES - Análise individual e comparativa
-  async getOperatorPerformance(customerId: string, period: string): Promise<any> {
+  async getOperatorPerformance(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
       return { operators: [], rankings: [], teamStats: {} };
@@ -799,7 +834,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // 5. ANÁLISE POR LOCAIS - Distribuição e performance por zona e site
-  async getLocationAnalysis(customerId: string, period: string): Promise<any> {
+  async getLocationAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
       return { sites: [], zones: [], heatmap: [] };
@@ -847,7 +882,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // 6. ANÁLISE TEMPORAL - Tendências e padrões ao longo do tempo  
-  async getTemporalAnalysis(customerId: string, period: string): Promise<any> {
+  async getTemporalAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
       return { trends: [], patterns: [], forecasts: [] };
@@ -893,7 +928,7 @@ export class DatabaseStorage implements IStorage {
     return { trends, patterns, forecasts };
   }
 
-  async getAnalyticsByCustomer(customerId: string, period: string, site: string): Promise<any> {
+  async getAnalyticsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any> {
     // Get customer-specific analytics
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     if (customerSites.length === 0) {
@@ -937,11 +972,15 @@ export class DatabaseStorage implements IStorage {
       previousDateFilter = sql`${workOrders.createdAt} >= CURRENT_DATE - INTERVAL '60 days' AND ${workOrders.createdAt} < CURRENT_DATE - INTERVAL '30 days'`;
     }
 
-    // Get work orders for customer zones only with period filter
+    // Module filter - apply to all queries
+    const moduleFilter = module ? eq(workOrders.module, module) : sql`true`;
+
+    // Get work orders for customer zones only with period filter and module filter
     const customerWorkOrders = await db.select()
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         dateFilter
       ))
       .orderBy(desc(workOrders.createdAt));
@@ -951,6 +990,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         previousDateFilter
       ));
 
@@ -992,6 +1032,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         sql`${workOrders.createdAt} >= CURRENT_DATE - INTERVAL '30 days'`
       ))
       .groupBy(sql`DATE(${workOrders.createdAt})`)
@@ -1013,6 +1054,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         ne(workOrders.status, 'concluida'), // Excluir concluídas
         dateFilter
       ))
@@ -1036,6 +1078,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(zones, eq(workOrders.zoneId, zones.id))
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         ne(workOrders.status, 'concluida'), // Excluir concluídas
         dateFilter
       ))
@@ -1057,6 +1100,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         dateFilter
       ))
       .groupBy(sql`EXTRACT(DOW FROM ${workOrders.scheduledDate})`);
@@ -1086,6 +1130,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(zones, eq(workOrders.zoneId, zones.id))
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'concluida'),
         dateFilter
       ));
@@ -1098,6 +1143,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(zones, eq(workOrders.zoneId, zones.id))
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'concluida'),
         previousDateFilter
       ));
@@ -1113,6 +1159,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'concluida'),
         sql`${workOrders.completedAt} IS NOT NULL`,
         dateFilter
@@ -1125,6 +1172,7 @@ export class DatabaseStorage implements IStorage {
       .from(workOrders)
       .where(and(
         inArray(workOrders.zoneId, zoneIds),
+        moduleFilter,
         eq(workOrders.status, 'concluida'),
         sql`${workOrders.completedAt} IS NOT NULL`,
         previousDateFilter
@@ -1282,7 +1330,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(zones.name);
   }
 
-  async getCleaningActivitiesByCustomer(customerId: string): Promise<CleaningActivity[]> {
+  async getCleaningActivitiesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]> {
     // Get sites for this customer
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     const siteIds = customerSites.map(site => site.id);
@@ -1310,9 +1358,14 @@ export class DatabaseStorage implements IStorage {
       activitiesWhereCondition = sql`${activitiesWhereCondition} OR ${cleaningActivities.zoneId} = ${zoneIds[i]}`;
     }
     
+    // Apply module filter if provided
+    const whereConditions = module
+      ? and(activitiesWhereCondition, eq(cleaningActivities.module, module))
+      : activitiesWhereCondition;
+    
     return await db.select()
       .from(cleaningActivities)
-      .where(activitiesWhereCondition)
+      .where(whereConditions)
       .orderBy(cleaningActivities.name);
   }
 
@@ -1679,9 +1732,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Services
-  async getServicesByCustomer(customerId: string): Promise<Service[]> {
+  async getServicesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Service[]> {
+    const whereConditions = module
+      ? and(eq(services.customerId, customerId), eq(services.module, module))
+      : eq(services.customerId, customerId);
+    
     return await db.select().from(services)
-      .where(eq(services.customerId, customerId))
+      .where(whereConditions)
       .orderBy(services.name);
   }
 
@@ -1713,6 +1770,7 @@ export class DatabaseStorage implements IStorage {
     const [newService] = await db.insert(services).values({
       ...service,
       id: crypto.randomUUID(),
+      module: service.module || 'clean', // Default to 'clean' if not specified
     }).returning();
     return newService;
   }
@@ -1761,9 +1819,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Service Types
-  async getServiceTypesByCustomer(customerId: string): Promise<ServiceType[]> {
+  async getServiceTypesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceType[]> {
+    const whereConditions = module
+      ? and(eq(serviceTypes.customerId, customerId), eq(serviceTypes.module, module))
+      : eq(serviceTypes.customerId, customerId);
+    
     return await db.select().from(serviceTypes)
-      .where(eq(serviceTypes.customerId, customerId))
+      .where(whereConditions)
       .orderBy(serviceTypes.name);
   }
 
@@ -1776,6 +1838,7 @@ export class DatabaseStorage implements IStorage {
     const [newServiceType] = await db.insert(serviceTypes).values({
       ...serviceType,
       id: crypto.randomUUID(),
+      module: serviceType.module || 'clean', // Default to 'clean' if not specified
     }).returning();
     return newServiceType;
   }
@@ -1923,9 +1986,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Cleaning Activities
-  async getCleaningActivitiesByCompany(companyId: string): Promise<CleaningActivity[]> {
+  async getCleaningActivitiesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]> {
+    const whereConditions = module
+      ? and(eq(cleaningActivities.companyId, companyId), eq(cleaningActivities.module, module))
+      : eq(cleaningActivities.companyId, companyId);
+    
     return await db.select().from(cleaningActivities)
-      .where(eq(cleaningActivities.companyId, companyId))
+      .where(whereConditions)
       .orderBy(cleaningActivities.name);
   }
 
@@ -1935,7 +2002,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCleaningActivity(activity: InsertCleaningActivity): Promise<CleaningActivity> {
-    const [newActivity] = await db.insert(cleaningActivities).values(activity).returning();
+    const [newActivity] = await db.insert(cleaningActivities).values({
+      ...activity,
+      module: activity.module || 'clean', // Default to 'clean' if not specified
+    }).returning();
     return newActivity;
   }
 
@@ -2137,9 +2207,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Work Orders
-  async getWorkOrdersByCompany(companyId: string): Promise<WorkOrder[]> {
+  async getWorkOrdersByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]> {
+    const whereConditions = module
+      ? and(eq(workOrders.companyId, companyId), eq(workOrders.module, module))
+      : eq(workOrders.companyId, companyId);
+    
     return await db.select().from(workOrders)
-      .where(eq(workOrders.companyId, companyId))
+      .where(whereConditions)
       .orderBy(desc(workOrders.createdAt));
   }
 
@@ -2228,7 +2302,8 @@ export class DatabaseStorage implements IStorage {
         id,
         number,
         checklistTemplateId,
-        estimatedHours 
+        estimatedHours,
+        module: workOrder.module || 'clean' // Default to 'clean' if not specified
       })
       .returning();
       
@@ -2453,6 +2528,7 @@ export class DatabaseStorage implements IStorage {
 
     // Create audit log
     await this.createBathroomCounterLog({
+      id: crypto.randomUUID(),
       counterId: counter.id,
       delta: 1,
       action: 'increment',
@@ -2465,15 +2541,20 @@ export class DatabaseStorage implements IStorage {
       // Create automatic cleaning work order
       const zone = await this.getZone(zoneId);
       if (zone) {
-        await this.createWorkOrder({
-          companyId: zone.siteId, // We'll need to get company from site
-          zoneId: zoneId,
-          type: 'corretiva_interna',
-          priority: 'alta',
-          title: 'Limpeza Automática - Limite de Uso Atingido',
-          description: `Contador de uso atingiu o limite de ${counter.limitCount}. Limpeza necessária.`,
-          origin: 'Contador Automático'
-        });
+        const site = await this.getSite(zone.siteId);
+        if (site) {
+          await this.createWorkOrder({
+            companyId: site.companyId,
+            zoneId: zoneId,
+            type: 'corretiva_interna',
+            priority: 'alta',
+            title: 'Limpeza Automática - Limite de Uso Atingido',
+            description: `Contador de uso atingiu o limite de ${counter.limitCount}. Limpeza necessária.`,
+            origin: 'Contador Automático',
+            scheduledDate: null,
+            dueDate: null
+          });
+        }
       }
     }
 
@@ -2974,10 +3055,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Dashboard Goals
-  async getDashboardGoals(companyId: string): Promise<DashboardGoal[]> {
+  async getDashboardGoals(companyId: string, module?: 'clean' | 'maintenance'): Promise<DashboardGoal[]> {
+    const whereConditions = module
+      ? and(
+          eq(dashboardGoals.companyId, companyId),
+          eq(dashboardGoals.isActive, true),
+          eq(dashboardGoals.module, module)
+        )
+      : and(eq(dashboardGoals.companyId, companyId), eq(dashboardGoals.isActive, true));
+    
     return await db.select()
       .from(dashboardGoals)
-      .where(and(eq(dashboardGoals.companyId, companyId), eq(dashboardGoals.isActive, true)))
+      .where(whereConditions)
       .orderBy(dashboardGoals.goalType, dashboardGoals.createdAt);
   }
 
@@ -2985,6 +3074,7 @@ export class DatabaseStorage implements IStorage {
     const [newGoal] = await db.insert(dashboardGoals).values({
       ...goal,
       id: crypto.randomUUID(),
+      module: goal.module || 'clean', // Default to 'clean' if not specified
     }).returning();
     return newGoal;
   }
@@ -3206,9 +3296,9 @@ export class DatabaseStorage implements IStorage {
   async createCustomRole(roleData: InsertCustomRole): Promise<CustomRoleWithPermissions> {
     const [role] = await db.insert(customRoles)
       .values({
-        id: `role-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        companyId: roleData.companyId || 'company-opus-default',
-        ...roleData
+        ...roleData,
+        id: roleData.id || `role-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        companyId: roleData.companyId || 'company-opus-default'
       })
       .returning();
     
@@ -3478,8 +3568,8 @@ export class DatabaseStorage implements IStorage {
   async createCompanyCounter(counter: InsertCompanyCounter): Promise<CompanyCounter> {
     const [newCounter] = await db.insert(companyCounters)
       .values({
-        id: `cc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        ...counter
+        ...counter,
+        id: counter.id || `cc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       })
       .returning();
     return newCounter;
@@ -3504,6 +3594,7 @@ export class DatabaseStorage implements IStorage {
 
     // If no existing counter, create one
     const newCounter = await this.createCompanyCounter({
+      id: `cc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       companyId,
       key,
       nextNumber: 2 // Since we're returning 1 for the first use

@@ -14,6 +14,7 @@ export const priorityEnum = pgEnum('priority', ['baixa', 'media', 'alta', 'criti
 export const qrCodeTypeEnum = pgEnum('qr_code_type', ['execucao', 'atendimento']);
 export const frequencyEnum = pgEnum('frequency', ['diaria', 'semanal', 'mensal', 'trimestral', 'semestral', 'anual', 'turno', 'custom']);
 export const bathroomCounterActionEnum = pgEnum('bathroom_counter_action', ['increment', 'decrement', 'reset']);
+export const moduleEnum = pgEnum('module', ['clean', 'maintenance']);
 
 // Sistema de permissões granulares
 export const permissionKeyEnum = pgEnum('permission_key', [
@@ -156,6 +157,7 @@ export const serviceTypes = pgTable("service_types", {
   name: varchar("name").notNull(),
   description: text("description"),
   code: varchar("code").notNull().unique(),
+  module: moduleEnum("module").notNull().default('clean'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
@@ -183,6 +185,7 @@ export const services = pgTable("services", {
   estimatedDurationMinutes: integer("estimated_duration_minutes"),
   priority: priorityEnum("priority").default('media'),
   requirements: text("requirements"),
+  module: moduleEnum("module").notNull().default('clean'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
@@ -202,6 +205,7 @@ export const cleaningActivities = pgTable("cleaning_activities", {
   description: text("description"),
   frequency: frequencyEnum("frequency").notNull(),
   frequencyConfig: jsonb("frequency_config"),
+  module: moduleEnum("module").notNull().default('clean'),
   checklistTemplateId: varchar("checklist_template_id").references(() => checklistTemplates.id),
   slaConfigId: varchar("sla_config_id").references(() => slaConfigs.id),
   isActive: boolean("is_active").default(true),
@@ -230,6 +234,7 @@ export const workOrders = pgTable("work_orders", {
   id: varchar("id").primaryKey(),
   number: integer("number").notNull(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
+  module: moduleEnum("module").notNull().default('clean'),
   zoneId: varchar("zone_id").references(() => zones.id),
   serviceId: varchar("service_id").references(() => services.id),
   cleaningActivityId: varchar("cleaning_activity_id").references(() => cleaningActivities.id),
@@ -284,6 +289,7 @@ export const auditLogs = pgTable("audit_logs", {
 export const dashboardGoals = pgTable("dashboard_goals", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
+  module: moduleEnum("module").notNull().default('clean'),
   goalType: varchar("goal_type").notNull(),
   goalValue: decimal("goal_value", { precision: 10, scale: 2 }).notNull(),
   currentPeriod: varchar("current_period").notNull(),
