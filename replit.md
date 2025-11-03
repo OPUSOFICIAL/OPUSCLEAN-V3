@@ -1,6 +1,6 @@
 # Overview
 
-OPUS is a **modular facilities management platform** with multiple specialized modules for different operational domains. The platform currently includes **OPUS Clean** (cleaning and facilities management) and **OPUS Manutenção** (maintenance management). It offers web-based administration and mobile applications for managing schedules, work orders, QR code-based task execution, and public service requests. The modular system supports multiple companies, sites, and zones, aiming to streamline facilities management, enhance operational efficiency, and provide real-time analytics through a modern full-stack architecture.
+OPUS is a modular facilities management platform designed to streamline operations and enhance efficiency across various domains. It currently includes **OPUS Clean** for cleaning and facilities management and **OPUS Manutenção** for maintenance management. The platform offers web-based administration and mobile applications, supporting scheduling, work order management, QR code-based task execution, and public service requests. OPUS is built to serve multiple companies, sites, and zones, providing real-time analytics through a modern full-stack architecture. The vision is to offer a comprehensive, scalable solution for modern facilities management.
 
 # User Preferences
 
@@ -10,37 +10,37 @@ Preferred communication style: Simple, everyday language.
 
 ## UI/UX Decisions
 
-The system features a consistent brand identity using navy blue and slate blue. The frontend leverages shadcn/ui with Radix UI primitives and Tailwind CSS for responsive, intuitive design, including gradient cards, color-coded charts, and streamlined navigation. Mobile interfaces are optimized with sticky headers, pull-to-refresh, and touch-friendly elements.
+The system maintains a consistent brand identity using a navy and slate blue palette. The frontend utilizes shadcn/ui with Radix UI primitives and Tailwind CSS for a responsive and intuitive design, incorporating gradient cards, color-coded charts, and streamlined navigation. Mobile interfaces are optimized for touch-friendly elements, including sticky headers and pull-to-refresh functionality.
 
 ## Technical Implementations
 
 ### Frontend
 
-Built with React and TypeScript, using Wouter for routing and TanStack Query for data management. Vite handles development and builds.
+Developed with React and TypeScript, employing Wouter for routing and TanStack Query for efficient data management. Vite is used for development and build processes.
 
 ### Backend
 
-An Express.js server with TypeScript follows RESTful API principles. It uses a layered architecture and Drizzle ORM for type-safe PostgreSQL queries.
+An Express.js server, written in TypeScript, adheres to RESTful API principles. It features a layered architecture and uses Drizzle ORM for type-safe interactions with PostgreSQL.
 
 ## Feature Specifications
 
 ### Multi-Tenancy
 
-Implements a hierarchical multi-tenancy model (Companies > Sites > Zones) with role-based access controls and client filtering for data segregation.
+The platform implements a hierarchical multi-tenancy model (Companies > Sites > Zones) with robust role-based access controls and client-specific data filtering to ensure segregation.
 
 ### QR Code System
 
-Supports two types:
--   **Execution QRs**: For internal staff to manage work orders with checklists.
--   **Public QRs**: For end-users to submit service requests, generating corrective work orders.
+Supports two types of QR codes:
+-   **Execution QRs**: Used by internal staff for managing work orders and checklists.
+-   **Public QRs**: Allow end-users to submit service requests, which automatically generate corrective work orders.
 
 ### Work Order Management
 
-Manages programmed, internal corrective, and public corrective work orders. It tracks status, SLA compliance, priority, operator assignments, commenting with photo attachments, and re-opening capabilities. All analytics use real-time PostgreSQL data.
+Manages programmed, internal corrective, and public corrective work orders. It tracks status, SLA compliance, priority, operator assignments, allows comments with photo attachments, and supports re-opening of work orders. All analytics are derived from real-time PostgreSQL data.
 
 ### Authentication and Authorization
 
-Supports Microsoft SSO (Entra ID) and email/password authentication. Security features include JWT, Bcrypt, rate limiting, data sanitization, CORS, Helmet.js, and SQL injection prevention. A custom role system provides granular, permission-based access control for predefined roles (Administrador, Cliente, Operador) with differentiated routing for web and mobile users.
+Supports both Microsoft SSO (Entra ID) and email/password authentication. Security measures include JWT, Bcrypt for password hashing, rate limiting, data sanitization, CORS, Helmet.js, and SQL injection prevention. A custom role system provides granular, permission-based access for predefined roles (Administrador, Cliente, Operador) with differentiated routing for web and mobile users.
 
 ### Dashboard
 
@@ -52,197 +52,30 @@ Offers full CRUD operations for users, including client user creation and custom
 
 ## System Design Choices
 
-The project is configured for the Replit cloud environment, with PostgreSQL provisioning, schema pushing, and dependency installation. The Vite dev server is compatible with Replit's proxy.
-
-# Recent Changes
-
-## November 3, 2025 - Arquitetura Modular OPUS (Clean + Manutenção)
-**Transformação do sistema em plataforma modular multi-domínio**
-
-### Módulos Implementados:
-- **OPUS Clean**: Gestão de limpeza e facilities (tema azul navy #1e3a8a)
-- **OPUS Manutenção**: Gestão de manutenção (tema laranja #FF9800)
-
-### Implementações Técnicas:
-
-**1. Schema Database (shared/schema.ts)**:
-- Criado ENUM `module: 'clean' | 'maintenance'`
-- Discriminador adicionado em tabelas: work_orders, services, service_types, cleaning_activities, dashboard_goals
-- Todos os novos registros incluem módulo (default: 'clean')
-
-**2. Storage Layer (server/storage.ts)**:
-- Interface IStorage atualizada com parâmetro `module?: 'clean' | 'maintenance'` em todos os métodos relevantes
-- Filtros aplicados em: getWorkOrders, getServices, getCleaningActivities, getDashboardStats, getAnalytics, todos os reports
-- Isolamento completo de dados entre módulos
-- Backward compatible: sem module = retorna dados de todos os módulos
-
-**3. API Routes (server/routes.ts)**:
-- GET routes aceitam `?module=clean|maintenance` via query params
-- POST routes aceitam `module` no body (default: 'clean')
-- 100% das rotas module-aware implementadas
-
-**4. Frontend Modular (client/src/)**:
-- **ModuleProvider** (contexts/ModuleContext.tsx): contexto global de módulo com temas dinâmicos
-- **CSS Theming** (index.css): variáveis CSS por módulo usando `data-module="clean"|"maintenance"`
-- **Module Selector** (pages/module-selector.tsx): landing page para escolha de módulo
-- **Rotas Modulares** (App.tsx): `/clean/*` e `/maintenance/*` com mesmo código, dados isolados
-
-**5. Sistema de Temas**:
-- Clean: Navy Blue (#1e3a8a), Blue (#3b82f6), Light Blue (#60a5fa)
-- Manutenção: Orange (#FF9800), Dark Orange (#FB8C00), Light Orange (#FFB74D)
-- Aplicação dinâmica via CSS custom properties
-
-**Resultado**: Sistema totalmente modular, escalável para novos módulos, com isolamento completo de dados e temas diferenciados.
-
-## November 3, 2025 - Relatório de Produtividade com Dados Reais
-**Problema identificado**: Todos os dados do relatório de produtividade estavam mockados/aleatórios, gerando valores diferentes a cada exportação.
-
-**Implementação de cálculos reais**:
-
-### Métricas de Produtividade (100% reais):
-- **OS por Dia**: Conta work orders concluídas no período / número de dias
-- **Tempo Médio de Conclusão**: Calcula média real de `(completedAt - startedAt)` em minutos
-- **Área Limpa por Hora**: Usa área real das zonas (`areaM2`) dividido por horas trabalhadas
-- **Tarefas por Operador**: Total de WOs concluídas / número de operadores ativos
-- **Score de Qualidade**: Baseado em % de work orders completadas dentro do prazo (SLA compliance)
-
-### Métricas de Eficiência (baseadas em dados reais):
-- **Utilização de Recursos**: % de operadores que têm work orders atribuídas
-- **Uptime de Equipamentos**: % de work orders completadas no prazo
-- **Desperdício de Material**: % de work orders atrasadas
-- **Consumo de Energia**: Estimativa baseada em horas trabalhadas × 15 kWh
-- **Eficiência de Custo**: Baseado em SLA compliance (WOs no prazo)
-
-### Tendências Mensais (reais dos últimos 6 meses):
-- **Produtividade**: % de conclusão por mês
-- **Eficiência**: % de work orders no prazo por mês
-- Calculado com agrupamento real por mês/ano
-
-**Resultado**: Relatórios agora exibem dados consistentes e calculados do PostgreSQL, sem valores aleatórios.
-
-## November 3, 2025 - Modelo de Dados Manutenção (Equipment-Based)
-**Implementação completa da arquitetura de manutenção baseada em equipamentos**
-
-### Novo Modelo de Dados (5 Tabelas):
-
-**1. equipment** - Registro centralizado de equipamentos
-- Multi-tenant (companyId + customerId + siteId + zoneId)
-- Especificações técnicas (JSONB)
-- QR Code próprio
-- Campos: internalCode, equipmentType, manufacturer, model, serialNumber, warranty, etc.
-
-**2. maintenance_checklist_templates** - Templates de checklist específicos
-- Pode ser genérico (equipmentType) ou específico (equipmentId)
-- Versionamento de checklists
-- Estrutura de itens flexível (JSONB)
-- Reutilizável entre múltiplos equipamentos
-
-**3. maintenance_checklist_executions** - Histórico de execuções
-- Rastreabilidade completa (quem, quando, qual equipamento)
-- Vinculado a Work Order ou standalone
-- Suporta anexos (fotos de evidências)
-- Registro de início e fim para métricas
-
-**4. maintenance_plans** - Planos de manutenção
-- Container lógico para agrupar equipamentos
-- Tipos: preventiva, preditiva, corretiva
-- Multi-tenant
-
-**5. maintenance_plan_equipments** - Link N:N Planos ↔ Equipamentos
-- Define checklist específico para cada equipamento no plano
-- Frequência configurável (diaria, semanal, mensal, etc.)
-- Auto-agendamento (nextExecutionAt/lastExecutionAt)
-- UNIQUE constraint (planId, equipmentId)
-
-### Alterações em Tabelas Existentes:
-
-**work_orders**:
-- Novos campos: `equipmentId`, `maintenancePlanEquipmentId`
-- OPUS Clean: usa `zoneId` + `cleaningActivityId`
-- OPUS Manutenção: usa `equipmentId` + `maintenancePlanEquipmentId`
-
-**qr_code_points**:
-- Novo campo: `equipmentId`
-- `zoneId` agora é opcional (antes obrigatório)
-- QR de Zona (Clean): `zoneId` preenchido
-- QR de Equipamento (Manutenção): `equipmentId` preenchido
-
-### Storage Layer Implementado:
-
-**Interface IStorage**: 27 novos métodos CRUD
-- Equipment: 7 métodos (getByCustomer, getBySite, getByZone, get, create, update, delete)
-- MaintenanceChecklistTemplates: 7 métodos
-- MaintenanceChecklistExecutions: 6 métodos
-- MaintenancePlans: 5 métodos
-- MaintenancePlanEquipments: 6 métodos
-
-**DatabaseStorage**: Todas implementações concretas usando Drizzle ORM
-- Queries otimizados com filtros adequados
-- Timestamps automáticos (createdAt, updatedAt)
-- Suporte completo a JSONB para dados flexíveis
-
-### Diferenças Arquiteturais: Clean vs Manutenção
-
-| Aspecto | OPUS Clean | OPUS Manutenção |
-|---------|------------|-----------------|
-| **Entidade Base** | Zone | Equipment |
-| **Atividades** | cleaning_activities | maintenance_plan_equipments |
-| **Checklists** | checklistTemplates (genéricos) | maintenance_checklist_templates (específicos) |
-| **QR Codes** | qr_code_points.zoneId | qr_code_points.equipmentId |
-| **Work Orders** | cleaningActivityId | equipmentId + maintenancePlanEquipmentId |
-
-### API Routes Implementadas (server/routes.ts):
-
-**31 rotas RESTful completas** ✅
-- **Equipment**: 7 endpoints (GET by customer/site/zone, GET by id, POST, PUT, DELETE)
-- **MaintenanceChecklistTemplates**: 7 endpoints (GET by customer/equipmentType/equipment, GET by id, POST, PUT, DELETE)
-- **MaintenanceChecklistExecutions**: 6 endpoints (GET by equipment/workOrder, GET by id, POST, PUT, DELETE)
-- **MaintenancePlans**: 5 endpoints (GET by customer, GET by id, POST, PUT, DELETE)
-- **MaintenancePlanEquipments**: 6 endpoints (GET by plan/equipment, GET by id, POST, PUT, DELETE)
-
-**Validação e Segurança**:
-- Todas rotas com validação Zod usando insert schemas
-- Error handling apropriado (400, 404, 500)
-- Seguindo padrão RESTful do projeto
-
-**Database Push**: Schema aplicado ao PostgreSQL com sucesso ✅
-
-**Documentação Completa**: `MODELO_DADOS_MANUTENCAO.md`
-
-**Status Backend**: 100% completo, testado e aprovado pelo architect ✅
-- Schema, Storage Layer, e API Routes funcionais
-- Servidor rodando sem erros
-- Pronto para implementação do frontend
-
-**Próximos Passos**: Implementar páginas frontend para gerenciar equipamentos, checklists e planos de manutenção.
-
-# Documentação Técnica
-
-Para entender o fluxo completo do sistema OPUS (desde autenticação até execução final), consulte:
-- **`FLUXO_SISTEMA_OPUS.md`**: Documentação técnica detalhada com diagramas de fluxo, arquitetura modular, e guia para adaptação de novos módulos.
+The project is configured for the Replit cloud environment, with automated PostgreSQL provisioning, schema pushing, and dependency installation. The Vite dev server is compatible with Replit's proxy. The system is designed to be modular, supporting new operational modules like OPUS Clean and OPUS Manutenção with distinct theming and data isolation.
 
 # External Dependencies
 
 ## Database
--   **PostgreSQL**: Primary database.
+-   **PostgreSQL**: Primary relational database.
 -   **Neon**: Serverless PostgreSQL hosting.
--   **Drizzle ORM**: Type-safe database operations.
+-   **Drizzle ORM**: Type-safe ORM for database interactions.
 
 ## UI Components
--   **Radix UI**: Accessible primitive components.
--   **shadcn/ui**: Pre-built component library.
--   **Tailwind CSS**: Utility-first styling.
+-   **Radix UI**: Accessible primitive UI components.
+-   **shadcn/ui**: Component library built on Radix UI and Tailwind CSS.
+-   **Tailwind CSS**: Utility-first CSS framework for styling.
 
 ## Development Tools
--   **Vite**: Build tool.
--   **TypeScript**: Type safety.
--   **TanStack Query**: Server state management.
--   **Wouter**: Frontend routing.
+-   **Vite**: Fast build tool and development server.
+-   **TypeScript**: Superset of JavaScript for type-safe code.
+-   **TanStack Query**: Data fetching and state management library.
+-   **Wouter**: Lightweight React router.
 
 ## Security & Authentication
--   **JWT (jsonwebtoken)**: Secure token-based authentication.
--   **Helmet**: HTTP security headers.
--   **CORS**: Cross-origin resource sharing protection.
--   **Express Rate Limit**: Brute force protection.
--   **Bcrypt**: Password hashing.
--   **Microsoft Entra ID**: SSO integration.
+-   **JWT (jsonwebtoken)**: For creating and verifying access tokens.
+-   **Helmet**: Helps secure Express apps by setting various HTTP headers.
+-   **CORS**: Middleware for enabling Cross-Origin Resource Sharing.
+-   **Express Rate Limit**: Middleware for basic rate-limiting to prevent abuse.
+-   **Bcrypt**: For hashing passwords securely.
+-   **Microsoft Entra ID**: For single sign-on (SSO) capabilities.
