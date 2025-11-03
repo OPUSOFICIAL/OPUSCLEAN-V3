@@ -74,8 +74,8 @@ export interface IStorage {
   deleteZone(id: string): Promise<void>;
 
   // QR Code Points
-  getQrCodePointsByCompany(companyId: string): Promise<QrCodePoint[]>;
-  getQrCodePointsByCustomer(customerId: string): Promise<any[]>;
+  getQrCodePointsByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<QrCodePoint[]>;
+  getQrCodePointsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<any[]>;
   
   // Customer-specific resources
   getCleaningActivitiesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]>;
@@ -1589,19 +1589,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   // QR Code Points
-  async getQrCodePointsByCompany(companyId: string): Promise<QrCodePoint[]> {
-    // Get all sites for this company
-    const companySites = await db.select().from(sites).where(eq(sites.companyId, companyId));
+  async getQrCodePointsByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<QrCodePoint[]> {
+    // Get all sites for this company, filtered by module if provided
+    const sitesFilter = module 
+      ? and(eq(sites.companyId, companyId), eq(sites.module, module))
+      : eq(sites.companyId, companyId);
+    const companySites = await db.select().from(sites).where(sitesFilter);
     const siteIds = companySites.map(site => site.id);
     
     if (siteIds.length === 0) {
       return [];
     }
     
-    // Get all zones for these sites
+    // Get all zones for these sites, filtered by module if provided
     let whereCondition = eq(zones.siteId, siteIds[0]);
     for (let i = 1; i < siteIds.length; i++) {
       whereCondition = sql`${whereCondition} OR ${zones.siteId} = ${siteIds[i]}`;
+    }
+    if (module) {
+      whereCondition = and(whereCondition, eq(zones.module, module));
     }
     
     const companyZones = await db.select().from(zones).where(whereCondition);
@@ -1611,10 +1617,13 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
     
-    // Get all QR code points for these zones with zone info
+    // Get all QR code points for these zones with zone info, filtered by module if provided
     let qrWhereCondition = eq(qrCodePoints.zoneId, zoneIds[0]);
     for (let i = 1; i < zoneIds.length; i++) {
       qrWhereCondition = sql`${qrWhereCondition} OR ${qrCodePoints.zoneId} = ${zoneIds[i]}`;
+    }
+    if (module) {
+      qrWhereCondition = and(qrWhereCondition, eq(qrCodePoints.module, module));
     }
     
     const qrPoints = await db.select({
@@ -1640,19 +1649,25 @@ export class DatabaseStorage implements IStorage {
     return qrPoints as any[];
   }
 
-  async getQrCodePointsByCustomer(customerId: string): Promise<any[]> {
-    // Get all sites for this customer
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+  async getQrCodePointsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<any[]> {
+    // Get all sites for this customer, filtered by module if provided
+    const sitesFilter = module 
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+    const customerSites = await db.select().from(sites).where(sitesFilter);
     const siteIds = customerSites.map(site => site.id);
     
     if (siteIds.length === 0) {
       return [];
     }
     
-    // Get all zones for these sites
+    // Get all zones for these sites, filtered by module if provided
     let whereCondition = eq(zones.siteId, siteIds[0]);
     for (let i = 1; i < siteIds.length; i++) {
       whereCondition = sql`${whereCondition} OR ${zones.siteId} = ${siteIds[i]}`;
+    }
+    if (module) {
+      whereCondition = and(whereCondition, eq(zones.module, module));
     }
     
     const customerZones = await db.select().from(zones).where(whereCondition);
@@ -1662,10 +1677,13 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
     
-    // Get all QR code points for these zones with zone info
+    // Get all QR code points for these zones with zone info, filtered by module if provided
     let qrWhereCondition = eq(qrCodePoints.zoneId, zoneIds[0]);
     for (let i = 1; i < zoneIds.length; i++) {
       qrWhereCondition = sql`${qrWhereCondition} OR ${qrCodePoints.zoneId} = ${zoneIds[i]}`;
+    }
+    if (module) {
+      qrWhereCondition = and(qrWhereCondition, eq(qrCodePoints.module, module));
     }
     
     const qrPoints = await db.select({
