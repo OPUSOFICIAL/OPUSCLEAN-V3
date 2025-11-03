@@ -54,6 +54,34 @@ Offers full CRUD operations for users, including client user creation and custom
 
 The project is configured for the Replit cloud environment, with PostgreSQL provisioning, schema pushing, and dependency installation. The Vite dev server is compatible with Replit's proxy.
 
+# Recent Changes
+
+## November 3, 2025 - Relatório de Produtividade com Dados Reais
+**Problema identificado**: Todos os dados do relatório de produtividade estavam mockados/aleatórios, gerando valores diferentes a cada exportação.
+
+**Implementação de cálculos reais**:
+
+### Métricas de Produtividade (100% reais):
+- **OS por Dia**: Conta work orders concluídas no período / número de dias
+- **Tempo Médio de Conclusão**: Calcula média real de `(completedAt - startedAt)` em minutos
+- **Área Limpa por Hora**: Usa área real das zonas (`areaM2`) dividido por horas trabalhadas
+- **Tarefas por Operador**: Total de WOs concluídas / número de operadores ativos
+- **Score de Qualidade**: Baseado em % de work orders completadas dentro do prazo (SLA compliance)
+
+### Métricas de Eficiência (baseadas em dados reais):
+- **Utilização de Recursos**: % de operadores que têm work orders atribuídas
+- **Uptime de Equipamentos**: % de work orders completadas no prazo
+- **Desperdício de Material**: % de work orders atrasadas
+- **Consumo de Energia**: Estimativa baseada em horas trabalhadas × 15 kWh
+- **Eficiência de Custo**: Baseado em SLA compliance (WOs no prazo)
+
+### Tendências Mensais (reais dos últimos 6 meses):
+- **Produtividade**: % de conclusão por mês
+- **Eficiência**: % de work orders no prazo por mês
+- Calculado com agrupamento real por mês/ano
+
+**Resultado**: Relatórios agora exibem dados consistentes e calculados do PostgreSQL, sem valores aleatórios.
+
 # External Dependencies
 
 ## Database

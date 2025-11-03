@@ -662,7 +662,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     // 3. Área Limpa por Hora (REAL - baseado em áreas das zonas)
-    const totalArea = customerZones.reduce((sum, zone) => sum + (zone.area || 0), 0);
+    const totalArea = customerZones.reduce((sum, zone) => {
+      const area = zone.areaM2 ? parseFloat(zone.areaM2) : 0;
+      return sum + area;
+    }, 0);
     const totalHours = completedWithTimes.length > 0 ? completedWithTimes.reduce((sum, wo) => {
       const start = new Date(wo.startedAt!).getTime();
       const end = new Date(wo.completedAt!).getTime();
@@ -673,9 +676,12 @@ export class DatabaseStorage implements IStorage {
     // 4. Tarefas por Operador (REAL)
     const tasksPerOperator = Math.round(completedCount / operatorCount);
 
-    // 5. Score de Qualidade (REAL - baseado em % de conclusão sem reabertura)
-    const reopened = periodWorkOrders.filter(wo => wo.reopenedAt !== null).length;
-    const qualityScore = total > 0 ? Math.round(((total - reopened) / total) * 100) : 0;
+    // 5. Score de Qualidade (REAL - baseado em SLA compliance e ratings)
+    const onTimeWork = periodWorkOrders.filter(wo => {
+      if (!wo.dueDate || !wo.completedAt) return false;
+      return new Date(wo.completedAt) <= new Date(wo.dueDate);
+    }).length;
+    const qualityScore = total > 0 ? Math.round((onTimeWork / total) * 100) : 0;
 
     const productivity = {
       workOrdersPerDay,
@@ -688,14 +694,15 @@ export class DatabaseStorage implements IStorage {
     // MÉTRICAS DE EFICIÊNCIA (baseadas em dados reais)
     
     // 1. Utilização de Recursos (% de operadores com WOs ativas)
-    const activeOperators = new Set(periodWorkOrders.filter(wo => wo.operatorId).map(wo => wo.operatorId)).size;
+    const activeOperators = new Set(periodWorkOrders.filter(wo => wo.assignedUserId).map(wo => wo.assignedUserId)).size;
     const resourceUtilization = operatorCount > 0 ? Math.round((activeOperators / operatorCount) * 100) : 0;
 
-    // 2. Uptime de Equipamentos (% de WOs sem reabertura = equipamentos funcionais)
-    const equipmentUptime = total > 0 ? Math.round(((total - reopened) / total) * 100) : 0;
+    // 2. Uptime de Equipamentos (% de WOs completadas no prazo)
+    const equipmentUptime = total > 0 ? Math.round((onTimeWork / total) * 100) : 0;
 
-    // 3. Desperdício de Material (% de WOs com problemas/reabertura)
-    const materialWaste = total > 0 ? Math.round((reopened / total) * 100) : 0;
+    // 3. Desperdício de Material (% de WOs atrasadas)
+    const lateWork = total - onTimeWork;
+    const materialWaste = total > 0 ? Math.round((lateWork / total) * 100) : 0;
 
     // 4. Consumo de Energia (estimativa baseada em horas trabalhadas * consumo médio)
     const energyConsumption = Math.round(totalHours * 15); // 15 kWh por hora de trabalho
@@ -732,13 +739,16 @@ export class DatabaseStorage implements IStorage {
       
       const monthCompleted = monthWorkOrders.filter(wo => wo.status === 'concluida').length;
       const monthTotal = monthWorkOrders.length;
-      const monthReopened = monthWorkOrders.filter(wo => wo.reopenedAt !== null).length;
+      const monthOnTime = monthWorkOrders.filter(wo => {
+        if (!wo.dueDate || !wo.completedAt) return false;
+        return new Date(wo.completedAt) <= new Date(wo.dueDate);
+      }).length;
       
       // Produtividade do mês (% de conclusão)
       const monthProductivity = monthTotal > 0 ? Math.round((monthCompleted / monthTotal) * 100) : 0;
       
-      // Eficiência do mês (qualidade sem reabertura)
-      const monthEfficiency = monthTotal > 0 ? Math.round(((monthTotal - monthReopened) / monthTotal) * 100) : 0;
+      // Eficiência do mês (% completadas no prazo)
+      const monthEfficiency = monthTotal > 0 ? Math.round((monthOnTime / monthTotal) * 100) : 0;
       
       trends.push({
         month: monthNames[month],
