@@ -94,7 +94,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sites
   app.get("/api/companies/:companyId/sites", async (req, res) => {
     try {
-      const sites = await storage.getSitesByCompany(req.params.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const sites = await storage.getSitesByCompany(req.params.companyId, module);
       res.json(sites);
     } catch (error) {
       res.status(500).json({ message: "Failed to get sites" });
@@ -104,7 +105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get sites by customer
   app.get("/api/customers/:customerId/sites", async (req, res) => {
     try {
-      const sites = await storage.getSitesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const sites = await storage.getSitesByCustomer(req.params.customerId, module);
       res.json(sites);
     } catch (error) {
       res.status(500).json({ message: "Failed to get sites" });
@@ -157,7 +159,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/sites", async (req, res) => {
     try {
-      const site = insertSiteSchema.parse(req.body);
+      const site = insertSiteSchema.parse({
+        ...req.body,
+        module: req.body.module || 'clean'
+      });
       const newSite = await storage.createSite(site);
       res.status(201).json(newSite);
     } catch (error) {
@@ -196,7 +201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Zones
   app.get("/api/companies/:companyId/zones", async (req, res) => {
     try {
-      const zones = await storage.getZonesByCompany(req.params.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const zones = await storage.getZonesByCompany(req.params.companyId, module);
       res.json(zones);
     } catch (error) {
       res.status(500).json({ message: "Failed to get zones" });
@@ -226,7 +232,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Zones by Customer (filtrado por cliente)
   app.get("/api/customers/:customerId/zones", async (req, res) => {
     try {
-      const zones = await storage.getZonesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const zones = await storage.getZonesByCustomer(req.params.customerId, module);
       res.json(zones);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer zones" });
@@ -663,7 +670,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/sites/:siteId/zones", async (req, res) => {
     try {
-      const zones = await storage.getZonesBySite(req.params.siteId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const zones = await storage.getZonesBySite(req.params.siteId, module);
       res.json(zones);
     } catch (error) {
       res.status(500).json({ message: "Failed to get zones" });
@@ -706,7 +714,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/zones", async (req, res) => {
     try {
-      const zone = insertZoneSchema.parse(req.body);
+      const zone = insertZoneSchema.parse({
+        ...req.body,
+        module: req.body.module || 'clean'
+      });
       const newZone = await storage.createZone(zone);
       res.status(201).json(newZone);
     } catch (error) {
