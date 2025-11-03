@@ -2144,30 +2144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const availableModules: string[] = [];
-      
-      // Check if user has access to customer data
-      if (user.customerId) {
-        // Check for Clean module data
-        const cleanSites = await storage.getSitesByCustomer(user.customerId, 'clean');
-        if (cleanSites && cleanSites.length > 0) {
-          availableModules.push('clean');
-        }
-        
-        // Check for Maintenance module data
-        const maintenanceSites = await storage.getSitesByCustomer(user.customerId, 'maintenance');
-        if (maintenanceSites && maintenanceSites.length > 0) {
-          availableModules.push('maintenance');
-        }
-        
-        // If no sites exist yet, allow access to both modules (for new customers)
-        if (availableModules.length === 0) {
-          availableModules.push('clean', 'maintenance');
-        }
-      } else {
-        // Opus users have access to all modules
-        availableModules.push('clean', 'maintenance');
-      }
+      // Use the modules field from the user (defaults to ['clean'] if not set)
+      const availableModules: string[] = user.modules || ['clean'];
       
       res.json({ modules: availableModules });
     } catch (error) {
