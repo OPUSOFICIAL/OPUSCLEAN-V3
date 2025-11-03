@@ -148,6 +148,7 @@ export const users = pgTable("users", {
   authProvider: authProviderEnum("auth_provider").default('local'),
   externalId: varchar("external_id"),
   msTenantId: varchar("ms_tenant_id"),
+  modules: text("modules").array().notNull().default(sql`ARRAY['clean']::text[]`),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
@@ -1002,7 +1003,9 @@ export const insertCompanySchema = createInsertSchema(companies).omit({ id: true
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true });
 export const insertSiteSchema = createInsertSchema(sites).omit({ id: true });
 export const insertZoneSchema = createInsertSchema(zones).omit({ id: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true }).extend({
+  modules: z.array(z.enum(['clean', 'maintenance'])).min(1, 'Selecione pelo menos um módulo').default(['clean']),
+});
 export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({ id: true });
 export const insertServiceCategorySchema = createInsertSchema(serviceCategories).omit({ id: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
