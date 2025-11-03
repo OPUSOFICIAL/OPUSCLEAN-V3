@@ -99,11 +99,12 @@ export const customers = pgTable("customers", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
-// 3. TABELA: sites (Locais/Sites)
+// 3. TABELA: sites (Locais)
 export const sites = pgTable("sites", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
   customerId: varchar("customer_id").references(() => customers.id),
+  module: moduleEnum("module").notNull().default('clean'),
   name: varchar("name").notNull(),
   address: varchar("address"),
   description: text("description"),
@@ -117,6 +118,7 @@ export const sites = pgTable("sites", {
 export const zones = pgTable("zones", {
   id: varchar("id").primaryKey(),
   siteId: varchar("site_id").notNull().references(() => sites.id),
+  module: moduleEnum("module").notNull().default('clean'),
   name: varchar("name").notNull(),
   description: text("description"),
   areaM2: decimal("area_m2", { precision: 10, scale: 2 }),
