@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building, Wrench, Loader2 } from "lucide-react";
@@ -8,12 +8,12 @@ import { useModule } from "@/contexts/ModuleContext";
 import { getAuthState } from "@/lib/auth";
 
 export default function ModuleSelection() {
-  const navigate = useNavigate();
-  const { setCurrentModule } = useModule();
+  const [, setLocation] = useLocation();
+  const { setModule } = useModule();
   const [isLoading, setIsLoading] = useState(false);
 
   // Get available modules for the user
-  const { data: modulesData, isLoading: isLoadingModules } = useQuery({
+  const { data: modulesData, isLoading: isLoadingModules } = useQuery<{ modules: string[] }>({
     queryKey: ["/api/auth/available-modules"],
   });
 
@@ -30,17 +30,17 @@ export default function ModuleSelection() {
   useEffect(() => {
     const auth = getAuthState();
     if (!auth) {
-      navigate("/login");
+      setLocation("/login");
     }
-  }, [navigate]);
+  }, [setLocation]);
 
   const handleModuleSelect = (module: 'clean' | 'maintenance') => {
     setIsLoading(true);
-    setCurrentModule(module);
+    setModule(module);
     
     // Small delay for better UX
     setTimeout(() => {
-      navigate("/");
+      setLocation("/");
     }, 300);
   };
 

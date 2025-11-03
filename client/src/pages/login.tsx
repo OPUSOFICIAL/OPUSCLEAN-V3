@@ -43,6 +43,26 @@ export default function Login() {
       // Aguardar para garantir que o estado foi salvo no localStorage
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      // Check available modules for the user
+      try {
+        const modulesResponse = await fetch("/api/auth/available-modules", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        const modulesData = await modulesResponse.json();
+        const availableModules = modulesData.modules || [];
+        
+        // If user has access to multiple modules, show module selection
+        if (availableModules.length > 1) {
+          setLocation("/module-selection");
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking available modules:", error);
+        // Continue with normal flow if module check fails
+      }
+      
       // Redirecionar baseado no role do usuário usando wouter
       if (user.role === 'operador') {
         setLocation("/mobile");

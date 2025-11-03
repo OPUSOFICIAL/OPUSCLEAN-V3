@@ -29,6 +29,7 @@ import QrExecution from "@/pages/qr-execution";
 import QrPublic from "@/pages/qr-public";
 import Login from "@/pages/login";
 import LoginMobile from "@/pages/login-mobile";
+import ModuleSelection from "@/pages/module-selection";
 import MobileDashboard from "@/pages/mobile-dashboard";
 import MobileQrScanner from "@/pages/mobile-qr-scanner";
 import MobileWorkOrderExecute from "@/pages/mobile-work-order-execute";
@@ -89,6 +90,9 @@ function AuthenticatedAdminRouter() {
           <Route path="/maintenance-plans" component={() => <MaintenancePlans customerId={activeClientId} />} />
           <Route path="/maintenance-checklist-templates" component={() => <MaintenanceChecklistTemplates customerId={activeClientId} />} />
           
+          {/* Module Selection - Available for authenticated users too */}
+          <Route path="/module-selection" component={ModuleSelection} />
+          
           {/* Redirecionar rotas de login para dashboard se já autenticado */}
           <Route path="/login">
             <Redirect to="/" />
@@ -131,6 +135,7 @@ function Router() {
       <Switch>
         <Route path="/qr-public/:code" component={QrPublic} />
         <Route path="/mobile/qr-scanner" component={MobileQrScanner} />
+        <Route path="/module-selection" component={ModuleSelection} />
         <Route path="/login-mobile" component={LoginMobile} />
         <Route path="/login" component={Login} />
         <Route component={Login} />
