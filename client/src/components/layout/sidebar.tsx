@@ -19,7 +19,10 @@ import {
   Shield,
   Cog,
   Activity,
-  TrendingUp
+  TrendingUp,
+  Wrench,
+  List,
+  CalendarCheck
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -64,7 +67,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     }
   };
 
-  // Criar menu baseado em permissões granulares
+  // Criar menu baseado em permissões granulares e módulo atual
   const menuItems = [
     // Dashboard - sempre disponível se tiver acesso ao sistema
     ...(can.viewDashboard(activeClientId) ? [{ path: "/", label: "Dashboard", icon: Home }] : []),
@@ -72,18 +75,20 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     // Ordens de Serviço
     ...(can.viewWorkOrders(activeClientId) ? [{ path: "/workorders", label: "Ordens de Serviço", icon: ClipboardList }] : []),
     
-    // Plano de Limpeza
-    ...(can.viewSchedule(activeClientId) ? [{ path: "/schedule", label: "Plano de Limpeza", icon: Calendar }] : []),
+    // OPUS Clean - Menu items específicos
+    ...(currentModule === 'clean' && can.viewSchedule(activeClientId) ? [{ path: "/schedule", label: "Plano de Limpeza", icon: Calendar }] : []),
+    ...(currentModule === 'clean' && can.viewChecklists(activeClientId) ? [{ path: "/checklists", label: "Checklists", icon: Fan }] : []),
     
-    // Checklists
-    ...(can.viewChecklists(activeClientId) ? [{ path: "/checklists", label: "Checklists", icon: Fan }] : []),
+    // OPUS Manutenção - Menu items específicos
+    ...(currentModule === 'maintenance' && can.viewQRCodes(activeClientId) ? [{ path: "/equipment", label: "Equipamentos", icon: Wrench }] : []),
+    ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ path: "/maintenance-plans", label: "Planos de Manutenção", icon: CalendarCheck }] : []),
+    ...(currentModule === 'maintenance' && can.viewChecklists(activeClientId) ? [{ path: "/maintenance-checklist-templates", label: "Templates de Checklist", icon: List }] : []),
     
-    // QR Codes
+    // QR Codes - disponível em ambos os módulos
     ...(can.viewQRCodes(activeClientId) ? [{ path: "/qrcodes", label: "QR Codes", icon: QrCode }] : []),
     
     // Planta dos Locais
     ...(can.viewFloorPlan(activeClientId) ? [{ path: "/floor-plan", label: "Planta dos Locais", icon: Map }] : []),
-    
     
     // Relatórios
     ...(can.viewReports(activeClientId) ? [{ path: "/reports", label: "Relatórios", icon: ChartBar }] : []),
