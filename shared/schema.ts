@@ -239,6 +239,8 @@ export const workOrders = pgTable("work_orders", {
   serviceId: varchar("service_id").references(() => services.id),
   cleaningActivityId: varchar("cleaning_activity_id").references(() => cleaningActivities.id),
   checklistTemplateId: varchar("checklist_template_id").references(() => checklistTemplates.id),
+  equipmentId: varchar("equipment_id").references(() => equipment.id),
+  maintenancePlanEquipmentId: varchar("maintenance_plan_equipment_id").references(() => maintenancePlanEquipments.id),
   type: workOrderTypeEnum("type").notNull(),
   status: workOrderStatusEnum("status").notNull().default('aberta'),
   priority: priorityEnum("priority").notNull().default('media'),
@@ -384,7 +386,8 @@ export const companyCounters = pgTable("company_counters", {
 // 22. TABELA: qr_code_points (Pontos de QR Code)
 export const qrCodePoints = pgTable("qr_code_points", {
   id: varchar("id").primaryKey(),
-  zoneId: varchar("zone_id").notNull().references(() => zones.id),
+  zoneId: varchar("zone_id").references(() => zones.id),
+  equipmentId: varchar("equipment_id").references(() => equipment.id),
   serviceId: varchar("service_id").references(() => services.id),
   code: varchar("code").notNull().unique(),
   type: qrCodeTypeEnum("type").notNull(),
@@ -454,6 +457,97 @@ export const workOrderComments = pgTable("work_order_comments", {
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
+
+// ============================================================================
+// MÓDULO DE MANUTENÇÃO - Tabelas Específicas
+// ============================================================================
+
+// 28. TABELA: equipment (Equipamentos)
+export const equipment = pgTable("equipment", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  siteId: varchar("site_id").notNull().references(() => sites.id),
+  zoneId: varchar("zone_id").notNull().references(() => zones.id),
+  name: varchar("name").notNull(),
+  internalCode: varchar("internal_code"),
+  equipmentType: varchar("equipment_type").notNull(),
+  manufacturer: varchar("manufacturer"),
+  model: varchar("model"),
+  serialNumber: varchar("serial_number"),
+  purchaseDate: date("purchase_date"),
+  warrantyExpiry: date("warranty_expiry"),
+  installationDate: date("installation_date"),
+  technicalSpecs: jsonb("technical_specs"),
+  maintenanceNotes: text("maintenance_notes"),
+  qrCodeUrl: varchar("qr_code_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 29. TABELA: maintenance_checklist_templates (Templates de Checklist de Manutenção)
+export const maintenanceChecklistTemplates = pgTable("maintenance_checklist_templates", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  equipmentType: varchar("equipment_type"),
+  equipmentId: varchar("equipment_id").references(() => equipment.id),
+  version: integer("version").notNull().default(1),
+  items: jsonb("items").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 30. TABELA: maintenance_checklist_executions (Execuções de Checklist de Manutenção)
+export const maintenanceChecklistExecutions = pgTable("maintenance_checklist_executions", {
+  id: varchar("id").primaryKey(),
+  checklistTemplateId: varchar("checklist_template_id").notNull().references(() => maintenanceChecklistTemplates.id),
+  equipmentId: varchar("equipment_id").notNull().references(() => equipment.id),
+  workOrderId: varchar("work_order_id").references(() => workOrders.id),
+  executedByUserId: varchar("executed_by_user_id").notNull().references(() => users.id),
+  startedAt: timestamp("started_at").notNull(),
+  finishedAt: timestamp("finished_at"),
+  status: varchar("status").notNull().default('in_progress'),
+  checklistData: jsonb("checklist_data"),
+  observations: text("observations"),
+  attachments: jsonb("attachments"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 31. TABELA: maintenance_plans (Planos de Manutenção)
+export const maintenancePlans = pgTable("maintenance_plans", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  type: varchar("type").notNull().default('preventiva'),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 32. TABELA: maintenance_plan_equipments (Equipamentos no Plano de Manutenção)
+export const maintenancePlanEquipments = pgTable("maintenance_plan_equipments", {
+  id: varchar("id").primaryKey(),
+  planId: varchar("plan_id").notNull().references(() => maintenancePlans.id),
+  equipmentId: varchar("equipment_id").notNull().references(() => equipment.id),
+  checklistTemplateId: varchar("checklist_template_id").references(() => maintenanceChecklistTemplates.id),
+  frequency: frequencyEnum("frequency").notNull(),
+  frequencyConfig: jsonb("frequency_config"),
+  nextExecutionAt: timestamp("next_execution_at"),
+  lastExecutionAt: timestamp("last_execution_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => ({
+  uniquePlanEquipment: unique("unique_plan_equipment").on(table.planId, table.equipmentId),
+}));
 
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -806,6 +900,94 @@ export const workOrderCommentsRelations = relations(workOrderComments, ({ one })
   }),
 }));
 
+// Maintenance Relations
+export const equipmentRelations = relations(equipment, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [equipment.companyId],
+    references: [companies.id],
+  }),
+  customer: one(customers, {
+    fields: [equipment.customerId],
+    references: [customers.id],
+  }),
+  site: one(sites, {
+    fields: [equipment.siteId],
+    references: [sites.id],
+  }),
+  zone: one(zones, {
+    fields: [equipment.zoneId],
+    references: [zones.id],
+  }),
+  maintenanceChecklistTemplates: many(maintenanceChecklistTemplates),
+  maintenanceChecklistExecutions: many(maintenanceChecklistExecutions),
+  maintenancePlanEquipments: many(maintenancePlanEquipments),
+  workOrders: many(workOrders),
+  qrCodePoints: many(qrCodePoints),
+}));
+
+export const maintenanceChecklistTemplatesRelations = relations(maintenanceChecklistTemplates, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [maintenanceChecklistTemplates.companyId],
+    references: [companies.id],
+  }),
+  customer: one(customers, {
+    fields: [maintenanceChecklistTemplates.customerId],
+    references: [customers.id],
+  }),
+  equipment: one(equipment, {
+    fields: [maintenanceChecklistTemplates.equipmentId],
+    references: [equipment.id],
+  }),
+  maintenanceChecklistExecutions: many(maintenanceChecklistExecutions),
+  maintenancePlanEquipments: many(maintenancePlanEquipments),
+}));
+
+export const maintenanceChecklistExecutionsRelations = relations(maintenanceChecklistExecutions, ({ one }) => ({
+  checklistTemplate: one(maintenanceChecklistTemplates, {
+    fields: [maintenanceChecklistExecutions.checklistTemplateId],
+    references: [maintenanceChecklistTemplates.id],
+  }),
+  equipment: one(equipment, {
+    fields: [maintenanceChecklistExecutions.equipmentId],
+    references: [equipment.id],
+  }),
+  workOrder: one(workOrders, {
+    fields: [maintenanceChecklistExecutions.workOrderId],
+    references: [workOrders.id],
+  }),
+  executedBy: one(users, {
+    fields: [maintenanceChecklistExecutions.executedByUserId],
+    references: [users.id],
+  }),
+}));
+
+export const maintenancePlansRelations = relations(maintenancePlans, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [maintenancePlans.companyId],
+    references: [companies.id],
+  }),
+  customer: one(customers, {
+    fields: [maintenancePlans.customerId],
+    references: [customers.id],
+  }),
+  maintenancePlanEquipments: many(maintenancePlanEquipments),
+}));
+
+export const maintenancePlanEquipmentsRelations = relations(maintenancePlanEquipments, ({ one }) => ({
+  plan: one(maintenancePlans, {
+    fields: [maintenancePlanEquipments.planId],
+    references: [maintenancePlans.id],
+  }),
+  equipment: one(equipment, {
+    fields: [maintenancePlanEquipments.equipmentId],
+    references: [equipment.id],
+  }),
+  checklistTemplate: one(maintenanceChecklistTemplates, {
+    fields: [maintenancePlanEquipments.checklistTemplateId],
+    references: [maintenanceChecklistTemplates.id],
+  }),
+}));
+
 // Insert schemas
 export const insertCompanySchema = createInsertSchema(companies).omit({ id: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true });
@@ -875,6 +1057,13 @@ export const insertBathroomCounterSchema = createInsertSchema(bathroomCounters);
 export const insertBathroomCounterLogSchema = createInsertSchema(bathroomCounterLogs);
 export const insertPublicRequestLogSchema = createInsertSchema(publicRequestLogs);
 export const insertWorkOrderCommentSchema = createInsertSchema(workOrderComments);
+
+// Maintenance insert schemas
+export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true });
+export const insertMaintenanceChecklistTemplateSchema = createInsertSchema(maintenanceChecklistTemplates).omit({ id: true });
+export const insertMaintenanceChecklistExecutionSchema = createInsertSchema(maintenanceChecklistExecutions).omit({ id: true });
+export const insertMaintenancePlanSchema = createInsertSchema(maintenancePlans).omit({ id: true });
+export const insertMaintenancePlanEquipmentSchema = createInsertSchema(maintenancePlanEquipments).omit({ id: true });
 
 // Types
 export type Company = typeof companies.$inferSelect;
@@ -958,3 +1147,19 @@ export type InsertPublicRequestLog = z.infer<typeof insertPublicRequestLogSchema
 
 export type WorkOrderComment = typeof workOrderComments.$inferSelect;
 export type InsertWorkOrderComment = z.infer<typeof insertWorkOrderCommentSchema>;
+
+// Maintenance types
+export type Equipment = typeof equipment.$inferSelect;
+export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
+
+export type MaintenanceChecklistTemplate = typeof maintenanceChecklistTemplates.$inferSelect;
+export type InsertMaintenanceChecklistTemplate = z.infer<typeof insertMaintenanceChecklistTemplateSchema>;
+
+export type MaintenanceChecklistExecution = typeof maintenanceChecklistExecutions.$inferSelect;
+export type InsertMaintenanceChecklistExecution = z.infer<typeof insertMaintenanceChecklistExecutionSchema>;
+
+export type MaintenancePlan = typeof maintenancePlans.$inferSelect;
+export type InsertMaintenancePlan = z.infer<typeof insertMaintenancePlanSchema>;
+
+export type MaintenancePlanEquipment = typeof maintenancePlanEquipments.$inferSelect;
+export type InsertMaintenancePlanEquipment = z.infer<typeof insertMaintenancePlanEquipmentSchema>;
