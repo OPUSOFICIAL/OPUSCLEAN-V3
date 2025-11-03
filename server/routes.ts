@@ -2144,8 +2144,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Use the modules field from the user (defaults to ['clean'] if not set)
-      const availableModules: string[] = user.modules || ['clean'];
+      let availableModules: string[] = [];
+
+      // Separate logic for OPUS users and customer users
+      if (user.userType === 'customer_user') {
+        // Customer users: get modules from their associated customer
+        if (user.customerId) {
+          const customer = await storage.getCustomerById(user.customerId);
+          if (customer) {
+            availableModules = customer.modules || [];
+          }
+        }
+      } else {
+        // OPUS users: get modules from the user directly
+        availableModules = user.modules || [];
+      }
       
       res.json({ modules: availableModules });
     } catch (error) {

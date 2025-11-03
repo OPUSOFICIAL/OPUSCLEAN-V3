@@ -94,6 +94,7 @@ export const customers = pgTable("customers", {
   zipCode: varchar("zip_code"),
   contactPerson: varchar("contact_person"),
   notes: text("notes"),
+  modules: text("modules").array().notNull().default(sql`ARRAY['clean']::text[]`),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
