@@ -81,7 +81,7 @@ export interface IStorage {
   getCleaningActivitiesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]>;
   getServicesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Service[]>;
   getUsersByCustomer(customerId: string): Promise<User[]>;
-  getChecklistTemplatesByCustomer(customerId: string): Promise<ChecklistTemplate[]>;
+  getChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]>;
   getQrCodePointsByZone(zoneId: string): Promise<QrCodePoint[]>;
   getQrCodePoint(id: string): Promise<QrCodePoint | undefined>;
   getQrCodePointByCode(code: string): Promise<QrCodePoint | undefined>;
@@ -132,7 +132,7 @@ export interface IStorage {
   deleteServiceType(id: string): Promise<void>;
 
   // Service Categories
-  getServiceCategoriesByCustomer(customerId: string): Promise<ServiceCategory[]>;
+  getServiceCategoriesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceCategory[]>;
   getServiceCategoriesByType(typeId: string): Promise<ServiceCategory[]>;
   getServiceCategory(id: string): Promise<ServiceCategory | undefined>;
   createServiceCategory(serviceCategory: InsertServiceCategory): Promise<ServiceCategory>;
@@ -140,7 +140,7 @@ export interface IStorage {
   deleteServiceCategory(id: string): Promise<void>;
 
   // Checklist Templates
-  getChecklistTemplatesByCompany(companyId: string): Promise<ChecklistTemplate[]>;
+  getChecklistTemplatesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]>;
   getChecklistTemplate(id: string): Promise<ChecklistTemplate | undefined>;
   getChecklistTemplateByServiceId(serviceId: string): Promise<ChecklistTemplate | undefined>;
   createChecklistTemplate(template: InsertChecklistTemplate): Promise<ChecklistTemplate>;
@@ -149,7 +149,7 @@ export interface IStorage {
   getWorkOrdersByChecklistTemplate(checklistTemplateId: string): Promise<WorkOrder[]>;
 
   // SLA Configs
-  getSlaConfigsByCompany(companyId: string): Promise<SlaConfig[]>;
+  getSlaConfigsByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<SlaConfig[]>;
   getSlaConfig(id: string): Promise<SlaConfig | undefined>;
   createSlaConfig(slaConfig: InsertSlaConfig): Promise<SlaConfig>;
   updateSlaConfig(id: string, slaConfig: Partial<InsertSlaConfig>): Promise<SlaConfig>;
@@ -319,17 +319,17 @@ export interface IStorage {
   // ============================================================================
   // MAINTENANCE MODULE - Equipment
   // ============================================================================
-  getEquipmentByCustomer(customerId: string): Promise<Equipment[]>;
-  getEquipmentBySite(siteId: string): Promise<Equipment[]>;
-  getEquipmentByZone(zoneId: string): Promise<Equipment[]>;
+  getEquipmentByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Equipment[]>;
+  getEquipmentBySite(siteId: string, module?: 'clean' | 'maintenance'): Promise<Equipment[]>;
+  getEquipmentByZone(zoneId: string, module?: 'clean' | 'maintenance'): Promise<Equipment[]>;
   getEquipment(id: string): Promise<Equipment | undefined>;
   createEquipment(equipment: InsertEquipment): Promise<Equipment>;
   updateEquipment(id: string, equipment: Partial<InsertEquipment>): Promise<Equipment>;
   deleteEquipment(id: string): Promise<void>;
 
   // Maintenance Checklist Templates
-  getMaintenanceChecklistTemplatesByCustomer(customerId: string): Promise<MaintenanceChecklistTemplate[]>;
-  getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string): Promise<MaintenanceChecklistTemplate[]>;
+  getMaintenanceChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]>;
+  getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]>;
   getMaintenanceChecklistTemplatesByEquipment(equipmentId: string): Promise<MaintenanceChecklistTemplate[]>;
   getMaintenanceChecklistTemplate(id: string): Promise<MaintenanceChecklistTemplate | undefined>;
   createMaintenanceChecklistTemplate(template: InsertMaintenanceChecklistTemplate): Promise<MaintenanceChecklistTemplate>;
@@ -345,7 +345,7 @@ export interface IStorage {
   deleteMaintenanceChecklistExecution(id: string): Promise<void>;
 
   // Maintenance Plans
-  getMaintenancePlansByCustomer(customerId: string): Promise<MaintenancePlan[]>;
+  getMaintenancePlansByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<MaintenancePlan[]>;
   getMaintenancePlan(id: string): Promise<MaintenancePlan | undefined>;
   createMaintenancePlan(plan: InsertMaintenancePlan): Promise<MaintenancePlan>;
   updateMaintenancePlan(id: string, plan: Partial<InsertMaintenancePlan>): Promise<MaintenancePlan>;
@@ -1520,7 +1520,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(users.name);
   }
 
-  async getChecklistTemplatesByCustomer(customerId: string): Promise<ChecklistTemplate[]> {
+  async getChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]> {
     // Get customer sites to determine their company
     const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
     
@@ -1534,16 +1534,20 @@ export class DatabaseStorage implements IStorage {
     // Return checklist templates that are either:
     // 1. Global to the company (siteId is null) 
     // 2. Specific to this customer's sites
-    const results = await db.select().from(checklistTemplates)
-      .where(
-        and(
-          eq(checklistTemplates.companyId, companyId),
-          or(
-            isNull(checklistTemplates.siteId),
-            inArray(checklistTemplates.siteId, siteIds)
-          )
-        )
+    const conditions = [
+      eq(checklistTemplates.companyId, companyId),
+      or(
+        isNull(checklistTemplates.siteId),
+        inArray(checklistTemplates.siteId, siteIds)
       )
+    ];
+    
+    if (module) {
+      conditions.push(eq(checklistTemplates.module, module));
+    }
+    
+    const results = await db.select().from(checklistTemplates)
+      .where(and(...conditions))
       .orderBy(checklistTemplates.createdAt);
       
     return results;
@@ -2017,9 +2021,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Service Categories
-  async getServiceCategoriesByCustomer(customerId: string): Promise<ServiceCategory[]> {
+  async getServiceCategoriesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceCategory[]> {
+    const conditions = [eq(serviceCategories.customerId, customerId)];
+    if (module) {
+      conditions.push(eq(serviceCategories.module, module));
+    }
     return await db.select().from(serviceCategories)
-      .where(eq(serviceCategories.customerId, customerId))
+      .where(and(...conditions))
       .orderBy(serviceCategories.name);
   }
 
@@ -2055,9 +2063,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Checklist Templates
-  async getChecklistTemplatesByCompany(companyId: string): Promise<ChecklistTemplate[]> {
+  async getChecklistTemplatesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]> {
+    const conditions = [eq(checklistTemplates.companyId, companyId)];
+    if (module) {
+      conditions.push(eq(checklistTemplates.module, module));
+    }
     return await db.select().from(checklistTemplates)
-      .where(eq(checklistTemplates.companyId, companyId))
+      .where(and(...conditions))
       .orderBy(checklistTemplates.name);
   }
 
@@ -2119,9 +2131,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // SLA Configs
-  async getSlaConfigsByCompany(companyId: string): Promise<SlaConfig[]> {
+  async getSlaConfigsByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<SlaConfig[]> {
+    const conditions = [eq(slaConfigs.companyId, companyId)];
+    if (module) {
+      conditions.push(eq(slaConfigs.module, module));
+    }
     return await db.select().from(slaConfigs)
-      .where(eq(slaConfigs.companyId, companyId))
+      .where(and(...conditions))
       .orderBy(slaConfigs.name);
   }
 
@@ -4032,24 +4048,36 @@ export class DatabaseStorage implements IStorage {
   // MAINTENANCE MODULE - Equipment Implementation
   // ============================================================================
   
-  async getEquipmentByCustomer(customerId: string): Promise<Equipment[]> {
+  async getEquipmentByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Equipment[]> {
+    const conditions = [eq(equipment.customerId, customerId)];
+    if (module) {
+      conditions.push(eq(equipment.module, module));
+    }
     return await db.select()
       .from(equipment)
-      .where(eq(equipment.customerId, customerId))
+      .where(and(...conditions))
       .orderBy(desc(equipment.createdAt));
   }
 
-  async getEquipmentBySite(siteId: string): Promise<Equipment[]> {
+  async getEquipmentBySite(siteId: string, module?: 'clean' | 'maintenance'): Promise<Equipment[]> {
+    const conditions = [eq(equipment.siteId, siteId)];
+    if (module) {
+      conditions.push(eq(equipment.module, module));
+    }
     return await db.select()
       .from(equipment)
-      .where(eq(equipment.siteId, siteId))
+      .where(and(...conditions))
       .orderBy(desc(equipment.createdAt));
   }
 
-  async getEquipmentByZone(zoneId: string): Promise<Equipment[]> {
+  async getEquipmentByZone(zoneId: string, module?: 'clean' | 'maintenance'): Promise<Equipment[]> {
+    const conditions = [eq(equipment.zoneId, zoneId)];
+    if (module) {
+      conditions.push(eq(equipment.module, module));
+    }
     return await db.select()
       .from(equipment)
-      .where(eq(equipment.zoneId, zoneId))
+      .where(and(...conditions))
       .orderBy(desc(equipment.createdAt));
   }
 
@@ -4081,20 +4109,28 @@ export class DatabaseStorage implements IStorage {
 
   // Maintenance Checklist Templates Implementation
   
-  async getMaintenanceChecklistTemplatesByCustomer(customerId: string): Promise<MaintenanceChecklistTemplate[]> {
+  async getMaintenanceChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]> {
+    const conditions = [eq(maintenanceChecklistTemplates.customerId, customerId)];
+    if (module) {
+      conditions.push(eq(maintenanceChecklistTemplates.module, module));
+    }
     return await db.select()
       .from(maintenanceChecklistTemplates)
-      .where(eq(maintenanceChecklistTemplates.customerId, customerId))
+      .where(and(...conditions))
       .orderBy(desc(maintenanceChecklistTemplates.createdAt));
   }
 
-  async getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string): Promise<MaintenanceChecklistTemplate[]> {
+  async getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]> {
+    const conditions = [
+      eq(maintenanceChecklistTemplates.customerId, customerId),
+      eq(maintenanceChecklistTemplates.equipmentType, equipmentType)
+    ];
+    if (module) {
+      conditions.push(eq(maintenanceChecklistTemplates.module, module));
+    }
     return await db.select()
       .from(maintenanceChecklistTemplates)
-      .where(and(
-        eq(maintenanceChecklistTemplates.customerId, customerId),
-        eq(maintenanceChecklistTemplates.equipmentType, equipmentType)
-      ))
+      .where(and(...conditions))
       .orderBy(desc(maintenanceChecklistTemplates.createdAt));
   }
 
@@ -4175,10 +4211,14 @@ export class DatabaseStorage implements IStorage {
 
   // Maintenance Plans Implementation
   
-  async getMaintenancePlansByCustomer(customerId: string): Promise<MaintenancePlan[]> {
+  async getMaintenancePlansByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<MaintenancePlan[]> {
+    const conditions = [eq(maintenancePlans.customerId, customerId)];
+    if (module) {
+      conditions.push(eq(maintenancePlans.module, module));
+    }
     return await db.select()
       .from(maintenancePlans)
-      .where(eq(maintenancePlans.customerId, customerId))
+      .where(and(...conditions))
       .orderBy(desc(maintenancePlans.createdAt));
   }
 
