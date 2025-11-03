@@ -90,9 +90,6 @@ function AuthenticatedAdminRouter() {
           <Route path="/maintenance-plans" component={() => <MaintenancePlans customerId={activeClientId} />} />
           <Route path="/maintenance-checklist-templates" component={() => <MaintenanceChecklistTemplates customerId={activeClientId} />} />
           
-          {/* Module Selection - Available for authenticated users too */}
-          <Route path="/module-selection" component={ModuleSelection} />
-          
           {/* Redirecionar rotas de login para dashboard se já autenticado */}
           <Route path="/login">
             <Redirect to="/" />
@@ -128,6 +125,7 @@ function MobileRouter() {
 function Router() {
   const { user, isAuthenticated } = useAuth();
   const { isMobileOnlyUser, isLoading } = usePermissions();
+  const [location] = useLocation();
 
   // Se não está autenticado, mostrar login
   if (!isAuthenticated || !user) {
@@ -141,6 +139,11 @@ function Router() {
         <Route component={Login} />
       </Switch>
     );
+  }
+
+  // Module selection page - no sidebar, accessible when authenticated
+  if (location === "/module-selection") {
+    return <ModuleSelection />;
   }
 
   // Aguardar carregamento das permissões antes de rotear
