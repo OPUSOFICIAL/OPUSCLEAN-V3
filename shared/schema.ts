@@ -331,7 +331,7 @@ export const userRoleAssignments = pgTable("user_role_assignments", {
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
-// 17. TABELA: user_site_assignments (Usuários x Sites)
+// 17. TABELA: user_site_assignments (Usuários x Locais)
 export const userSiteAssignments = pgTable("user_site_assignments", {
   id: varchar("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -340,7 +340,7 @@ export const userSiteAssignments = pgTable("user_site_assignments", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
-// 18. TABELA: site_shifts (Turnos por Site)
+// 18. TABELA: site_shifts (Turnos por Local)
 export const siteShifts = pgTable("site_shifts", {
   id: varchar("id").primaryKey(),
   siteId: varchar("site_id").notNull().references(() => sites.id),
