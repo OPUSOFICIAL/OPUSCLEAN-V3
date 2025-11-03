@@ -408,34 +408,41 @@ export class DatabaseStorage implements IStorage {
   // Customer-filtered methods
 
   async getWorkOrdersByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]> {
-    // Get sites for this customer
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    // Get sites for this customer (filter by module if provided)
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+    
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     const siteIds = customerSites.map(site => site.id);
     
     if (siteIds.length === 0) {
       return [];
     }
     
-    // Get zones for these sites
+    // Get zones for these sites (filter by module if provided)
     let siteWhereCondition = eq(zones.siteId, siteIds[0]);
     for (let i = 1; i < siteIds.length; i++) {
       siteWhereCondition = sql`${siteWhereCondition} OR ${zones.siteId} = ${siteIds[i]}`;
     }
     
-    const customerZones = await db.select().from(zones).where(siteWhereCondition);
+    const zonesWhereCondition = module
+      ? and(siteWhereCondition, eq(zones.module, module))
+      : siteWhereCondition;
+    
+    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
     
     if (zoneIds.length === 0) {
       return [];
     }
     
-    // Get work orders for these zones
+    // Get work orders for these zones (filter by module if provided)
     let zoneWhereCondition = eq(workOrders.zoneId, zoneIds[0]);
     for (let i = 1; i < zoneIds.length; i++) {
       zoneWhereCondition = sql`${zoneWhereCondition} OR ${workOrders.zoneId} = ${zoneIds[i]}`;
     }
     
-    // Apply module filter if provided
     const whereConditions = module 
       ? and(zoneWhereCondition, eq(workOrders.module, module))
       : zoneWhereCondition;
