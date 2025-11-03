@@ -290,7 +290,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Checklist Templates by Customer (filtrado por cliente)  
   app.get("/api/customers/:customerId/checklist-templates", async (req, res) => {
     try {
-      const templates = await storage.getChecklistTemplatesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const templates = await storage.getChecklistTemplatesByCustomer(req.params.customerId, module);
       res.json(templates);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer checklist templates" });
@@ -1131,7 +1132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Checklist Templates
   app.get("/api/companies/:companyId/checklist-templates", async (req, res) => {
     try {
-      const templates = await storage.getChecklistTemplatesByCompany(req.params.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const templates = await storage.getChecklistTemplatesByCompany(req.params.companyId, module);
       res.json(templates);
     } catch (error) {
       console.error("Error getting checklist templates:", error);
@@ -1290,7 +1292,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Service Categories
   app.get("/api/customers/:customerId/service-categories", async (req, res) => {
     try {
-      const serviceCategories = await storage.getServiceCategoriesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const serviceCategories = await storage.getServiceCategoriesByCustomer(req.params.customerId, module);
       res.json(serviceCategories);
     } catch (error) {
       res.status(500).json({ message: "Failed to get service categories" });
@@ -2636,7 +2639,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get equipment by customer
   app.get("/api/customers/:customerId/equipment", async (req, res) => {
     try {
-      const equipment = await storage.getEquipmentByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const equipment = await storage.getEquipmentByCustomer(req.params.customerId, module);
       res.json(equipment);
     } catch (error) {
       console.error("Error fetching equipment:", error);
@@ -2647,7 +2651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get equipment by site
   app.get("/api/sites/:siteId/equipment", async (req, res) => {
     try {
-      const equipment = await storage.getEquipmentBySite(req.params.siteId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const equipment = await storage.getEquipmentBySite(req.params.siteId, module);
       res.json(equipment);
     } catch (error) {
       console.error("Error fetching equipment:", error);
@@ -2658,7 +2663,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get equipment by zone
   app.get("/api/zones/:zoneId/equipment", async (req, res) => {
     try {
-      const equipment = await storage.getEquipmentByZone(req.params.zoneId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const equipment = await storage.getEquipmentByZone(req.params.zoneId, module);
       res.json(equipment);
     } catch (error) {
       console.error("Error fetching equipment:", error);
@@ -2728,7 +2734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get checklist templates by customer
   app.get("/api/customers/:customerId/maintenance-checklist-templates", async (req, res) => {
     try {
-      const templates = await storage.getMaintenanceChecklistTemplatesByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const templates = await storage.getMaintenanceChecklistTemplatesByCustomer(req.params.customerId, module);
       res.json(templates);
     } catch (error) {
       console.error("Error fetching maintenance checklist templates:", error);
@@ -2739,9 +2746,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get checklist templates by equipment type
   app.get("/api/customers/:customerId/maintenance-checklist-templates/equipment-type/:equipmentType", async (req, res) => {
     try {
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
       const templates = await storage.getMaintenanceChecklistTemplatesByEquipmentType(
         req.params.customerId, 
-        req.params.equipmentType
+        req.params.equipmentType,
+        module
       );
       res.json(templates);
     } catch (error) {
@@ -2904,7 +2913,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get plans by customer
   app.get("/api/customers/:customerId/maintenance-plans", async (req, res) => {
     try {
-      const plans = await storage.getMaintenancePlansByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const plans = await storage.getMaintenancePlansByCustomer(req.params.customerId, module);
       res.json(plans);
     } catch (error) {
       console.error("Error fetching maintenance plans:", error);
