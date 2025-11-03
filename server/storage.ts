@@ -601,7 +601,11 @@ export class DatabaseStorage implements IStorage {
 
   // 1. RELATÓRIO GERAL - Visão completa das operações com todos os KPIs principais
   async getGeneralReport(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return {
         overview: { totalWorkOrders: 0, completedWorkOrders: 0, pendingWorkOrders: 0, overdueWorkOrders: 0 },
@@ -612,7 +616,12 @@ export class DatabaseStorage implements IStorage {
     }
 
     const siteIds = customerSites.map(site => site.id);
-    const customerZones = await db.select().from(zones).where(inArray(zones.siteId, siteIds));
+
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+
+    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
     
     if (zoneIds.length === 0) {
@@ -662,13 +671,22 @@ export class DatabaseStorage implements IStorage {
 
   // 2. ANÁLISE DE SLA - Performance detalhada de cumprimento de prazos
   async getSLAAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return { slaBreakdown: [], timeDistribution: [], criticalAlerts: [] };
     }
 
     const siteIds = customerSites.map(site => site.id);
-    const customerZones = await db.select().from(zones).where(inArray(zones.siteId, siteIds));
+
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+
+    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
     
     if (zoneIds.length === 0) {
@@ -708,13 +726,22 @@ export class DatabaseStorage implements IStorage {
 
   // 3. PRODUTIVIDADE - Métricas de eficiência e produtividade operacional
   async getProductivityReport(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return { productivity: {}, efficiency: {}, trends: [] };
     }
 
     const siteIds = customerSites.map(site => site.id);
-    const customerZones = await db.select().from(zones).where(inArray(zones.siteId, siteIds));
+
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+
+    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
     
     if (zoneIds.length === 0) {
@@ -867,7 +894,11 @@ export class DatabaseStorage implements IStorage {
 
   // 4. PERFORMANCE DE OPERADORES - Análise individual e comparativa
   async getOperatorPerformance(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return { operators: [], rankings: [], teamStats: {} };
     }
@@ -905,13 +936,22 @@ export class DatabaseStorage implements IStorage {
 
   // 5. ANÁLISE POR LOCAIS - Distribuição e performance por zona e site
   async getLocationAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return { sites: [], zones: [], heatmap: [] };
     }
 
     const siteIds = customerSites.map(site => site.id);
-    const customerZones = await db.select().from(zones).where(inArray(zones.siteId, siteIds));
+
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+
+    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     
     const sitesData = await Promise.all(customerSites.map(async (site) => {
       const siteZones = customerZones.filter(zone => zone.siteId === site.id);
@@ -953,13 +993,22 @@ export class DatabaseStorage implements IStorage {
 
   // 6. ANÁLISE TEMPORAL - Tendências e padrões ao longo do tempo  
   async getTemporalAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any> {
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return { trends: [], patterns: [], forecasts: [] };
     }
 
     const siteIds = customerSites.map(site => site.id);
-    const customerZones = await db.select().from(zones).where(inArray(zones.siteId, siteIds));
+
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+
+    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
     
     if (zoneIds.length === 0) {
@@ -1000,7 +1049,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAnalyticsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any> {
     // Get customer-specific analytics
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return {
         workOrdersData: [],
@@ -1011,8 +1064,13 @@ export class DatabaseStorage implements IStorage {
     }
 
     const siteIds = customerSites.map(site => site.id);
+
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+
     const customerZones = await db.select().from(zones)
-      .where(inArray(zones.siteId, siteIds));
+      .where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
 
     if (zoneIds.length === 0) {
