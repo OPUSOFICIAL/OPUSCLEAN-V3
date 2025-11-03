@@ -212,7 +212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // QR Code Points by Company
   app.get("/api/companies/:companyId/qr-points", async (req, res) => {
     try {
-      const qrPoints = await storage.getQrCodePointsByCompany(req.params.companyId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const qrPoints = await storage.getQrCodePointsByCompany(req.params.companyId, module);
       res.json(qrPoints);
     } catch (error) {
       res.status(500).json({ message: "Failed to get QR code points" });
@@ -222,7 +223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // QR Points by Customer (filtrado por cliente)
   app.get("/api/customers/:customerId/qr-points", async (req, res) => {
     try {
-      const qrPoints = await storage.getQrCodePointsByCustomer(req.params.customerId);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const qrPoints = await storage.getQrCodePointsByCustomer(req.params.customerId, module);
       res.json(qrPoints);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer QR code points" });
@@ -863,7 +865,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/qr-points", async (req, res) => {
     try {
-      const qrPoint = insertQrCodePointSchema.parse(req.body);
+      const qrPoint = insertQrCodePointSchema.parse({
+        ...req.body,
+        module: req.body.module || 'clean'
+      });
       // Generate unique code if not provided
       if (!qrPoint.code) {
         qrPoint.code = crypto.randomUUID();
