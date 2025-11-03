@@ -120,6 +120,11 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
 
 **Resultado**: Relatórios agora exibem dados consistentes e calculados do PostgreSQL, sem valores aleatórios.
 
+# Documentação Técnica
+
+Para entender o fluxo completo do sistema OPUS (desde autenticação até execução final), consulte:
+- **`FLUXO_SISTEMA_OPUS.md`**: Documentação técnica detalhada com diagramas de fluxo, arquitetura modular, e guia para adaptação de novos módulos.
+
 # External Dependencies
 
 ## Database
