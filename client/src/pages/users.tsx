@@ -355,6 +355,25 @@ export default function Users({ customerId }: UsersProps) {
     return <Badge variant="destructive" className="animate-pulse">⚠️ SEM PERFIL</Badge>;
   };
 
+  const getModulesBadges = (user: any) => {
+    const modules = user.modules || ['clean'];
+    
+    return (
+      <div className="flex flex-wrap gap-1">
+        {modules.includes('clean') && (
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" data-testid={`badge-module-clean-${user.id}`}>
+            Clean
+          </Badge>
+        )}
+        {modules.includes('maintenance') && (
+          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" data-testid={`badge-module-maintenance-${user.id}`}>
+            Manutenção
+          </Badge>
+        )}
+      </div>
+    );
+  };
+
   const filteredUsers = (users as any[])?.filter((user: any) => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -669,6 +688,7 @@ export default function Users({ customerId }: UsersProps) {
                     <TableHead>Email</TableHead>
                     <TableHead>Usuário</TableHead>
                     <TableHead>Perfil</TableHead>
+                    <TableHead>Módulos</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Último Acesso</TableHead>
                     <TableHead>Ações</TableHead>
@@ -681,6 +701,7 @@ export default function Users({ customerId }: UsersProps) {
                       <TableCell>{user.email}</TableCell>
                       <TableCell className="font-mono">{user.username}</TableCell>
                       <TableCell>{getRoleBadge(user)}</TableCell>
+                      <TableCell>{getModulesBadges(user)}</TableCell>
                       <TableCell>
                         {user.isActive ? (
                           <Badge className="bg-chart-2/10 text-chart-2">Ativo</Badge>
