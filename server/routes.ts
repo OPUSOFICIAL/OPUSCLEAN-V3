@@ -2150,7 +2150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.userType === 'customer_user') {
         // Customer users: get modules from their associated customer
         if (user.customerId) {
-          const customer = await storage.getCustomerById(user.customerId);
+          const customer = await storage.getCustomer(user.customerId);
           if (customer) {
             availableModules = customer.modules || [];
           }
