@@ -13,6 +13,9 @@ import {
   insertCustomRoleSchema, insertRolePermissionSchema, insertUserRoleAssignmentSchema,
   insertUserSiteAssignmentSchema, insertPublicRequestLogSchema, insertSiteShiftSchema,
   insertBathroomCounterLogSchema, insertCompanyCounterSchema,
+  insertEquipmentSchema, insertMaintenanceChecklistTemplateSchema,
+  insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
+  insertMaintenancePlanEquipmentSchema,
   type User
 } from "@shared/schema";
 import { z } from "zod";
@@ -1697,6 +1700,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get zone and company info
+      if (!point.zoneId) {
+        return res.status(400).json({ message: "QR code point has no zone associated" });
+      }
       const zone = await storage.getZone(point.zoneId);
       if (!zone) {
         return res.status(404).json({ message: "Zone not found" });
@@ -2398,9 +2404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userType: 'opus_user',
         companyId: 'company-opus-default',
         customerId: null,
-        phone: userData.phone || null,
         authProvider: userData.authProvider || 'local',
-        msUserId: userData.msUserId || null,
         msTenantId: userData.msTenantId || null,
         isActive: userData.isActive ?? true,
       };
@@ -2413,7 +2417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check for duplicate username
       if (error?.code === '23505' && error?.constraint === 'users_username_unique') {
         return res.status(400).json({ 
-          message: `Username '${userData.username}' já está em uso. Por favor, escolha outro username.` 
+          message: `Username já está em uso. Por favor, escolha outro username.` 
         });
       }
       
@@ -2606,6 +2610,425 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating company counter:", error);
       res.status(500).json({ message: "Failed to create company counter" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Equipment Routes
+  // ============================================================================
+
+  // Get equipment by customer
+  app.get("/api/customers/:customerId/equipment", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentByCustomer(req.params.customerId);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
+  // Get equipment by site
+  app.get("/api/sites/:siteId/equipment", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentBySite(req.params.siteId);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
+  // Get equipment by zone
+  app.get("/api/zones/:zoneId/equipment", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentByZone(req.params.zoneId);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
+  // Get single equipment
+  app.get("/api/equipment/:id", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipment(req.params.id);
+      if (!equipment) {
+        return res.status(404).json({ message: "Equipment not found" });
+      }
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
+  // Create equipment
+  app.post("/api/equipment", async (req, res) => {
+    try {
+      const equipment = insertEquipmentSchema.parse(req.body);
+      const newEquipment = await storage.createEquipment(equipment);
+      res.status(201).json(newEquipment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating equipment:", error);
+      res.status(500).json({ message: "Failed to create equipment" });
+    }
+  });
+
+  // Update equipment
+  app.put("/api/equipment/:id", async (req, res) => {
+    try {
+      const equipment = insertEquipmentSchema.partial().parse(req.body);
+      const updatedEquipment = await storage.updateEquipment(req.params.id, equipment);
+      res.json(updatedEquipment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating equipment:", error);
+      res.status(500).json({ message: "Failed to update equipment" });
+    }
+  });
+
+  // Delete equipment
+  app.delete("/api/equipment/:id", async (req, res) => {
+    try {
+      await storage.deleteEquipment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting equipment:", error);
+      res.status(500).json({ message: "Failed to delete equipment" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Maintenance Checklist Templates Routes
+  // ============================================================================
+
+  // Get checklist templates by customer
+  app.get("/api/customers/:customerId/maintenance-checklist-templates", async (req, res) => {
+    try {
+      const templates = await storage.getMaintenanceChecklistTemplatesByCustomer(req.params.customerId);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching maintenance checklist templates:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance checklist templates" });
+    }
+  });
+
+  // Get checklist templates by equipment type
+  app.get("/api/customers/:customerId/maintenance-checklist-templates/equipment-type/:equipmentType", async (req, res) => {
+    try {
+      const templates = await storage.getMaintenanceChecklistTemplatesByEquipmentType(
+        req.params.customerId, 
+        req.params.equipmentType
+      );
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching maintenance checklist templates:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance checklist templates" });
+    }
+  });
+
+  // Get checklist templates by equipment
+  app.get("/api/equipment/:equipmentId/maintenance-checklist-templates", async (req, res) => {
+    try {
+      const templates = await storage.getMaintenanceChecklistTemplatesByEquipment(req.params.equipmentId);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching maintenance checklist templates:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance checklist templates" });
+    }
+  });
+
+  // Get single checklist template
+  app.get("/api/maintenance-checklist-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getMaintenanceChecklistTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "Maintenance checklist template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching maintenance checklist template:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance checklist template" });
+    }
+  });
+
+  // Create checklist template
+  app.post("/api/maintenance-checklist-templates", async (req, res) => {
+    try {
+      const template = insertMaintenanceChecklistTemplateSchema.parse(req.body);
+      const newTemplate = await storage.createMaintenanceChecklistTemplate(template);
+      res.status(201).json(newTemplate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating maintenance checklist template:", error);
+      res.status(500).json({ message: "Failed to create maintenance checklist template" });
+    }
+  });
+
+  // Update checklist template
+  app.put("/api/maintenance-checklist-templates/:id", async (req, res) => {
+    try {
+      const template = insertMaintenanceChecklistTemplateSchema.partial().parse(req.body);
+      const updatedTemplate = await storage.updateMaintenanceChecklistTemplate(req.params.id, template);
+      res.json(updatedTemplate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating maintenance checklist template:", error);
+      res.status(500).json({ message: "Failed to update maintenance checklist template" });
+    }
+  });
+
+  // Delete checklist template
+  app.delete("/api/maintenance-checklist-templates/:id", async (req, res) => {
+    try {
+      await storage.deleteMaintenanceChecklistTemplate(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting maintenance checklist template:", error);
+      res.status(500).json({ message: "Failed to delete maintenance checklist template" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Maintenance Checklist Executions Routes
+  // ============================================================================
+
+  // Get executions by equipment
+  app.get("/api/equipment/:equipmentId/maintenance-checklist-executions", async (req, res) => {
+    try {
+      const executions = await storage.getMaintenanceChecklistExecutionsByEquipment(req.params.equipmentId);
+      res.json(executions);
+    } catch (error) {
+      console.error("Error fetching maintenance checklist executions:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance checklist executions" });
+    }
+  });
+
+  // Get executions by work order
+  app.get("/api/work-orders/:workOrderId/maintenance-checklist-executions", async (req, res) => {
+    try {
+      const executions = await storage.getMaintenanceChecklistExecutionsByWorkOrder(req.params.workOrderId);
+      res.json(executions);
+    } catch (error) {
+      console.error("Error fetching maintenance checklist executions:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance checklist executions" });
+    }
+  });
+
+  // Get single execution
+  app.get("/api/maintenance-checklist-executions/:id", async (req, res) => {
+    try {
+      const execution = await storage.getMaintenanceChecklistExecution(req.params.id);
+      if (!execution) {
+        return res.status(404).json({ message: "Maintenance checklist execution not found" });
+      }
+      res.json(execution);
+    } catch (error) {
+      console.error("Error fetching maintenance checklist execution:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance checklist execution" });
+    }
+  });
+
+  // Create execution
+  app.post("/api/maintenance-checklist-executions", async (req, res) => {
+    try {
+      const execution = insertMaintenanceChecklistExecutionSchema.parse(req.body);
+      const newExecution = await storage.createMaintenanceChecklistExecution(execution);
+      res.status(201).json(newExecution);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating maintenance checklist execution:", error);
+      res.status(500).json({ message: "Failed to create maintenance checklist execution" });
+    }
+  });
+
+  // Update execution
+  app.put("/api/maintenance-checklist-executions/:id", async (req, res) => {
+    try {
+      const execution = insertMaintenanceChecklistExecutionSchema.partial().parse(req.body);
+      const updatedExecution = await storage.updateMaintenanceChecklistExecution(req.params.id, execution);
+      res.json(updatedExecution);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating maintenance checklist execution:", error);
+      res.status(500).json({ message: "Failed to update maintenance checklist execution" });
+    }
+  });
+
+  // Delete execution
+  app.delete("/api/maintenance-checklist-executions/:id", async (req, res) => {
+    try {
+      await storage.deleteMaintenanceChecklistExecution(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting maintenance checklist execution:", error);
+      res.status(500).json({ message: "Failed to delete maintenance checklist execution" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Maintenance Plans Routes
+  // ============================================================================
+
+  // Get plans by customer
+  app.get("/api/customers/:customerId/maintenance-plans", async (req, res) => {
+    try {
+      const plans = await storage.getMaintenancePlansByCustomer(req.params.customerId);
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching maintenance plans:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance plans" });
+    }
+  });
+
+  // Get single plan
+  app.get("/api/maintenance-plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.getMaintenancePlan(req.params.id);
+      if (!plan) {
+        return res.status(404).json({ message: "Maintenance plan not found" });
+      }
+      res.json(plan);
+    } catch (error) {
+      console.error("Error fetching maintenance plan:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance plan" });
+    }
+  });
+
+  // Create plan
+  app.post("/api/maintenance-plans", async (req, res) => {
+    try {
+      const plan = insertMaintenancePlanSchema.parse(req.body);
+      const newPlan = await storage.createMaintenancePlan(plan);
+      res.status(201).json(newPlan);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating maintenance plan:", error);
+      res.status(500).json({ message: "Failed to create maintenance plan" });
+    }
+  });
+
+  // Update plan
+  app.put("/api/maintenance-plans/:id", async (req, res) => {
+    try {
+      const plan = insertMaintenancePlanSchema.partial().parse(req.body);
+      const updatedPlan = await storage.updateMaintenancePlan(req.params.id, plan);
+      res.json(updatedPlan);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating maintenance plan:", error);
+      res.status(500).json({ message: "Failed to update maintenance plan" });
+    }
+  });
+
+  // Delete plan
+  app.delete("/api/maintenance-plans/:id", async (req, res) => {
+    try {
+      await storage.deleteMaintenancePlan(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting maintenance plan:", error);
+      res.status(500).json({ message: "Failed to delete maintenance plan" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Maintenance Plan Equipment Routes
+  // ============================================================================
+
+  // Get plan equipments by plan
+  app.get("/api/maintenance-plans/:planId/equipments", async (req, res) => {
+    try {
+      const planEquipments = await storage.getMaintenancePlanEquipmentsByPlan(req.params.planId);
+      res.json(planEquipments);
+    } catch (error) {
+      console.error("Error fetching maintenance plan equipments:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance plan equipments" });
+    }
+  });
+
+  // Get plan equipments by equipment
+  app.get("/api/equipment/:equipmentId/maintenance-plans", async (req, res) => {
+    try {
+      const planEquipments = await storage.getMaintenancePlanEquipmentsByEquipment(req.params.equipmentId);
+      res.json(planEquipments);
+    } catch (error) {
+      console.error("Error fetching maintenance plan equipments:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance plan equipments" });
+    }
+  });
+
+  // Get single plan equipment
+  app.get("/api/maintenance-plan-equipments/:id", async (req, res) => {
+    try {
+      const planEquipment = await storage.getMaintenancePlanEquipment(req.params.id);
+      if (!planEquipment) {
+        return res.status(404).json({ message: "Maintenance plan equipment not found" });
+      }
+      res.json(planEquipment);
+    } catch (error) {
+      console.error("Error fetching maintenance plan equipment:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance plan equipment" });
+    }
+  });
+
+  // Create plan equipment
+  app.post("/api/maintenance-plan-equipments", async (req, res) => {
+    try {
+      const planEquipment = insertMaintenancePlanEquipmentSchema.parse(req.body);
+      const newPlanEquipment = await storage.createMaintenancePlanEquipment(planEquipment);
+      res.status(201).json(newPlanEquipment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating maintenance plan equipment:", error);
+      res.status(500).json({ message: "Failed to create maintenance plan equipment" });
+    }
+  });
+
+  // Update plan equipment
+  app.put("/api/maintenance-plan-equipments/:id", async (req, res) => {
+    try {
+      const planEquipment = insertMaintenancePlanEquipmentSchema.partial().parse(req.body);
+      const updatedPlanEquipment = await storage.updateMaintenancePlanEquipment(req.params.id, planEquipment);
+      res.json(updatedPlanEquipment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating maintenance plan equipment:", error);
+      res.status(500).json({ message: "Failed to update maintenance plan equipment" });
+    }
+  });
+
+  // Delete plan equipment
+  app.delete("/api/maintenance-plan-equipments/:id", async (req, res) => {
+    try {
+      await storage.deleteMaintenancePlanEquipment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting maintenance plan equipment:", error);
+      res.status(500).json({ message: "Failed to delete maintenance plan equipment" });
     }
   });
 
