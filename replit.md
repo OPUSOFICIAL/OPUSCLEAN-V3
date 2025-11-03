@@ -56,6 +56,22 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
 
 # Recent Changes
 
+## October 31, 2025 (Parte 3)
+- **DOCUMENTAÇÃO DO BANCO DE DADOS**: Criado arquivo completo de documentação
+  - Arquivo: `DOCUMENTACAO_BANCO_DE_DADOS.md`
+  - Documenta todas as 27 tabelas do sistema
+  - Inclui todos os 11 enums e 66 permissões
+  - Estrutura detalhada de campos JSONB (checklist_data, items, attachments)
+  - Regras de negócio e relacionamentos
+  - Comandos úteis e notas importantes
+  - Estatísticas completas do banco
+
+- **FIX LABELS CHECKLIST**: Corrigido exibição de labels em "Dados da Finalização"
+  - Labels dos itens agora aparecem em vez de IDs numéricos
+  - Busca correta do template pelo checklistTemplateId
+  - Tenta múltiplos campos (label, title, name, text)
+  - UX profissional e legível
+
 ## October 31, 2025 (Parte 2)
 - **HISTÓRICO ADICIONADO NO MODAL WEB**: Modal de detalhes da OS agora inclui histórico completo
   - Histórico adicionado à seção direita do modal (após "Dados da Finalização")
@@ -71,9 +87,9 @@ The project is configured for the Replit cloud environment, with PostgreSQL prov
   - Agora datas são salvas e exibidas corretamente
 
 - **SEPARAÇÃO HISTÓRICO vs COMENTÁRIOS**: Comentários de sistema movidos para histórico
-  - Comentários automáticos (iniciou, pausou, retomou) aparecem APENAS no Histórico
+  - Comentários automáticos (iniciou, pausou, retomou, finalizou) aparecem APENAS no Histórico
   - Seção "Comentários" mostra apenas comentários reais de usuários
-  - Filtro automático detecta emojis de sistema (⏯️, ⏸️, ▶️)
+  - Filtro automático detecta emojis de sistema (⏯️, ⏸️, ▶️) e frases ("OS Finalizada!", "✅ Checklist")
   - Badge de contador de comentários agora mostra apenas comentários de usuários
   - UX mais limpa e organizada
 
