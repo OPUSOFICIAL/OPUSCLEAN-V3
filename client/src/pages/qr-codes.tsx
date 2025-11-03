@@ -55,7 +55,7 @@ export default function QrCodes() {
   });
 
   const { data: qrPoints, isLoading } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "qr-points"],
+    queryKey: ["/api/customers", activeClientId, "qr-points", { module: currentModule }],
     enabled: !!activeClientId,
   });
 
@@ -101,6 +101,7 @@ export default function QrCodes() {
       type: "execucao",
       name: pointName,
       sizeCm: qrSizeCm,
+      module: currentModule,
       ...(pointCode ? { code: pointCode } : {}),
     });
   };
