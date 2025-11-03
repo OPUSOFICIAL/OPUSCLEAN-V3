@@ -4,6 +4,8 @@ import {
   serviceTypes, serviceCategories, serviceZones, dashboardGoals, auditLogs, customers,
   userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters,
   workOrderComments,
+  equipment, maintenanceChecklistTemplates, maintenanceChecklistExecutions,
+  maintenancePlans, maintenancePlanEquipments,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
   type User, type InsertUser, type ChecklistTemplate, type InsertChecklistTemplate,
@@ -21,7 +23,12 @@ import {
   type WorkOrderComment, type InsertWorkOrderComment,
   customRoles, rolePermissions, userRoleAssignments,
   type CustomRole, type CustomRoleWithPermissions, type InsertCustomRole, type RolePermission, type InsertRolePermission,
-  type UserRoleAssignment, type InsertUserRoleAssignment
+  type UserRoleAssignment, type InsertUserRoleAssignment,
+  type Equipment, type InsertEquipment,
+  type MaintenanceChecklistTemplate, type InsertMaintenanceChecklistTemplate,
+  type MaintenanceChecklistExecution, type InsertMaintenanceChecklistExecution,
+  type MaintenancePlan, type InsertMaintenancePlan,
+  type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne } from "drizzle-orm";
@@ -311,6 +318,49 @@ export interface IStorage {
       label: string;
     }[];
   }>;
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Equipment
+  // ============================================================================
+  getEquipmentByCustomer(customerId: string): Promise<Equipment[]>;
+  getEquipmentBySite(siteId: string): Promise<Equipment[]>;
+  getEquipmentByZone(zoneId: string): Promise<Equipment[]>;
+  getEquipment(id: string): Promise<Equipment | undefined>;
+  createEquipment(equipment: InsertEquipment): Promise<Equipment>;
+  updateEquipment(id: string, equipment: Partial<InsertEquipment>): Promise<Equipment>;
+  deleteEquipment(id: string): Promise<void>;
+
+  // Maintenance Checklist Templates
+  getMaintenanceChecklistTemplatesByCustomer(customerId: string): Promise<MaintenanceChecklistTemplate[]>;
+  getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string): Promise<MaintenanceChecklistTemplate[]>;
+  getMaintenanceChecklistTemplatesByEquipment(equipmentId: string): Promise<MaintenanceChecklistTemplate[]>;
+  getMaintenanceChecklistTemplate(id: string): Promise<MaintenanceChecklistTemplate | undefined>;
+  createMaintenanceChecklistTemplate(template: InsertMaintenanceChecklistTemplate): Promise<MaintenanceChecklistTemplate>;
+  updateMaintenanceChecklistTemplate(id: string, template: Partial<InsertMaintenanceChecklistTemplate>): Promise<MaintenanceChecklistTemplate>;
+  deleteMaintenanceChecklistTemplate(id: string): Promise<void>;
+
+  // Maintenance Checklist Executions
+  getMaintenanceChecklistExecutionsByEquipment(equipmentId: string): Promise<MaintenanceChecklistExecution[]>;
+  getMaintenanceChecklistExecutionsByWorkOrder(workOrderId: string): Promise<MaintenanceChecklistExecution[]>;
+  getMaintenanceChecklistExecution(id: string): Promise<MaintenanceChecklistExecution | undefined>;
+  createMaintenanceChecklistExecution(execution: InsertMaintenanceChecklistExecution): Promise<MaintenanceChecklistExecution>;
+  updateMaintenanceChecklistExecution(id: string, execution: Partial<InsertMaintenanceChecklistExecution>): Promise<MaintenanceChecklistExecution>;
+  deleteMaintenanceChecklistExecution(id: string): Promise<void>;
+
+  // Maintenance Plans
+  getMaintenancePlansByCustomer(customerId: string): Promise<MaintenancePlan[]>;
+  getMaintenancePlan(id: string): Promise<MaintenancePlan | undefined>;
+  createMaintenancePlan(plan: InsertMaintenancePlan): Promise<MaintenancePlan>;
+  updateMaintenancePlan(id: string, plan: Partial<InsertMaintenancePlan>): Promise<MaintenancePlan>;
+  deleteMaintenancePlan(id: string): Promise<void>;
+
+  // Maintenance Plan Equipments
+  getMaintenancePlanEquipmentsByPlan(planId: string): Promise<MaintenancePlanEquipment[]>;
+  getMaintenancePlanEquipmentsByEquipment(equipmentId: string): Promise<MaintenancePlanEquipment[]>;
+  getMaintenancePlanEquipment(id: string): Promise<MaintenancePlanEquipment | undefined>;
+  createMaintenancePlanEquipment(planEquipment: InsertMaintenancePlanEquipment): Promise<MaintenancePlanEquipment>;
+  updateMaintenancePlanEquipment(id: string, planEquipment: Partial<InsertMaintenancePlanEquipment>): Promise<MaintenancePlanEquipment>;
+  deleteMaintenancePlanEquipment(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3868,6 +3918,228 @@ export class DatabaseStorage implements IStorage {
         ]
       };
     }
+  }
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Equipment Implementation
+  // ============================================================================
+  
+  async getEquipmentByCustomer(customerId: string): Promise<Equipment[]> {
+    return await db.select()
+      .from(equipment)
+      .where(eq(equipment.customerId, customerId))
+      .orderBy(desc(equipment.createdAt));
+  }
+
+  async getEquipmentBySite(siteId: string): Promise<Equipment[]> {
+    return await db.select()
+      .from(equipment)
+      .where(eq(equipment.siteId, siteId))
+      .orderBy(desc(equipment.createdAt));
+  }
+
+  async getEquipmentByZone(zoneId: string): Promise<Equipment[]> {
+    return await db.select()
+      .from(equipment)
+      .where(eq(equipment.zoneId, zoneId))
+      .orderBy(desc(equipment.createdAt));
+  }
+
+  async getEquipment(id: string): Promise<Equipment | undefined> {
+    const [result] = await db.select().from(equipment).where(eq(equipment.id, id));
+    return result;
+  }
+
+  async createEquipment(equipmentData: InsertEquipment): Promise<Equipment> {
+    const id = nanoid();
+    const [newEquipment] = await db.insert(equipment).values({ 
+      ...equipmentData, 
+      id 
+    }).returning();
+    return newEquipment;
+  }
+
+  async updateEquipment(id: string, equipmentData: Partial<InsertEquipment>): Promise<Equipment> {
+    const [updatedEquipment] = await db.update(equipment)
+      .set({ ...equipmentData, updatedAt: sql`now()` })
+      .where(eq(equipment.id, id))
+      .returning();
+    return updatedEquipment;
+  }
+
+  async deleteEquipment(id: string): Promise<void> {
+    await db.delete(equipment).where(eq(equipment.id, id));
+  }
+
+  // Maintenance Checklist Templates Implementation
+  
+  async getMaintenanceChecklistTemplatesByCustomer(customerId: string): Promise<MaintenanceChecklistTemplate[]> {
+    return await db.select()
+      .from(maintenanceChecklistTemplates)
+      .where(eq(maintenanceChecklistTemplates.customerId, customerId))
+      .orderBy(desc(maintenanceChecklistTemplates.createdAt));
+  }
+
+  async getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string): Promise<MaintenanceChecklistTemplate[]> {
+    return await db.select()
+      .from(maintenanceChecklistTemplates)
+      .where(and(
+        eq(maintenanceChecklistTemplates.customerId, customerId),
+        eq(maintenanceChecklistTemplates.equipmentType, equipmentType)
+      ))
+      .orderBy(desc(maintenanceChecklistTemplates.createdAt));
+  }
+
+  async getMaintenanceChecklistTemplatesByEquipment(equipmentId: string): Promise<MaintenanceChecklistTemplate[]> {
+    return await db.select()
+      .from(maintenanceChecklistTemplates)
+      .where(eq(maintenanceChecklistTemplates.equipmentId, equipmentId))
+      .orderBy(desc(maintenanceChecklistTemplates.createdAt));
+  }
+
+  async getMaintenanceChecklistTemplate(id: string): Promise<MaintenanceChecklistTemplate | undefined> {
+    const [result] = await db.select().from(maintenanceChecklistTemplates).where(eq(maintenanceChecklistTemplates.id, id));
+    return result;
+  }
+
+  async createMaintenanceChecklistTemplate(template: InsertMaintenanceChecklistTemplate): Promise<MaintenanceChecklistTemplate> {
+    const id = nanoid();
+    const [newTemplate] = await db.insert(maintenanceChecklistTemplates).values({ 
+      ...template, 
+      id 
+    }).returning();
+    return newTemplate;
+  }
+
+  async updateMaintenanceChecklistTemplate(id: string, template: Partial<InsertMaintenanceChecklistTemplate>): Promise<MaintenanceChecklistTemplate> {
+    const [updatedTemplate] = await db.update(maintenanceChecklistTemplates)
+      .set({ ...template, updatedAt: sql`now()` })
+      .where(eq(maintenanceChecklistTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+
+  async deleteMaintenanceChecklistTemplate(id: string): Promise<void> {
+    await db.delete(maintenanceChecklistTemplates).where(eq(maintenanceChecklistTemplates.id, id));
+  }
+
+  // Maintenance Checklist Executions Implementation
+  
+  async getMaintenanceChecklistExecutionsByEquipment(equipmentId: string): Promise<MaintenanceChecklistExecution[]> {
+    return await db.select()
+      .from(maintenanceChecklistExecutions)
+      .where(eq(maintenanceChecklistExecutions.equipmentId, equipmentId))
+      .orderBy(desc(maintenanceChecklistExecutions.createdAt));
+  }
+
+  async getMaintenanceChecklistExecutionsByWorkOrder(workOrderId: string): Promise<MaintenanceChecklistExecution[]> {
+    return await db.select()
+      .from(maintenanceChecklistExecutions)
+      .where(eq(maintenanceChecklistExecutions.workOrderId, workOrderId))
+      .orderBy(desc(maintenanceChecklistExecutions.createdAt));
+  }
+
+  async getMaintenanceChecklistExecution(id: string): Promise<MaintenanceChecklistExecution | undefined> {
+    const [result] = await db.select().from(maintenanceChecklistExecutions).where(eq(maintenanceChecklistExecutions.id, id));
+    return result;
+  }
+
+  async createMaintenanceChecklistExecution(execution: InsertMaintenanceChecklistExecution): Promise<MaintenanceChecklistExecution> {
+    const id = nanoid();
+    const [newExecution] = await db.insert(maintenanceChecklistExecutions).values({ 
+      ...execution, 
+      id 
+    }).returning();
+    return newExecution;
+  }
+
+  async updateMaintenanceChecklistExecution(id: string, execution: Partial<InsertMaintenanceChecklistExecution>): Promise<MaintenanceChecklistExecution> {
+    const [updatedExecution] = await db.update(maintenanceChecklistExecutions)
+      .set({ ...execution, updatedAt: sql`now()` })
+      .where(eq(maintenanceChecklistExecutions.id, id))
+      .returning();
+    return updatedExecution;
+  }
+
+  async deleteMaintenanceChecklistExecution(id: string): Promise<void> {
+    await db.delete(maintenanceChecklistExecutions).where(eq(maintenanceChecklistExecutions.id, id));
+  }
+
+  // Maintenance Plans Implementation
+  
+  async getMaintenancePlansByCustomer(customerId: string): Promise<MaintenancePlan[]> {
+    return await db.select()
+      .from(maintenancePlans)
+      .where(eq(maintenancePlans.customerId, customerId))
+      .orderBy(desc(maintenancePlans.createdAt));
+  }
+
+  async getMaintenancePlan(id: string): Promise<MaintenancePlan | undefined> {
+    const [result] = await db.select().from(maintenancePlans).where(eq(maintenancePlans.id, id));
+    return result;
+  }
+
+  async createMaintenancePlan(plan: InsertMaintenancePlan): Promise<MaintenancePlan> {
+    const id = nanoid();
+    const [newPlan] = await db.insert(maintenancePlans).values({ 
+      ...plan, 
+      id 
+    }).returning();
+    return newPlan;
+  }
+
+  async updateMaintenancePlan(id: string, plan: Partial<InsertMaintenancePlan>): Promise<MaintenancePlan> {
+    const [updatedPlan] = await db.update(maintenancePlans)
+      .set({ ...plan, updatedAt: sql`now()` })
+      .where(eq(maintenancePlans.id, id))
+      .returning();
+    return updatedPlan;
+  }
+
+  async deleteMaintenancePlan(id: string): Promise<void> {
+    await db.delete(maintenancePlans).where(eq(maintenancePlans.id, id));
+  }
+
+  // Maintenance Plan Equipments Implementation
+  
+  async getMaintenancePlanEquipmentsByPlan(planId: string): Promise<MaintenancePlanEquipment[]> {
+    return await db.select()
+      .from(maintenancePlanEquipments)
+      .where(eq(maintenancePlanEquipments.planId, planId))
+      .orderBy(desc(maintenancePlanEquipments.createdAt));
+  }
+
+  async getMaintenancePlanEquipmentsByEquipment(equipmentId: string): Promise<MaintenancePlanEquipment[]> {
+    return await db.select()
+      .from(maintenancePlanEquipments)
+      .where(eq(maintenancePlanEquipments.equipmentId, equipmentId))
+      .orderBy(desc(maintenancePlanEquipments.createdAt));
+  }
+
+  async getMaintenancePlanEquipment(id: string): Promise<MaintenancePlanEquipment | undefined> {
+    const [result] = await db.select().from(maintenancePlanEquipments).where(eq(maintenancePlanEquipments.id, id));
+    return result;
+  }
+
+  async createMaintenancePlanEquipment(planEquipment: InsertMaintenancePlanEquipment): Promise<MaintenancePlanEquipment> {
+    const id = nanoid();
+    const [newPlanEquipment] = await db.insert(maintenancePlanEquipments).values({ 
+      ...planEquipment, 
+      id 
+    }).returning();
+    return newPlanEquipment;
+  }
+
+  async updateMaintenancePlanEquipment(id: string, planEquipment: Partial<InsertMaintenancePlanEquipment>): Promise<MaintenancePlanEquipment> {
+    const [updatedPlanEquipment] = await db.update(maintenancePlanEquipments)
+      .set({ ...planEquipment, updatedAt: sql`now()` })
+      .where(eq(maintenancePlanEquipments.id, id))
+      .returning();
+    return updatedPlanEquipment;
+  }
+
+  async deleteMaintenancePlanEquipment(id: string): Promise<void> {
+    await db.delete(maintenancePlanEquipments).where(eq(maintenancePlanEquipments.id, id));
   }
 }
 
