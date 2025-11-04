@@ -2544,6 +2544,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate scheduled work orders from maintenance activities
+  app.post("/api/scheduler/generate-maintenance-work-orders", async (req, res) => {
+    try {
+      const { companyId, windowStart, windowEnd } = req.body;
+      
+      if (!companyId) {
+        return res.status(400).json({ message: "Company ID is required" });
+      }
+      
+      // Default window: APENAS MÊS CORRENTE (1 mês)
+      const now = new Date();
+      const startDate = windowStart ? new Date(windowStart) : new Date(now.getFullYear(), now.getMonth(), 1);
+      const endDate = windowEnd ? new Date(windowEnd) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      
+      console.log(`[SCHEDULER MAINTENANCE] Gerando OSs de manutenção para período: ${startDate.toISOString()} até ${endDate.toISOString()}`);
+      
+      const generatedOrders = await storage.generateMaintenanceWorkOrders(companyId, startDate, endDate);
+      
+      console.log(`[SCHEDULER MAINTENANCE] ✅ ${generatedOrders.length} OSs de manutenção geradas com sucesso`);
+      
+      res.json({
+        message: `Generated ${generatedOrders.length} maintenance work orders`,
+        generatedOrders: generatedOrders.length,
+        workOrders: generatedOrders,
+        period: {
+          start: startDate,
+          end: endDate
+        }
+      });
+    } catch (error) {
+      console.error("Error generating maintenance work orders:", error);
+      res.status(500).json({ message: "Failed to generate maintenance work orders" });
+    }
+  });
+
   // === SYSTEM USERS MANAGEMENT ===
   
   // Listar usuários do sistema OPUS (type: opus_user)

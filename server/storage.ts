@@ -175,6 +175,7 @@ export interface IStorage {
   // Scheduler functions
   expandOccurrences(activity: CleaningActivity, windowStart: Date, windowEnd: Date): Date[];
   generateScheduledWorkOrders(companyId: string, windowStart: Date, windowEnd: Date): Promise<WorkOrder[]>;
+  generateMaintenanceWorkOrders(companyId: string, windowStart: Date, windowEnd: Date): Promise<WorkOrder[]>;
 
   // Work Orders
   getWorkOrdersByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]>;
@@ -2431,6 +2432,103 @@ export class DatabaseStorage implements IStorage {
         
         const [createdOrder] = await db.insert(workOrders).values(workOrderData).returning();
         generatedOrders.push(createdOrder);
+      }
+    }
+    
+    return generatedOrders;
+  }
+
+  // Generate scheduled work orders from maintenance activities
+  async generateMaintenanceWorkOrders(companyId: string, windowStart: Date, windowEnd: Date): Promise<WorkOrder[]> {
+    // Get active maintenance activities
+    const activities = await this.getMaintenanceActivitiesByCompany(companyId);
+    const activeActivities = activities.filter((a: any) => a.isActive);
+    
+    const generatedOrders: WorkOrder[] = [];
+    
+    for (const activity of activeActivities) {
+      // Convert maintenance activity to format compatible with expandOccurrences
+      const activityForExpansion: any = {
+        ...activity,
+        module: 'maintenance'
+      };
+      
+      const occurrences = this.expandOccurrences(activityForExpansion, windowStart, windowEnd);
+      
+      // Get equipment based on application target
+      let equipmentList: any[] = [];
+      if (activity.applicationTarget === 'tags' && activity.tagIds && activity.tagIds.length > 0) {
+        // Get all equipment with these tags
+        const allEquipment = await db.select().from(equipment)
+          .where(eq(equipment.customerId, activity.customerId));
+        
+        equipmentList = allEquipment.filter(equipItem => 
+          equipItem.tags && activity.tagIds.some((tagId: string) => equipItem.tags.includes(tagId))
+        );
+      } else if (activity.applicationTarget === 'equipment' && activity.equipmentId) {
+        // Get specific equipment
+        const [equipItem] = await db.select().from(equipment)
+          .where(eq(equipment.id, activity.equipmentId))
+          .limit(1);
+        if (equipItem) {
+          equipmentList = [equipItem];
+        }
+      }
+      
+      // Generate work orders for each equipment and occurrence combination
+      for (const equipItem of equipmentList) {
+        for (const occ of occurrences) {
+          // Check if work order already exists (idempotency)
+          const existing = await db.select().from(workOrders)
+            .where(and(
+              eq(workOrders.companyId, companyId),
+              eq(workOrders.maintenanceActivityId, activity.id),
+              eq(workOrders.equipmentId, equipItem.id),
+              eq(workOrders.scheduledDate, occ.date)
+            ))
+            .limit(1);
+            
+          if (existing.length > 0) {
+            continue; // Skip if already exists
+          }
+          
+          // Generate work order number
+          const workOrderNumber = await this.getNextWorkOrderNumber(companyId);
+          
+          // Build title
+          let title = `${activity.name} - ${equipItem.name}`;
+          if (occ.total > 1) {
+            let periodo = 'ao dia';
+            if (activity.frequency === 'semanal') {
+              periodo = 'na semana';
+            } else if (activity.frequency === 'turno') {
+              periodo = 'turnos';
+            }
+            title = `${activity.name} - ${equipItem.name} - ${occ.occurrence}ª/${occ.total}`;
+          }
+          
+          // Create work order
+          const workOrderData = {
+            id: crypto.randomUUID(),
+            number: workOrderNumber,
+            companyId: companyId,
+            equipmentId: equipItem.id,
+            maintenanceActivityId: activity.id,
+            checklistTemplateId: activity.checklistTemplateId,
+            type: 'programada' as const,
+            status: 'aberta' as const,
+            priority: 'media' as const,
+            title: title,
+            description: activity.description || `Manutenção ${activity.type} para ${equipItem.name}`,
+            scheduledDate: occ.date,
+            dueDate: new Date(occ.date.getTime() + (4 * 60 * 60 * 1000)), // 4 hours after scheduled
+            origin: 'Sistema - Plano de Manutenção',
+            module: 'maintenance' as const
+          };
+          
+          const [createdOrder] = await db.insert(workOrders).values(workOrderData).returning();
+          generatedOrders.push(createdOrder);
+        }
       }
     }
     
