@@ -1308,7 +1308,7 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     equipmentIds: [] as string[],
     siteIds: [] as string[],
     zoneIds: [] as string[],
-    checklistTemplateId: "none",
+    checklistTemplateId: "",
     startTime: "",
     endTime: "",
     isActive: true
@@ -1400,7 +1400,7 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
         ...data,
         companyId,
         activeClientId,
-        checklistTemplateId: data.checklistTemplateId === "none" ? null : data.checklistTemplateId,
+        checklistTemplateId: data.checklistTemplateId || null,
         equipmentIds: data.equipmentIds || [],
       };
       return { activity: await apiRequest("POST", "/api/maintenance-activities", submitData), companyId };
@@ -1452,6 +1452,16 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
       toast({
         title: "Zonas obrigatórias",
         description: "Selecione ao menos uma zona",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate checklist
+    if (!formData.checklistTemplateId) {
+      toast({
+        title: "Checklist obrigatório",
+        description: "Selecione um checklist para o plano de manutenção",
         variant: "destructive"
       });
       return;
@@ -1777,13 +1787,12 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="checklist">Template de Checklist (opcional)</Label>
+                <Label htmlFor="checklist">Checklist (obrigatório)</Label>
                 <Select value={formData.checklistTemplateId} onValueChange={(value) => handleChange("checklistTemplateId", value)}>
                   <SelectTrigger data-testid="select-checklist">
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione um checklist" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
                     {(checklistTemplates as any[])?.map((template: any) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}

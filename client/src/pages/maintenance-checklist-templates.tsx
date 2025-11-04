@@ -479,7 +479,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-purple-900 to-indigo-900 bg-clip-text text-transparent">
-                  Templates de Checklist
+                  Checklists
                 </h1>
                 <p className="text-sm text-slate-600">
                   Gerencie os templates de checklist de manutenção
@@ -884,7 +884,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       <div className="p-8">
         <Card>
           <CardHeader>
-            <CardTitle>Templates de Checklist de Manutenção</CardTitle>
+            <CardTitle>Checklists de Manutenção</CardTitle>
           </CardHeader>
           <CardContent>
             {!templates || (templates as any[]).length === 0 ? (
