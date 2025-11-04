@@ -2462,9 +2462,17 @@ export class DatabaseStorage implements IStorage {
         const allEquipment = await db.select().from(equipment)
           .where(eq(equipment.customerId, activity.customerId));
         
+        console.log(`[SCHEDULER DEBUG] Total equipment for customer: ${allEquipment.length}`);
+        console.log(`[SCHEDULER DEBUG] Looking for tags:`, activity.tagIds);
+        
         equipmentList = allEquipment.filter(equipItem => 
           equipItem.tagIds && activity.tagIds.some((tagId: string) => equipItem.tagIds.includes(tagId))
         );
+        
+        console.log(`[SCHEDULER DEBUG] Equipment found with matching tags: ${equipmentList.length}`);
+        equipmentList.forEach(eq => {
+          console.log(`  - ${eq.name} (tags: ${eq.tagIds})`);
+        });
       } else if (activity.applicationTarget === 'equipment' && activity.equipmentId) {
         // Get specific equipment
         const [equipItem] = await db.select().from(equipment)
