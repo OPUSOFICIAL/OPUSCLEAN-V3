@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -153,7 +152,6 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
-  const [targetType, setTargetType] = useState<'tags' | 'equipment'>('tags');
   
   // Form states
   const [templateForm, setTemplateForm] = useState({
@@ -161,8 +159,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     description: "",
     siteIds: [] as string[],
     zoneIds: [] as string[],
-    tagIds: [] as string[],
-    equipmentId: null as string | null,
+    equipmentIds: [] as string[],
     version: "1.0",
     items: [] as ChecklistItem[]
   });
@@ -207,12 +204,6 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       if (!res.ok) throw new Error('Failed to fetch zones');
       return res.json();
     },
-  });
-
-  // Fetch equipment tags
-  const { data: equipmentTags = [] } = useQuery({
-    queryKey: [`/api/customers/${customerId}/equipment-tags`, { module: currentModule }],
-    enabled: !!customerId,
   });
 
   // Fetch equipment for selected zones
@@ -290,12 +281,10 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: "",
       siteIds: [],
       zoneIds: [],
-      tagIds: [],
-      equipmentId: null,
+      equipmentIds: [],
       version: "1.0",
       items: []
     });
-    setTargetType('tags');
     setNewItem({
       type: 'text',
       label: "",
@@ -372,8 +361,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: templateForm.description || null,
       siteIds: templateForm.siteIds && templateForm.siteIds.length > 0 ? templateForm.siteIds : null,
       zoneIds: templateForm.zoneIds && templateForm.zoneIds.length > 0 ? templateForm.zoneIds : null,
-      tagIds: targetType === 'tags' && templateForm.tagIds && templateForm.tagIds.length > 0 ? templateForm.tagIds : null,
-      equipmentId: targetType === 'equipment' ? templateForm.equipmentId : null,
+      equipmentIds: templateForm.equipmentIds && templateForm.equipmentIds.length > 0 ? templateForm.equipmentIds : null,
       version: templateForm.version,
       items: templateForm.items,
       module: currentModule,
@@ -393,13 +381,10 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: template.description || "",
       siteIds: template.siteIds || [],
       zoneIds: template.zoneIds || [],
-      tagIds: template.tagIds || [],
-      equipmentId: template.equipmentId || null,
+      equipmentIds: template.equipmentIds || [],
       version: template.version,
       items: template.items || []
     });
-    // Detectar se é tag ou equipamento
-    setTargetType(template.equipmentId ? 'equipment' : 'tags');
     setIsCreateDialogOpen(true);
   };
 
@@ -437,12 +422,12 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     return (zones as any[])?.find(z => z.id === zoneId)?.name || null;
   };
 
-  const getTagName = (tagId: string) => {
-    return (equipmentTags as any[])?.find(t => t.id === tagId)?.name || tagId;
-  };
-
-  const getEquipmentName = (equipmentId: string) => {
-    return (equipment as any[])?.find(e => e.id === equipmentId)?.name || equipmentId;
+  const getEquipmentNames = (equipmentIds: string[]) => {
+    if (!equipmentIds || equipmentIds.length === 0) return [];
+    return equipmentIds.map(id => {
+      const eq = (equipment as any[])?.find(e => e.id === id);
+      return eq ? eq.name : id;
+    });
   };
 
   if (isLoading) {
@@ -556,79 +541,23 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     />
                   </div>
 
-                  {/* Seleção de Tags OU Equipamento */}
-                  <Card className="bg-slate-50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm">Aplicar Template a:</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <RadioGroup 
-                        value={targetType} 
-                        onValueChange={(val: 'tags' | 'equipment') => {
-                          setTargetType(val);
-                          setTemplateForm(prev => ({
-                            ...prev,
-                            tagIds: [],
-                            equipmentId: null
-                          }));
-                        }}
-                        className="flex gap-6"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="tags" id="target-tags" data-testid="radio-target-tags" />
-                          <Label htmlFor="target-tags" className="cursor-pointer font-normal">
-                            Tags de Equipamentos
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="equipment" id="target-equipment" data-testid="radio-target-equipment" />
-                          <Label htmlFor="target-equipment" className="cursor-pointer font-normal">
-                            Equipamento Específico
-                          </Label>
-                        </div>
-                      </RadioGroup>
-
-                      {targetType === 'tags' ? (
-                        <MultiSelect
-                          label="Selecione as Tags (Opcional)"
-                          options={(equipmentTags as any[])?.map(tag => ({ value: tag.id, label: tag.name })) || []}
-                          value={templateForm.tagIds || []}
-                          onChange={(val) => setTemplateForm(prev => ({ ...prev, tagIds: val }))}
-                          placeholder="Selecione tags para aplicar este template"
-                          data-testid="select-template-tags"
-                        />
-                      ) : (
-                        <div className="space-y-2">
-                          <Label>Selecione o Equipamento (Opcional)</Label>
-                          <Select
-                            value={templateForm.equipmentId || undefined}
-                            onValueChange={(val) => setTemplateForm(prev => ({ ...prev, equipmentId: val }))}
-                            disabled={!equipment.length}
-                          >
-                            <SelectTrigger data-testid="select-template-equipment">
-                              <SelectValue placeholder={
-                                equipment.length === 0 
-                                  ? "Selecione zonas primeiro" 
-                                  : "Selecione um equipamento"
-                              } />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(equipment as any[])?.map(eq => (
-                                <SelectItem key={eq.id} value={eq.id}>
-                                  {eq.name} {eq.internalCode ? `(${eq.internalCode})` : ''}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {equipment.length === 0 && templateForm.zoneIds?.length > 0 && (
-                            <p className="text-xs text-slate-500">
-                              Nenhum equipamento encontrado nas zonas selecionadas
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  {/* Seleção de Equipamentos */}
+                  <MultiSelect
+                    label="Equipamentos (Opcional)"
+                    options={(equipment as any[])?.map(eq => ({ 
+                      value: eq.id, 
+                      label: `${eq.name}${eq.internalCode ? ` (${eq.internalCode})` : ''}` 
+                    })) || []}
+                    value={templateForm.equipmentIds || []}
+                    onChange={(val) => setTemplateForm(prev => ({ ...prev, equipmentIds: val }))}
+                    placeholder={
+                      equipment.length === 0 
+                        ? (templateForm.zoneIds?.length > 0 ? "Nenhum equipamento nas zonas selecionadas" : "Selecione zonas primeiro")
+                        : "Selecione um ou mais equipamentos"
+                    }
+                    disabled={!equipment.length}
+                    data-testid="select-template-equipment"
+                  />
 
                   {/* Adicionar item */}
                   <Card>
@@ -947,18 +876,14 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {template.equipmentId ? (
-                            <Badge variant="default" className="text-xs bg-purple-600">
-                              Equipamento: {getEquipmentName(template.equipmentId)}
-                            </Badge>
-                          ) : template.tagIds && template.tagIds.length > 0 ? (
-                            template.tagIds.map((tagId: string) => (
-                              <Badge key={tagId} variant="outline" className="text-xs">
-                                Tag: {getTagName(tagId)}
+                          {template.equipmentIds && template.equipmentIds.length > 0 ? (
+                            getEquipmentNames(template.equipmentIds).map((name: string, idx: number) => (
+                              <Badge key={template.equipmentIds[idx]} variant="default" className="text-xs bg-purple-600">
+                                {name}
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-slate-400 text-xs">Todos</span>
+                            <span className="text-slate-400 text-xs">Todos equipamentos</span>
                           )}
                         </div>
                       </TableCell>

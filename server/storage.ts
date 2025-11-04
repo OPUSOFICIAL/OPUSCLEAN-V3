@@ -2452,32 +2452,18 @@ export class DatabaseStorage implements IStorage {
         console.log(`  ${idx + 1}. ${occ.date.toISOString().split('T')[0]} (${occ.occurrence}/${occ.total})`);
       });
       
-      // Get equipment based on application target
+      // Get equipment based on equipmentIds array
       let equipmentList: any[] = [];
-      if (activity.applicationTarget === 'tags' && activity.tagIds && activity.tagIds.length > 0) {
-        // Get all equipment with these tags
-        const allEquipment = await db.select().from(equipment)
-          .where(eq(equipment.customerId, activity.customerId));
+      if (activity.equipmentIds && activity.equipmentIds.length > 0) {
+        // Get all specified equipment
+        equipmentList = await db.select().from(equipment)
+          .where(inArray(equipment.id, activity.equipmentIds));
         
-        console.log(`[SCHEDULER DEBUG] Total equipment for customer: ${allEquipment.length}`);
-        console.log(`[SCHEDULER DEBUG] Looking for tags:`, activity.tagIds);
-        
-        equipmentList = allEquipment.filter(equipItem => 
-          equipItem.tagIds && activity.tagIds.some((tagId: string) => equipItem.tagIds.includes(tagId))
-        );
-        
-        console.log(`[SCHEDULER DEBUG] Equipment found with matching tags: ${equipmentList.length}`);
+        console.log(`[SCHEDULER DEBUG] Equipment IDs in activity: ${activity.equipmentIds.length}`);
+        console.log(`[SCHEDULER DEBUG] Equipment found: ${equipmentList.length}`);
         equipmentList.forEach(eq => {
-          console.log(`  - ${eq.name} (tags: ${eq.tagIds})`);
+          console.log(`  - ${eq.name} (ID: ${eq.id})`);
         });
-      } else if (activity.applicationTarget === 'equipment' && activity.equipmentId) {
-        // Get specific equipment
-        const [equipItem] = await db.select().from(equipment)
-          .where(eq(equipment.id, activity.equipmentId))
-          .limit(1);
-        if (equipItem) {
-          equipmentList = [equipItem];
-        }
       }
       
       // Generate work orders for each equipment and occurrence combination

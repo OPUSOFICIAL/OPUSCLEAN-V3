@@ -32,7 +32,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown } from "lucide-react";
@@ -244,6 +243,14 @@ export default function MaintenancePlans() {
   // Função para obter equipamentos relacionados a uma zona
   const getEquipmentForZone = (zoneId: string) => {
     return (equipment as any[] || []).filter((e: any) => e.zoneId === zoneId);
+  };
+
+  // Função para obter nomes dos equipamentos por IDs
+  const getEquipmentNames = (equipmentIds: string[]) => {
+    if (!equipmentIds || equipmentIds.length === 0) return [];
+    return (equipment as any[] || [])
+      .filter((e: any) => equipmentIds.includes(e.id))
+      .map((e: any) => e.name);
   };
 
   // Função para calcular próxima data de execução
@@ -518,7 +525,7 @@ export default function MaintenancePlans() {
                 <div>
                   <p className="text-sm text-muted-foreground">Equipamentos</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {new Set((activities as any[])?.map((a: any) => a.equipmentId)).size || 0}
+                    {new Set((activities as any[])?.flatMap((a: any) => a.equipmentIds || [])).size || 0}
                   </p>
                 </div>
                 <MapPin className="w-8 h-8 text-chart-1" />
@@ -731,7 +738,7 @@ export default function MaintenancePlans() {
                             {activity.description && (
                               <p className="text-sm text-gray-600 mb-3">{activity.description}</p>
                             )}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-gray-400" />
                                 <span className="text-gray-600">
@@ -755,6 +762,16 @@ export default function MaintenancePlans() {
                                 </span>
                               </div>
                             </div>
+                            {activity.equipmentIds && activity.equipmentIds.length > 0 && (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs text-gray-500">Equipamentos:</span>
+                                {getEquipmentNames(activity.equipmentIds).map((name: string, idx: number) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex gap-2 ml-4">
                             <Button
@@ -845,7 +862,7 @@ export default function MaintenancePlans() {
                             {activity.description && (
                               <p className="text-sm text-gray-600 mb-2">{activity.description}</p>
                             )}
-                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-500">
+                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 mb-2">
                               <div className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
                                 <span>{getZoneName(activity.zoneId)}</span>
@@ -865,6 +882,16 @@ export default function MaintenancePlans() {
                                 </div>
                               )}
                             </div>
+                            {activity.equipmentIds && activity.equipmentIds.length > 0 && (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className="text-xs text-gray-500">Equipamentos:</span>
+                                {getEquipmentNames(activity.equipmentIds).map((name: string, idx: number) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-1">
@@ -1291,11 +1318,9 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
       turnShifts: [] as string[],
       timesPerDay: 1
     },
-    applicationTarget: "tags" as "tags" | "equipment",
-    equipmentId: "",
+    equipmentIds: [] as string[],
     siteIds: [] as string[],
     zoneIds: [] as string[],
-    tagIds: [] as string[],
     checklistTemplateId: "none",
     startTime: "",
     endTime: "",
@@ -1309,11 +1334,6 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
 
   const { data: sites } = useQuery({
     queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
-    enabled: !!activeClientId,
-  });
-
-  const { data: equipmentTags } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "equipment-tags"],
     enabled: !!activeClientId,
   });
 
@@ -1348,9 +1368,9 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
-      // Auto-preenchimento de checklist baseado no equipamento selecionado
-      if (field === 'equipmentId' && value && equipment) {
-        const selectedEquipment = (equipment as any[]).find(e => e.id === value);
+      // Auto-preenchimento de checklist baseado nos equipamentos selecionados
+      if (field === 'equipmentIds' && value && value.length > 0 && equipment) {
+        const selectedEquipment = (equipment as any[]).find(e => e.id === value[0]);
         if (selectedEquipment?.checklistTemplateId) {
           newData.checklistTemplateId = selectedEquipment.checklistTemplateId;
         }
@@ -1394,9 +1414,7 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
         companyId,
         activeClientId,
         checklistTemplateId: data.checklistTemplateId === "none" ? null : data.checklistTemplateId,
-        // Include either tagIds or equipmentId based on applicationTarget
-        tagIds: data.applicationTarget === "tags" && data.tagIds?.length > 0 ? data.tagIds : null,
-        equipmentId: data.applicationTarget === "equipment" ? data.equipmentId : null,
+        equipmentIds: data.equipmentIds || [],
       };
       return { activity: await apiRequest("POST", "/api/maintenance-activities", submitData), companyId };
     },
@@ -1452,11 +1470,11 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
       return;
     }
 
-    // Validate equipment or tags based on applicationTarget
-    if (formData.applicationTarget === "equipment" && !formData.equipmentId) {
+    // Validate equipment selection
+    if (!formData.equipmentIds || formData.equipmentIds.length === 0) {
       toast({
-        title: "Equipamento obrigatório",
-        description: "Selecione um equipamento específico",
+        title: "Equipamentos obrigatórios",
+        description: "Selecione ao menos um equipamento",
         variant: "destructive"
       });
       return;
@@ -1756,60 +1774,19 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
                 />
               </div>
 
-              <div className="md:col-span-2 space-y-4">
-                <div className="space-y-2">
-                  <Label>Aplicar Template a: *</Label>
-                  <RadioGroup
-                    value={formData.applicationTarget}
-                    onValueChange={(value: "tags" | "equipment") => handleChange("applicationTarget", value)}
-                    data-testid="radiogroup-application-target"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="tags" id="tags" data-testid="radio-tags" />
-                      <Label htmlFor="tags" className="cursor-pointer font-normal">
-                        Tags de Equipamentos
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="equipment" id="equipment" data-testid="radio-equipment" />
-                      <Label htmlFor="equipment" className="cursor-pointer font-normal">
-                        Equipamento Específico
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {formData.applicationTarget === "tags" ? (
-                  <div className="space-y-2">
-                    <MultiSelect
-                      label="Selecione as Tags"
-                      options={(equipmentTags as any[])?.map((tag: any) => ({
-                        value: tag.id,
-                        label: tag.name
-                      })) || []}
-                      value={formData.tagIds}
-                      onChange={(value) => handleChange("tagIds", value)}
-                      placeholder="Selecione tags para aplicar este template"
-                      data-testid="multiselect-tags"
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="equipment-select">Equipamento Específico *</Label>
-                    <Select value={formData.equipmentId} onValueChange={(value) => handleChange("equipmentId", value)}>
-                      <SelectTrigger data-testid="select-equipment">
-                        <SelectValue placeholder="Selecione um equipamento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(equipment as any[])?.map((equip: any) => (
-                          <SelectItem key={equip.id} value={equip.id}>
-                            {equip.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+              <div className="md:col-span-2 space-y-2">
+                <MultiSelect
+                  label="Equipamentos"
+                  options={(equipment as any[])?.map((equip: any) => ({
+                    value: equip.id,
+                    label: equip.name
+                  })) || []}
+                  value={formData.equipmentIds}
+                  onChange={(value) => handleChange("equipmentIds", value)}
+                  placeholder="Selecione um ou mais equipamentos"
+                  required
+                  data-testid="multiselect-equipment"
+                />
               </div>
 
               <div className="md:col-span-2 space-y-2">
