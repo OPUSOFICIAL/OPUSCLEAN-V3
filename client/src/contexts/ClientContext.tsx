@@ -24,7 +24,10 @@ interface ClientProviderProps {
 }
 
 export function ClientProvider({ children }: ClientProviderProps) {
-  const [activeClientId, setActiveClientId] = useState<string>("");
+  // Inicializar com valor do localStorage se existir
+  const [activeClientId, setActiveClientId] = useState<string>(() => {
+    return localStorage.getItem('opus:activeClientId') || "";
+  });
   const { user } = useAuth();
   
   // Usar o companyId do usuário logado ao invés de um valor fixo
@@ -76,6 +79,14 @@ export function ClientProvider({ children }: ClientProviderProps) {
   const isLoading = isCustomerUser 
     ? !activeClientId 
     : isLoadingCustomers;
+
+  // Sincronizar activeClientId com localStorage
+  useEffect(() => {
+    if (activeClientId) {
+      localStorage.setItem('opus:activeClientId', activeClientId);
+      console.log(`[CLIENT CONTEXT] Cliente ativo atualizado: ${activeClientId}`);
+    }
+  }, [activeClientId]);
 
   const value: ClientContextType = {
     activeClientId,
