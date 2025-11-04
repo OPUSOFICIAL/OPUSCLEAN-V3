@@ -35,6 +35,31 @@ import { useEffect } from "react";
 export default function CleaningSchedule() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Plano de Limpeza é exclusivo do módulo OPUS Clean
+  if (currentModule !== 'clean') {
+    return (
+      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Funcionalidade Não Disponível</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <Calendar className="w-16 h-16 mx-auto text-slate-400" />
+            <p className="text-slate-600">
+              O plano de limpeza está disponível apenas no módulo <strong>OPUS Clean</strong>.
+            </p>
+            <p className="text-sm text-slate-500">
+              Alterne para OPUS Clean usando o seletor de plataforma na barra lateral.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const [viewMode, setViewMode] = useState<"monthly" | "list">("monthly");
   const [siteFilter, setSiteFilter] = useState("todos");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -46,9 +71,6 @@ export default function CleaningSchedule() {
   const [showEditActivityModal, setShowEditActivityModal] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
-  
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   // Removido: geração automática que estava criando OSs excessivamente
 

@@ -121,6 +121,28 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<any>(null);
+
+  // Equipamentos é exclusivo do módulo de manutenção
+  if (currentModule !== 'maintenance') {
+    return (
+      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Funcionalidade Não Disponível</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <Wrench className="w-16 h-16 mx-auto text-slate-400" />
+            <p className="text-slate-600">
+              A gestão de equipamentos está disponível apenas no módulo <strong>OPUS Manutenção</strong>.
+            </p>
+            <p className="text-sm text-slate-500">
+              Alterne para OPUS Manutenção usando o seletor de plataforma na barra lateral.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   // Form states
   const [selectedSiteId, setSelectedSiteId] = useState("");
