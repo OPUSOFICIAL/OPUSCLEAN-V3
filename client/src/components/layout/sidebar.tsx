@@ -49,6 +49,11 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   
   // Usuários do tipo customer_user não podem alterar o cliente
   const isCustomerUser = user?.userType === 'customer_user';
+  
+  // Calcular módulos permitidos baseado na interseção entre módulos do usuário e do cliente ativo
+  const clientModules = (activeClient?.modules || []) as ('clean' | 'maintenance')[];
+  const effectiveAllowedModules = allowedModules.filter(module => clientModules.includes(module));
+  const effectiveHasMultipleModules = effectiveAllowedModules.length > 1;
 
   const handleLogout = async () => {
     try {
@@ -175,7 +180,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
         </div>
       )}
 
-      {/* Module/Platform Selector - apenas se tiver múltiplos módulos */}
+      {/* Module/Platform Selector - mostrar se o USUÁRIO tem múltiplos módulos */}
       {!isCollapsed && hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
           <label className="block text-sm font-semibold text-slate-700 mb-2">Plataforma</label>
@@ -184,13 +189,13 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="clean" disabled={!allowedModules.includes('clean')}>
+              <SelectItem value="clean" disabled={!effectiveAllowedModules.includes('clean')}>
                 <span className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-blue-600" />
                   {MODULE_CONFIGS.clean.displayName}
                 </span>
               </SelectItem>
-              <SelectItem value="maintenance" disabled={!allowedModules.includes('maintenance')}>
+              <SelectItem value="maintenance" disabled={!effectiveAllowedModules.includes('maintenance')}>
                 <span className="flex items-center gap-2">
                   <Cog className="w-4 h-4 text-orange-600" />
                   {MODULE_CONFIGS.maintenance.displayName}

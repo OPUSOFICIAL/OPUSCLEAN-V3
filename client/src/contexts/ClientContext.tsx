@@ -6,6 +6,7 @@ interface Customer {
   id: string;
   name: string;
   isActive: boolean;
+  modules: string[];
 }
 
 interface ClientContextType {
