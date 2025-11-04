@@ -50,7 +50,7 @@ Manages programmed, internal corrective, and public corrective work orders. It t
 
 **Automated Monthly Work Order Generation (Maintenance Module)**: To optimize database performance, the system uses a dual approach for work order visibility and persistence:
 
-1. **Virtual Calendar Display**: The maintenance schedule calendar (`/maintenance-schedule`) shows all future planned maintenance activities by calculating them on-the-fly based on maintenance plan frequency settings. This provides complete visibility of upcoming work without database overhead.
+1. **Virtual Calendar Display**: The Maintenance Plans page (`/maintenance-plans`) includes an integrated calendar view that shows all future planned maintenance activities by calculating them on-the-fly based on maintenance plan frequency settings. Activities are color-coded by frequency (daily=green, weekly=blue, shift-based=orange, monthly=purple, quarterly=indigo, semi-annual=violet, annual=rose). This provides complete visibility of upcoming work without database overhead.
 
 2. **Deferred Database Creation**: When a maintenance plan is created, NO work orders are immediately generated in the database. Instead, on the last day of each month at 23:00, an automated scheduler runs and pre-generates actual work orders for the following month across all companies.
 
