@@ -384,99 +384,162 @@ export default function QrCodes() {
       <Header title="QR Codes" />
       
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Criar Novo QR Code
+        <Card className="border-2 border-primary/20 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Plus className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Criar Novo QR Code</h2>
+                <p className="text-sm text-blue-100 font-normal mt-1">Preencha os campos abaixo para gerar um novo código QR</p>
+              </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Local *</label>
-              <Select value={selectedSite} onValueChange={setSelectedSite}>
-                <SelectTrigger data-testid="select-site">
-                  <SelectValue placeholder="Selecione o local" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(sites as any[])?.map((site: any) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Coluna Esquerda - Informações Principais */}
+              <div className="space-y-5">
+                <div>
+                  <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-600">1</span>
+                    </div>
+                    Local <span className="text-red-500">*</span>
+                  </label>
+                  <Select value={selectedSite} onValueChange={setSelectedSite}>
+                    <SelectTrigger 
+                      data-testid="select-site"
+                      className={`h-12 ${!selectedSite ? 'border-orange-300 bg-orange-50/30' : 'border-green-300 bg-green-50/30'}`}
+                    >
+                      <SelectValue placeholder="Selecione o local" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(sites as any[])?.map((site: any) => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!selectedSite && (
+                    <p className="text-xs text-orange-600 mt-1">Escolha o local onde o QR será instalado</p>
+                  )}
+                </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Zona *</label>
-              <Select value={selectedZone} onValueChange={setSelectedZone} disabled={!selectedSite}>
-                <SelectTrigger data-testid="select-zone">
-                  <SelectValue placeholder={selectedSite ? "Selecione a zona" : "Selecione o local primeiro"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(zones as any[])?.map((zone: any) => (
-                    <SelectItem key={zone.id} value={zone.id}>
-                      {zone.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-600">2</span>
+                    </div>
+                    Zona <span className="text-red-500">*</span>
+                  </label>
+                  <Select value={selectedZone} onValueChange={setSelectedZone} disabled={!selectedSite}>
+                    <SelectTrigger 
+                      data-testid="select-zone"
+                      className={`h-12 ${!selectedZone && selectedSite ? 'border-orange-300 bg-orange-50/30' : selectedZone ? 'border-green-300 bg-green-50/30' : ''}`}
+                    >
+                      <SelectValue placeholder={selectedSite ? "Selecione a zona" : "Selecione o local primeiro"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(zones as any[])?.map((zone: any) => (
+                        <SelectItem key={zone.id} value={zone.id}>
+                          {zone.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!selectedSite && (
+                    <p className="text-xs text-gray-500 mt-1">Primeiro selecione um local</p>
+                  )}
+                  {selectedSite && !selectedZone && (
+                    <p className="text-xs text-orange-600 mt-1">Escolha a zona específica dentro do local</p>
+                  )}
+                </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Nome *</label>
-              <Input
-                placeholder="Ex: Sala de Reunião 1"
-                value={pointName}
-                onChange={(e) => setPointName(e.target.value)}
-                data-testid="input-point-name"
-              />
-            </div>
+                <div>
+                  <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-600">3</span>
+                    </div>
+                    Nome do Ponto <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    placeholder="Ex: Sala de Reunião 1"
+                    value={pointName}
+                    onChange={(e) => setPointName(e.target.value)}
+                    data-testid="input-point-name"
+                    className={`h-12 ${!pointName ? 'border-orange-300 bg-orange-50/30' : 'border-green-300 bg-green-50/30'}`}
+                  />
+                  {!pointName && (
+                    <p className="text-xs text-orange-600 mt-1">Digite um nome descritivo para o ponto</p>
+                  )}
+                </div>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Código (opcional)</label>
-              <Input
-                placeholder="Ex: SR-001"
-                value={pointCode}
-                onChange={(e) => setPointCode(e.target.value)}
-                data-testid="input-point-code"
-              />
-            </div>
+              {/* Coluna Direita - Detalhes Opcionais */}
+              <div className="space-y-5">
+                <div>
+                  <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
+                    <FileText className="w-4 h-4 text-gray-500" />
+                    Código Personalizado <span className="text-gray-400 text-xs">(opcional)</span>
+                  </label>
+                  <Input
+                    placeholder="Ex: SR-001, QR-123"
+                    value={pointCode}
+                    onChange={(e) => setPointCode(e.target.value)}
+                    data-testid="input-point-code"
+                    className="h-12 border-gray-300"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Deixe em branco para gerar automaticamente</p>
+                </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tamanho</label>
-              <Select value={String(qrSizeCm)} onValueChange={(v) => setQrSizeCm(Number(v))}>
-                <SelectTrigger data-testid="select-size">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {QR_SIZES_CM.map(size => (
-                    <SelectItem key={size} value={String(size)}>{size} cm</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
+                    <QrCode className="w-4 h-4 text-gray-500" />
+                    Tamanho do QR Code
+                  </label>
+                  <Select value={String(qrSizeCm)} onValueChange={(v) => setQrSizeCm(Number(v))}>
+                    <SelectTrigger data-testid="select-size" className="h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {QR_SIZES_CM.map(size => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size} cm {size === 5 && '(recomendado)'} {size >= 10 && '(grande)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">5 cm é ideal para a maioria dos casos</p>
+                </div>
 
-            <div className="flex items-end">
-              <Button 
-                onClick={handleCreateQrPoint} 
-                className="w-full"
-                disabled={createQrPointMutation.isPending}
-                data-testid="button-create-qr"
-              >
-                {createQrPointMutation.isPending ? (
-                  <>
-                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Criando...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Criar QR Code
-                  </>
-                )}
-              </Button>
+                <div className="pt-4">
+                  <Button 
+                    onClick={handleCreateQrPoint} 
+                    className="w-full h-14 text-base font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all"
+                    disabled={createQrPointMutation.isPending}
+                    data-testid="button-create-qr"
+                  >
+                    {createQrPointMutation.isPending ? (
+                      <>
+                        <div className="w-5 h-5 mr-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Gerando QR Code...
+                      </>
+                    ) : (
+                      <>
+                        <QrCode className="w-5 h-5 mr-3" />
+                        Criar QR Code
+                      </>
+                    )}
+                  </Button>
+                  {(!selectedSite || !selectedZone || !pointName) && (
+                    <p className="text-xs text-center text-orange-600 mt-2 font-medium">
+                      ⚠️ Preencha todos os campos obrigatórios (*)
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
