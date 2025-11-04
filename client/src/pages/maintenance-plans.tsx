@@ -32,6 +32,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown } from "lucide-react";
 
 export default function MaintenancePlans() {
   const { activeClientId } = useClient();
@@ -1126,6 +1130,95 @@ export default function MaintenancePlans() {
   );
 }
 
+// MultiSelect Component
+function MultiSelect({
+  label,
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  required,
+  "data-testid": dataTestId,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (vals: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  "data-testid"?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  
+  const toggleOption = (optionValue: string) => {
+    if (value.includes(optionValue)) {
+      onChange(value.filter(v => v !== optionValue));
+    } else {
+      onChange([...value, optionValue]);
+    }
+  };
+
+  const selectedLabels = options
+    .filter(opt => value.includes(opt.value))
+    .map(opt => opt.label)
+    .join(", ");
+
+  return (
+    <div className="space-y-2">
+      <Label>{label} {required && "*"}</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+            disabled={disabled}
+            data-testid={dataTestId}
+          >
+            <span className="truncate">
+              {selectedLabels || placeholder || "Selecione..."}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <div className="max-h-64 overflow-auto p-2">
+            {options.length === 0 ? (
+              <div className="p-2 text-sm text-muted-foreground">
+                {placeholder || "Sem opções"}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {options.map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                    onClick={() => toggleOption(option.value)}
+                  >
+                    <Checkbox
+                      checked={value.includes(option.value)}
+                      onCheckedChange={() => toggleOption(option.value)}
+                    />
+                    <label className="flex-1 cursor-pointer text-sm">
+                      {option.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <div className="text-xs text-slate-500">
+        {value?.length ? `${value.length} selecionado(s)` : "Nenhum selecionado"}
+      </div>
+    </div>
+  );
+}
+
 // Componente de Modal para Criação de Atividade de Manutenção
 interface CreateMaintenanceActivityModalProps {
   activeClientId: string;
@@ -1150,9 +1243,11 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
       turnShifts: [] as string[],
       timesPerDay: 1
     },
+    applicationTarget: "tags" as "tags" | "equipment",
     equipmentId: "",
-    siteId: "",
-    zoneId: "",
+    siteIds: [] as string[],
+    zoneIds: [] as string[],
+    tagIds: [] as string[],
     checklistTemplateId: "none",
     startTime: "",
     endTime: "",
@@ -1169,21 +1264,37 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     enabled: !!activeClientId,
   });
 
-  const { data: zones } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
+  const { data: equipmentTags } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "equipment-tags"],
     enabled: !!activeClientId,
+  });
+
+  // Fetch zones based on selected sites
+  const { data: zones = [] } = useQuery({
+    queryKey: ["/api/zones", (formData.siteIds || []).join(","), { module: currentModule }],
+    enabled: Array.isArray(formData.siteIds) && formData.siteIds.length > 0,
+    queryFn: async () => {
+      const ids = formData.siteIds;
+      if (!ids || ids.length === 0) return [];
+      const qs = new URLSearchParams();
+      qs.set("siteIds", ids.join(","));
+      qs.set("module", currentModule);
+      const res = await fetch(`/api/zones?${qs.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch zones');
+      return res.json();
+    },
   });
 
   const { data: checklistTemplates } = useQuery({
-    queryKey: ["/api/companies", activeClientId, "maintenance-checklist-templates"],
+    queryKey: ["/api/customers", activeClientId, "maintenance-checklist-templates"],
     enabled: !!activeClientId,
   });
 
-  // Filtrar zonas baseado no site selecionado
+  // Filtrar zonas baseado nos sites selecionados
   const filteredZones = useMemo(() => {
-    if (!formData.siteId || !zones) return [];
-    return (zones as any[]).filter((zone: any) => zone.siteId === formData.siteId);
-  }, [zones, formData.siteId]);
+    if (!formData.siteIds || formData.siteIds.length === 0 || !zones) return [];
+    return (zones as any[]).filter((zone: any) => formData.siteIds.includes(zone.siteId));
+  }, [zones, formData.siteIds]);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => {
@@ -1197,9 +1308,9 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
         }
       }
       
-      // Limpar zona quando site muda
-      if (field === 'siteId') {
-        newData.zoneId = "";
+      // Limpar zonas quando sites mudam
+      if (field === 'siteIds') {
+        newData.zoneIds = [];
       }
       
       // Reset frequency config quando muda frequência
@@ -1228,13 +1339,16 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
 
   const createActivityMutation = useMutation({
     mutationFn: async (data: any) => {
-      const site = (sites as any[])?.find(s => s.id === data.siteId);
+      const site = (sites as any[])?.find(s => data.siteIds?.includes(s.id));
       const companyId = site?.companyId || "company-opus-default";
       const submitData = {
         ...data,
         companyId,
         activeClientId,
         checklistTemplateId: data.checklistTemplateId === "none" ? null : data.checklistTemplateId,
+        // Include either tagIds or equipmentId based on applicationTarget
+        tagIds: data.applicationTarget === "tags" && data.tagIds?.length > 0 ? data.tagIds : null,
+        equipmentId: data.applicationTarget === "equipment" ? data.equipmentId : null,
       };
       return { activity: await apiRequest("POST", "/api/maintenance-activities", submitData), companyId };
     },
@@ -1285,10 +1399,40 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.equipmentId || !formData.siteId || !formData.zoneId || !formData.startDate) {
+    // Validate required fields
+    if (!formData.name || !formData.startDate) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate sites and zones
+    if (!formData.siteIds || formData.siteIds.length === 0) {
+      toast({
+        title: "Locais obrigatórios",
+        description: "Selecione ao menos um local",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.zoneIds || formData.zoneIds.length === 0) {
+      toast({
+        title: "Zonas obrigatórias",
+        description: "Selecione ao menos uma zona",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate equipment or tags based on applicationTarget
+    if (formData.applicationTarget === "equipment" && !formData.equipmentId) {
+      toast({
+        title: "Equipamento obrigatório",
+        description: "Selecione um equipamento específico",
         variant: "destructive"
       });
       return;
@@ -1558,58 +1702,93 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="equipment">Equipamento *</Label>
-                <Select value={formData.equipmentId} onValueChange={(value) => handleChange("equipmentId", value)}>
-                  <SelectTrigger data-testid="select-equipment">
-                    <SelectValue placeholder="Selecione um equipamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(equipment as any[])?.map((equip: any) => (
-                      <SelectItem key={equip.id} value={equip.id}>
-                        {equip.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  label="Local"
+                  options={(sites as any[])?.map((site: any) => ({
+                    value: site.id,
+                    label: site.name
+                  })) || []}
+                  value={formData.siteIds}
+                  onChange={(value) => handleChange("siteIds", value)}
+                  placeholder="Selecione um ou mais locais"
+                  required
+                  data-testid="multiselect-sites"
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="site">Local *</Label>
-                <Select value={formData.siteId} onValueChange={(value) => handleChange("siteId", value)}>
-                  <SelectTrigger data-testid="select-site">
-                    <SelectValue placeholder="Selecione um local" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(sites as any[])?.map((site: any) => (
-                      <SelectItem key={site.id} value={site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  label="Zona"
+                  options={filteredZones?.map((zone: any) => ({
+                    value: zone.id,
+                    label: zone.name
+                  })) || []}
+                  value={formData.zoneIds}
+                  onChange={(value) => handleChange("zoneIds", value)}
+                  placeholder={formData.siteIds.length > 0 ? "Selecione uma ou mais zonas" : "Selecione ao menos um local"}
+                  disabled={!formData.siteIds || formData.siteIds.length === 0}
+                  required
+                  data-testid="multiselect-zones"
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="zone">Zona *</Label>
-                <Select 
-                  value={formData.zoneId} 
-                  onValueChange={(value) => handleChange("zoneId", value)}
-                  disabled={!formData.siteId}
-                >
-                  <SelectTrigger data-testid="select-zone">
-                    <SelectValue placeholder={formData.siteId ? "Selecione uma zona" : "Selecione um local primeiro"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredZones.map((zone: any) => (
-                      <SelectItem key={zone.id} value={zone.id}>
-                        {zone.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="md:col-span-2 space-y-4">
+                <div className="space-y-2">
+                  <Label>Aplicar Template a: *</Label>
+                  <RadioGroup
+                    value={formData.applicationTarget}
+                    onValueChange={(value: "tags" | "equipment") => handleChange("applicationTarget", value)}
+                    data-testid="radiogroup-application-target"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="tags" id="tags" data-testid="radio-tags" />
+                      <Label htmlFor="tags" className="cursor-pointer font-normal">
+                        Tags de Equipamentos
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="equipment" id="equipment" data-testid="radio-equipment" />
+                      <Label htmlFor="equipment" className="cursor-pointer font-normal">
+                        Equipamento Específico
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {formData.applicationTarget === "tags" ? (
+                  <div className="space-y-2">
+                    <MultiSelect
+                      label="Selecione as Tags"
+                      options={(equipmentTags as any[])?.map((tag: any) => ({
+                        value: tag.id,
+                        label: tag.name
+                      })) || []}
+                      value={formData.tagIds}
+                      onChange={(value) => handleChange("tagIds", value)}
+                      placeholder="Selecione tags para aplicar este template"
+                      data-testid="multiselect-tags"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="equipment-select">Equipamento Específico *</Label>
+                    <Select value={formData.equipmentId} onValueChange={(value) => handleChange("equipmentId", value)}>
+                      <SelectTrigger data-testid="select-equipment">
+                        <SelectValue placeholder="Selecione um equipamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(equipment as any[])?.map((equip: any) => (
+                          <SelectItem key={equip.id} value={equip.id}>
+                            {equip.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
+              <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="checklist">Template de Checklist (opcional)</Label>
                 <Select value={formData.checklistTemplateId} onValueChange={(value) => handleChange("checklistTemplateId", value)}>
                   <SelectTrigger data-testid="select-checklist">
