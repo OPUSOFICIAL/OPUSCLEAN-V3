@@ -183,12 +183,15 @@ export default function Checklists() {
       const ids = checklistForm.siteIds;
       if (!ids?.length) return [];
       if (ids.length === 1) {
-        const r = await fetch(`/api/sites/${ids[0]}/zones`);
+        const qs = new URLSearchParams();
+        qs.set("module", currentModule);
+        const r = await fetch(`/api/sites/${ids[0]}/zones?${qs.toString()}`);
         if (!r.ok) throw new Error("Falha ao carregar zonas");
         return r.json();
       }
       const qs = new URLSearchParams();
       qs.set("siteIds", ids.join(","));
+      qs.set("module", currentModule);
       const r = await fetch(`/api/zones?${qs.toString()}`);
       if (!r.ok) throw new Error("Falha ao carregar zonas");
       return r.json();
