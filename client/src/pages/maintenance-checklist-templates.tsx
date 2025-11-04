@@ -157,6 +157,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const [templateForm, setTemplateForm] = useState({
     name: "",
     description: "",
+    serviceId: "",
     siteIds: [] as string[],
     zoneIds: [] as string[],
     equipmentIds: [] as string[],
@@ -187,6 +188,12 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   // Fetch sites
   const { data: sites = [] } = useQuery({
     queryKey: [`/api/customers/${customerId}/sites`, { module: currentModule }],
+    enabled: !!customerId,
+  });
+
+  // Fetch services
+  const { data: services = [] } = useQuery({
+    queryKey: [`/api/customers/${customerId}/services`, { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -279,6 +286,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     setTemplateForm({
       name: "",
       description: "",
+      serviceId: "",
       siteIds: [],
       zoneIds: [],
       equipmentIds: [],
@@ -379,6 +387,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     setTemplateForm({
       name: template.name,
       description: template.description || "",
+      serviceId: template.serviceId || "",
       siteIds: template.siteIds || [],
       zoneIds: template.zoneIds || [],
       equipmentIds: template.equipmentIds || [],
@@ -517,6 +526,30 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                       placeholder="Descrição do template..."
                       rows={2}
                     />
+                  </div>
+
+                  {/* Serviço */}
+                  <div className="space-y-2">
+                    <Label htmlFor="service">Serviço (Opcional)</Label>
+                    <Select
+                      value={templateForm.serviceId}
+                      onValueChange={(value) => setTemplateForm(prev => ({ ...prev, serviceId: value }))}
+                    >
+                      <SelectTrigger data-testid="select-template-service">
+                        <SelectValue placeholder="Selecione um serviço" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum</SelectItem>
+                        {(services as any[])?.map((service: any) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500">
+                      Vincule este template a um serviço específico
+                    </p>
                   </div>
 
                   {/* Local e Zona */}
