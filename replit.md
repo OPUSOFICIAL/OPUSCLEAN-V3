@@ -30,7 +30,13 @@ The platform implements a hierarchical multi-tenancy model (Companies > Sites > 
 
 ### Equipment Tag System (Maintenance Module)
 
-The Maintenance module uses a tag-based system for equipment identification and checklist assignment. Equipment can be linked to multiple tags (e.g., "Coffee Machine", "AC Unit"), and maintenance checklist templates can target all equipment with selected tags. This enables efficient maintenance management across similar equipment types. Tags are customer-specific and module-specific, managed through the Equipment Tags configuration page accessible via sidebar navigation.
+The Maintenance module uses a flexible tag-based system for equipment identification and checklist assignment. Equipment can be linked to multiple tags (e.g., "Coffee Machine", "AC Unit"). 
+
+**Maintenance Checklist Templates** can be configured in two ways:
+1. **Tag-based**: Templates target all equipment with selected tags, enabling efficient maintenance management across similar equipment types
+2. **Equipment-specific**: Templates target a single specific equipment by ID
+
+This dual approach allows both broad equipment categorization through tags and precise individual equipment targeting. Tags are customer-specific and module-specific, managed through the Equipment Tags configuration page accessible via the Settings page under the "Tags" tab.
 
 ### QR Code System
 
