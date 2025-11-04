@@ -2585,14 +2585,16 @@ export class DatabaseStorage implements IStorage {
             title = `${activity.name} - ${equipItem.name} - ${occ.occurrence}ª/${occ.total}`;
           }
           
-          // Verify if checklist template exists
+          // Verify if checklist template exists and get serviceId from it
           let validChecklistTemplateId = null;
+          let serviceId = null;
           if (activity.checklistTemplateId) {
-            const [template] = await db.select().from(checklistTemplates)
-              .where(eq(checklistTemplates.id, activity.checklistTemplateId))
+            const [template] = await db.select().from(maintenanceChecklistTemplates)
+              .where(eq(maintenanceChecklistTemplates.id, activity.checklistTemplateId))
               .limit(1);
             if (template) {
               validChecklistTemplateId = activity.checklistTemplateId;
+              serviceId = template.serviceId; // Get serviceId from checklist template
             }
           }
           
@@ -2604,6 +2606,7 @@ export class DatabaseStorage implements IStorage {
             equipmentId: equipItem.id,
             maintenanceActivityId: activity.id,
             checklistTemplateId: validChecklistTemplateId,
+            serviceId: serviceId, // Add serviceId from checklist template
             type: 'programada' as const,
             status: 'aberta' as const,
             priority: 'media' as const,
