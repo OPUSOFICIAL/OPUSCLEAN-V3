@@ -193,7 +193,13 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     },
   });
 
-  // Fetch equipment for selected zones
+  // Fetch all equipment for displaying names in the table
+  const { data: allEquipment = [] } = useQuery({
+    queryKey: [`/api/customers/${customerId}/equipment`],
+    enabled: !!customerId,
+  });
+
+  // Fetch equipment for selected zones (for the form)
   const { data: equipment = [] } = useQuery({
     queryKey: ["/api/equipment", (templateForm.zoneIds || []).join(","), { module: currentModule }],
     enabled: Array.isArray(templateForm.zoneIds) && templateForm.zoneIds.length > 0,
@@ -440,7 +446,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const getEquipmentNames = (equipmentIds: string[]) => {
     if (!equipmentIds || equipmentIds.length === 0) return [];
     return equipmentIds.map(id => {
-      const eq = (equipment as any[])?.find(e => e.id === id);
+      const eq = (allEquipment as any[])?.find(e => e.id === id);
       return eq ? eq.name : id;
     });
   };
