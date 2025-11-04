@@ -2605,7 +2605,7 @@ export class DatabaseStorage implements IStorage {
             companyId: companyId,
             equipmentId: equipItem.id,
             maintenanceActivityId: activity.id,
-            checklistTemplateId: validChecklistTemplateId,
+            maintenanceChecklistTemplateId: validChecklistTemplateId,
             serviceId: serviceId, // Add serviceId from checklist template
             type: 'programada' as const,
             status: 'aberta' as const,

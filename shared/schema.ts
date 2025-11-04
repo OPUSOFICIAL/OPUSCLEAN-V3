@@ -247,6 +247,7 @@ export const workOrders = pgTable("work_orders", {
   cleaningActivityId: varchar("cleaning_activity_id").references(() => cleaningActivities.id),
   maintenanceActivityId: varchar("maintenance_activity_id").references(() => maintenanceActivities.id),
   checklistTemplateId: varchar("checklist_template_id").references(() => checklistTemplates.id),
+  maintenanceChecklistTemplateId: varchar("maintenance_checklist_template_id").references(() => maintenanceChecklistTemplates.id),
   equipmentId: varchar("equipment_id").references(() => equipment.id),
   maintenancePlanEquipmentId: varchar("maintenance_plan_equipment_id").references(() => maintenancePlanEquipments.id),
   type: workOrderTypeEnum("type").notNull(),
