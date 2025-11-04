@@ -69,9 +69,19 @@ export function ClientProvider({ children }: ClientProviderProps) {
       return; // Não executar lógica de admin
     }
     
-    // Se é admin/opus_user e não tem cliente selecionado, selecionar o primeiro
+    // Se é admin/opus_user e não tem cliente selecionado
     if (!isCustomerUser && !activeClientId && customers.length > 0) {
-      setActiveClientId(customers[0].id);
+      // Verificar se o cliente do localStorage é válido antes de sobrescrever
+      const savedClientId = localStorage.getItem('opus:activeClientId');
+      const savedClientExists = savedClientId && customers.some(c => c.id === savedClientId);
+      
+      if (savedClientExists) {
+        // Se existe um cliente válido salvo, usar ele
+        setActiveClientId(savedClientId);
+      } else {
+        // Caso contrário, usar o primeiro da lista
+        setActiveClientId(customers[0].id);
+      }
     }
   }, [isCustomerUser, userCustomerId, activeClientId, customers]);
 
