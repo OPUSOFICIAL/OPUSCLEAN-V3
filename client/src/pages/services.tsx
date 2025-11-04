@@ -115,7 +115,7 @@ export default function Services({ customerId }: ServicesProps) {
 
   const createMutation = useMutation({
     mutationFn: async (data: ServiceFormData) => {
-      return apiRequest("POST", `/api/services`, { ...data, customerId });
+      return apiRequest("POST", `/api/services`, { ...data, customerId, module: 'maintenance' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "services"] });
@@ -137,7 +137,7 @@ export default function Services({ customerId }: ServicesProps) {
 
   const updateMutation = useMutation({
     mutationFn: async (data: ServiceFormData) => {
-      return apiRequest("PUT", `/api/services/${editingService.id}`, data);
+      return apiRequest("PUT", `/api/services/${editingService.id}`, { ...data, module: 'maintenance' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "services"] });

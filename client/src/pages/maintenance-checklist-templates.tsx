@@ -171,9 +171,9 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     enabled: !!customerId,
   });
 
-  // Fetch services (sem filtro de módulo - serviços são compartilhados)
+  // Fetch services (filtrado por módulo de manutenção)
   const { data: services = [] } = useQuery({
-    queryKey: [`/api/customers/${customerId}/services`],
+    queryKey: [`/api/customers/${customerId}/services`, { module: currentModule }],
     enabled: !!customerId,
   });
 
