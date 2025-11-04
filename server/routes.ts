@@ -2432,8 +2432,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const cleanedData = { 
         ...req.body,
-        module: 'maintenance'
+        module: 'maintenance',
+        customerId: req.body.activeClientId || req.body.customerId // Map activeClientId to customerId
       };
+      
+      // Remove activeClientId if present (not part of schema)
+      delete cleanedData.activeClientId;
       
       if (cleanedData.checklistTemplateId === "none" || cleanedData.checklistTemplateId === "") {
         cleanedData.checklistTemplateId = null;
