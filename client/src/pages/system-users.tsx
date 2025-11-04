@@ -317,7 +317,7 @@ export default function SystemUsers() {
               Novo Usuário OPUS
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingUser ? 'Editar Usuário OPUS' : 'Novo Usuário OPUS'}

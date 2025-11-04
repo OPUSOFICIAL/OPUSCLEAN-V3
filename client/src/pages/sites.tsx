@@ -363,7 +363,7 @@ export default function Sites({ customerId }: SitesProps) {
                 Novo Local
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
                   <Building className="w-5 h-5" />
@@ -554,7 +554,7 @@ export default function Sites({ customerId }: SitesProps) {
                       Nova Zona
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Criar Nova Zona</DialogTitle>
                     </DialogHeader>
@@ -725,7 +725,7 @@ export default function Sites({ customerId }: SitesProps) {
 
         {/* Edit Site Modal */}
         <Dialog open={isEditSiteDialogOpen} onOpenChange={setIsEditSiteDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Local - {editingSite?.name}</DialogTitle>
             </DialogHeader>
@@ -785,7 +785,7 @@ export default function Sites({ customerId }: SitesProps) {
 
         {/* Edit Zone Modal */}
         <Dialog open={isEditZoneDialogOpen} onOpenChange={setIsEditZoneDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Zona - {editingZone?.name}</DialogTitle>
             </DialogHeader>

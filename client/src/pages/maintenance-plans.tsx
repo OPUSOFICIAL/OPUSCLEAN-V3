@@ -1040,7 +1040,7 @@ export default function MaintenancePlans() {
 
         {/* Modal de Detalhes da Atividade */}
         <Dialog open={showActivityDetailsModal} onOpenChange={setShowActivityDetailsModal}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">Detalhes da Atividade</DialogTitle>
               <DialogDescription>
