@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -127,6 +128,7 @@ function MultiSelect({
 export default function MaintenanceChecklistTemplates({ customerId }: MaintenanceChecklistTemplatesProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [targetType, setTargetType] = useState<'tags' | 'equipment'>('tags');
   
   // Form states
   const [templateForm, setTemplateForm] = useState({
@@ -135,6 +137,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     siteIds: [] as string[],
     zoneIds: [] as string[],
     tagIds: [] as string[],
+    equipmentId: null as string | null,
     version: "1.0",
     items: [] as ChecklistItem[]
   });
@@ -188,6 +191,22 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const { data: equipmentTags = [] } = useQuery({
     queryKey: [`/api/customers/${customerId}/equipment-tags`, { module: currentModule }],
     enabled: !!customerId,
+  });
+
+  // Fetch equipment for selected zones
+  const { data: equipment = [] } = useQuery({
+    queryKey: ["/api/equipment", (templateForm.zoneIds || []).join(","), { module: currentModule }],
+    enabled: Array.isArray(templateForm.zoneIds) && templateForm.zoneIds.length > 0,
+    queryFn: async () => {
+      const ids = templateForm.zoneIds;
+      if (!ids || ids.length === 0) return [];
+      const qs = new URLSearchParams();
+      qs.set("zoneIds", ids.join(","));
+      qs.set("module", currentModule);
+      const res = await fetch(`/api/equipment?${qs.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch equipment');
+      return res.json();
+    },
   });
 
   const createTemplateMutation = useMutation({
@@ -250,9 +269,11 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       siteIds: [],
       zoneIds: [],
       tagIds: [],
+      equipmentId: null,
       version: "1.0",
       items: []
     });
+    setTargetType('tags');
     setNewItem({
       type: 'text',
       label: "",
@@ -329,7 +350,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: templateForm.description || null,
       siteIds: templateForm.siteIds && templateForm.siteIds.length > 0 ? templateForm.siteIds : null,
       zoneIds: templateForm.zoneIds && templateForm.zoneIds.length > 0 ? templateForm.zoneIds : null,
-      tagIds: templateForm.tagIds && templateForm.tagIds.length > 0 ? templateForm.tagIds : null,
+      tagIds: targetType === 'tags' && templateForm.tagIds && templateForm.tagIds.length > 0 ? templateForm.tagIds : null,
+      equipmentId: targetType === 'equipment' ? templateForm.equipmentId : null,
       version: templateForm.version,
       items: templateForm.items,
       module: currentModule,
@@ -350,9 +372,12 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       siteIds: template.siteIds || [],
       zoneIds: template.zoneIds || [],
       tagIds: template.tagIds || [],
+      equipmentId: template.equipmentId || null,
       version: template.version,
       items: template.items || []
     });
+    // Detectar se é tag ou equipamento
+    setTargetType(template.equipmentId ? 'equipment' : 'tags');
     setIsCreateDialogOpen(true);
   };
 
@@ -483,8 +508,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     />
                   </div>
 
-                  {/* Local, Zona e TAG de Equipamento */}
-                  <div className="grid grid-cols-3 gap-4">
+                  {/* Local e Zona */}
+                  <div className="grid grid-cols-2 gap-4">
                     <MultiSelect
                       label="Local *"
                       options={(sites as any[])?.map(site => ({ value: site.id, label: site.name })) || []}
@@ -503,16 +528,81 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                       disabled={!(templateForm.siteIds?.length)}
                       data-testid="select-template-zones"
                     />
-
-                    <MultiSelect
-                      label="Tags de Equipamentos (Opcional)"
-                      options={(equipmentTags as any[])?.map(tag => ({ value: tag.id, label: tag.name })) || []}
-                      value={templateForm.tagIds || []}
-                      onChange={(val) => setTemplateForm(prev => ({ ...prev, tagIds: val }))}
-                      placeholder="Selecione tags para aplicar este template"
-                      data-testid="select-template-tags"
-                    />
                   </div>
+
+                  {/* Seleção de Tags OU Equipamento */}
+                  <Card className="bg-slate-50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Aplicar Template a:</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <RadioGroup 
+                        value={targetType} 
+                        onValueChange={(val: 'tags' | 'equipment') => {
+                          setTargetType(val);
+                          setTemplateForm(prev => ({
+                            ...prev,
+                            tagIds: [],
+                            equipmentId: null
+                          }));
+                        }}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="tags" id="target-tags" data-testid="radio-target-tags" />
+                          <Label htmlFor="target-tags" className="cursor-pointer font-normal">
+                            Tags de Equipamentos
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="equipment" id="target-equipment" data-testid="radio-target-equipment" />
+                          <Label htmlFor="target-equipment" className="cursor-pointer font-normal">
+                            Equipamento Específico
+                          </Label>
+                        </div>
+                      </RadioGroup>
+
+                      {targetType === 'tags' ? (
+                        <MultiSelect
+                          label="Selecione as Tags (Opcional)"
+                          options={(equipmentTags as any[])?.map(tag => ({ value: tag.id, label: tag.name })) || []}
+                          value={templateForm.tagIds || []}
+                          onChange={(val) => setTemplateForm(prev => ({ ...prev, tagIds: val }))}
+                          placeholder="Selecione tags para aplicar este template"
+                          data-testid="select-template-tags"
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          <Label>Selecione o Equipamento (Opcional)</Label>
+                          <Select
+                            value={templateForm.equipmentId || undefined}
+                            onValueChange={(val) => setTemplateForm(prev => ({ ...prev, equipmentId: val }))}
+                            disabled={!equipment.length}
+                          >
+                            <SelectTrigger data-testid="select-template-equipment">
+                              <SelectValue placeholder={
+                                equipment.length === 0 
+                                  ? "Selecione zonas primeiro" 
+                                  : "Selecione um equipamento"
+                              } />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(equipment as any[])?.map(eq => (
+                                <SelectItem key={eq.id} value={eq.id}>
+                                  {eq.name} {eq.internalCode ? `(${eq.internalCode})` : ''}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {equipment.length === 0 && templateForm.zoneIds?.length > 0 && (
+                            <p className="text-xs text-slate-500">
+                              Nenhum equipamento encontrado nas zonas selecionadas
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   {/* Adicionar item */}
                   <Card>
