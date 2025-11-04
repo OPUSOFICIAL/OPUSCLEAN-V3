@@ -2808,7 +2808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create equipment tag
-  app.post("/api/equipment-tags", async (req, res) => {
+  app.post("/api/customers/:customerId/equipment-tags", async (req, res) => {
     try {
       const tag = insertEquipmentTagSchema.parse(req.body);
       const newTag = await storage.createEquipmentTag(tag);
@@ -2823,7 +2823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update equipment tag
-  app.put("/api/equipment-tags/:id", async (req, res) => {
+  app.put("/api/customers/:customerId/equipment-tags/:id", async (req, res) => {
     try {
       const tag = insertEquipmentTagSchema.partial().parse(req.body);
       const updatedTag = await storage.updateEquipmentTag(req.params.id, tag);
@@ -2838,7 +2838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete equipment tag
-  app.delete("/api/equipment-tags/:id", async (req, res) => {
+  app.delete("/api/customers/:customerId/equipment-tags/:id", async (req, res) => {
     try {
       await storage.deleteEquipmentTag(req.params.id);
       res.status(204).send();
