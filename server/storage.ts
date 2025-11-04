@@ -5,7 +5,7 @@ import {
   userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters,
   workOrderComments,
   equipment, equipmentTags, equipmentTypes, maintenanceChecklistTemplates,
-  maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments,
+  maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
   type User, type InsertUser, type ChecklistTemplate, type InsertChecklistTemplate,
@@ -30,7 +30,8 @@ import {
   type MaintenanceChecklistTemplate, type InsertMaintenanceChecklistTemplate,
   type MaintenanceChecklistExecution, type InsertMaintenanceChecklistExecution,
   type MaintenancePlan, type InsertMaintenancePlan,
-  type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment
+  type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment,
+  type MaintenanceActivity, type InsertMaintenanceActivity
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne } from "drizzle-orm";
@@ -162,6 +163,14 @@ export interface IStorage {
   createCleaningActivity(activity: InsertCleaningActivity): Promise<CleaningActivity>;
   updateCleaningActivity(id: string, activity: Partial<InsertCleaningActivity>): Promise<CleaningActivity>;
   deleteCleaningActivity(id: string): Promise<void>;
+
+  // Maintenance Activities
+  getMaintenanceActivitiesByCustomer(customerId: string): Promise<MaintenanceActivity[]>;
+  getMaintenanceActivitiesByCompany(companyId: string): Promise<MaintenanceActivity[]>;
+  getMaintenanceActivity(id: string): Promise<MaintenanceActivity | undefined>;
+  createMaintenanceActivity(activity: InsertMaintenanceActivity): Promise<MaintenanceActivity>;
+  updateMaintenanceActivity(id: string, activity: Partial<InsertMaintenanceActivity>): Promise<MaintenanceActivity>;
+  deleteMaintenanceActivity(id: string): Promise<void>;
   
   // Scheduler functions
   expandOccurrences(activity: CleaningActivity, windowStart: Date, windowEnd: Date): Date[];
@@ -2206,6 +2215,45 @@ export class DatabaseStorage implements IStorage {
     
     // Depois deletar a cleaning activity
     await db.delete(cleaningActivities).where(eq(cleaningActivities.id, id));
+  }
+
+  // Maintenance Activities
+  async getMaintenanceActivitiesByCustomer(customerId: string): Promise<MaintenanceActivity[]> {
+    return await db.select().from(maintenanceActivities)
+      .where(eq(maintenanceActivities.customerId, customerId))
+      .orderBy(maintenanceActivities.name);
+  }
+
+  async getMaintenanceActivitiesByCompany(companyId: string): Promise<MaintenanceActivity[]> {
+    return await db.select().from(maintenanceActivities)
+      .where(eq(maintenanceActivities.companyId, companyId))
+      .orderBy(maintenanceActivities.name);
+  }
+
+  async getMaintenanceActivity(id: string): Promise<MaintenanceActivity | undefined> {
+    const [activity] = await db.select().from(maintenanceActivities)
+      .where(eq(maintenanceActivities.id, id));
+    return activity;
+  }
+
+  async createMaintenanceActivity(activity: InsertMaintenanceActivity): Promise<MaintenanceActivity> {
+    const [newActivity] = await db.insert(maintenanceActivities).values({
+      ...activity,
+      module: 'maintenance',
+    }).returning();
+    return newActivity;
+  }
+
+  async updateMaintenanceActivity(id: string, activity: Partial<InsertMaintenanceActivity>): Promise<MaintenanceActivity> {
+    const [updatedActivity] = await db.update(maintenanceActivities)
+      .set({ ...activity, updatedAt: sql`now()` })
+      .where(eq(maintenanceActivities.id, id))
+      .returning();
+    return updatedActivity;
+  }
+
+  async deleteMaintenanceActivity(id: string): Promise<void> {
+    await db.delete(maintenanceActivities).where(eq(maintenanceActivities.id, id));
   }
 
   // Helper function to expand occurrences based on activity frequency

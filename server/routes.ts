@@ -15,7 +15,7 @@ import {
   insertBathroomCounterLogSchema, insertCompanyCounterSchema,
   insertEquipmentTagSchema, insertEquipmentSchema, insertMaintenanceChecklistTemplateSchema,
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
-  insertMaintenancePlanEquipmentSchema,
+  insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
   type User
 } from "@shared/schema";
 import { z } from "zod";
@@ -2384,6 +2384,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting cleaning activity:", error);
       res.status(500).json({ message: "Failed to delete cleaning activity" });
+    }
+  });
+
+  // === MAINTENANCE ACTIVITIES MANAGEMENT ===
+  
+  // Get maintenance activities by customer
+  app.get("/api/customers/:customerId/maintenance-activities", async (req, res) => {
+    try {
+      const activities = await storage.getMaintenanceActivitiesByCustomer(req.params.customerId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching maintenance activities:", error);
+      res.status(500).json({ message: "Failed to get maintenance activities" });
+    }
+  });
+
+  // Get maintenance activities by company
+  app.get("/api/companies/:companyId/maintenance-activities", async (req, res) => {
+    try {
+      const activities = await storage.getMaintenanceActivitiesByCompany(req.params.companyId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching maintenance activities:", error);
+      res.status(500).json({ message: "Failed to get maintenance activities" });
+    }
+  });
+
+  // Get single maintenance activity
+  app.get("/api/maintenance-activities/:id", async (req, res) => {
+    try {
+      const activity = await storage.getMaintenanceActivity(req.params.id);
+      if (!activity) {
+        return res.status(404).json({ message: "Maintenance activity not found" });
+      }
+      res.json(activity);
+    } catch (error) {
+      console.error("Error fetching maintenance activity:", error);
+      res.status(500).json({ message: "Failed to get maintenance activity" });
+    }
+  });
+
+  // Create maintenance activity
+  app.post("/api/maintenance-activities", async (req, res) => {
+    try {
+      const cleanedData = { 
+        ...req.body,
+        module: 'maintenance'
+      };
+      
+      if (cleanedData.checklistTemplateId === "none" || cleanedData.checklistTemplateId === "") {
+        cleanedData.checklistTemplateId = null;
+      }
+      
+      if (cleanedData.assignedUserId === "none" || cleanedData.assignedUserId === "") {
+        cleanedData.assignedUserId = null;
+      }
+      
+      if (cleanedData.slaConfigId === "none" || cleanedData.slaConfigId === "") {
+        cleanedData.slaConfigId = null;
+      }
+      
+      if (cleanedData.startTime === "") {
+        cleanedData.startTime = null;
+      }
+      if (cleanedData.endTime === "") {
+        cleanedData.endTime = null;
+      }
+      
+      const activityData = insertMaintenanceActivitySchema.parse(cleanedData);
+      
+      const activityWithId = {
+        ...activityData,
+        id: `ma-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+      
+      const activity = await storage.createMaintenanceActivity(activityWithId as any);
+      res.status(201).json(activity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating maintenance activity:", error);
+      res.status(500).json({ message: "Failed to create maintenance activity" });
+    }
+  });
+
+  // Update maintenance activity
+  app.put("/api/maintenance-activities/:id", async (req, res) => {
+    try {
+      const activityData = insertMaintenanceActivitySchema.partial().parse(req.body);
+      const activity = await storage.updateMaintenanceActivity(req.params.id, activityData);
+      res.json(activity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating maintenance activity:", error);
+      res.status(500).json({ message: "Failed to update maintenance activity" });
+    }
+  });
+
+  // Delete maintenance activity
+  app.delete("/api/maintenance-activities/:id", async (req, res) => {
+    try {
+      await storage.deleteMaintenanceActivity(req.params.id);
+      res.json({ message: "Maintenance activity deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting maintenance activity:", error);
+      res.status(500).json({ message: "Failed to delete maintenance activity" });
     }
   });
 

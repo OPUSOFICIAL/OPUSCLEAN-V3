@@ -591,6 +591,34 @@ export const maintenancePlanEquipments = pgTable("maintenance_plan_equipments", 
   uniquePlanEquipment: unique("unique_plan_equipment").on(table.planId, table.equipmentId),
 }));
 
+// 33. TABELA: maintenance_activities (Atividades de Manutenção Programadas)
+export const maintenanceActivities = pgTable("maintenance_activities", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  equipmentId: varchar("equipment_id").references(() => equipment.id),
+  siteId: varchar("site_id").references(() => sites.id),
+  zoneId: varchar("zone_id").references(() => zones.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  type: varchar("type").notNull().default('preventiva'), // preventiva, preditiva, corretiva
+  frequency: frequencyEnum("frequency").notNull(),
+  frequencyConfig: jsonb("frequency_config"),
+  module: moduleEnum("module").notNull().default('maintenance'),
+  checklistTemplateId: varchar("checklist_template_id").references(() => maintenanceChecklistTemplates.id),
+  slaConfigId: varchar("sla_config_id").references(() => slaConfigs.id),
+  assignedUserId: varchar("assigned_user_id").references(() => users.id),
+  estimatedHours: decimal("estimated_hours", { precision: 5, scale: 2 }),
+  slaMinutes: integer("sla_minutes"),
+  startDate: date("start_date"),
+  lastExecutedAt: timestamp("last_executed_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+  startTime: time("start_time"),
+  endTime: time("end_time"),
+});
+
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   customers: many(customers),
@@ -1116,6 +1144,7 @@ export const insertMaintenanceChecklistTemplateSchema = createInsertSchema(maint
 export const insertMaintenanceChecklistExecutionSchema = createInsertSchema(maintenanceChecklistExecutions).omit({ id: true });
 export const insertMaintenancePlanSchema = createInsertSchema(maintenancePlans).omit({ id: true });
 export const insertMaintenancePlanEquipmentSchema = createInsertSchema(maintenancePlanEquipments).omit({ id: true });
+export const insertMaintenanceActivitySchema = createInsertSchema(maintenanceActivities).omit({ id: true });
 
 // Types
 export type Company = typeof companies.$inferSelect;
@@ -1218,3 +1247,6 @@ export type InsertMaintenancePlan = z.infer<typeof insertMaintenancePlanSchema>;
 
 export type MaintenancePlanEquipment = typeof maintenancePlanEquipments.$inferSelect;
 export type InsertMaintenancePlanEquipment = z.infer<typeof insertMaintenancePlanEquipmentSchema>;
+
+export type MaintenanceActivity = typeof maintenanceActivities.$inferSelect;
+export type InsertMaintenanceActivity = z.infer<typeof insertMaintenanceActivitySchema>;
