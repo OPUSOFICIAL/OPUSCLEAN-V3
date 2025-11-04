@@ -108,9 +108,9 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   ];
 
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-card border-r border-border flex flex-col transition-all duration-300`} data-testid="sidebar">
+    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-gradient-to-b from-slate-50 via-white to-slate-50/50 border-r border-slate-200 shadow-lg flex flex-col transition-all duration-300`} data-testid="sidebar">
       {/* Header */}
-      <div className={`${isCollapsed ? 'p-5' : 'py-8 px-6'} border-b border-border relative`}>
+      <div className={`${isCollapsed ? 'p-5' : 'py-8 px-6'} border-b border-slate-200 relative bg-gradient-to-br from-white to-slate-100`}>
         <div className="flex items-center justify-between">
           <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-start'}`}>
             <img 
@@ -148,10 +148,10 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
 
       {/* Company Selector - apenas para admin/opus users */}
       {!isCollapsed && !isCustomerUser && customers.length > 0 && (
-        <div className="px-6 pt-1 pb-3 border-b border-border">
-          <label className="block text-sm font-medium text-foreground mb-2">Cliente Ativo</label>
+        <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Cliente Ativo</label>
           <Select value={activeClientId} onValueChange={setActiveClientId}>
-            <SelectTrigger data-testid="company-selector">
+            <SelectTrigger data-testid="company-selector" className="bg-white shadow-sm border-slate-300 hover:border-slate-400 transition-colors">
               <SelectValue placeholder="Selecione um cliente" />
             </SelectTrigger>
             <SelectContent>
@@ -167,20 +167,20 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
       
       {/* Nome do Cliente fixo para customer_user */}
       {!isCollapsed && isCustomerUser && activeClient && (
-        <div className="px-6 pt-1 pb-3 border-b border-border">
-          <label className="block text-sm font-medium text-muted-foreground mb-2">Cliente</label>
-          <div className="px-3 py-2 bg-muted rounded-md">
-            <p className="text-sm font-medium text-foreground">{activeClient.name}</p>
+        <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
+          <label className="block text-sm font-semibold text-slate-500 mb-2">Cliente</label>
+          <div className="px-3 py-2 bg-gradient-to-br from-blue-50 to-slate-50 border border-blue-200 rounded-md shadow-sm">
+            <p className="text-sm font-medium text-slate-700">{activeClient.name}</p>
           </div>
         </div>
       )}
 
       {/* Module/Platform Selector */}
       {!isCollapsed && (
-        <div className="px-6 pt-1 pb-3 border-b border-border">
-          <label className="block text-sm font-medium text-foreground mb-2">Plataforma</label>
+        <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Plataforma</label>
           <Select value={currentModule} onValueChange={(value) => setModule(value as 'clean' | 'maintenance')}>
-            <SelectTrigger data-testid="module-selector">
+            <SelectTrigger data-testid="module-selector" className="bg-white shadow-sm border-slate-300 hover:border-slate-400 transition-colors">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -207,20 +207,25 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           const Icon = item.icon;
           const isActive = location === item.path;
           
+          // Gradiente baseado no módulo ativo
+          const activeGradient = currentModule === 'maintenance'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md hover:shadow-lg'
+            : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md hover:shadow-lg';
+          
           return (
             <Link key={item.path} href={item.path}>
               <Button
                 variant={isActive ? "default" : "ghost"}
-                className={`w-full ${isCollapsed ? 'justify-center px-0' : 'justify-start space-x-3'} ${
+                className={`w-full ${isCollapsed ? 'justify-center px-0' : 'justify-start space-x-3'} transition-all duration-200 ${
                   isActive 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-accent hover:text-accent-foreground"
+                    ? activeGradient
+                    : "hover:bg-slate-100 hover:text-slate-900"
                 }`}
                 data-testid={`nav-${item.path.slice(1) || 'dashboard'}`}
                 title={isCollapsed ? item.label : undefined}
               >
                 <Icon className="w-5 h-5" />
-                {!isCollapsed && <span>{item.label}</span>}
+                {!isCollapsed && <span className="font-medium">{item.label}</span>}
               </Button>
             </Link>
           );
@@ -228,7 +233,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-slate-200 bg-gradient-to-br from-slate-50 to-white">
         {isCollapsed ? (
           <div className="flex justify-center">
             <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">

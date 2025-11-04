@@ -267,10 +267,15 @@ export default function WorkOrders() {
     wo.status === 'concluida'
   ).length || 0;
 
+  // Descrição dinâmica baseada no módulo
+  const headerDescription = currentModule === 'maintenance' 
+    ? "Gerenciamento de ordens de serviço de manutenção" 
+    : "Gerenciamento de ordens de serviço de limpeza";
+
   if (isLoading) {
     return (
       <>
-        <Header title="Ordens de Serviço" description="Gerenciamento de ordens de serviço de limpeza e manutenção" />
+        <Header title="Ordens de Serviço" description={headerDescription} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -308,7 +313,7 @@ export default function WorkOrders() {
     <>
       <Header 
         title="Ordens de Serviço" 
-        description="Gerenciamento de ordens de serviço de limpeza e manutenção" 
+        description={headerDescription} 
       />
       
       <main className="flex-1 overflow-auto p-6 bg-gray-50">
