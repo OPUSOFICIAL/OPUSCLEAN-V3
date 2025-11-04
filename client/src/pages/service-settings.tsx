@@ -42,12 +42,13 @@ const serviceTypeSchema = z.object({
   code: z.string().min(1, "Código é obrigatório"),
 });
 
-const serviceCategorySchema = z.object({
+// CATEGORIAS DE SERVIÇOS - FUNCIONALIDADE COMENTADA (MANTER PARA REFERÊNCIA FUTURA)
+/* const serviceCategorySchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   description: z.string().optional(),
   code: z.string().min(1, "Código é obrigatório"),
   typeId: z.string().min(1, "Tipo é obrigatório"),
-});
+}); */
 
 const dashboardGoalSchema = z.object({
   goalType: z.string().min(1, "Tipo de meta é obrigatório"),
@@ -57,10 +58,10 @@ const dashboardGoalSchema = z.object({
 
 export default function Settings() {
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  // const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false); // CATEGORIAS - COMENTADO
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<any>(null);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
+  // const [editingCategory, setEditingCategory] = useState<any>(null); // CATEGORIAS - COMENTADO
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -80,10 +81,11 @@ export default function Settings() {
     enabled: !!customerId,
   });
 
-  const { data: serviceCategories = [], isLoading: loadingCategories } = useQuery({
+  // CATEGORIAS - COMENTADO
+  /* const { data: serviceCategories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["/api/customers", customerId, "service-categories", { module: currentModule }],
     enabled: !!customerId,
-  });
+  }); */
 
   const { data: dashboardGoals = [], isLoading: loadingGoals } = useQuery({
     queryKey: ["/api/customers", customerId, "dashboard-goals"],
@@ -105,7 +107,8 @@ export default function Settings() {
     },
   });
 
-  const categoryForm = useForm({
+  // CATEGORIAS - COMENTADO
+  /* const categoryForm = useForm({
     resolver: zodResolver(serviceCategorySchema),
     defaultValues: {
       name: "",
@@ -113,7 +116,7 @@ export default function Settings() {
       code: "",
       typeId: "",
     },
-  });
+  }); */
 
   const goalForm = useForm({
     resolver: zodResolver(dashboardGoalSchema),
@@ -164,7 +167,8 @@ export default function Settings() {
     },
   });
 
-  const createCategoryMutation = useMutation({
+  // CATEGORIAS - MUTATIONS COMENTADAS
+  /* const createCategoryMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/service-categories`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-categories"] });
@@ -201,7 +205,7 @@ export default function Settings() {
     onError: () => {
       toast({ title: "Erro ao excluir categoria", variant: "destructive" });
     },
-  });
+  }); */
 
   const createGoalMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/dashboard-goals`, data),
@@ -252,14 +256,15 @@ export default function Settings() {
     }
   };
 
-  const onSubmitCategory = (data: any) => {
+  // CATEGORIAS - HANDLER COMENTADO
+  /* const onSubmitCategory = (data: any) => {
     if (editingCategory) {
       updateCategoryMutation.mutate({ id: editingCategory.id, data });
     } else {
       // Incluir o módulo atual ao criar categoria
       createCategoryMutation.mutate({ ...data, module: currentModule });
     }
-  };
+  }; */
 
   const onSubmitGoal = (data: any) => {
     if (editingGoal) {
@@ -279,7 +284,8 @@ export default function Settings() {
     setIsTypeDialogOpen(true);
   };
 
-  const handleEditCategory = (category: any) => {
+  // CATEGORIAS - HANDLER COMENTADO
+  /* const handleEditCategory = (category: any) => {
     setEditingCategory(category);
     categoryForm.reset({
       name: category.name,
@@ -288,7 +294,7 @@ export default function Settings() {
       typeId: category.typeId,
     });
     setIsCategoryDialogOpen(true);
-  };
+  }; */
 
   const handleEditGoal = (goal: any) => {
     setEditingGoal(goal);
@@ -305,7 +311,7 @@ export default function Settings() {
     return type?.name || "Tipo não encontrado";
   };
 
-  if (loadingTypes || loadingCategories || loadingGoals) {
+  if (loadingTypes || /* loadingCategories || */ loadingGoals) { // CATEGORIAS - LOADING COMENTADO
     return (
       <div className="p-4 space-y-4 bg-gray-50 min-h-screen">
         <div className="animate-pulse">
@@ -344,10 +350,11 @@ export default function Settings() {
                 <Bookmark className="w-3.5 h-3.5" />
                 Tipos
               </TabsTrigger>
-              <TabsTrigger value="categories" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
+              {/* CATEGORIAS - ABA COMENTADA */}
+              {/* <TabsTrigger value="categories" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
                 <Layers className="w-3.5 h-3.5" />
                 Categorias
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger value="services" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
                 <SettingsIcon className="w-3.5 h-3.5" />
                 Serviços
@@ -519,7 +526,8 @@ export default function Settings() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="categories" className="space-y-6">
+          {/* CATEGORIAS - TODO O CONTEÚDO DA ABA COMENTADO */}
+          {/* <TabsContent value="categories" className="space-y-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -693,7 +701,7 @@ export default function Settings() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
 
           <TabsContent value="services" className="space-y-6">
             <Services customerId={customerId} />
