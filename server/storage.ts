@@ -2454,6 +2454,10 @@ export class DatabaseStorage implements IStorage {
       
       // Get equipment based on equipmentIds array
       let equipmentList: any[] = [];
+      console.log(`[SCHEDULER DEBUG] activity.equipmentIds:`, activity.equipmentIds);
+      console.log(`[SCHEDULER DEBUG] equipmentIds type:`, typeof activity.equipmentIds);
+      console.log(`[SCHEDULER DEBUG] equipmentIds isArray:`, Array.isArray(activity.equipmentIds));
+      
       if (activity.equipmentIds && activity.equipmentIds.length > 0) {
         // Get all specified equipment
         equipmentList = await db.select().from(equipment)
@@ -2464,6 +2468,8 @@ export class DatabaseStorage implements IStorage {
         equipmentList.forEach(eq => {
           console.log(`  - ${eq.name} (ID: ${eq.id})`);
         });
+      } else {
+        console.log(`[SCHEDULER DEBUG] ❌ No equipment IDs found in activity - skipping OS generation`);
       }
       
       // Generate work orders for each equipment and occurrence combination
