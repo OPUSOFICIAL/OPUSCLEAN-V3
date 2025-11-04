@@ -307,7 +307,8 @@ export default function Settings() {
     if (editingType) {
       updateTypeMutation.mutate({ id: editingType.id, data });
     } else {
-      createTypeMutation.mutate(data);
+      // Incluir o módulo atual ao criar tipo de serviço
+      createTypeMutation.mutate({ ...data, module: currentModule });
     }
   };
 
@@ -315,7 +316,8 @@ export default function Settings() {
     if (editingCategory) {
       updateCategoryMutation.mutate({ id: editingCategory.id, data });
     } else {
-      createCategoryMutation.mutate(data);
+      // Incluir o módulo atual ao criar categoria
+      createCategoryMutation.mutate({ ...data, module: currentModule });
     }
   };
 
