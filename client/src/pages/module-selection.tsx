@@ -7,17 +7,37 @@ import { useQuery } from "@tanstack/react-query";
 import { useModule } from "@/contexts/ModuleContext";
 import { getAuthState } from "@/lib/auth";
 
+interface Customer {
+  id: string;
+  name: string;
+  isActive: boolean;
+  modules: string[];
+}
+
 export default function ModuleSelection() {
   const [, setLocation] = useLocation();
   const { setModule } = useModule();
   const [isLoading, setIsLoading] = useState(false);
+
+  const auth = getAuthState();
+  const user = auth?.user;
+  const companyId = user?.companyId || "company-opus-default";
+  const isCustomerUser = user?.userType === 'customer_user';
+  const userCustomerId = user?.customerId;
 
   // Get available modules for the user
   const { data: modulesData, isLoading: isLoadingModules } = useQuery<{ modules: string[]; defaultModule: string }>({
     queryKey: ["/api/auth/user-modules"],
   });
 
+  // Get all customers for the user's company (only for admin/opus users)
+  const { data: allCustomers = [], isLoading: isLoadingCustomers } = useQuery<Customer[]>({
+    queryKey: ["/api/companies", companyId, "customers"],
+    enabled: !isCustomerUser && !!companyId,
+  });
+
   const availableModules = modulesData?.modules || [];
+  const activeCustomers = (allCustomers as Customer[]).filter(c => c.isActive);
 
   useEffect(() => {
     // If user only has access to one module, redirect automatically
@@ -35,9 +55,30 @@ export default function ModuleSelection() {
     }
   }, [setLocation]);
 
-  const handleModuleSelect = (module: 'clean' | 'maintenance') => {
+  const handleModuleSelect = async (module: 'clean' | 'maintenance') => {
     setIsLoading(true);
     setModule(module);
+    
+    // For customer_user, use their own customer ID
+    if (isCustomerUser && userCustomerId) {
+      localStorage.setItem('opus:activeClientId', userCustomerId);
+      setTimeout(() => setLocation("/"), 300);
+      return;
+    }
+
+    // For admin/opus users, find a customer with the selected module
+    const customersWithModule = activeCustomers.filter(customer => 
+      customer.modules.includes(module)
+    );
+
+    if (customersWithModule.length > 0) {
+      // Select the first customer that has the module
+      const selectedCustomer = customersWithModule[0];
+      localStorage.setItem('opus:activeClientId', selectedCustomer.id);
+      console.log(`[MODULE SELECTION] Módulo ${module} selecionado. Cliente ativo: ${selectedCustomer.name}`);
+    } else {
+      console.warn(`[MODULE SELECTION] Nenhum cliente encontrado com o módulo ${module}`);
+    }
     
     // Small delay for better UX
     setTimeout(() => {
