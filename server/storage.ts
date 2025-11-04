@@ -329,6 +329,13 @@ export interface IStorage {
   updateEquipment(id: string, equipment: Partial<InsertEquipment>): Promise<Equipment>;
   deleteEquipment(id: string): Promise<void>;
 
+  // Equipment Tags
+  getEquipmentTagsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<EquipmentTag[]>;
+  getEquipmentTag(id: string): Promise<EquipmentTag | undefined>;
+  createEquipmentTag(tagData: InsertEquipmentTag): Promise<EquipmentTag>;
+  updateEquipmentTag(id: string, tagData: Partial<InsertEquipmentTag>): Promise<EquipmentTag>;
+  deleteEquipmentTag(id: string): Promise<void>;
+
   // Maintenance Checklist Templates
   getMaintenanceChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]>;
   getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]>;

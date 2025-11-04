@@ -22,6 +22,7 @@ import AdminMobile from "@/pages/admin-mobile";
 import Customers from "@/pages/customers";
 import Roles from "@/pages/roles";
 import Equipment from "@/pages/equipment";
+import EquipmentTags from "@/pages/equipment-tags";
 import MaintenancePlans from "@/pages/maintenance-plans";
 import MaintenanceChecklistTemplates from "@/pages/maintenance-checklist-templates";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -87,6 +88,7 @@ function AuthenticatedAdminRouter() {
           
           {/* Maintenance Module Routes */}
           <Route path="/equipment" component={() => <Equipment customerId={activeClientId} />} />
+          <Route path="/equipment-tags" component={() => <EquipmentTags />} />
           <Route path="/maintenance-plans" component={() => <MaintenancePlans customerId={activeClientId} />} />
           <Route path="/maintenance-checklist-templates" component={() => <MaintenanceChecklistTemplates customerId={activeClientId} />} />
           
