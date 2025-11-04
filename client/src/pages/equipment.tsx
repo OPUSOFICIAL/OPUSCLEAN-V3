@@ -147,7 +147,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
   // Form states
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
-  const [internalCode, setInternalCode] = useState("");
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [equipmentName, setEquipmentName] = useState("");
   const [equipmentType, setEquipmentType] = useState("");
@@ -247,7 +246,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const resetForm = () => {
     setSelectedSiteId("");
     setSelectedZoneId("");
-    setInternalCode("");
     setTagIds([]);
     setEquipmentName("");
     setEquipmentType("");
@@ -275,7 +273,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
       customerId,
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
-      internalCode,
       tagIds: tagIds.length > 0 ? tagIds : null,
       name: equipmentName,
       equipmentType,
@@ -294,7 +291,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setEditingEquipment(equip);
     setSelectedSiteId(equip.siteId);
     setSelectedZoneId(equip.zoneId || "");
-    setInternalCode(equip.internalCode || "");
     setTagIds(equip.tagIds || []);
     setEquipmentName(equip.name);
     setEquipmentType(equip.equipmentType);
@@ -318,7 +314,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
       customerId,
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
-      internalCode,
       tagIds: tagIds.length > 0 ? tagIds : null,
       name: equipmentName,
       equipmentType,
@@ -411,18 +406,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="internalCode">Código Interno</Label>
-                      <Input
-                        id="internalCode"
-                        data-testid="input-internal-code"
-                        value={internalCode}
-                        onChange={(e) => setInternalCode(e.target.value)}
-                        placeholder="EQ-001"
-                      />
-                    </div>
-
+                  <div className="grid grid-cols-2 gap-4">
                     <MultiSelect
                       label="Tags"
                       options={equipmentTags.map(tag => ({ value: tag.id, label: tag.name }))}
@@ -705,15 +689,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Código Interno</Label>
-                  <Input
-                    value={internalCode}
-                    onChange={(e) => setInternalCode(e.target.value)}
-                  />
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <MultiSelect
                   label="Tags"
                   options={equipmentTags.map(tag => ({ value: tag.id, label: tag.name }))}
