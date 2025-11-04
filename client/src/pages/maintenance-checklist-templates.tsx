@@ -340,6 +340,24 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       return;
     }
 
+    if (!templateForm.serviceId) {
+      toast({
+        title: "Serviço obrigatório",
+        description: "Selecione um serviço para o checklist.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!templateForm.equipmentIds || templateForm.equipmentIds.length === 0) {
+      toast({
+        title: "Equipamento obrigatório",
+        description: "Selecione pelo menos um equipamento para o checklist.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (templateForm.items.length === 0) {
       toast({
         title: "Itens obrigatórios",
@@ -356,7 +374,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: templateForm.description || null,
       siteIds: templateForm.siteIds && templateForm.siteIds.length > 0 ? templateForm.siteIds : null,
       zoneIds: templateForm.zoneIds && templateForm.zoneIds.length > 0 ? templateForm.zoneIds : null,
-      equipmentIds: templateForm.equipmentIds && templateForm.equipmentIds.length > 0 ? templateForm.equipmentIds : null,
+      equipmentIds: templateForm.equipmentIds,
+      serviceId: templateForm.serviceId,
       version: templateForm.version,
       items: templateForm.items,
       module: currentModule,
@@ -522,16 +541,15 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
                   {/* Serviço */}
                   <div className="space-y-2">
-                    <Label htmlFor="service">Serviço (Opcional)</Label>
+                    <Label htmlFor="service">Serviço *</Label>
                     <Select
-                      value={templateForm.serviceId || "none"}
-                      onValueChange={(value) => setTemplateForm(prev => ({ ...prev, serviceId: value === "none" ? "" : value }))}
+                      value={templateForm.serviceId || ""}
+                      onValueChange={(value) => setTemplateForm(prev => ({ ...prev, serviceId: value }))}
                     >
                       <SelectTrigger data-testid="select-template-service">
                         <SelectValue placeholder="Selecione um serviço" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Nenhum</SelectItem>
                         {(services as any[])?.map((service: any) => (
                           <SelectItem key={service.id} value={service.id}>
                             {service.name}
@@ -568,7 +586,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
                   {/* Seleção de Equipamentos */}
                   <MultiSelect
-                    label="Equipamentos (Opcional)"
+                    label="Equipamentos *"
                     options={(equipment as any[])?.map(eq => ({ 
                       value: eq.id, 
                       label: `${eq.name}${eq.internalCode ? ` (${eq.internalCode})` : ''}` 
