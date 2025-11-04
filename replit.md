@@ -1,3 +1,7 @@
+# OPUS - Project Summary
+
+> **📚 Documentação Completa**: Para documentação técnica detalhada, arquitetura, fluxos e changelog, consulte [DOCUMENTATION.md](./DOCUMENTATION.md)
+
 # Overview
 
 OPUS is a modular facilities management platform designed to streamline operations and enhance efficiency. It currently includes OPUS Clean for cleaning and facilities management and OPUS Manutenção for maintenance management. The platform offers web-based administration and mobile applications, supporting scheduling, work order management, QR code-based task execution, and public service requests. OPUS is built to serve multiple companies, sites, and zones, providing real-time analytics through a modern full-stack architecture, with the vision of offering a comprehensive, scalable solution for modern facilities management.
