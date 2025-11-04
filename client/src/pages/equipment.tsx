@@ -6,23 +6,114 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
+import type { EquipmentTag } from "@shared/schema";
 import { 
   Plus, 
   Settings, 
   Edit, 
   Trash2,
   Wrench,
-  MapPin
+  MapPin,
+  ChevronDown
 } from "lucide-react";
 
 interface EquipmentProps {
   customerId: string;
+}
+
+function MultiSelect({
+  label,
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  "data-testid": dataTestId,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (vals: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  "data-testid"?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  
+  const toggleOption = (optionValue: string) => {
+    if (value.includes(optionValue)) {
+      onChange(value.filter(v => v !== optionValue));
+    } else {
+      onChange([...value, optionValue]);
+    }
+  };
+
+  const selectedLabels = options
+    .filter(opt => value.includes(opt.value))
+    .map(opt => opt.label)
+    .join(", ");
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+            disabled={disabled}
+            data-testid={dataTestId}
+          >
+            <span className="truncate">
+              {selectedLabels || placeholder || "Selecione..."}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <div className="max-h-64 overflow-auto p-2">
+            {options.length === 0 ? (
+              <div className="p-2 text-sm text-muted-foreground">
+                {placeholder || "Sem opções"}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {options.map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                    onClick={() => toggleOption(option.value)}
+                  >
+                    <Checkbox
+                      checked={value.includes(option.value)}
+                      onCheckedChange={() => toggleOption(option.value)}
+                    />
+                    <label className="flex-1 cursor-pointer text-sm">
+                      {option.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <div className="text-xs text-slate-500">
+        {value?.length ? `${value.length} selecionado(s)` : "Nenhum selecionado"}
+      </div>
+    </div>
+  );
 }
 
 export default function Equipment({ customerId }: EquipmentProps) {
@@ -35,7 +126,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
   const [internalCode, setInternalCode] = useState("");
-  const [tag, setTag] = useState("");
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [equipmentName, setEquipmentName] = useState("");
   const [equipmentType, setEquipmentType] = useState("");
   const [manufacturer, setManufacturer] = useState("");
@@ -69,6 +160,12 @@ export default function Equipment({ customerId }: EquipmentProps) {
   // Fetch equipment
   const { data: equipment, isLoading } = useQuery({
     queryKey: [`/api/customers/${customerId}/equipment`],
+    enabled: !!customerId,
+  });
+
+  // Fetch equipment tags
+  const { data: equipmentTags = [] } = useQuery<EquipmentTag[]>({
+    queryKey: [`/api/customers/${customerId}/equipment-tags`, { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -129,7 +226,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSelectedSiteId("");
     setSelectedZoneId("");
     setInternalCode("");
-    setTag("");
+    setTagIds([]);
     setEquipmentName("");
     setEquipmentType("");
     setManufacturer("");
@@ -157,7 +254,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
       internalCode,
-      tag: tag || null,
+      tagIds: tagIds.length > 0 ? tagIds : null,
       name: equipmentName,
       equipmentType,
       manufacturer: manufacturer || null,
@@ -167,6 +264,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       warrantyExpiry: warrantyExpiry || null,
       status,
       description: description || null,
+      module: currentModule,
     });
   };
 
@@ -175,7 +273,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSelectedSiteId(equip.siteId);
     setSelectedZoneId(equip.zoneId || "");
     setInternalCode(equip.internalCode || "");
-    setTag(equip.tag || "");
+    setTagIds(equip.tagIds || []);
     setEquipmentName(equip.name);
     setEquipmentType(equip.equipmentType);
     setManufacturer(equip.manufacturer || "");
@@ -199,7 +297,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
       internalCode,
-      tag: tag || null,
+      tagIds: tagIds.length > 0 ? tagIds : null,
       name: equipmentName,
       equipmentType,
       manufacturer: manufacturer || null,
@@ -303,16 +401,14 @@ export default function Equipment({ customerId }: EquipmentProps) {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="tag">TAG</Label>
-                      <Input
-                        id="tag"
-                        data-testid="input-equipment-tag"
-                        value={tag}
-                        onChange={(e) => setTag(e.target.value)}
-                        placeholder="AC-01, ELV-02"
-                      />
-                    </div>
+                    <MultiSelect
+                      label="Tags"
+                      options={equipmentTags.map(tag => ({ value: tag.id, label: tag.name }))}
+                      value={tagIds}
+                      onChange={setTagIds}
+                      placeholder="Selecione as tags"
+                      data-testid="select-equipment-tags"
+                    />
 
                     <div className="space-y-2">
                       <Label htmlFor="name">Nome do Equipamento *</Label>
@@ -480,8 +576,21 @@ export default function Equipment({ customerId }: EquipmentProps) {
                       <TableCell className="font-mono text-sm">
                         {equip.internalCode || "-"}
                       </TableCell>
-                      <TableCell className="font-mono text-sm font-medium">
-                        {equip.tag || "-"}
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {equip.tagIds && equip.tagIds.length > 0 ? (
+                            equip.tagIds.map((tagId: string) => {
+                              const tagObj = equipmentTags.find(t => t.id === tagId);
+                              return tagObj ? (
+                                <Badge key={tagId} variant="secondary" className="text-xs">
+                                  {tagObj.name}
+                                </Badge>
+                              ) : null;
+                            })
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-medium">{equip.name}</TableCell>
                       <TableCell className="capitalize">{equip.equipmentType}</TableCell>
@@ -583,14 +692,14 @@ export default function Equipment({ customerId }: EquipmentProps) {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>TAG</Label>
-                  <Input
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value)}
-                    placeholder="AC-01, ELV-02"
-                  />
-                </div>
+                <MultiSelect
+                  label="Tags"
+                  options={equipmentTags.map(tag => ({ value: tag.id, label: tag.name }))}
+                  value={tagIds}
+                  onChange={setTagIds}
+                  placeholder="Selecione as tags"
+                  data-testid="select-edit-equipment-tags"
+                />
 
                 <div className="space-y-2">
                   <Label>Nome do Equipamento *</Label>
