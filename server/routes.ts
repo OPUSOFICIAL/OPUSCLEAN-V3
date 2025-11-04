@@ -3052,6 +3052,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get equipment by multiple zones (query parameter)
+  app.get("/api/equipment", async (req, res) => {
+    try {
+      const zoneIdsParam = req.query.zoneIds as string;
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      
+      if (!zoneIdsParam) {
+        return res.status(400).json({ message: "zoneIds query parameter is required" });
+      }
+      
+      const zoneIds = zoneIdsParam.split(',').filter(id => id.trim());
+      
+      if (zoneIds.length === 0) {
+        return res.json([]);
+      }
+      
+      // Fetch equipment for all zones and merge
+      const equipmentPromises = zoneIds.map(zoneId => 
+        storage.getEquipmentByZone(zoneId.trim(), module)
+      );
+      
+      const equipmentArrays = await Promise.all(equipmentPromises);
+      const allEquipment = equipmentArrays.flat();
+      
+      // Remove duplicates by ID
+      const uniqueEquipment = Array.from(
+        new Map(allEquipment.map(eq => [eq.id, eq])).values()
+      );
+      
+      res.json(uniqueEquipment);
+    } catch (error) {
+      console.error("Error fetching equipment by zones:", error);
+      res.status(500).json({ message: "Failed to fetch equipment" });
+    }
+  });
+
   // Get single equipment
   app.get("/api/equipment/:id", async (req, res) => {
     try {
