@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import opusLogo from "@assets/ChatGPT Image 8 de set. de 2025, 18_10_10_1757366528566.png";
@@ -54,6 +55,18 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   const clientModules = (activeClient?.modules || []) as ('clean' | 'maintenance')[];
   const effectiveAllowedModules = allowedModules.filter(module => clientModules.includes(module));
   const effectiveHasMultipleModules = effectiveAllowedModules.length > 1;
+
+  // Auto-corrigir módulo quando cliente ativo mudar
+  useEffect(() => {
+    if (activeClient && effectiveAllowedModules.length > 0) {
+      // Se o módulo atual não está disponível para o cliente ativo, trocar para o primeiro disponível
+      if (!effectiveAllowedModules.includes(currentModule)) {
+        const newModule = effectiveAllowedModules[0];
+        console.log(`[SIDEBAR] Módulo ${currentModule} não disponível para cliente ${activeClient.name}. Trocando para ${newModule}`);
+        setModule(newModule);
+      }
+    }
+  }, [activeClient, effectiveAllowedModules, currentModule, setModule]);
 
   const handleLogout = async () => {
     try {
