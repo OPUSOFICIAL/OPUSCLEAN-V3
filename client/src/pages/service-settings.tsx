@@ -495,9 +495,10 @@ export default function Settings() {
                             {type.description && (
                               <p className="text-sm text-muted-foreground mb-2">{type.description}</p>
                             )}
-                            <p className="text-xs text-muted-foreground">
+                            {/* CATEGORIAS - CONTAGEM COMENTADA */}
+                            {/* <p className="text-xs text-muted-foreground">
                               Categorias: {(serviceCategories as any[]).filter(c => c.typeId === type.id).length}
-                            </p>
+                            </p> */}
                           </div>
                           <div className="flex items-center space-x-2">
                             <Button 
