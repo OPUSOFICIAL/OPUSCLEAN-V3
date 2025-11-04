@@ -87,5 +87,41 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Schedule monthly maintenance work order generation
+    scheduleMonthlyMaintenance();
   });
 })();
+
+// Monthly maintenance scheduler - runs on the last day of each month at 23:00
+function scheduleMonthlyMaintenance() {
+  function checkAndRun() {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Check if tomorrow is a new month (meaning today is last day of month)
+    const isLastDayOfMonth = tomorrow.getMonth() !== now.getMonth();
+    
+    // Run at 23:00 on the last day of month
+    if (isLastDayOfMonth && now.getHours() === 23 && now.getMinutes() === 0) {
+      log('[MONTHLY SCHEDULER] Executando geração automática de OSs para próximo mês');
+      
+      fetch(`http://localhost:${parseInt(process.env.PORT || '5000', 10)}/api/scheduler/regenerate-monthly-maintenance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+        .then(res => res.json())
+        .then(data => {
+          log(`[MONTHLY SCHEDULER] ✅ Geração concluída: ${data.totalGenerated} OSs criadas`);
+        })
+        .catch(error => {
+          console.error('[MONTHLY SCHEDULER] ❌ Erro na geração automática:', error);
+        });
+    }
+  }
+  
+  // Check every hour
+  setInterval(checkAndRun, 60 * 60 * 1000);
+  log('[MONTHLY SCHEDULER] Agendamento mensal ativado - roda todo último dia do mês às 23:00');
+}

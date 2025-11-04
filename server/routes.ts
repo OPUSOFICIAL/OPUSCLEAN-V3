@@ -2586,7 +2586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[MONTHLY SCHEDULER] Iniciando regeneração mensal automática de OSs de manutenção`);
       
       // Get all companies
-      const allCompanies = await storage.getAllCompanies();
+      const allCompanies = await storage.getCompanies();
       
       let totalGenerated = 0;
       
