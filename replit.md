@@ -48,6 +48,8 @@ Supports two types of QR codes: Execution QRs for internal staff work order mana
 
 Manages programmed, internal corrective, and public corrective work orders. It tracks status, SLA compliance, priority, operator assignments, allows comments with photo attachments, and supports re-opening. All analytics are derived from real-time PostgreSQL data.
 
+**Automated Monthly Work Order Generation (Maintenance Module)**: To optimize database performance, the system generates preventive maintenance work orders on a monthly basis rather than creating orders for an entire year upfront. When a maintenance plan is created, work orders are generated only for the current month. On the last day of each month at 23:00, an automated scheduler runs and pre-generates work orders for the following month across all companies. This approach balances operational planning needs with database efficiency.
+
 ### Authentication and Authorization
 
 Supports Microsoft SSO (Entra ID) and email/password authentication. Security measures include JWT, Bcrypt for password hashing, rate limiting, data sanitization, CORS, Helmet.js, and SQL injection prevention. A custom role system provides granular, permission-based access for predefined roles with differentiated routing for web and mobile users.
