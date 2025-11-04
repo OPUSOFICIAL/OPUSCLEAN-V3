@@ -1055,6 +1055,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/users/:id", requireManageUsers, async (req, res) => {
     try {
       const user = insertUserSchema.partial().parse(req.body);
+      
+      // VALIDAÇÃO DE MÓDULOS: Verificar se os módulos solicitados são compatíveis com o cliente
+      if (user.modules && user.customerId) {
+        const existingUser = await storage.getUser(req.params.id);
+        
+        if (existingUser && existingUser.userType === 'customer_user') {
+          const customer = await storage.getCustomer(user.customerId);
+          
+          if (!customer) {
+            return res.status(400).json({
+              message: "Cliente não encontrado",
+              details: "O cliente selecionado não existe no sistema."
+            });
+          }
+          
+          const customerModules = customer.modules || ['clean'];
+          const requestedModules = user.modules;
+          
+          // Verificar se todos os módulos solicitados estão disponíveis no cliente
+          const invalidModules = requestedModules.filter(m => !customerModules.includes(m));
+          
+          if (invalidModules.length > 0) {
+            return res.status(400).json({
+              message: "Módulos incompatíveis",
+              details: `Os módulos ${invalidModules.join(', ')} não estão disponíveis para o cliente "${customer.name}". Módulos disponíveis: ${customerModules.join(', ')}`
+            });
+          }
+        }
+      }
+      
       const updatedUser = await storage.updateUser(req.params.id, user);
       res.json(sanitizeUser(updatedUser));
     } catch (error) {
@@ -1068,6 +1098,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/users/:id", requireManageUsers, async (req, res) => {
     try {
       const user = insertUserSchema.partial().parse(req.body);
+      
+      // VALIDAÇÃO DE MÓDULOS: Verificar se os módulos solicitados são compatíveis com o cliente
+      if (user.modules && user.customerId) {
+        const existingUser = await storage.getUser(req.params.id);
+        
+        if (existingUser && existingUser.userType === 'customer_user') {
+          const customer = await storage.getCustomer(user.customerId);
+          
+          if (!customer) {
+            return res.status(400).json({
+              message: "Cliente não encontrado",
+              details: "O cliente selecionado não existe no sistema."
+            });
+          }
+          
+          const customerModules = customer.modules || ['clean'];
+          const requestedModules = user.modules;
+          
+          // Verificar se todos os módulos solicitados estão disponíveis no cliente
+          const invalidModules = requestedModules.filter(m => !customerModules.includes(m));
+          
+          if (invalidModules.length > 0) {
+            return res.status(400).json({
+              message: "Módulos incompatíveis",
+              details: `Os módulos ${invalidModules.join(', ')} não estão disponíveis para o cliente "${customer.name}". Módulos disponíveis: ${customerModules.join(', ')}`
+            });
+          }
+        }
+      }
+      
       const updatedUser = await storage.updateUser(req.params.id, user);
       res.json(sanitizeUser(updatedUser));
     } catch (error) {
