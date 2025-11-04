@@ -596,9 +596,20 @@ export const maintenanceActivities = pgTable("maintenance_activities", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
   customerId: varchar("customer_id").notNull().references(() => customers.id),
-  equipmentId: varchar("equipment_id").references(() => equipment.id),
+  
+  // Novos campos para múltiplos locais/zonas
+  siteIds: varchar("site_ids").array(),
+  zoneIds: varchar("zone_ids").array(),
+  
+  // Seleção de aplicação: tags ou equipamento específico
+  applicationTarget: varchar("application_target"), // "tags" ou "equipment"
+  tagIds: varchar("tag_ids").array(), // Array de tags quando applicationTarget = "tags"
+  equipmentId: varchar("equipment_id").references(() => equipment.id), // Equipamento específico quando applicationTarget = "equipment"
+  
+  // Campos antigos mantidos para compatibilidade (deprecated)
   siteId: varchar("site_id").references(() => sites.id),
   zoneId: varchar("zone_id").references(() => zones.id),
+  
   name: varchar("name").notNull(),
   description: text("description"),
   type: varchar("type").notNull().default('preventiva'), // preventiva, preditiva, corretiva
