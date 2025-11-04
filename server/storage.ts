@@ -339,13 +339,6 @@ export interface IStorage {
   updateEquipment(id: string, equipment: Partial<InsertEquipment>): Promise<Equipment>;
   deleteEquipment(id: string): Promise<void>;
 
-  // Equipment Tags
-  getEquipmentTagsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<EquipmentTag[]>;
-  getEquipmentTag(id: string): Promise<EquipmentTag | undefined>;
-  createEquipmentTag(tagData: InsertEquipmentTag): Promise<EquipmentTag>;
-  updateEquipmentTag(id: string, tagData: Partial<InsertEquipmentTag>): Promise<EquipmentTag>;
-  deleteEquipmentTag(id: string): Promise<void>;
-
   // Maintenance Checklist Templates
   getMaintenanceChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]>;
   getMaintenanceChecklistTemplatesByEquipmentType(customerId: string, equipmentType: string, module?: 'clean' | 'maintenance'): Promise<MaintenanceChecklistTemplate[]>;
@@ -4289,45 +4282,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEquipment(id: string): Promise<void> {
     await db.delete(equipment).where(eq(equipment.id, id));
-  }
-
-  // Equipment Tags Implementation
-  
-  async getEquipmentTagsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<EquipmentTag[]> {
-    const conditions = [eq(equipmentTags.customerId, customerId)];
-    if (module) {
-      conditions.push(eq(equipmentTags.module, module));
-    }
-    return await db.select()
-      .from(equipmentTags)
-      .where(and(...conditions))
-      .orderBy(desc(equipmentTags.createdAt));
-  }
-
-  async getEquipmentTag(id: string): Promise<EquipmentTag | undefined> {
-    const [result] = await db.select().from(equipmentTags).where(eq(equipmentTags.id, id));
-    return result;
-  }
-
-  async createEquipmentTag(tagData: InsertEquipmentTag): Promise<EquipmentTag> {
-    const id = nanoid();
-    const [newTag] = await db.insert(equipmentTags).values({ 
-      ...tagData, 
-      id 
-    }).returning();
-    return newTag;
-  }
-
-  async updateEquipmentTag(id: string, tagData: Partial<InsertEquipmentTag>): Promise<EquipmentTag> {
-    const [updatedTag] = await db.update(equipmentTags)
-      .set({ ...tagData, updatedAt: sql`now()` })
-      .where(eq(equipmentTags.id, id))
-      .returning();
-    return updatedTag;
-  }
-
-  async deleteEquipmentTag(id: string): Promise<void> {
-    await db.delete(equipmentTags).where(eq(equipmentTags.id, id));
   }
 
   // Maintenance Checklist Templates Implementation
