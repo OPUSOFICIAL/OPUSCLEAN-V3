@@ -1,36 +1,45 @@
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
-  Calendar,
-  Edit, 
+  Calendar, 
+  Clock, 
+  MapPin,
+  Eye,
+  Edit,
+  Copy,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Timer,
+  Save,
   Settings,
-  CheckCircle2
+  Wrench
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
-interface MaintenancePlansProps {
-  customerId: string;
-}
-
-export default function MaintenancePlans({ customerId }: MaintenancePlansProps) {
-  const { toast } = useToast();
+export default function MaintenancePlans() {
+  const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  // Planos de Manutenção são exclusivos do módulo de manutenção
+  // Plano de Manutenção é exclusivo do módulo OPUS Maintenance
   if (currentModule !== 'maintenance') {
     return (
       <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
@@ -39,9 +48,9 @@ export default function MaintenancePlans({ customerId }: MaintenancePlansProps) 
             <CardTitle className="text-center">Funcionalidade Não Disponível</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <Calendar className="w-16 h-16 mx-auto text-slate-400" />
+            <Wrench className="w-16 h-16 mx-auto text-slate-400" />
             <p className="text-slate-600">
-              Os planos de manutenção estão disponíveis apenas no módulo <strong>OPUS Manutenção</strong>.
+              O plano de manutenção está disponível apenas no módulo <strong>OPUS Manutenção</strong>.
             </p>
             <p className="text-sm text-slate-500">
               Alterne para OPUS Manutenção usando o seletor de plataforma na barra lateral.
@@ -52,420 +61,1305 @@ export default function MaintenancePlans({ customerId }: MaintenancePlansProps) 
     );
   }
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isManageEquipmentDialogOpen, setIsManageEquipmentDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [editingPlan, setEditingPlan] = useState<any>(null);
-  
-  // Form states
-  const [planName, setPlanName] = useState("");
-  const [planType, setPlanType] = useState("preventiva");
-  const [description, setDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [viewMode, setViewMode] = useState<"monthly" | "list">("monthly");
+  const [siteFilter, setSiteFilter] = useState("todos");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDayDetailsModal, setShowDayDetailsModal] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedActivities, setSelectedActivities] = useState<any[]>([]);
+  const [showActivityDetailsModal, setShowActivityDetailsModal] = useState(false);
+  const [showEditActivityModal, setShowEditActivityModal] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
 
-  // Equipment assignment states
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [frequency, setFrequency] = useState("mensal");
-
-  // Fetch customer data
-  const { data: customer } = useQuery({
-    queryKey: [`/api/customers/${customerId}`],
-    enabled: !!customerId,
+  const { data: activities, isLoading } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "maintenance-activities"],
+    enabled: !!activeClientId,
   });
 
-  // Fetch maintenance plans
-  const { data: plans, isLoading } = useQuery({
-    queryKey: [`/api/customers/${customerId}/maintenance-plans`, { module: currentModule }],
-    enabled: !!customerId,
+  const { data: sites } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
+    enabled: !!activeClientId,
   });
 
-  // Fetch equipment for selected customer
+  const { data: zones } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
+    enabled: !!activeClientId,
+  });
+
+  const { data: users } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "users"],
+    enabled: !!activeClientId,
+  });
+
   const { data: equipment } = useQuery({
-    queryKey: [`/api/customers/${customerId}/equipment`, { module: currentModule }],
-    enabled: !!customerId,
+    queryKey: ["/api/customers", activeClientId, "equipment"],
+    enabled: !!activeClientId,
   });
 
-  // Fetch checklist templates
-  const { data: templates } = useQuery({
-    queryKey: [`/api/customers/${customerId}/maintenance-checklist-templates`, { module: currentModule }],
-    enabled: !!customerId,
-  });
-
-  // Fetch plan equipments for selected plan
-  const { data: planEquipments } = useQuery({
-    queryKey: [`/api/maintenance-plans/${selectedPlan?.id}/equipments`],
-    enabled: !!selectedPlan?.id,
-  });
-
-  const createPlanMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/maintenance-plans", data);
+  // Mutation to delete maintenance activity
+  const deleteMaintenanceActivityMutation = useMutation({
+    mutationFn: async (activityId: string) => {
+      await apiRequest('DELETE', `/api/maintenance-activities/${activityId}`);
     },
     onSuccess: () => {
-      toast({ title: "Plano criado com sucesso" });
-      queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/maintenance-plans`] });
-      setIsCreateDialogOpen(false);
-      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "maintenance-activities"] });
+      toast({
+        title: "Atividade excluída",
+        description: "A atividade de manutenção foi removida com sucesso.",
+      });
     },
     onError: () => {
-      toast({ 
-        title: "Erro ao criar plano", 
-        variant: "destructive" 
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a atividade.",
+        variant: "destructive",
       });
     },
   });
 
-  const updatePlanMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("PUT", `/api/maintenance-plans/${data.id}`, data);
-    },
-    onSuccess: () => {
-      toast({ title: "Plano atualizado com sucesso" });
-      queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/maintenance-plans`] });
-      setIsEditDialogOpen(false);
-      setEditingPlan(null);
-      resetForm();
-    },
-    onError: () => {
-      toast({ 
-        title: "Erro ao atualizar plano", 
-        variant: "destructive" 
-      });
-    },
-  });
-
-  const deletePlanMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest("DELETE", `/api/maintenance-plans/${id}`);
-    },
-    onSuccess: () => {
-      toast({ title: "Plano excluído com sucesso" });
-      queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/maintenance-plans`] });
-    },
-    onError: () => {
-      toast({ 
-        title: "Erro ao excluir plano", 
-        variant: "destructive" 
-      });
-    },
-  });
-
-  const addEquipmentToPlanMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/maintenance-plan-equipments", data);
-    },
-    onSuccess: () => {
-      toast({ title: "Equipamento adicionado ao plano" });
-      queryClient.invalidateQueries({ queryKey: [`/api/maintenance-plans/${selectedPlan?.id}/equipments`] });
-      setSelectedEquipmentId("");
-      setSelectedTemplateId("");
-      setFrequency("mensal");
-    },
-    onError: () => {
-      toast({ 
-        title: "Erro ao adicionar equipamento", 
-        variant: "destructive" 
-      });
-    },
-  });
-
-  const removeEquipmentFromPlanMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest("DELETE", `/api/maintenance-plan-equipments/${id}`);
-    },
-    onSuccess: () => {
-      toast({ title: "Equipamento removido do plano" });
-      queryClient.invalidateQueries({ queryKey: [`/api/maintenance-plans/${selectedPlan?.id}/equipments`] });
-    },
-    onError: () => {
-      toast({ 
-        title: "Erro ao remover equipamento", 
-        variant: "destructive" 
-      });
-    },
-  });
-
-  const resetForm = () => {
-    setPlanName("");
-    setPlanType("preventiva");
-    setDescription("");
-    setIsActive(true);
-  };
-
-  const handleCreate = () => {
-    const companyId = (customer as any)?.companyId;
-    if (!companyId || !planName) {
-      toast({ 
-        title: "Preencha todos os campos obrigatórios", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    createPlanMutation.mutate({
-      companyId,
-      customerId,
-      name: planName,
-      type: planType,
-      description: description || null,
-      isActive,
-    });
-  };
-
-  const handleEdit = (plan: any) => {
-    setEditingPlan(plan);
-    setPlanName(plan.name);
-    setPlanType(plan.type);
-    setDescription(plan.description || "");
-    setIsActive(plan.isActive);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleUpdate = () => {
-    const companyId = (customer as any)?.companyId;
-    if (!editingPlan || !companyId) return;
-
-    updatePlanMutation.mutate({
-      id: editingPlan.id,
-      companyId,
-      customerId,
-      name: planName,
-      type: planType,
-      description: description || null,
-      isActive,
-    });
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este plano?")) {
-      deletePlanMutation.mutate(id);
+  const handleDeleteActivity = async (activity: any) => {
+    if (confirm(`Deseja realmente excluir a atividade "${activity.name}"? Esta ação não pode ser desfeita.`)) {
+      await deleteMaintenanceActivityMutation.mutateAsync(activity.id);
     }
   };
 
-  const handleManageEquipment = (plan: any) => {
-    setSelectedPlan(plan);
-    setIsManageEquipmentDialogOpen(true);
+  const getFrequencyBadge = (frequency: string) => {
+    switch (frequency) {
+      case "diaria":
+        return <Badge className="bg-chart-2/10 text-chart-2">Diária</Badge>;
+      case "semanal":
+        return <Badge className="bg-chart-4/10 text-chart-4">Semanal</Badge>;
+      case "mensal":
+        return <Badge className="bg-primary/10 text-primary">Mensal</Badge>;
+      case "trimestral":
+        return <Badge className="bg-indigo-100/80 text-indigo-700">Trimestral</Badge>;
+      case "semestral":
+        return <Badge className="bg-violet-100/80 text-violet-700">Semestral</Badge>;
+      case "anual":
+        return <Badge className="bg-rose-100/80 text-rose-700">Anual</Badge>;
+      case "turno":
+        return <Badge className="bg-chart-1/10 text-chart-1">Por Turno</Badge>;
+      default:
+        return <Badge variant="outline">Personalizada</Badge>;
+    }
   };
 
-  const handleAddEquipment = () => {
-    if (!selectedEquipmentId || !selectedTemplateId) {
-      toast({ 
-        title: "Selecione um equipamento e um template", 
-        variant: "destructive" 
-      });
-      return;
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "preventiva":
+        return <Badge className="bg-green-100/80 text-green-700">Preventiva</Badge>;
+      case "preditiva":
+        return <Badge className="bg-blue-100/80 text-blue-700">Preditiva</Badge>;
+      case "corretiva":
+        return <Badge className="bg-orange-100/80 text-orange-700">Corretiva</Badge>;
+      default:
+        return <Badge variant="outline">Não definido</Badge>;
     }
+  };
 
-    addEquipmentToPlanMutation.mutate({
-      planId: selectedPlan.id,
-      equipmentId: selectedEquipmentId,
-      checklistTemplateId: selectedTemplateId,
-      frequency,
+  // Função para gerar o calendário mensal
+  const generateMonthCalendar = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const firstDayOfWeek = firstDay.getDay(); // 0 = domingo
+    const daysInMonth = lastDay.getDate();
+    
+    const calendar = [];
+    let day = 1;
+    
+    // Criar as semanas do mês
+    for (let week = 0; week < 6; week++) {
+      const weekDays = [];
+      
+      for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+        if (week === 0 && dayOfWeek < firstDayOfWeek) {
+          // Dias vazios antes do primeiro dia do mês
+          weekDays.push(null);
+        } else if (day > daysInMonth) {
+          // Dias vazios depois do último dia do mês
+          weekDays.push(null);
+        } else {
+          // Dias válidos do mês
+          weekDays.push(day);
+          day++;
+        }
+      }
+      
+      calendar.push(weekDays);
+      
+      // Se todos os dias do mês já foram adicionados, parar
+      if (day > daysInMonth) break;
+    }
+    
+    return calendar;
+  };
+
+  // Função para obter zona por ID
+  const getZoneName = (zoneId: string) => {
+    const zone = (zones as any[] || []).find((z: any) => z.id === zoneId);
+    return zone?.name || 'Local não encontrado';
+  };
+
+  // Função para obter responsável por ID
+  const getAssignedUserName = (userId: string) => {
+    const user = (users as any[] || []).find((u: any) => u.id === userId);
+    return user?.name || 'Não atribuído';
+  };
+
+  // Função para obter SLA baseado no tipo de atividade
+  const getSLAForActivity = (activity: any) => {
+    return `${activity.slaMinutes || 60}min`;
+  };
+
+  // Função para obter equipamentos relacionados a uma zona
+  const getEquipmentForZone = (zoneId: string) => {
+    return (equipment as any[] || []).filter((e: any) => e.zoneId === zoneId);
+  };
+
+  // Função para calcular próxima data de execução
+  const getNextExecutionDate = (activity: any) => {
+    const now = new Date();
+    const lastExecution = activity.lastExecutedAt ? new Date(activity.lastExecutedAt) : null;
+    
+    if (!lastExecution) return 'Nunca executado';
+    
+    let nextDate = new Date(lastExecution);
+    
+    switch (activity.frequency) {
+      case 'diaria':
+        nextDate.setDate(nextDate.getDate() + 1);
+        break;
+      case 'semanal':
+        nextDate.setDate(nextDate.getDate() + 7);
+        break;
+      case 'mensal':
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        break;
+      case 'trimestral':
+        nextDate.setMonth(nextDate.getMonth() + 3);
+        break;
+      case 'semestral':
+        nextDate.setMonth(nextDate.getMonth() + 6);
+        break;
+      case 'anual':
+        nextDate.setFullYear(nextDate.getFullYear() + 1);
+        break;
+      default:
+        return 'Frequência personalizada';
+    }
+    
+    return nextDate.toLocaleDateString('pt-BR');
+  };
+
+  // Função para obter atividades de um dia específico
+  const getActivitiesForDay = (day: number) => {
+    if (!activities) return [];
+    
+    return (activities as any[]).filter((activity: any) => {
+      if (activity.frequency === 'diaria') return true;
+      if (activity.frequency === 'semanal') {
+        const dayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay();
+        const weekDays = activity.frequencyConfig?.weekDays || [];
+        const dayMap: Record<string, number> = {
+          'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3,
+          'quinta': 4, 'sexta': 5, 'sabado': 6
+        };
+        return weekDays.some((d: string) => dayMap[d] === dayOfWeek);
+      }
+      if (activity.frequency === 'mensal') {
+        return day === (activity.frequencyConfig?.monthDay || 1);
+      }
+      if (activity.frequency === 'trimestral') {
+        const startDate = new Date(activity.startDate);
+        const currentMonth = currentDate.getMonth();
+        const startMonth = startDate.getMonth();
+        const monthDiff = (currentMonth - startMonth + 12) % 12;
+        return monthDiff % 3 === 0 && day === (activity.frequencyConfig?.monthDay || 1);
+      }
+      if (activity.frequency === 'semestral') {
+        const startDate = new Date(activity.startDate);
+        const currentMonth = currentDate.getMonth();
+        const startMonth = startDate.getMonth();
+        const monthDiff = (currentMonth - startMonth + 12) % 12;
+        return monthDiff % 6 === 0 && day === (activity.frequencyConfig?.monthDay || 1);
+      }
+      if (activity.frequency === 'anual') {
+        const startDate = new Date(activity.startDate);
+        const currentMonth = currentDate.getMonth();
+        const startMonth = startDate.getMonth();
+        return currentMonth === startMonth && day === (activity.frequencyConfig?.monthDay || 1);
+      }
+      return false;
     });
   };
 
-  const getEquipmentName = (equipmentId: string) => {
-    if (!Array.isArray(equipment)) return "N/A";
-    return equipment.find((e: any) => e.id === equipmentId)?.name || "N/A";
+  // Função para navegar pelos meses
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
   };
 
-  const getTemplateName = (templateId: string) => {
-    if (!Array.isArray(templates)) return "N/A";
-    return templates.find((t: any) => t.id === templateId)?.name || "N/A";
+  // Função para abrir detalhes do dia
+  const openDayDetails = (day: number) => {
+    const dayActivities = getActivitiesForDay(day);
+    setSelectedDay(day);
+    setSelectedActivities(dayActivities);
+    setShowDayDetailsModal(true);
   };
+
+  // Função para formatar data selecionada
+  const getSelectedDateFormatted = () => {
+    if (!selectedDay) return '';
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDay);
+    return date.toLocaleDateString('pt-BR', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <>
+        <Header title="Plano de Manutenção" description="Gerenciamento de atividades programadas" />
+        <div className="flex-1 flex items-center justify-center">
+          <div>Carregando plano de manutenção...</div>
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header title="Planos de Manutenção" description="Gerencie planos preventivos e preditivos" />
-
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              <CardTitle>Lista de Planos</CardTitle>
-            </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-create-plan">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Plano
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Criar Novo Plano de Manutenção</DialogTitle>
-                  <DialogDescription>
-                    Defina um plano para agrupar equipamentos
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="planName">Nome do Plano *</Label>
-                    <Input
-                      id="planName"
-                      data-testid="input-plan-name"
-                      value={planName}
-                      onChange={(e) => setPlanName(e.target.value)}
-                      placeholder="Ex: Manutenção Preventiva HVAC"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="planType">Tipo de Manutenção</Label>
-                    <Select value={planType} onValueChange={setPlanType}>
-                      <SelectTrigger data-testid="select-plan-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="preventiva">Preventiva</SelectItem>
-                        <SelectItem value="preditiva">Preditiva</SelectItem>
-                        <SelectItem value="corretiva">Corretiva</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea
-                      id="description"
-                      data-testid="input-description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Descreva o objetivo e escopo do plano"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={isActive}
-                      onChange={(e) => setIsActive(e.target.checked)}
-                      className="rounded"
-                      data-testid="checkbox-is-active"
-                    />
-                    <Label htmlFor="isActive" className="cursor-pointer">
-                      Plano ativo
-                    </Label>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                    data-testid="button-cancel"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={handleCreate}
-                    disabled={createPlanMutation.isPending}
-                    data-testid="button-save"
-                  >
-                    {createPlanMutation.isPending ? "Criando..." : "Criar Plano"}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Carregando planos...</div>
-            ) : !Array.isArray(plans) || plans.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhum plano cadastrado
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.isArray(plans) && plans.map((plan: any) => (
-                    <TableRow key={plan.id} data-testid={`row-plan-${plan.id}`}>
-                      <TableCell className="font-medium">{plan.name}</TableCell>
-                      <TableCell className="capitalize">
-                        <Badge variant="outline">{plan.type}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {plan.isActive ? (
-                          <Badge className="bg-green-100 text-green-800">Ativo</Badge>
-                        ) : (
-                          <Badge variant="secondary">Inativo</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {plan.description || "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleManageEquipment(plan)}
-                            data-testid={`button-manage-${plan.id}`}
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(plan)}
-                            data-testid={`button-edit-${plan.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(plan.id)}
-                            data-testid={`button-delete-${plan.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+    <>
+      <Header 
+        title="Plano de Manutenção" 
+        description="Gerenciamento de atividades de manutenção programadas"
+      >
+        <div className="flex items-center space-x-2">
+          <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
+            <SelectTrigger className="w-32" data-testid="select-view-mode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="monthly">📆 Mensal</SelectItem>
+              <SelectItem value="list">📋 Lista</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            data-testid="button-create-activity"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Atividade
+          </Button>
+        </div>
+      </Header>
+      
+      <main className="flex-1 overflow-auto p-3 md:p-6 bg-muted/30">
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <Select value={siteFilter} onValueChange={setSiteFilter}>
+                <SelectTrigger className="w-48" data-testid="select-site-filter">
+                  <SelectValue placeholder="Filtrar por local" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Locais</SelectItem>
+                  {(sites as any[])?.map((site: any) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
                   ))}
-                </TableBody>
-              </Table>
-            )}
+                </SelectContent>
+              </Select>
+              
+              <Select defaultValue="todas">
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas Frequências</SelectItem>
+                  <SelectItem value="diaria">Diária</SelectItem>
+                  <SelectItem value="semanal">Semanal</SelectItem>
+                  <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="trimestral">Trimestral</SelectItem>
+                  <SelectItem value="semestral">Semestral</SelectItem>
+                  <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="turno">Por Turno</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select defaultValue="todos">
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Tipos</SelectItem>
+                  <SelectItem value="preventiva">Preventiva</SelectItem>
+                  <SelectItem value="preditiva">Preditiva</SelectItem>
+                  <SelectItem value="corretiva">Corretiva</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select defaultValue="ativas">
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativas">Ativas</SelectItem>
+                  <SelectItem value="inativas">Inativas</SelectItem>
+                  <SelectItem value="todas">Todas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Edit Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-lg">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Atividades Ativas</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {(activities as any[])?.filter((a: any) => a.isActive).length || 0}
+                  </p>
+                </div>
+                <Wrench className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Preventivas</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {(activities as any[])?.filter((a: any) => a.type === 'preventiva').length || 0}
+                  </p>
+                </div>
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Preditivas</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {(activities as any[])?.filter((a: any) => a.type === 'preditiva').length || 0}
+                  </p>
+                </div>
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Timer className="w-4 h-4 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Equipamentos</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {new Set((activities as any[])?.map((a: any) => a.equipmentId)).size || 0}
+                  </p>
+                </div>
+                <MapPin className="w-8 h-8 text-chart-1" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Calendar Views or Activities List */}
+        {viewMode === "monthly" ? (
+          <Card className="bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-t-lg">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <Wrench className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">Calendário de Manutenção</h2>
+                    <p className="text-orange-100 text-sm">Atividades programadas por data</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigateMonth('prev')}
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    data-testid="button-prev-month"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="font-bold text-lg min-w-40 text-center">
+                    {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigateMonth('next')}
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    data-testid="button-next-month"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {/* Legenda */}
+              <div className="flex flex-wrap gap-4 mb-6 p-4 bg-slate-50 rounded-lg border">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-500 rounded"></div>
+                  <span className="text-sm font-medium">Preventivas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                  <span className="text-sm font-medium">Preditivas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                  <span className="text-sm font-medium">Corretivas</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                  <span className="text-sm font-medium">Mensais</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-indigo-500 rounded"></div>
+                  <span className="text-sm font-medium">Trimestrais</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-violet-500 rounded"></div>
+                  <span className="text-sm font-medium">Semestrais</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-rose-500 rounded"></div>
+                  <span className="text-sm font-medium">Anuais</span>
+                </div>
+              </div>
+
+              {/* Cabeçalho da semana */}
+              <div className="grid grid-cols-7 gap-2 mb-3">
+                {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(day => (
+                  <div key={day} className="p-3 text-center font-bold text-sm text-slate-700 bg-slate-100 rounded-lg">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendário */}
+              <div className="grid grid-cols-7 gap-2">
+                {generateMonthCalendar().map((week, weekIndex) => 
+                  week.map((day, dayIndex) => {
+                    const dayActivities = day ? getActivitiesForDay(day) : [];
+                    const isToday = day && 
+                      day === new Date().getDate() && 
+                      currentDate.getMonth() === new Date().getMonth() && 
+                      currentDate.getFullYear() === new Date().getFullYear();
+                    
+                    return (
+                      <div 
+                        key={`${weekIndex}-${dayIndex}`} 
+                        className={`border-2 rounded-xl p-3 min-h-32 transition-all duration-200 ${
+                          day 
+                            ? `bg-white hover:bg-slate-50 hover:shadow-md cursor-pointer ${
+                                isToday ? 'ring-4 ring-orange-500 ring-opacity-50 border-orange-500' : 'border-slate-200'
+                              }`
+                            : 'bg-gray-50 border-gray-100 pointer-events-none'
+                        }`}
+                        onClick={() => day && openDayDetails(day)}
+                        data-testid={day ? `calendar-day-${day}` : `calendar-empty-${weekIndex}-${dayIndex}`}
+                      >
+                        {day && (
+                          <>
+                            <div className={`text-lg font-bold mb-2 flex items-center justify-between ${
+                              isToday ? 'text-orange-600' : 'text-slate-700'
+                            }`}>
+                              <span>{day}</span>
+                              {dayActivities.length > 0 && (
+                                <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded-full">
+                                  {dayActivities.length}
+                                </span>
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              {dayActivities.slice(0, 3).map((activity: any, idx: number) => {
+                                const typeColor = 
+                                  activity.type === 'preventiva' ? 'bg-green-500' :
+                                  activity.type === 'preditiva' ? 'bg-blue-500' :
+                                  'bg-orange-500';
+                                
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`text-xs p-1.5 rounded text-white ${typeColor} truncate`}
+                                    title={activity.name}
+                                  >
+                                    {activity.name.length > 20 ? activity.name.substring(0, 20) + '...' : activity.name}
+                                  </div>
+                                );
+                              })}
+                              {dayActivities.length > 3 && (
+                                <div 
+                                  className="text-xs text-slate-600 bg-slate-100 p-1 rounded text-center cursor-pointer hover:bg-slate-200"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openDayDetails(day);
+                                  }}
+                                >
+                                  + {dayActivities.length - 3} mais
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          // List View
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Lista de Atividades de Manutenção
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(activities as any[])?.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Wrench className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg font-medium">Nenhuma atividade cadastrada</p>
+                  <p className="text-sm mt-1">Clique em "Nova Atividade" para começar</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(activities as any[])?.map((activity: any) => (
+                    <Card key={activity.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-bold text-lg">{activity.name}</h3>
+                              {getTypeBadge(activity.type)}
+                              {getFrequencyBadge(activity.frequency)}
+                              {!activity.isActive && (
+                                <Badge variant="secondary">Inativa</Badge>
+                              )}
+                            </div>
+                            {activity.description && (
+                              <p className="text-sm text-gray-600 mb-3">{activity.description}</p>
+                            )}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-600">
+                                  {getZoneName(activity.zoneId)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-600">
+                                  {getAssignedUserName(activity.assignedUserId || '')}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-600">SLA: {getSLAForActivity(activity)}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Timer className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-600">
+                                  Próxima: {getNextExecutionDate(activity)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedActivity(activity);
+                                setShowActivityDetailsModal(true);
+                              }}
+                              data-testid={`button-view-${activity.id}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedActivity(activity);
+                                setShowEditActivityModal(true);
+                              }}
+                              data-testid={`button-edit-${activity.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteActivity(activity)}
+                              data-testid={`button-delete-${activity.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Modal de Detalhes do Dia */}
+        <Dialog open={showDayDetailsModal} onOpenChange={setShowDayDetailsModal}>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Editar Plano de Manutenção</DialogTitle>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-orange-600" />
+                Atividades do dia {selectedDay && selectedDay.toString().padStart(2, '0')}
+              </DialogTitle>
+              <DialogDescription className="text-base">
+                {getSelectedDateFormatted()}
+              </DialogDescription>
             </DialogHeader>
+
+            <div className="space-y-3">
+              {selectedActivities.length > 0 ? (
+                selectedActivities.map((activity: any, index: number) => (
+                  <Card 
+                    key={activity.id} 
+                    className={`hover:shadow-md transition-all duration-200 ${
+                      selectedForDeletion.includes(activity.id) ? 'ring-2 ring-destructive' : ''
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedForDeletion.includes(activity.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedForDeletion(prev => [...prev, activity.id]);
+                              } else {
+                                setSelectedForDeletion(prev => prev.filter(id => id !== activity.id));
+                              }
+                            }}
+                            className="mt-1.5"
+                            data-testid={`checkbox-activity-${activity.id}`}
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                              <h4 className="font-bold text-base">{activity.name}</h4>
+                              {getTypeBadge(activity.type)}
+                              {getFrequencyBadge(activity.frequency)}
+                            </div>
+                            {activity.description && (
+                              <p className="text-sm text-gray-600 mb-2">{activity.description}</p>
+                            )}
+                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                <span>{getZoneName(activity.zoneId)}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                <span>{getAssignedUserName(activity.assignedUserId || '')}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>SLA: {getSLAForActivity(activity)}</span>
+                              </div>
+                              {activity.startTime && (
+                                <div className="flex items-center gap-1">
+                                  <Timer className="w-3 h-3" />
+                                  <span>{activity.startTime}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowDayDetailsModal(false);
+                              setShowActivityDetailsModal(true);
+                            }}
+                            title="Ver detalhes"
+                            data-testid={`button-view-day-activity-${activity.id}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowDayDetailsModal(false);
+                              setShowEditActivityModal(true);
+                            }}
+                            title="Editar"
+                            data-testid={`button-edit-day-activity-${activity.id}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteActivity(activity)}
+                            title="Deletar"
+                            data-testid={`button-delete-day-activity-${activity.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <Calendar className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg font-medium mb-2">
+                    Este dia não possui atividades de manutenção agendadas.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      setShowDayDetailsModal(false);
+                      setShowCreateModal(true);
+                    }}
+                    data-testid="button-create-activity-for-day"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Atividade
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-3 border-t text-sm">
+              <div className="text-gray-500">
+                {selectedActivities.length > 0 && (
+                  `Total: ${selectedActivities.reduce((acc, activity) => acc + (activity.estimatedDuration || 30), 0)}min`
+                )}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {selectedActivities.length > 0 && (
+                  <>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={async () => {
+                        if (window.confirm(`Tem certeza que deseja deletar TODAS as ${selectedActivities.length} atividade(s) deste dia?`)) {
+                          try {
+                            const allIds = selectedActivities.map(a => a.id);
+                            await Promise.all(
+                              allIds.map(id => apiRequest('DELETE', `/api/maintenance-activities/${id}`))
+                            );
+                            toast({
+                              title: "Atividades Deletadas",
+                              description: `${selectedActivities.length} atividade(s) foram removidas com sucesso!`,
+                            });
+                            queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "maintenance-activities"] });
+                            setSelectedForDeletion([]);
+                            setShowDayDetailsModal(false);
+                          } catch (error) {
+                            toast({
+                              title: "Erro ao Deletar",
+                              description: "Não foi possível deletar as atividades",
+                              variant: "destructive"
+                            });
+                          }
+                        }
+                      }}
+                      data-testid="button-delete-all-day"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Deletar Todas ({selectedActivities.length})
+                    </Button>
+                    
+                    {selectedForDeletion.length > 0 && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={async () => {
+                          if (window.confirm(`Tem certeza que deseja deletar ${selectedForDeletion.length} atividade(s) selecionada(s)?`)) {
+                            try {
+                              await Promise.all(
+                                selectedForDeletion.map(id => apiRequest('DELETE', `/api/maintenance-activities/${id}`))
+                              );
+                              toast({
+                                title: "Atividades Deletadas",
+                                description: `${selectedForDeletion.length} atividade(s) selecionada(s) foram removidas com sucesso!`,
+                              });
+                              queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "maintenance-activities"] });
+                              setSelectedForDeletion([]);
+                            } catch (error) {
+                              toast({
+                                title: "Erro ao Deletar",
+                                description: "Não foi possível deletar as atividades selecionadas",
+                                variant: "destructive"
+                              });
+                            }
+                          }
+                        }}
+                        data-testid="button-delete-selected"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Deletar Selecionadas ({selectedForDeletion.length})
+                      </Button>
+                    )}
+                  </>
+                )}
+                
+                <Button variant="outline" size="sm" onClick={() => setShowDayDetailsModal(false)}>
+                  Fechar
+                </Button>
+                
+                {selectedActivities.length > 0 && (
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setShowDayDetailsModal(false);
+                      setShowCreateModal(true);
+                    }}
+                    data-testid="button-add-more-activities"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Nova Atividade
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Criação de Atividade */}
+        {showCreateModal && (
+          <CreateMaintenanceActivityModal
+            activeClientId={activeClientId}
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {
+              setShowCreateModal(false);
+              queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "maintenance-activities"] });
+            }}
+          />
+        )}
+
+        {/* Modal de Detalhes da Atividade */}
+        <Dialog open={showActivityDetailsModal} onOpenChange={setShowActivityDetailsModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold">Detalhes da Atividade</DialogTitle>
+              <DialogDescription>
+                Informações completas sobre a atividade selecionada.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedActivity && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900">{selectedActivity.name}</h3>
+                  {selectedActivity.description && (
+                    <p className="text-sm text-gray-600 mt-1">{selectedActivity.description}</p>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Tipo:</span>
+                    <p className="text-gray-600 mt-1">{getTypeBadge(selectedActivity.type)}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Frequência:</span>
+                    <p className="text-gray-600 mt-1">{getFrequencyBadge(selectedActivity.frequency)}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Status:</span>
+                    <p className="text-gray-600">{selectedActivity.isActive ? 'Ativa' : 'Inativa'}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Local:</span>
+                    <p className="text-gray-600">{getZoneName(selectedActivity.zoneId)}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">SLA:</span>
+                    <p className="text-gray-600">{getSLAForActivity(selectedActivity)}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="font-medium text-gray-700">Responsável:</span>
+                    <p className="text-gray-600">{getAssignedUserName(selectedActivity.assignedUserId || '')}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Edição da Atividade */}
+        <Dialog open={showEditActivityModal} onOpenChange={setShowEditActivityModal}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold">Editar Atividade</DialogTitle>
+              <DialogDescription>
+                Modifique as informações da atividade abaixo.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedActivity && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-name">Nome da Atividade</Label>
+                  <Input 
+                    id="edit-name"
+                    defaultValue={selectedActivity.name}
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-description">Descrição</Label>
+                  <Textarea 
+                    id="edit-description"
+                    defaultValue={selectedActivity.description || ''}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-type">Tipo de Manutenção</Label>
+                  <Select defaultValue={selectedActivity.type}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="preventiva">Preventiva</SelectItem>
+                      <SelectItem value="preditiva">Preditiva</SelectItem>
+                      <SelectItem value="corretiva">Corretiva</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-frequency">Frequência</Label>
+                  <Select defaultValue={selectedActivity.frequency}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="diaria">Diária</SelectItem>
+                      <SelectItem value="semanal">Semanal</SelectItem>
+                      <SelectItem value="mensal">Mensal</SelectItem>
+                      <SelectItem value="trimestral">Trimestral</SelectItem>
+                      <SelectItem value="semestral">Semestral</SelectItem>
+                      <SelectItem value="anual">Anual</SelectItem>
+                      <SelectItem value="turno">Por Turno</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowEditActivityModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="button"
+                    onClick={() => {
+                      toast({
+                        title: "Em Desenvolvimento",
+                        description: "Funcionalidade de edição será implementada em breve",
+                      });
+                      setShowEditActivityModal(false);
+                    }}
+                  >
+                    Salvar Alterações
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </main>
+    </>
+  );
+}
+
+// Componente de Modal para Criação de Atividade de Manutenção
+interface CreateMaintenanceActivityModalProps {
+  activeClientId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: CreateMaintenanceActivityModalProps) {
+  const { currentModule } = useModule();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    type: "preventiva",
+    frequency: "mensal",
+    startDate: "",
+    frequencyConfig: {
+      weekDays: [] as string[],
+      monthDay: 1,
+      turnShifts: [] as string[],
+      timesPerDay: 1
+    },
+    equipmentId: "",
+    siteId: "",
+    zoneId: "",
+    checklistTemplateId: "none",
+    startTime: "",
+    endTime: "",
+    isActive: true
+  });
+
+  const { data: equipment } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "equipment"],
+    enabled: !!activeClientId,
+  });
+
+  const { data: sites } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
+    enabled: !!activeClientId,
+  });
+
+  const { data: zones } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
+    enabled: !!activeClientId,
+  });
+
+  const { data: checklistTemplates } = useQuery({
+    queryKey: ["/api/companies", activeClientId, "maintenance-checklist-templates"],
+    enabled: !!activeClientId,
+  });
+
+  // Filtrar zonas baseado no site selecionado
+  const filteredZones = useMemo(() => {
+    if (!formData.siteId || !zones) return [];
+    return (zones as any[]).filter((zone: any) => zone.siteId === formData.siteId);
+  }, [zones, formData.siteId]);
+
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-preenchimento de checklist baseado no equipamento selecionado
+      if (field === 'equipmentId' && value && equipment) {
+        const selectedEquipment = (equipment as any[]).find(e => e.id === value);
+        if (selectedEquipment?.checklistTemplateId) {
+          newData.checklistTemplateId = selectedEquipment.checklistTemplateId;
+        }
+      }
+      
+      // Limpar zona quando site muda
+      if (field === 'siteId') {
+        newData.zoneId = "";
+      }
+      
+      // Reset frequency config quando muda frequência
+      if (field === 'frequency') {
+        newData.frequencyConfig = {
+          weekDays: [],
+          monthDay: 1,
+          turnShifts: [],
+          timesPerDay: 1
+        };
+      }
+      
+      return newData;
+    });
+  };
+
+  const handleFrequencyConfigChange = (configField: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      frequencyConfig: {
+        ...prev.frequencyConfig,
+        [configField]: value
+      }
+    }));
+  };
+
+  const createActivityMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const site = (sites as any[])?.find(s => s.id === data.siteId);
+      const companyId = site?.companyId || "company-opus-default";
+      const submitData = {
+        ...data,
+        companyId,
+        activeClientId,
+        checklistTemplateId: data.checklistTemplateId === "none" ? null : data.checklistTemplateId,
+      };
+      return { activity: await apiRequest("POST", "/api/maintenance-activities", submitData), companyId };
+    },
+    onSuccess: async (result: any) => {
+      toast({ title: "Atividade de manutenção criada com sucesso!" });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers", activeClientId, "maintenance-activities"] 
+      });
+      
+      // Gerar ordens de trabalho automaticamente
+      const companyId = result.companyId || "company-opus-default";
+      
+      try {
+        const response = await apiRequest("POST", "/api/scheduler/generate-maintenance-work-orders", {
+          companyId
+        });
+        
+        const data = await response.json();
+        
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/customers", activeClientId, "work-orders"] 
+        });
+        
+        toast({ 
+          title: "Ordens de trabalho geradas!", 
+          description: `${data.generatedOrders || 0} OSs criadas automaticamente`
+        });
+      } catch (error) {
+        console.error("Erro ao gerar ordens:", error);
+        toast({
+          title: "Erro ao gerar OSs automáticas",
+          description: "As OSs precisarão ser geradas manualmente",
+          variant: "destructive"
+        });
+      }
+      
+      onSuccess();
+    },
+    onError: () => {
+      toast({ 
+        title: "Erro ao criar atividade de manutenção", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.equipmentId || !formData.siteId || !formData.zoneId || !formData.startDate) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validar configuração de frequência
+    if (formData.frequency === "diaria" && formData.frequencyConfig.timesPerDay < 1) {
+      toast({
+        title: "Frequência diária inválida",
+        description: "Informe quantas vezes por dia a atividade deve ser realizada",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.frequency === "semanal" && formData.frequencyConfig.weekDays.length === 0) {
+      toast({
+        title: "Dias da semana obrigatórios",
+        description: "Selecione pelo menos um dia da semana",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.frequency === "turno" && formData.frequencyConfig.turnShifts.length === 0) {
+      toast({
+        title: "Turnos obrigatórios", 
+        description: "Selecione pelo menos um turno",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    createActivityMutation.mutate(formData);
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="create-activity-modal">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">Nova Atividade de Manutenção</DialogTitle>
+          <DialogDescription>
+            Preencha as informações para criar uma nova atividade de manutenção programada
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Informações Básicas */}
+          <div className="space-y-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <h4 className="font-semibold text-orange-900 flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Informações Básicas
+            </h4>
             
-            <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Nome do Plano *</Label>
+                <Label htmlFor="name">Nome da Atividade *</Label>
                 <Input
-                  value={planName}
-                  onChange={(e) => setPlanName(e.target.value)}
+                  id="name"
+                  placeholder="Ex: Manutenção preventiva HVAC"
+                  value={formData.name}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                  data-testid="input-name"
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Tipo de Manutenção</Label>
-                <Select value={planType} onValueChange={setPlanType}>
-                  <SelectTrigger>
+                <Label htmlFor="type">Tipo de Manutenção *</Label>
+                <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
+                  <SelectTrigger data-testid="select-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -477,174 +1371,293 @@ export default function MaintenancePlans({ customerId }: MaintenancePlansProps) 
               </div>
 
               <div className="space-y-2">
-                <Label>Descrição</Label>
+                <Label htmlFor="frequency">Frequência</Label>
+                <Select value={formData.frequency} onValueChange={(value) => handleChange("frequency", value)}>
+                  <SelectTrigger data-testid="select-frequency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diaria">Diária</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                    <SelectItem value="trimestral">Trimestral</SelectItem>
+                    <SelectItem value="semestral">Semestral</SelectItem>
+                    <SelectItem value="anual">Anual</SelectItem>
+                    <SelectItem value="turno">Por Turno</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Data de Início *</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => handleChange("startDate", e.target.value)}
+                  data-testid="input-start-date"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="startTime">Horário de Início (opcional)</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  placeholder="Ex: 08:00"
+                  value={formData.startTime}
+                  onChange={(e) => handleChange("startTime", e.target.value)}
+                  data-testid="input-start-time"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endTime">Horário de Fim (opcional)</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  placeholder="Ex: 18:00"
+                  value={formData.endTime}
+                  onChange={(e) => handleChange("endTime", e.target.value)}
+                  data-testid="input-end-time"
+                />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="description">Descrição</Label>
                 <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  id="description"
+                  placeholder="Descreva detalhes da atividade de manutenção..."
+                  value={formData.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  data-testid="textarea-description"
                   rows={3}
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="editIsActive"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="editIsActive" className="cursor-pointer">
-                  Plano ativo
-                </Label>
+              {/* Configuração de Frequência */}
+              {formData.frequency === "diaria" && (
+                <div key="daily-config" className="space-y-2">
+                  <Label htmlFor="timesPerDay">Quantas vezes por dia? *</Label>
+                  <Select 
+                    key="times-per-day-select"
+                    value={formData.frequencyConfig.timesPerDay.toString()} 
+                    onValueChange={(value) => handleFrequencyConfigChange("timesPerDay", parseInt(value))}
+                  >
+                    <SelectTrigger data-testid="select-times-per-day">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 vez por dia</SelectItem>
+                      <SelectItem value="2">2 vezes por dia</SelectItem>
+                      <SelectItem value="3">3 vezes por dia</SelectItem>
+                      <SelectItem value="4">4 vezes por dia</SelectItem>
+                      <SelectItem value="5">5 vezes por dia</SelectItem>
+                      <SelectItem value="6">6 vezes por dia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formData.frequency === "semanal" && (
+                <div key="weekly-config" className="md:col-span-2 space-y-2">
+                  <Label>Dias da Semana *</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { value: 'domingo', label: 'Domingo' },
+                      { value: 'segunda', label: 'Segunda' },
+                      { value: 'terca', label: 'Terça' },
+                      { value: 'quarta', label: 'Quarta' },
+                      { value: 'quinta', label: 'Quinta' },
+                      { value: 'sexta', label: 'Sexta' },
+                      { value: 'sabado', label: 'Sábado' }
+                    ].map(day => (
+                      <label key={day.value} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.frequencyConfig.weekDays.includes(day.value)}
+                          onChange={(e) => {
+                            const currentDays = formData.frequencyConfig.weekDays;
+                            if (e.target.checked) {
+                              handleFrequencyConfigChange("weekDays", [...currentDays, day.value]);
+                            } else {
+                              handleFrequencyConfigChange("weekDays", currentDays.filter(d => d !== day.value));
+                            }
+                          }}
+                          className="rounded"
+                          data-testid={`checkbox-weekday-${day.value}`}
+                        />
+                        <span className="text-sm">{day.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {formData.frequency === "mensal" && (
+                <div key="monthly-config" className="space-y-2">
+                  <Label htmlFor="monthDay">Dia do Mês *</Label>
+                  <Select 
+                    value={formData.frequencyConfig.monthDay.toString()} 
+                    onValueChange={(value) => handleFrequencyConfigChange("monthDay", parseInt(value))}
+                  >
+                    <SelectTrigger data-testid="select-month-day">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                        <SelectItem key={day} value={day.toString()}>
+                          Dia {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formData.frequency === "turno" && (
+                <div key="shift-config" className="md:col-span-2 space-y-2">
+                  <Label>Turnos *</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'manha', label: 'Manhã' },
+                      { value: 'tarde', label: 'Tarde' },
+                      { value: 'noite', label: 'Noite' }
+                    ].map(shift => (
+                      <label key={shift.value} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.frequencyConfig.turnShifts.includes(shift.value)}
+                          onChange={(e) => {
+                            const currentShifts = formData.frequencyConfig.turnShifts;
+                            if (e.target.checked) {
+                              handleFrequencyConfigChange("turnShifts", [...currentShifts, shift.value]);
+                            } else {
+                              handleFrequencyConfigChange("turnShifts", currentShifts.filter(s => s !== shift.value));
+                            }
+                          }}
+                          className="rounded"
+                          data-testid={`checkbox-shift-${shift.value}`}
+                        />
+                        <span className="text-sm">{shift.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Local e Equipamento */}
+          <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Local e Equipamento
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="equipment">Equipamento *</Label>
+                <Select value={formData.equipmentId} onValueChange={(value) => handleChange("equipmentId", value)}>
+                  <SelectTrigger data-testid="select-equipment">
+                    <SelectValue placeholder="Selecione um equipamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(equipment as any[])?.map((equip: any) => (
+                      <SelectItem key={equip.id} value={equip.id}>
+                        {equip.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="site">Local *</Label>
+                <Select value={formData.siteId} onValueChange={(value) => handleChange("siteId", value)}>
+                  <SelectTrigger data-testid="select-site">
+                    <SelectValue placeholder="Selecione um local" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(sites as any[])?.map((site: any) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="zone">Zona *</Label>
+                <Select 
+                  value={formData.zoneId} 
+                  onValueChange={(value) => handleChange("zoneId", value)}
+                  disabled={!formData.siteId}
+                >
+                  <SelectTrigger data-testid="select-zone">
+                    <SelectValue placeholder={formData.siteId ? "Selecione uma zona" : "Selecione um local primeiro"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredZones.map((zone: any) => (
+                      <SelectItem key={zone.id} value={zone.id}>
+                        {zone.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="checklist">Template de Checklist (opcional)</Label>
+                <Select value={formData.checklistTemplateId} onValueChange={(value) => handleChange("checklistTemplateId", value)}>
+                  <SelectTrigger data-testid="select-checklist">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {(checklistTemplates as any[])?.map((template: any) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
+          </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingPlan(null);
-                  resetForm();
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleUpdate}
-                disabled={updatePlanMutation.isPending}
-              >
-                {updatePlanMutation.isPending ? "Atualizando..." : "Atualizar"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Manage Equipment Dialog */}
-        <Dialog open={isManageEquipmentDialogOpen} onOpenChange={setIsManageEquipmentDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Gerenciar Equipamentos - {selectedPlan?.name}</DialogTitle>
-              <DialogDescription>
-                Adicione ou remova equipamentos deste plano
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Adicionar Equipamento</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Equipamento</Label>
-                      <Select value={selectedEquipmentId} onValueChange={setSelectedEquipmentId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um equipamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.isArray(equipment) && equipment.map((equip: any) => (
-                            <SelectItem key={equip.id} value={equip.id}>
-                              {equip.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Template de Checklist</Label>
-                      <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um template" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.isArray(templates) && templates.map((template: any) => (
-                            <SelectItem key={template.id} value={template.id}>
-                              {template.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Frequência</Label>
-                    <Select value={frequency} onValueChange={setFrequency}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="diaria">Diária</SelectItem>
-                        <SelectItem value="semanal">Semanal</SelectItem>
-                        <SelectItem value="quinzenal">Quinzenal</SelectItem>
-                        <SelectItem value="mensal">Mensal</SelectItem>
-                        <SelectItem value="bimestral">Bimestral</SelectItem>
-                        <SelectItem value="trimestral">Trimestral</SelectItem>
-                        <SelectItem value="semestral">Semestral</SelectItem>
-                        <SelectItem value="anual">Anual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button
-                    onClick={handleAddEquipment}
-                    disabled={addEquipmentToPlanMutation.isPending}
-                    className="w-full"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Adicionar Equipamento
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Equipamentos no Plano</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!Array.isArray(planEquipments) || planEquipments.length === 0 ? (
-                    <div className="text-center py-4 text-muted-foreground">
-                      Nenhum equipamento neste plano
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Equipamento</TableHead>
-                          <TableHead>Checklist</TableHead>
-                          <TableHead>Frequência</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {Array.isArray(planEquipments) && planEquipments.map((pe: any) => (
-                          <TableRow key={pe.id}>
-                            <TableCell>{getEquipmentName(pe.equipmentId)}</TableCell>
-                            <TableCell>{getTemplateName(pe.checklistTemplateId)}</TableCell>
-                            <TableCell className="capitalize">{pe.frequency}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeEquipmentFromPlanMutation.mutate(pe.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
+          {/* Botões de Ação */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              data-testid="button-cancel"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={createActivityMutation.isPending}
+              data-testid="button-submit"
+            >
+              {createActivityMutation.isPending ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Criar Atividade
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
