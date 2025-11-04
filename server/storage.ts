@@ -4,8 +4,8 @@ import {
   serviceTypes, serviceCategories, serviceZones, dashboardGoals, auditLogs, customers,
   userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters,
   workOrderComments,
-  equipment, maintenanceChecklistTemplates, maintenanceChecklistExecutions,
-  maintenancePlans, maintenancePlanEquipments,
+  equipment, equipmentTypes, maintenanceChecklistTemplates, checklistAssociations,
+  maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
   type User, type InsertUser, type ChecklistTemplate, type InsertChecklistTemplate,
@@ -25,7 +25,9 @@ import {
   type CustomRole, type CustomRoleWithPermissions, type InsertCustomRole, type RolePermission, type InsertRolePermission,
   type UserRoleAssignment, type InsertUserRoleAssignment,
   type Equipment, type InsertEquipment,
+  type EquipmentType, type InsertEquipmentType,
   type MaintenanceChecklistTemplate, type InsertMaintenanceChecklistTemplate,
+  type ChecklistAssociation, type InsertChecklistAssociation,
   type MaintenanceChecklistExecution, type InsertMaintenanceChecklistExecution,
   type MaintenancePlan, type InsertMaintenancePlan,
   type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment
@@ -4288,6 +4290,91 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMaintenancePlanEquipment(id: string): Promise<void> {
     await db.delete(maintenancePlanEquipments).where(eq(maintenancePlanEquipments.id, id));
+  }
+
+  // Equipment Types Implementation
+  
+  async getEquipmentTypesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<EquipmentType[]> {
+    const conditions = [eq(equipmentTypes.companyId, companyId)];
+    if (module) {
+      conditions.push(eq(equipmentTypes.module, module));
+    }
+    return await db.select()
+      .from(equipmentTypes)
+      .where(and(...conditions))
+      .orderBy(desc(equipmentTypes.createdAt));
+  }
+
+  async getEquipmentType(id: string): Promise<EquipmentType | undefined> {
+    const [result] = await db.select().from(equipmentTypes).where(eq(equipmentTypes.id, id));
+    return result;
+  }
+
+  async createEquipmentType(equipmentType: InsertEquipmentType): Promise<EquipmentType> {
+    const id = nanoid();
+    const [newEquipmentType] = await db.insert(equipmentTypes).values({ 
+      ...equipmentType, 
+      id 
+    }).returning();
+    return newEquipmentType;
+  }
+
+  async updateEquipmentType(id: string, equipmentType: Partial<InsertEquipmentType>): Promise<EquipmentType> {
+    const [updatedEquipmentType] = await db.update(equipmentTypes)
+      .set({ ...equipmentType, updatedAt: sql`now()` })
+      .where(eq(equipmentTypes.id, id))
+      .returning();
+    return updatedEquipmentType;
+  }
+
+  async deleteEquipmentType(id: string): Promise<void> {
+    await db.delete(equipmentTypes).where(eq(equipmentTypes.id, id));
+  }
+
+  // Checklist Associations Implementation
+  
+  async getChecklistAssociationsByTemplate(templateId: string): Promise<ChecklistAssociation[]> {
+    return await db.select()
+      .from(checklistAssociations)
+      .where(eq(checklistAssociations.checklistTemplateId, templateId))
+      .orderBy(desc(checklistAssociations.createdAt));
+  }
+
+  async getChecklistAssociationsBySite(siteId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistAssociation[]> {
+    const conditions = [eq(checklistAssociations.siteId, siteId)];
+    if (module) {
+      conditions.push(eq(checklistAssociations.module, module));
+    }
+    return await db.select()
+      .from(checklistAssociations)
+      .where(and(...conditions))
+      .orderBy(desc(checklistAssociations.createdAt));
+  }
+
+  async getChecklistAssociation(id: string): Promise<ChecklistAssociation | undefined> {
+    const [result] = await db.select().from(checklistAssociations).where(eq(checklistAssociations.id, id));
+    return result;
+  }
+
+  async createChecklistAssociation(association: InsertChecklistAssociation): Promise<ChecklistAssociation> {
+    const id = nanoid();
+    const [newAssociation] = await db.insert(checklistAssociations).values({ 
+      ...association, 
+      id 
+    }).returning();
+    return newAssociation;
+  }
+
+  async updateChecklistAssociation(id: string, association: Partial<InsertChecklistAssociation>): Promise<ChecklistAssociation> {
+    const [updatedAssociation] = await db.update(checklistAssociations)
+      .set({ ...association, updatedAt: sql`now()` })
+      .where(eq(checklistAssociations.id, id))
+      .returning();
+    return updatedAssociation;
+  }
+
+  async deleteChecklistAssociation(id: string): Promise<void> {
+    await db.delete(checklistAssociations).where(eq(checklistAssociations.id, id));
   }
 }
 
