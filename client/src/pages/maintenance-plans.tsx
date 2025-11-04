@@ -1368,7 +1368,7 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
         });
         
         queryClient.invalidateQueries({ 
-          queryKey: ["/api/customers", activeClientId, "work-orders"] 
+          queryKey: ["/api/customers", activeClientId, "work-orders", { module: "maintenance" }] 
         });
         
         toast({ 
