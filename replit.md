@@ -34,15 +34,15 @@ The platform implements a hierarchical multi-tenancy model (Companies > Sites > 
 
 **Module-Specific Page Protection**: All module-specific pages include built-in verification to prevent cross-module access. Pages exclusive to OPUS Clean cannot be accessed when OPUS Manutenção is active, and vice versa. Users attempting to access restricted pages see a friendly error message directing them to switch modules.
 
-### Equipment Tag System (Maintenance Module)
+### Equipment Management (Maintenance Module)
 
-The Maintenance module uses a flexible tag-based system for equipment identification and checklist assignment. Equipment can be linked to multiple tags (e.g., "Coffee Machine", "AC Unit"). 
+The Maintenance module uses direct equipment selection for checklist assignment and maintenance planning. Equipment can be managed through the Equipment page and selected directly when creating:
 
-**Maintenance Checklist Templates** can be configured in two ways:
-1. **Tag-based**: Templates target all equipment with selected tags, enabling efficient maintenance management across similar equipment types
-2. **Equipment-specific**: Templates target a single specific equipment by ID
+**Maintenance Checklist Templates**: Templates can target one or multiple specific equipment items using a multiselect interface. This allows both individual equipment targeting and group management by selecting multiple pieces of equipment that share similar maintenance procedures.
 
-This dual approach allows both broad equipment categorization through tags and precise individual equipment targeting. Tags are customer-specific and module-specific, managed through the Equipment Tags configuration page accessible via the Settings page under the "Tags" tab.
+**Maintenance Plans**: Plans support selecting multiple equipment items, with the system automatically generating work orders for each selected equipment based on the configured frequency and schedule.
+
+All equipment is customer-specific and module-specific, managed through the Equipment page accessible via the sidebar in OPUS Manutenção.
 
 ### QR Code System
 
