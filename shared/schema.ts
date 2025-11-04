@@ -535,6 +535,7 @@ export const maintenanceChecklistTemplates = pgTable("maintenance_checklist_temp
   siteIds: varchar("site_ids").array(),
   zoneIds: varchar("zone_ids").array(),
   tagIds: varchar("tag_ids").array(),
+  equipmentId: varchar("equipment_id").references(() => equipment.id),
   items: jsonb("items").notNull(),
   module: moduleEnum("module").notNull().default('maintenance'),
   isActive: boolean("is_active").default(true),
