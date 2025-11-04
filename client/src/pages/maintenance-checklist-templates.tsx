@@ -32,8 +32,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   
   // Form states
   const [templateName, setTemplateName] = useState("");
-  const [equipmentType, setEquipmentType] = useState("");
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [equipmentType, setEquipmentType] = useState("none");
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState("none");
   const [version, setVersion] = useState("1.0");
   const [description, setDescription] = useState("");
   const [checklistItems, setChecklistItems] = useState("[]");
@@ -114,8 +114,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
   const resetForm = () => {
     setTemplateName("");
-    setEquipmentType("");
-    setSelectedEquipmentId("");
+    setEquipmentType("none");
+    setSelectedEquipmentId("none");
     setVersion("1.0");
     setDescription("");
     setChecklistItems("[]");
@@ -150,8 +150,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       companyId,
       customerId,
       name: templateName,
-      equipmentType: equipmentType || null,
-      equipmentId: selectedEquipmentId || null,
+      equipmentType: equipmentType === "none" ? null : equipmentType,
+      equipmentId: selectedEquipmentId === "none" ? null : selectedEquipmentId,
       version,
       items,
       description: description || null,
@@ -161,8 +161,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const handleEdit = (template: any) => {
     setEditingTemplate(template);
     setTemplateName(template.name);
-    setEquipmentType(template.equipmentType || "");
-    setSelectedEquipmentId(template.equipmentId || "");
+    setEquipmentType(template.equipmentType || "none");
+    setSelectedEquipmentId(template.equipmentId || "none");
     setVersion(template.version);
     setDescription(template.description || "");
     setChecklistItems(JSON.stringify(template.items, null, 2));
@@ -193,8 +193,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       companyId,
       customerId,
       name: templateName,
-      equipmentType: equipmentType || null,
-      equipmentId: selectedEquipmentId || null,
+      equipmentType: equipmentType === "none" ? null : equipmentType,
+      equipmentId: selectedEquipmentId === "none" ? null : selectedEquipmentId,
       version,
       items,
       description: description || null,
@@ -279,7 +279,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Nenhum</SelectItem>
+                          <SelectItem value="none">Nenhum</SelectItem>
                           <SelectItem value="hvac">HVAC</SelectItem>
                           <SelectItem value="eletrico">Elétrico</SelectItem>
                           <SelectItem value="hidraulico">Hidráulico</SelectItem>
@@ -297,7 +297,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                           <SelectValue placeholder="Selecione se aplicável" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Nenhum</SelectItem>
+                          <SelectItem value="none">Nenhum</SelectItem>
                           {Array.isArray(equipment) && equipment.map((equip: any) => (
                             <SelectItem key={equip.id} value={equip.id}>
                               {equip.name}
@@ -476,7 +476,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       <SelectItem value="hvac">HVAC</SelectItem>
                       <SelectItem value="eletrico">Elétrico</SelectItem>
                       <SelectItem value="hidraulico">Hidráulico</SelectItem>
@@ -494,7 +494,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {Array.isArray(equipment) && equipment.map((equip: any) => (
                         <SelectItem key={equip.id} value={equip.id}>
                           {equip.name}
