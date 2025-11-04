@@ -519,6 +519,7 @@ export const maintenanceChecklistTemplates = pgTable("maintenance_checklist_temp
   name: varchar("name").notNull(),
   description: text("description"),
   version: varchar("version").notNull().default('1.0'),
+  serviceId: varchar("service_id").references(() => services.id),
   siteIds: varchar("site_ids").array(),
   zoneIds: varchar("zone_ids").array(),
   equipmentIds: varchar("equipment_ids").array(),
