@@ -1345,7 +1345,59 @@ import type { MyType } from '@shared/schema';
 
 ---
 
+## 💾 Database Backup
+
+### Dumps Disponíveis
+
+O sistema possui dumps atualizados do banco de dados PostgreSQL:
+
+- **database_full_dump.sql** (476 KB) - Schema + Dados completo
+- **database_schema.sql** (57 KB) - Apenas estrutura
+- **database_data.sql** (420 KB) - Apenas dados
+
+**Detalhes**: Consulte [DATABASE_DUMP_INFO.md](./DATABASE_DUMP_INFO.md) para instruções completas de restauração e informações sobre as 35 tabelas do sistema.
+
+### Como Criar Novo Dump
+
+```bash
+# Dump completo
+pg_dump $DATABASE_URL --no-owner --no-privileges > database_full_dump.sql
+
+# Apenas schema
+pg_dump $DATABASE_URL --schema-only --no-owner --no-privileges > database_schema.sql
+
+# Apenas dados
+pg_dump $DATABASE_URL --data-only --no-owner --no-privileges > database_data.sql
+```
+
+**Nota**: Arquivos `.sql` já estão no `.gitignore` para proteção de dados sensíveis.
+
+---
+
 ## 📝 Changelog
+
+### 04/11/2025 - Database Dump Completo
+
+**Feature**: Criação de dump completo do banco de dados PostgreSQL.
+
+**Arquivos Gerados**:
+- `database_full_dump.sql` - Dump completo (schema + dados)
+- `database_schema.sql` - Apenas estrutura das 35 tabelas
+- `database_data.sql` - Apenas dados
+- `DATABASE_DUMP_INFO.md` - Documentação completa do dump
+
+**Estatísticas**:
+- 35 tabelas no total
+- 12+ tipos ENUM definidos
+- Schema completo do sistema multi-módulo
+
+**Uso**:
+- Backup de segurança
+- Restauração de ambiente
+- Migração entre instâncias
+- Documentação da estrutura de dados
+
+---
 
 ### 04/11/2025 - Correção: Module Assignment em Service Categories/Types
 
