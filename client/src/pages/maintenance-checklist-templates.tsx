@@ -82,7 +82,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
   // Fetch zones based on selected site
   const { data: zones = [] } = useQuery({
-    queryKey: [`/api/sites/${templateForm.siteId}/zones`],
+    queryKey: [`/api/sites/${templateForm.siteId}/zones`, { module: currentModule }],
     enabled: templateForm.siteId !== "none" && !!templateForm.siteId,
   });
 
