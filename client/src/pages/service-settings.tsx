@@ -23,7 +23,8 @@ import {
   Building,
   Users as UsersIcon,
   Cog,
-  Target
+  Target,
+  Bookmark
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -423,7 +424,7 @@ export default function Settings() {
           <div className="bg-white rounded-2xl p-2 shadow-sm overflow-x-auto">
             <TabsList className="flex gap-1 bg-transparent w-max min-w-full">
               <TabsTrigger value="types" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
-                <Tag className="w-3.5 h-3.5" />
+                <Bookmark className="w-3.5 h-3.5" />
                 Tipos
               </TabsTrigger>
               <TabsTrigger value="categories" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
@@ -460,7 +461,7 @@ export default function Settings() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <Tag className="w-5 h-5" />
+                    <Bookmark className="w-5 h-5" />
                     Tipos de Serviços
                   </CardTitle>
                   <Dialog open={isTypeDialogOpen} onOpenChange={setIsTypeDialogOpen}>
@@ -552,7 +553,7 @@ export default function Settings() {
               <CardContent>
                 {(serviceTypes as any[]).length === 0 ? (
                   <div className="text-center py-8">
-                    <Tag className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <Bookmark className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">Nenhum tipo de serviço cadastrado</p>
                     <p className="text-sm text-muted-foreground mt-2">
                       Crie tipos de serviços para organizar melhor seu sistema
