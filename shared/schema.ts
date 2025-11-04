@@ -471,16 +471,28 @@ export const workOrderComments = pgTable("work_order_comments", {
 // MÓDULO DE MANUTENÇÃO - Tabelas Específicas
 // ============================================================================
 
-// 28. TABELA: equipment (Equipamentos)
+// 28. TABELA: equipment_types (Tipos de Equipamento)
+export const equipmentTypes = pgTable("equipment_types", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  module: moduleEnum("module").notNull().default('maintenance'),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 29. TABELA: equipment (Equipamentos)
 export const equipment = pgTable("equipment", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
   customerId: varchar("customer_id").notNull().references(() => customers.id),
   siteId: varchar("site_id").notNull().references(() => sites.id),
   zoneId: varchar("zone_id").notNull().references(() => zones.id),
+  equipmentTypeId: varchar("equipment_type_id").references(() => equipmentTypes.id),
   name: varchar("name").notNull(),
   internalCode: varchar("internal_code"),
-  equipmentType: varchar("equipment_type").notNull(),
   manufacturer: varchar("manufacturer"),
   model: varchar("model"),
   serialNumber: varchar("serial_number"),
@@ -497,19 +509,29 @@ export const equipment = pgTable("equipment", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
-// 29. TABELA: maintenance_checklist_templates (Templates de Checklist de Manutenção)
+// 30. TABELA: maintenance_checklist_templates (Templates de Checklist de Manutenção)
 export const maintenanceChecklistTemplates = pgTable("maintenance_checklist_templates", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
   customerId: varchar("customer_id").notNull().references(() => customers.id),
   name: varchar("name").notNull(),
   description: text("description"),
-  siteId: varchar("site_id").references(() => sites.id),
-  zoneId: varchar("zone_id").references(() => zones.id),
-  equipmentType: varchar("equipment_type"),
-  equipmentId: varchar("equipment_id").references(() => equipment.id),
   version: varchar("version").notNull().default('1.0'),
   items: jsonb("items").notNull(),
+  module: moduleEnum("module").notNull().default('maintenance'),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 31. TABELA: checklist_associations (Associações de Checklist com Locais/Zonas/Equipamentos)
+export const checklistAssociations = pgTable("checklist_associations", {
+  id: varchar("id").primaryKey(),
+  checklistTemplateId: varchar("checklist_template_id").notNull().references(() => maintenanceChecklistTemplates.id),
+  siteId: varchar("site_id").notNull().references(() => sites.id),
+  zoneId: varchar("zone_id").references(() => zones.id),
+  equipmentTypeId: varchar("equipment_type_id").references(() => equipmentTypes.id),
+  equipmentId: varchar("equipment_id").references(() => equipment.id),
   module: moduleEnum("module").notNull().default('maintenance'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
@@ -933,11 +955,24 @@ export const equipmentRelations = relations(equipment, ({ one, many }) => ({
     fields: [equipment.zoneId],
     references: [zones.id],
   }),
-  maintenanceChecklistTemplates: many(maintenanceChecklistTemplates),
+  equipmentType: one(equipmentTypes, {
+    fields: [equipment.equipmentTypeId],
+    references: [equipmentTypes.id],
+  }),
+  checklistAssociations: many(checklistAssociations),
   maintenanceChecklistExecutions: many(maintenanceChecklistExecutions),
   maintenancePlanEquipments: many(maintenancePlanEquipments),
   workOrders: many(workOrders),
   qrCodePoints: many(qrCodePoints),
+}));
+
+export const equipmentTypesRelations = relations(equipmentTypes, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [equipmentTypes.companyId],
+    references: [companies.id],
+  }),
+  equipment: many(equipment),
+  checklistAssociations: many(checklistAssociations),
 }));
 
 export const maintenanceChecklistTemplatesRelations = relations(maintenanceChecklistTemplates, ({ one, many }) => ({
@@ -949,20 +984,32 @@ export const maintenanceChecklistTemplatesRelations = relations(maintenanceCheck
     fields: [maintenanceChecklistTemplates.customerId],
     references: [customers.id],
   }),
+  checklistAssociations: many(checklistAssociations),
+  maintenanceChecklistExecutions: many(maintenanceChecklistExecutions),
+  maintenancePlanEquipments: many(maintenancePlanEquipments),
+}));
+
+export const checklistAssociationsRelations = relations(checklistAssociations, ({ one }) => ({
+  checklistTemplate: one(maintenanceChecklistTemplates, {
+    fields: [checklistAssociations.checklistTemplateId],
+    references: [maintenanceChecklistTemplates.id],
+  }),
   site: one(sites, {
-    fields: [maintenanceChecklistTemplates.siteId],
+    fields: [checklistAssociations.siteId],
     references: [sites.id],
   }),
   zone: one(zones, {
-    fields: [maintenanceChecklistTemplates.zoneId],
+    fields: [checklistAssociations.zoneId],
     references: [zones.id],
   }),
+  equipmentType: one(equipmentTypes, {
+    fields: [checklistAssociations.equipmentTypeId],
+    references: [equipmentTypes.id],
+  }),
   equipment: one(equipment, {
-    fields: [maintenanceChecklistTemplates.equipmentId],
+    fields: [checklistAssociations.equipmentId],
     references: [equipment.id],
   }),
-  maintenanceChecklistExecutions: many(maintenanceChecklistExecutions),
-  maintenancePlanEquipments: many(maintenancePlanEquipments),
 }));
 
 export const maintenanceChecklistExecutionsRelations = relations(maintenanceChecklistExecutions, ({ one }) => ({
