@@ -2313,15 +2313,12 @@ export class DatabaseStorage implements IStorage {
           break;
           
         case 'mensal':
-          // Monthly: Verifica se é o primeiro dia do mês no loop para adicionar uma ocorrência
+          // Monthly: Process once per month on the first day or effective start
           const monthDay = (frequencyConfig as any)?.monthDay || 1;
           
-          // Só processar uma vez por mês - verificar se estamos no primeiro dia do mês atual no loop
           if (current.getDate() === 1 || current.getTime() === effectiveStart.getTime()) {
-            // Calcular a data da ocorrência para este mês
             const occurrenceDate = new Date(current.getFullYear(), current.getMonth(), monthDay, 10, 0, 0, 0);
             
-            // Verificar se a ocorrência está dentro da janela válida
             if (occurrenceDate >= effectiveStart && occurrenceDate <= effectiveEnd) {
               occurrences.push({
                 date: new Date(occurrenceDate),
