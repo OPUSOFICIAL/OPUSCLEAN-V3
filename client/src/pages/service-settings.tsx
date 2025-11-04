@@ -103,6 +103,11 @@ export default function Settings() {
     enabled: !!customerId && currentModule === 'maintenance',
   });
 
+  const { data: customer } = useQuery({
+    queryKey: [`/api/customers/${customerId}`],
+    enabled: !!customerId,
+  });
+
   // Forms
   const typeForm = useForm({
     resolver: zodResolver(serviceTypeSchema),
@@ -323,8 +328,19 @@ export default function Settings() {
   };
 
   const onSubmitTag = (data: any) => {
+    const companyId = (customer as any)?.companyId;
+    if (!companyId) {
+      toast({ 
+        title: "Erro", 
+        description: "CompanyId não encontrado",
+        variant: "destructive" 
+      });
+      return;
+    }
+
     const payload = {
       ...data,
+      companyId,
       customerId,
       module: currentModule,
       isActive: true,
