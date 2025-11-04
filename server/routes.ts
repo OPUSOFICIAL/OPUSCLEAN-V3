@@ -2553,11 +2553,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Company ID is required" });
       }
       
-      // Default window: PRÓXIMO MÊS (sistema regenera automaticamente no final de cada mês)
+      // Default window: MÊS ATUAL (sistema regenera automaticamente no final de cada mês)
       const now = new Date();
       const startDate = windowStart ? new Date(windowStart) : new Date(now.getFullYear(), now.getMonth(), 1);
-      // Gerar OSs apenas até o final do próximo mês
-      const endDate = windowEnd ? new Date(windowEnd) : new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59);
+      // Gerar OSs apenas até o final do mês atual
+      const endDate = windowEnd ? new Date(windowEnd) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       
       console.log(`[SCHEDULER MAINTENANCE] Gerando OSs de manutenção para período: ${startDate.toISOString()} até ${endDate.toISOString()}`);
       
@@ -2577,6 +2577,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating maintenance work orders:", error);
       res.status(500).json({ message: "Failed to generate maintenance work orders" });
+    }
+  });
+
+  // Monthly regeneration of maintenance work orders (called automatically)
+  app.post("/api/scheduler/regenerate-monthly-maintenance", async (req, res) => {
+    try {
+      console.log(`[MONTHLY SCHEDULER] Iniciando regeneração mensal automática de OSs de manutenção`);
+      
+      // Get all companies
+      const allCompanies = await storage.getAllCompanies();
+      
+      let totalGenerated = 0;
+      
+      for (const company of allCompanies) {
+        try {
+          // Calculate next month window
+          const now = new Date();
+          const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          const startDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+          const endDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0, 23, 59, 59);
+          
+          console.log(`[MONTHLY SCHEDULER] Gerando OSs para ${company.name} - período: ${startDate.toISOString()} até ${endDate.toISOString()}`);
+          
+          const generatedOrders = await storage.generateMaintenanceWorkOrders(company.id, startDate, endDate);
+          totalGenerated += generatedOrders.length;
+          
+          console.log(`[MONTHLY SCHEDULER] ✅ ${generatedOrders.length} OSs geradas para ${company.name}`);
+        } catch (companyError) {
+          console.error(`[MONTHLY SCHEDULER] Erro ao gerar OSs para ${company.name}:`, companyError);
+        }
+      }
+      
+      console.log(`[MONTHLY SCHEDULER] ✅ Total: ${totalGenerated} OSs de manutenção geradas para próximo mês`);
+      
+      res.json({
+        message: `Monthly regeneration completed`,
+        totalGenerated,
+        companiesProcessed: allCompanies.length
+      });
+    } catch (error) {
+      console.error("Error in monthly regeneration:", error);
+      res.status(500).json({ message: "Failed to regenerate monthly work orders" });
     }
   });
 
