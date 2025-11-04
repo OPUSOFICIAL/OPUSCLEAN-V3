@@ -13,7 +13,7 @@ import {
   insertCustomRoleSchema, insertRolePermissionSchema, insertUserRoleAssignmentSchema,
   insertUserSiteAssignmentSchema, insertPublicRequestLogSchema, insertSiteShiftSchema,
   insertBathroomCounterLogSchema, insertCompanyCounterSchema,
-  insertEquipmentSchema, insertMaintenanceChecklistTemplateSchema,
+  insertEquipmentTagSchema, insertEquipmentSchema, insertMaintenanceChecklistTemplateSchema,
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
   insertMaintenancePlanEquipmentSchema,
   type User
@@ -2774,6 +2774,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting equipment:", error);
       res.status(500).json({ message: "Failed to delete equipment" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE MODULE - Equipment Tags Routes
+  // ============================================================================
+
+  // Get equipment tags by customer
+  app.get("/api/customers/:customerId/equipment-tags", async (req, res) => {
+    try {
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const tags = await storage.getEquipmentTagsByCustomer(req.params.customerId, module);
+      res.json(tags);
+    } catch (error) {
+      console.error("Error fetching equipment tags:", error);
+      res.status(500).json({ message: "Failed to fetch equipment tags" });
+    }
+  });
+
+  // Get single equipment tag
+  app.get("/api/equipment-tags/:id", async (req, res) => {
+    try {
+      const tag = await storage.getEquipmentTag(req.params.id);
+      if (!tag) {
+        return res.status(404).json({ message: "Equipment tag not found" });
+      }
+      res.json(tag);
+    } catch (error) {
+      console.error("Error fetching equipment tag:", error);
+      res.status(500).json({ message: "Failed to fetch equipment tag" });
+    }
+  });
+
+  // Create equipment tag
+  app.post("/api/equipment-tags", async (req, res) => {
+    try {
+      const tag = insertEquipmentTagSchema.parse(req.body);
+      const newTag = await storage.createEquipmentTag(tag);
+      res.status(201).json(newTag);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating equipment tag:", error);
+      res.status(500).json({ message: "Failed to create equipment tag" });
+    }
+  });
+
+  // Update equipment tag
+  app.put("/api/equipment-tags/:id", async (req, res) => {
+    try {
+      const tag = insertEquipmentTagSchema.partial().parse(req.body);
+      const updatedTag = await storage.updateEquipmentTag(req.params.id, tag);
+      res.json(updatedTag);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating equipment tag:", error);
+      res.status(500).json({ message: "Failed to update equipment tag" });
+    }
+  });
+
+  // Delete equipment tag
+  app.delete("/api/equipment-tags/:id", async (req, res) => {
+    try {
+      await storage.deleteEquipmentTag(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting equipment tag:", error);
+      res.status(500).json({ message: "Failed to delete equipment tag" });
     }
   });
 

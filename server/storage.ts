@@ -4,7 +4,7 @@ import {
   serviceTypes, serviceCategories, serviceZones, dashboardGoals, auditLogs, customers,
   userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters,
   workOrderComments,
-  equipment, equipmentTypes, maintenanceChecklistTemplates,
+  equipment, equipmentTags, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
@@ -25,6 +25,7 @@ import {
   type CustomRole, type CustomRoleWithPermissions, type InsertCustomRole, type RolePermission, type InsertRolePermission,
   type UserRoleAssignment, type InsertUserRoleAssignment,
   type Equipment, type InsertEquipment,
+  type EquipmentTag, type InsertEquipmentTag,
   type EquipmentType, type InsertEquipmentType,
   type MaintenanceChecklistTemplate, type InsertMaintenanceChecklistTemplate,
   type MaintenanceChecklistExecution, type InsertMaintenanceChecklistExecution,
@@ -4106,6 +4107,45 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEquipment(id: string): Promise<void> {
     await db.delete(equipment).where(eq(equipment.id, id));
+  }
+
+  // Equipment Tags Implementation
+  
+  async getEquipmentTagsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<EquipmentTag[]> {
+    const conditions = [eq(equipmentTags.customerId, customerId)];
+    if (module) {
+      conditions.push(eq(equipmentTags.module, module));
+    }
+    return await db.select()
+      .from(equipmentTags)
+      .where(and(...conditions))
+      .orderBy(desc(equipmentTags.createdAt));
+  }
+
+  async getEquipmentTag(id: string): Promise<EquipmentTag | undefined> {
+    const [result] = await db.select().from(equipmentTags).where(eq(equipmentTags.id, id));
+    return result;
+  }
+
+  async createEquipmentTag(tagData: InsertEquipmentTag): Promise<EquipmentTag> {
+    const id = nanoid();
+    const [newTag] = await db.insert(equipmentTags).values({ 
+      ...tagData, 
+      id 
+    }).returning();
+    return newTag;
+  }
+
+  async updateEquipmentTag(id: string, tagData: Partial<InsertEquipmentTag>): Promise<EquipmentTag> {
+    const [updatedTag] = await db.update(equipmentTags)
+      .set({ ...tagData, updatedAt: sql`now()` })
+      .where(eq(equipmentTags.id, id))
+      .returning();
+    return updatedTag;
+  }
+
+  async deleteEquipmentTag(id: string): Promise<void> {
+    await db.delete(equipmentTags).where(eq(equipmentTags.id, id));
   }
 
   // Maintenance Checklist Templates Implementation
