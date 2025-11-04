@@ -55,13 +55,20 @@ const dashboardGoalSchema = z.object({
   currentPeriod: z.string().min(1, "Período é obrigatório"),
 });
 
+const equipmentTagSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  description: z.string().optional(),
+});
+
 export default function Settings() {
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
+  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<any>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [editingGoal, setEditingGoal] = useState<any>(null);
+  const [editingTag, setEditingTag] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { activeClientId: customerId } = useClient();
@@ -90,6 +97,11 @@ export default function Settings() {
     enabled: !!customerId,
   });
 
+  const { data: equipmentTags = [], isLoading: loadingTags } = useQuery({
+    queryKey: ["/api/customers", customerId, "equipment-tags", { module: currentModule }],
+    enabled: !!customerId && currentModule === 'maintenance',
+  });
+
   // Forms
   const typeForm = useForm({
     resolver: zodResolver(serviceTypeSchema),
@@ -116,6 +128,14 @@ export default function Settings() {
       goalType: "",
       goalValue: "",
       currentPeriod: new Date().toISOString().slice(0, 7), // YYYY-MM format
+    },
+  });
+
+  const tagForm = useForm({
+    resolver: zodResolver(equipmentTagSchema),
+    defaultValues: {
+      name: "",
+      description: "",
     },
   });
 
@@ -237,6 +257,45 @@ export default function Settings() {
     },
   });
 
+  const createTagMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/equipment-tags`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "equipment-tags"] });
+      setIsTagDialogOpen(false);
+      tagForm.reset();
+      toast({ title: "Tag criada com sucesso!" });
+    },
+    onError: () => {
+      toast({ title: "Erro ao criar tag", variant: "destructive" });
+    },
+  });
+
+  const updateTagMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      apiRequest("PUT", `/api/customers/${customerId}/equipment-tags/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "equipment-tags"] });
+      setIsTagDialogOpen(false);
+      setEditingTag(null);
+      tagForm.reset();
+      toast({ title: "Tag atualizada com sucesso!" });
+    },
+    onError: () => {
+      toast({ title: "Erro ao atualizar tag", variant: "destructive" });
+    },
+  });
+
+  const deleteTagMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/customers/${customerId}/equipment-tags/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "equipment-tags"] });
+      toast({ title: "Tag excluída com sucesso!" });
+    },
+    onError: () => {
+      toast({ title: "Erro ao excluir tag", variant: "destructive" });
+    },
+  });
+
   // Handlers
   const onSubmitType = (data: any) => {
     if (editingType) {
@@ -259,6 +318,21 @@ export default function Settings() {
       updateGoalMutation.mutate({ id: editingGoal.id, data });
     } else {
       createGoalMutation.mutate(data);
+    }
+  };
+
+  const onSubmitTag = (data: any) => {
+    const payload = {
+      ...data,
+      customerId,
+      module: currentModule,
+      isActive: true,
+    };
+    
+    if (editingTag) {
+      updateTagMutation.mutate({ id: editingTag.id, data: payload });
+    } else {
+      createTagMutation.mutate(payload);
     }
   };
 
@@ -291,6 +365,21 @@ export default function Settings() {
       currentPeriod: goal.currentPeriod,
     });
     setIsGoalDialogOpen(true);
+  };
+
+  const handleEditTag = (tag: any) => {
+    setEditingTag(tag);
+    tagForm.reset({
+      name: tag.name,
+      description: tag.description || "",
+    });
+    setIsTagDialogOpen(true);
+  };
+
+  const handleDeleteTag = (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir esta tag?")) {
+      deleteTagMutation.mutate(id);
+    }
   };
 
   const getTypeName = (typeId: string) => {
@@ -357,6 +446,12 @@ export default function Settings() {
                 <UsersIcon className="w-3.5 h-3.5" />
                 Usuários
               </TabsTrigger>
+              {currentModule === 'maintenance' && (
+                <TabsTrigger value="tags" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
+                  <Tag className="w-3.5 h-3.5" />
+                  Tags
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -926,6 +1021,141 @@ export default function Settings() {
 
           <TabsContent value="users" className="space-y-6">
             <Users customerId={customerId} />
+          </TabsContent>
+
+          <TabsContent value="tags" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Tag className="w-5 h-5" />
+                    Tags de Equipamentos
+                  </CardTitle>
+                  <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        onClick={() => {
+                          setEditingTag(null);
+                          tagForm.reset({ name: "", description: "" });
+                        }}
+                        data-testid="button-create-tag"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Nova Tag
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingTag ? "Editar Tag" : "Nova Tag"}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <Form {...tagForm}>
+                        <form onSubmit={tagForm.handleSubmit(onSubmitTag)} className="space-y-4">
+                          <FormField
+                            control={tagForm.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Nome</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Ex: Máquina de Café" {...field} data-testid="input-tag-name" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={tagForm.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Descrição (Opcional)</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Descrição da tag" 
+                                    {...field} 
+                                    data-testid="input-tag-description"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="flex justify-end space-x-2">
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              onClick={() => setIsTagDialogOpen(false)}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button 
+                              type="submit" 
+                              disabled={createTagMutation.isPending || updateTagMutation.isPending}
+                              data-testid="button-save-tag"
+                            >
+                              {editingTag ? "Atualizar" : "Criar"}
+                            </Button>
+                          </div>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(equipmentTags as any[]).length === 0 ? (
+                  <div className="text-center py-8">
+                    <Tag className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Nenhuma tag cadastrada</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Crie tags para categorizar e identificar equipamentos
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(equipmentTags as any[]).map((tag: any) => (
+                      <div key={tag.id} className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="text-lg font-semibold text-foreground">{tag.name}</h3>
+                              {tag.isActive ? (
+                                <Badge className="bg-green-100 text-green-800">Ativa</Badge>
+                              ) : (
+                                <Badge variant="outline">Inativa</Badge>
+                              )}
+                            </div>
+                            {tag.description && (
+                              <p className="text-sm text-muted-foreground">{tag.description}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditTag(tag)}
+                              data-testid={`button-edit-tag-${tag.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteTag(tag.id)}
+                              data-testid={`button-delete-tag-${tag.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
