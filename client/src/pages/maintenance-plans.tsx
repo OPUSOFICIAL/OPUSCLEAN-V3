@@ -129,6 +129,28 @@ export default function MaintenancePlans() {
     }
   };
 
+  // Mutation para gerar OSs manualmente (teste)
+  const generateWorkOrdersMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/scheduler/regenerate-monthly-maintenance', {});
+      return response;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
+      toast({
+        title: "OSs geradas com sucesso!",
+        description: `${data.totalGenerated} ordens de serviço foram criadas para o próximo mês.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao gerar OSs",
+        description: "Ocorreu um erro ao gerar as ordens de serviço.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const getFrequencyBadge = (frequency: string) => {
     switch (frequency) {
       case "diaria":
@@ -351,7 +373,7 @@ export default function MaintenancePlans() {
         title="Plano de Manutenção" 
         description="Gerenciamento de atividades de manutenção programadas"
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
             <SelectTrigger className="w-32" data-testid="select-view-mode">
               <SelectValue />
@@ -361,6 +383,16 @@ export default function MaintenancePlans() {
               <SelectItem value="list">📋 Lista</SelectItem>
             </SelectContent>
           </Select>
+          <Button 
+            onClick={() => generateWorkOrdersMutation.mutate()}
+            variant="outline"
+            disabled={generateWorkOrdersMutation.isPending}
+            data-testid="button-generate-work-orders"
+            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            {generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs (Teste)'}
+          </Button>
           <Button 
             onClick={() => setShowCreateModal(true)}
             data-testid="button-create-activity"
