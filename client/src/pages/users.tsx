@@ -500,13 +500,17 @@ export default function Users({ customerId }: UsersProps) {
                           setUserModules(userModules.filter(m => m !== 'clean'));
                         }
                       }}
-                      className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      disabled={!customer?.modules?.includes('clean')}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="checkbox-module-clean"
                     />
                     <div className="flex-1">
-                      <label htmlFor="module-clean" className="cursor-pointer">
+                      <label htmlFor="module-clean" className={customer?.modules?.includes('clean') ? "cursor-pointer" : "cursor-not-allowed opacity-50"}>
                         <div className="font-medium text-blue-900 dark:text-blue-300">OPUS Clean</div>
                         <div className="text-sm text-muted-foreground">Gestão de Limpeza e Facilities</div>
+                        {!customer?.modules?.includes('clean') && (
+                          <div className="text-xs text-red-600 dark:text-red-400 mt-1">Módulo não disponível para este cliente</div>
+                        )}
                       </label>
                     </div>
                   </div>
@@ -522,19 +526,23 @@ export default function Users({ customerId }: UsersProps) {
                           setUserModules(userModules.filter(m => m !== 'maintenance'));
                         }
                       }}
-                      className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                      disabled={!customer?.modules?.includes('maintenance')}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="checkbox-module-maintenance"
                     />
                     <div className="flex-1">
-                      <label htmlFor="module-maintenance" className="cursor-pointer">
+                      <label htmlFor="module-maintenance" className={customer?.modules?.includes('maintenance') ? "cursor-pointer" : "cursor-not-allowed opacity-50"}>
                         <div className="font-medium text-orange-900 dark:text-orange-300">OPUS Manutenção</div>
                         <div className="text-sm text-muted-foreground">Gestão de Manutenção</div>
+                        {!customer?.modules?.includes('maintenance') && (
+                          <div className="text-xs text-red-600 dark:text-red-400 mt-1">Módulo não disponível para este cliente</div>
+                        )}
                       </label>
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Selecione um ou mais módulos que o usuário poderá acessar
+                  Selecione um ou mais módulos que o usuário poderá acessar (apenas módulos disponíveis para o cliente)
                 </p>
               </div>
               <div className="flex justify-end space-x-2">
