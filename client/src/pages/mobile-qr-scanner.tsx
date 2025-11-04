@@ -182,8 +182,10 @@ export default function MobileQrScanner() {
 
       // Criar nova work order
       const customerId = resolvedContext.customer.id;
+      const qrModule = resolvedContext.qrPoint?.module || 'clean';
       const workOrderData = {
         companyId: COMPANY_ID,
+        module: qrModule,
         siteId: resolvedContext.site.id,
         zoneId: resolvedContext.zone.id,
         serviceId: serviceId,
@@ -195,6 +197,8 @@ export default function MobileQrScanner() {
         qrCodePointId: resolvedContext.qrPoint?.id,
         checklistData: checklistAnswers || null
       };
+      
+      console.log('[QR SCANNER] Criando work order com módulo:', qrModule);
 
       console.log('[QR SCANNER] Criando nova work order para customer:', customerId, workOrderData);
 
