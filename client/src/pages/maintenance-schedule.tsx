@@ -193,7 +193,6 @@ export default function MaintenanceSchedule() {
     <div className="h-full bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
       <Header 
         title="Calendário de Manutenção"
-        subtitle="Visualize os planos de manutenção programados"
       />
       
       <div className="p-6 space-y-6 overflow-auto" style={{ height: 'calc(100% - 73px)' }}>

@@ -88,7 +88,7 @@ function AuthenticatedAdminRouter() {
           
           {/* Maintenance Module Routes */}
           <Route path="/equipment" component={() => <Equipment customerId={activeClientId} />} />
-          <Route path="/maintenance-plans" component={() => <MaintenancePlans customerId={activeClientId} />} />
+          <Route path="/maintenance-plans" component={() => <MaintenancePlans />} />
           <Route path="/maintenance-schedule" component={() => <MaintenanceSchedule />} />
           <Route path="/maintenance-checklist-templates" component={() => <MaintenanceChecklistTemplates customerId={activeClientId} />} />
           

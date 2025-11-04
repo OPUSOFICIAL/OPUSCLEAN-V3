@@ -48,7 +48,13 @@ Supports two types of QR codes: Execution QRs for internal staff work order mana
 
 Manages programmed, internal corrective, and public corrective work orders. It tracks status, SLA compliance, priority, operator assignments, allows comments with photo attachments, and supports re-opening. All analytics are derived from real-time PostgreSQL data.
 
-**Automated Monthly Work Order Generation (Maintenance Module)**: To optimize database performance, the system generates preventive maintenance work orders on a monthly basis rather than creating orders for an entire year upfront. When a maintenance plan is created, work orders are generated only for the current month. On the last day of each month at 23:00, an automated scheduler runs and pre-generates work orders for the following month across all companies. This approach balances operational planning needs with database efficiency.
+**Automated Monthly Work Order Generation (Maintenance Module)**: To optimize database performance, the system uses a dual approach for work order visibility and persistence:
+
+1. **Virtual Calendar Display**: The maintenance schedule calendar (`/maintenance-schedule`) shows all future planned maintenance activities by calculating them on-the-fly based on maintenance plan frequency settings. This provides complete visibility of upcoming work without database overhead.
+
+2. **Deferred Database Creation**: When a maintenance plan is created, NO work orders are immediately generated in the database. Instead, on the last day of each month at 23:00, an automated scheduler runs and pre-generates actual work orders for the following month across all companies.
+
+This approach balances operational planning needs (users can see future schedules) with database efficiency (only current/next month orders exist in the database).
 
 ### Authentication and Authorization
 
