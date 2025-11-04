@@ -1353,36 +1353,14 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
       return { activity: await apiRequest("POST", "/api/maintenance-activities", submitData), companyId };
     },
     onSuccess: async (result: any) => {
-      toast({ title: "Atividade de manutenção criada com sucesso!" });
+      toast({ 
+        title: "Plano de Manutenção Criado!", 
+        description: "As ordens de serviço serão geradas automaticamente no final de cada mês." 
+      });
       
       queryClient.invalidateQueries({ 
         queryKey: ["/api/customers", activeClientId, "maintenance-activities"] 
       });
-      
-      // Gerar ordens de trabalho automaticamente
-      const companyId = result.companyId || "company-opus-default";
-      
-      try {
-        const data = await apiRequest("POST", "/api/scheduler/generate-maintenance-work-orders", {
-          companyId
-        });
-        
-        queryClient.invalidateQueries({ 
-          queryKey: ["/api/customers", activeClientId, "work-orders", { module: "maintenance" }] 
-        });
-        
-        toast({ 
-          title: "Ordens de trabalho geradas!", 
-          description: `${data.generatedOrders || 0} OSs criadas automaticamente`
-        });
-      } catch (error) {
-        console.error("Erro ao gerar ordens:", error);
-        toast({
-          title: "Erro ao gerar OSs automáticas",
-          description: "As OSs precisarão ser geradas manualmente",
-          variant: "destructive"
-        });
-      }
       
       onSuccess();
     },
