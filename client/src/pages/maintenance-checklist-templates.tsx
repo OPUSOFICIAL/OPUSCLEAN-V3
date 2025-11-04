@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
+import { useLocation } from "wouter";
 import { Plus, Edit3, Trash2, List, FileText, Eye, Hash, ChevronDown } from "lucide-react";
 import { nanoid } from "nanoid";
 
@@ -127,28 +128,7 @@ function MultiSelect({
 export default function MaintenanceChecklistTemplates({ customerId }: MaintenanceChecklistTemplatesProps) {
   const { toast } = useToast();
   const { currentModule } = useModule();
-
-  // Templates de Checklist de Manutenção são exclusivos do módulo de manutenção
-  if (currentModule !== 'maintenance') {
-    return (
-      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center">Funcionalidade Não Disponível</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <List className="w-16 h-16 mx-auto text-slate-400" />
-            <p className="text-slate-600">
-              Os templates de checklist de manutenção estão disponíveis apenas no módulo <strong>OPUS Manutenção</strong>.
-            </p>
-            <p className="text-sm text-slate-500">
-              Alterne para OPUS Manutenção usando o seletor de plataforma na barra lateral.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const [, setLocation] = useLocation();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
@@ -228,6 +208,13 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       return res.json();
     },
   });
+
+  // Redirect if not in maintenance module
+  useEffect(() => {
+    if (currentModule !== 'maintenance') {
+      setLocation('/');
+    }
+  }, [currentModule, setLocation]);
 
   const createTemplateMutation = useMutation({
     mutationFn: async (data: any) => {

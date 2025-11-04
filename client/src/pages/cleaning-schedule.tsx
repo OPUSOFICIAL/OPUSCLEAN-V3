@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
+import { useLocation } from "wouter";
 import { 
   Plus, 
   Calendar, 
@@ -30,35 +31,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
 export default function CleaningSchedule() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  // Plano de Limpeza é exclusivo do módulo OPUS Clean
-  if (currentModule !== 'clean') {
-    return (
-      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center">Funcionalidade Não Disponível</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <Calendar className="w-16 h-16 mx-auto text-slate-400" />
-            <p className="text-slate-600">
-              O plano de limpeza está disponível apenas no módulo <strong>OPUS Clean</strong>.
-            </p>
-            <p className="text-sm text-slate-500">
-              Alterne para OPUS Clean usando o seletor de plataforma na barra lateral.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const [, setLocation] = useLocation();
 
   const [viewMode, setViewMode] = useState<"monthly" | "list">("monthly");
   const [siteFilter, setSiteFilter] = useState("todos");
@@ -101,7 +80,12 @@ export default function CleaningSchedule() {
     enabled: !!activeClientId,
   });
 
-
+  // Redirect if not in clean module
+  useEffect(() => {
+    if (currentModule !== 'clean') {
+      setLocation('/');
+    }
+  }, [currentModule, setLocation]);
 
   // Mutation to delete cleaning activity
   const deleteCleaningActivityMutation = useMutation({

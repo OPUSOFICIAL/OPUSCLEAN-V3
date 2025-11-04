@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
+import { useLocation } from "wouter";
 import { Plus, Edit3, Trash2, FileText, List, Eye, ChevronDown } from "lucide-react";
 import type { ChecklistTemplate } from "@shared/schema";
 
@@ -138,28 +139,7 @@ interface Checklist {
 export default function Checklists() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
-
-  // Checklists (templates de limpeza) são exclusivos do módulo OPUS Clean
-  if (currentModule !== 'clean') {
-    return (
-      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center">Funcionalidade Não Disponível</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <FileText className="w-16 h-16 mx-auto text-slate-400" />
-            <p className="text-slate-600">
-              Os templates de checklist estão disponíveis apenas no módulo <strong>OPUS Clean</strong>.
-            </p>
-            <p className="text-sm text-slate-500">
-              Alterne para OPUS Clean usando o seletor de plataforma na barra lateral.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const [, setLocation] = useLocation();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingChecklist, setEditingChecklist] = useState<Checklist | null>(null);
@@ -220,6 +200,13 @@ export default function Checklists() {
       return r.json();
     }
   });
+
+  // Redirect if not in clean module
+  useEffect(() => {
+    if (currentModule !== 'clean') {
+      setLocation('/');
+    }
+  }, [currentModule, setLocation]);
 
   const createChecklistMutation = useMutation({
     mutationFn: async (data: typeof checklistForm) => {
