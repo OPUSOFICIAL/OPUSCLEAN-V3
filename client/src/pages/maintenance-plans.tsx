@@ -1351,16 +1351,38 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     return (zones as any[]).filter((zone: any) => formData.siteIds.includes(zone.siteId));
   }, [zones, formData.siteIds]);
 
+  // Filtrar checklists baseado nos equipamentos selecionados (interseção)
+  // Só mostra checklists que estão vinculados a TODOS os equipamentos selecionados
+  const availableChecklistTemplates = useMemo(() => {
+    // Se nenhum equipamento selecionado, não mostrar checklists
+    if (!formData.equipmentIds || formData.equipmentIds.length === 0) {
+      return [];
+    }
+    
+    if (!checklistTemplates || !Array.isArray(checklistTemplates)) {
+      return [];
+    }
+
+    // Filtrar checklists que contêm TODOS os equipamentos selecionados
+    return (checklistTemplates as any[]).filter((template: any) => {
+      if (!template.equipmentIds || !Array.isArray(template.equipmentIds)) {
+        return false;
+      }
+      
+      // Verifica se o template contém TODOS os equipamentos selecionados
+      return formData.equipmentIds.every((equipId: string) => 
+        template.equipmentIds.includes(equipId)
+      );
+    });
+  }, [checklistTemplates, formData.equipmentIds]);
+
   const handleChange = (field: string, value: any) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
-      // Auto-preenchimento de checklist baseado nos equipamentos selecionados
-      if (field === 'equipmentIds' && value && value.length > 0 && equipment) {
-        const selectedEquipment = (equipment as any[]).find(e => e.id === value[0]);
-        if (selectedEquipment?.checklistTemplateId) {
-          newData.checklistTemplateId = selectedEquipment.checklistTemplateId;
-        }
+      // Limpar checklist quando equipamentos mudam (será necessário reselecionar)
+      if (field === 'equipmentIds') {
+        newData.checklistTemplateId = "";
       }
       
       // Limpar zonas quando sites mudam
@@ -1788,12 +1810,24 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
 
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="checklist">Checklist (obrigatório)</Label>
-                <Select value={formData.checklistTemplateId} onValueChange={(value) => handleChange("checklistTemplateId", value)}>
+                <Select 
+                  value={formData.checklistTemplateId} 
+                  onValueChange={(value) => handleChange("checklistTemplateId", value)}
+                  disabled={!formData.equipmentIds || formData.equipmentIds.length === 0}
+                >
                   <SelectTrigger data-testid="select-checklist">
-                    <SelectValue placeholder="Selecione um checklist" />
+                    <SelectValue 
+                      placeholder={
+                        !formData.equipmentIds || formData.equipmentIds.length === 0
+                          ? "Selecione equipamentos primeiro"
+                          : availableChecklistTemplates.length === 0
+                          ? "Nenhum checklist disponível para os equipamentos selecionados"
+                          : "Selecione um checklist"
+                      } 
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {(checklistTemplates as any[])?.map((template: any) => (
+                    {availableChecklistTemplates.map((template: any) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
                       </SelectItem>
