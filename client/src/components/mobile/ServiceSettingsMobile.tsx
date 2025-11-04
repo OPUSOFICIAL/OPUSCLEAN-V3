@@ -40,12 +40,13 @@ const serviceTypeSchema = z.object({
   code: z.string().min(1, "Código é obrigatório"),
 });
 
-const serviceCategorySchema = z.object({
+// CATEGORIAS - FUNCIONALIDADE COMENTADA (MANTER PARA REFERÊNCIA FUTURA)
+/* const serviceCategorySchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   description: z.string().optional(),
   code: z.string().min(1, "Código é obrigatório"),
   typeId: z.string().min(1, "Tipo é obrigatório"),
-});
+}); */
 
 const dashboardGoalSchema = z.object({
   goalType: z.string().min(1, "Tipo de meta é obrigatório"),
@@ -56,10 +57,10 @@ const dashboardGoalSchema = z.object({
 export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMobileProps) {
   const [activeTab, setActiveTab] = useState("types");
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  // const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false); // CATEGORIAS - COMENTADO
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<any>(null);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
+  // const [editingCategory, setEditingCategory] = useState<any>(null); // CATEGORIAS - COMENTADO
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -77,10 +78,11 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     enabled: !!customerId,
   });
 
-  const { data: serviceCategories = [], isLoading: loadingCategories } = useQuery({
+  // CATEGORIAS - COMENTADO
+  /* const { data: serviceCategories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["/api/customers", customerId, "service-categories"],
     enabled: !!customerId,
-  });
+  }); */
 
   const { data: dashboardGoals = [], isLoading: loadingGoals } = useQuery({
     queryKey: ["/api/customers", customerId, "dashboard-goals"],
@@ -97,7 +99,8 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     },
   });
 
-  const categoryForm = useForm({
+  // CATEGORIAS - COMENTADO
+  /* const categoryForm = useForm({
     resolver: zodResolver(serviceCategorySchema),
     defaultValues: {
       name: "",
@@ -105,7 +108,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
       code: "",
       typeId: "",
     },
-  });
+  }); */
 
   const goalForm = useForm({
     resolver: zodResolver(dashboardGoalSchema),
@@ -156,8 +159,8 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     },
   });
 
-  // Mutations - Categories
-  const createCategoryMutation = useMutation({
+  // CATEGORIAS - MUTATIONS COMENTADAS
+  /* const createCategoryMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/service-categories`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-categories"] });
@@ -194,7 +197,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     onError: () => {
       toast({ title: "Erro ao excluir categoria", variant: "destructive" });
     },
-  });
+  }); */
 
   // Mutations - Goals
   const createGoalMutation = useMutation({
@@ -245,13 +248,14 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     }
   };
 
-  const onSubmitCategory = (data: any) => {
+  // CATEGORIAS - HANDLER COMENTADO
+  /* const onSubmitCategory = (data: any) => {
     if (editingCategory) {
       updateCategoryMutation.mutate({ id: editingCategory.id, data });
     } else {
       createCategoryMutation.mutate(data);
     }
-  };
+  }; */
 
   const onSubmitGoal = (data: any) => {
     if (editingGoal) {
@@ -271,7 +275,8 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     setIsTypeDialogOpen(true);
   };
 
-  const handleEditCategory = (category: any) => {
+  // CATEGORIAS - HANDLER COMENTADO
+  /* const handleEditCategory = (category: any) => {
     setEditingCategory(category);
     categoryForm.reset({
       name: category.name,
@@ -280,7 +285,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
       typeId: category.typeId,
     });
     setIsCategoryDialogOpen(true);
-  };
+  }; */
 
   const handleEditGoal = (goal: any) => {
     setEditingGoal(goal);
@@ -319,7 +324,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     return colors[goalType] || 'bg-gray-500';
   };
 
-  if (loadingTypes || loadingCategories || loadingGoals) {
+  if (loadingTypes || /* loadingCategories || */ loadingGoals) { // CATEGORIAS - LOADING COMENTADO
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
         <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 p-6 pb-4">
@@ -369,14 +374,15 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
               <Tag className="w-4 h-4" />
               Tipos
             </TabsTrigger>
-            <TabsTrigger 
+            {/* CATEGORIAS - ABA COMENTADA */}
+            {/* <TabsTrigger 
               value="categories" 
               className="flex items-center gap-1.5 text-xs rounded-xl px-4 py-2.5 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap"
               data-testid="tab-categories"
             >
               <Layers className="w-4 h-4" />
               Categorias
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger 
               value="services" 
               className="flex items-center gap-1.5 text-xs rounded-xl px-4 py-2.5 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap"
@@ -569,8 +575,8 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
           </Card>
         </TabsContent>
 
-        {/* Aba Categorias */}
-        <TabsContent value="categories" className="p-4 space-y-4">
+        {/* CATEGORIAS - TODO O CONTEÚDO DA ABA COMENTADO */}
+        {/* <TabsContent value="categories" className="p-4 space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -743,7 +749,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </TabsContent> */}
 
         {/* Aba Serviços */}
         <TabsContent value="services" className="mt-0">
