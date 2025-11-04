@@ -53,11 +53,16 @@ export function ClientProvider({ children }: ClientProviderProps) {
   });
 
   // Resetar activeClientId quando o companyId mudar (quando user loga)
+  // SOMENTE se não houver um cliente válido salvo no localStorage
   useEffect(() => {
     if (companyId && !isCustomerUser) {
-      setActiveClientId("");
+      const savedClientId = localStorage.getItem('opus:activeClientId');
+      // Só resetar se não houver cliente salvo no localStorage
+      if (!savedClientId) {
+        setActiveClientId("");
+      }
     }
-  }, [companyId]);
+  }, [companyId, isCustomerUser]);
 
   // COMBINADO: Definir activeClientId corretamente baseado no tipo de usuário
   useEffect(() => {
