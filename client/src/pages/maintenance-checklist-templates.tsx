@@ -1,25 +1,36 @@
-import Header from "@/components/layout/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
-import { 
-  Plus, 
-  CheckCircle2,
-  Edit, 
-  Trash2,
-  List
-} from "lucide-react";
+import { Plus, Edit3, Trash2, List, FileText, Eye, Hash } from "lucide-react";
+import { nanoid } from "nanoid";
+
+interface ChecklistItem {
+  id: string;
+  type: 'text' | 'number' | 'photo' | 'checkbox';
+  label: string;
+  required: boolean;
+  description?: string;
+  validation?: {
+    minLength?: number;
+    maxLength?: number;
+    minValue?: number;
+    maxValue?: number;
+    photoMinCount?: number;
+    photoMaxCount?: number;
+  };
+}
 
 interface MaintenanceChecklistTemplatesProps {
   customerId: string;
@@ -27,16 +38,26 @@ interface MaintenanceChecklistTemplatesProps {
 
 export default function MaintenanceChecklistTemplates({ customerId }: MaintenanceChecklistTemplatesProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   
   // Form states
-  const [templateName, setTemplateName] = useState("");
-  const [equipmentType, setEquipmentType] = useState("none");
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState("none");
-  const [version, setVersion] = useState("1.0");
-  const [description, setDescription] = useState("");
-  const [checklistItems, setChecklistItems] = useState("[]");
+  const [templateForm, setTemplateForm] = useState({
+    name: "",
+    description: "",
+    siteId: "none",
+    zoneId: "none",
+    equipmentId: "none",
+    version: "1.0",
+    items: [] as ChecklistItem[]
+  });
+
+  const [newItem, setNewItem] = useState<Partial<ChecklistItem>>({
+    type: 'text',
+    label: "",
+    required: false,
+    description: "",
+    validation: {}
+  });
 
   const { toast } = useToast();
   const { currentModule } = useModule();
@@ -53,9 +74,25 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     enabled: !!customerId,
   });
 
-  // Fetch equipment for dropdown
-  const { data: equipment } = useQuery({
-    queryKey: [`/api/customers/${customerId}/equipment`, { module: currentModule }],
+  // Fetch sites
+  const { data: sites = [] } = useQuery({
+    queryKey: [`/api/customers/${customerId}/sites`, { module: currentModule }],
+    enabled: !!customerId,
+  });
+
+  // Fetch zones based on selected site
+  const { data: zones = [] } = useQuery({
+    queryKey: [`/api/sites/${templateForm.siteId}/zones`],
+    enabled: templateForm.siteId !== "none" && !!templateForm.siteId,
+  });
+
+  // Fetch equipment based on site and zone
+  const { data: equipment = [] } = useQuery({
+    queryKey: [`/api/customers/${customerId}/equipment`, { 
+      module: currentModule,
+      siteId: templateForm.siteId !== "none" ? templateForm.siteId : undefined,
+      zoneId: templateForm.zoneId !== "none" ? templateForm.zoneId : undefined,
+    }],
     enabled: !!customerId,
   });
 
@@ -84,7 +121,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     onSuccess: () => {
       toast({ title: "Template atualizado com sucesso" });
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/maintenance-checklist-templates`] });
-      setIsEditDialogOpen(false);
+      setIsCreateDialogOpen(false);
       setEditingTemplate(null);
       resetForm();
     },
@@ -113,17 +150,68 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   });
 
   const resetForm = () => {
-    setTemplateName("");
-    setEquipmentType("none");
-    setSelectedEquipmentId("none");
-    setVersion("1.0");
-    setDescription("");
-    setChecklistItems("[]");
+    setTemplateForm({
+      name: "",
+      description: "",
+      siteId: "none",
+      zoneId: "none",
+      equipmentId: "none",
+      version: "1.0",
+      items: []
+    });
+    setNewItem({
+      type: 'text',
+      label: "",
+      required: false,
+      description: "",
+      validation: {}
+    });
   };
 
-  const handleCreate = () => {
+  const handleAddItem = () => {
+    if (!newItem.label) {
+      toast({ 
+        title: "Rótulo obrigatório", 
+        description: "Digite um rótulo para o item", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    const item: ChecklistItem = {
+      id: nanoid(),
+      type: newItem.type || 'text',
+      label: newItem.label,
+      required: newItem.required || false,
+      description: newItem.description,
+      validation: newItem.validation
+    };
+
+    setTemplateForm(prev => ({
+      ...prev,
+      items: [...prev.items, item]
+    }));
+
+    // Reset new item
+    setNewItem({
+      type: 'text',
+      label: "",
+      required: false,
+      description: "",
+      validation: {}
+    });
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    setTemplateForm(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== itemId)
+    }));
+  };
+
+  const handleSubmit = () => {
     const companyId = (customer as any)?.companyId;
-    if (!companyId || !templateName) {
+    if (!companyId || !templateForm.name) {
       toast({ 
         title: "Preencha todos os campos obrigatórios", 
         variant: "destructive" 
@@ -131,74 +219,46 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       return;
     }
 
-    // Validate JSON
-    let items;
-    try {
-      items = JSON.parse(checklistItems);
-      if (!Array.isArray(items)) {
-        throw new Error("Items deve ser um array");
-      }
-    } catch (error) {
-      toast({ 
-        title: "JSON inválido nos itens do checklist", 
-        variant: "destructive" 
+    if (templateForm.items.length === 0) {
+      toast({
+        title: "Itens obrigatórios",
+        description: "Adicione pelo menos um item ao checklist.",
+        variant: "destructive",
       });
       return;
     }
 
-    createTemplateMutation.mutate({
+    const data = {
       companyId,
       customerId,
-      name: templateName,
-      equipmentType: equipmentType === "none" ? null : equipmentType,
-      equipmentId: selectedEquipmentId === "none" ? null : selectedEquipmentId,
-      version,
-      items,
-      description: description || null,
-    });
+      name: templateForm.name,
+      description: templateForm.description || null,
+      siteId: templateForm.siteId === "none" ? null : templateForm.siteId,
+      zoneId: templateForm.zoneId === "none" ? null : templateForm.zoneId,
+      equipmentId: templateForm.equipmentId === "none" ? null : templateForm.equipmentId,
+      version: templateForm.version,
+      items: templateForm.items,
+    };
+
+    if (editingTemplate) {
+      updateTemplateMutation.mutate({ ...data, id: editingTemplate.id });
+    } else {
+      createTemplateMutation.mutate(data);
+    }
   };
 
   const handleEdit = (template: any) => {
     setEditingTemplate(template);
-    setTemplateName(template.name);
-    setEquipmentType(template.equipmentType || "none");
-    setSelectedEquipmentId(template.equipmentId || "none");
-    setVersion(template.version);
-    setDescription(template.description || "");
-    setChecklistItems(JSON.stringify(template.items, null, 2));
-    setIsEditDialogOpen(true);
-  };
-
-  const handleUpdate = () => {
-    const companyId = (customer as any)?.companyId;
-    if (!editingTemplate || !companyId) return;
-
-    // Validate JSON
-    let items;
-    try {
-      items = JSON.parse(checklistItems);
-      if (!Array.isArray(items)) {
-        throw new Error("Items deve ser um array");
-      }
-    } catch (error) {
-      toast({ 
-        title: "JSON inválido nos itens do checklist", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    updateTemplateMutation.mutate({
-      id: editingTemplate.id,
-      companyId,
-      customerId,
-      name: templateName,
-      equipmentType: equipmentType === "none" ? null : equipmentType,
-      equipmentId: selectedEquipmentId === "none" ? null : selectedEquipmentId,
-      version,
-      items,
-      description: description || null,
+    setTemplateForm({
+      name: template.name,
+      description: template.description || "",
+      siteId: template.siteId || "none",
+      zoneId: template.zoneId || "none",
+      equipmentId: template.equipmentId || "none",
+      version: template.version,
+      items: template.items || []
     });
+    setIsCreateDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -207,98 +267,192 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     }
   };
 
-  const getEquipmentName = (equipmentId: string | null) => {
-    if (!equipmentId || !Array.isArray(equipment)) return null;
-    return equipment.find((e: any) => e.id === equipmentId)?.name || null;
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'photo': return <Eye className="w-4 h-4" />;
+      case 'number': return <Hash className="w-4 h-4" />;
+      case 'checkbox': return <List className="w-4 h-4" />;
+      default: return <FileText className="w-4 h-4" />;
+    }
   };
 
-  const addSampleItem = () => {
-    const sample = [
-      {
-        id: "1",
-        description: "Verificar estado geral",
-        required: true
-      },
-      {
-        id: "2",
-        description: "Limpar componentes",
-        required: true
-      },
-      {
-        id: "3",
-        description: "Testar funcionamento",
-        required: true
-      }
-    ];
-    setChecklistItems(JSON.stringify(sample, null, 2));
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'photo': return 'Foto';
+      case 'number': return 'Número';
+      case 'checkbox': return 'Checkbox';
+      default: return 'Texto';
+    }
   };
+
+  const getSiteName = (siteId: string | null) => {
+    if (!siteId) return null;
+    return (sites as any[])?.find(s => s.id === siteId)?.name || null;
+  };
+
+  const getZoneName = (zoneId: string | null) => {
+    if (!zoneId) return null;
+    return (zones as any[])?.find(z => z.id === zoneId)?.name || null;
+  };
+
+  const getEquipmentName = (equipmentId: string | null) => {
+    if (!equipmentId) return null;
+    return (equipment as any[])?.find(e => e.id === equipmentId)?.name || null;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <p className="text-slate-600">Carregando templates...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header title="Templates de Checklist" description="Modelos de checklist para manutenção" />
-
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="flex items-center gap-2">
-              <List className="h-5 w-5 text-primary" />
-              <CardTitle>Lista de Templates</CardTitle>
+    <div className="h-full overflow-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg shadow-blue-500/5 sticky top-0 z-50">
+        <div className="px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 rounded-2xl flex items-center justify-center shadow-lg">
+                <List className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-purple-900 to-indigo-900 bg-clip-text text-transparent">
+                  Templates de Checklist
+                </h1>
+                <p className="text-sm text-slate-600">
+                  Gerencie os templates de checklist de manutenção
+                </p>
+              </div>
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-create-template">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Template
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (!open) {
+                setEditingTemplate(null);
+                resetForm();
+              }
+            }}>
+              <Button 
+                className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800"
+                onClick={() => setIsCreateDialogOpen(true)}
+                data-testid="button-create-template"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Template
+              </Button>
+              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Criar Novo Template de Checklist</DialogTitle>
-                  <DialogDescription>
-                    Defina um modelo de checklist reutilizável
-                  </DialogDescription>
+                  <DialogTitle>
+                    {editingTemplate ? "Editar Template" : "Criar Novo Template"}
+                  </DialogTitle>
                 </DialogHeader>
                 
-                <div className="grid gap-4 py-4">
+                <div className="space-y-6">
+                  {/* Form básico */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome do Template *</Label>
+                      <Input
+                        id="name"
+                        data-testid="input-template-name"
+                        value={templateForm.name}
+                        onChange={(e) => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Ex: Manutenção Preventiva HVAC"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="version">Versão</Label>
+                      <Input
+                        id="version"
+                        data-testid="input-template-version"
+                        value={templateForm.version}
+                        onChange={(e) => setTemplateForm(prev => ({ ...prev, version: e.target.value }))}
+                        placeholder="1.0"
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="templateName">Nome do Template *</Label>
-                    <Input
-                      id="templateName"
-                      data-testid="input-template-name"
-                      value={templateName}
-                      onChange={(e) => setTemplateName(e.target.value)}
-                      placeholder="Ex: Checklist HVAC Mensal"
+                    <Label htmlFor="description">Descrição</Label>
+                    <Textarea
+                      id="description"
+                      data-testid="input-template-description"
+                      value={templateForm.description}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Descrição do template..."
+                      rows={2}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Local, Zona e Equipamento */}
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="equipmentType">Tipo de Equipamento (Genérico)</Label>
-                      <Select value={equipmentType} onValueChange={setEquipmentType}>
-                        <SelectTrigger data-testid="select-equipment-type">
-                          <SelectValue placeholder="Selecione o tipo" />
+                      <Label>Local</Label>
+                      <Select 
+                        value={templateForm.siteId} 
+                        onValueChange={(value) => setTemplateForm(prev => ({ 
+                          ...prev, 
+                          siteId: value,
+                          zoneId: "none",
+                          equipmentId: "none"
+                        }))}
+                      >
+                        <SelectTrigger data-testid="select-template-site">
+                          <SelectValue placeholder="Selecione o local" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Nenhum</SelectItem>
-                          <SelectItem value="hvac">HVAC</SelectItem>
-                          <SelectItem value="eletrico">Elétrico</SelectItem>
-                          <SelectItem value="hidraulico">Hidráulico</SelectItem>
-                          <SelectItem value="mecanico">Mecânico</SelectItem>
-                          <SelectItem value="eletronico">Eletrônico</SelectItem>
-                          <SelectItem value="outro">Outro</SelectItem>
+                          {(sites as any[])?.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="equipmentId">Equipamento Específico</Label>
-                      <Select value={selectedEquipmentId} onValueChange={setSelectedEquipmentId}>
-                        <SelectTrigger data-testid="select-equipment">
-                          <SelectValue placeholder="Selecione se aplicável" />
+                      <Label>Zona</Label>
+                      <Select 
+                        value={templateForm.zoneId} 
+                        onValueChange={(value) => setTemplateForm(prev => ({ 
+                          ...prev, 
+                          zoneId: value,
+                          equipmentId: "none"
+                        }))}
+                        disabled={templateForm.siteId === "none"}
+                      >
+                        <SelectTrigger data-testid="select-template-zone">
+                          <SelectValue placeholder="Selecione a zona" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma</SelectItem>
+                          {(zones as any[])?.map((zone) => (
+                            <SelectItem key={zone.id} value={zone.id}>
+                              {zone.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Equipamento Específico</Label>
+                      <Select 
+                        value={templateForm.equipmentId} 
+                        onValueChange={(value) => setTemplateForm(prev => ({ ...prev, equipmentId: value }))}
+                      >
+                        <SelectTrigger data-testid="select-template-equipment">
+                          <SelectValue placeholder="Selecione o equipamento" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Nenhum</SelectItem>
-                          {Array.isArray(equipment) && equipment.map((equip: any) => (
+                          {(equipment as any[])?.map((equip) => (
                             <SelectItem key={equip.id} value={equip.id}>
                               {equip.name}
                             </SelectItem>
@@ -308,131 +462,343 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="version">Versão</Label>
-                    <Input
-                      id="version"
-                      data-testid="input-version"
-                      value={version}
-                      onChange={(e) => setVersion(e.target.value)}
-                      placeholder="1.0"
-                    />
-                  </div>
+                  {/* Adicionar item */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Adicionar Item ao Checklist</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Tipo</Label>
+                          <Select 
+                            value={newItem.type} 
+                            onValueChange={(value) => setNewItem(prev => ({ 
+                              ...prev, 
+                              type: value as ChecklistItem['type'],
+                              validation: {}
+                            }))}
+                          >
+                            <SelectTrigger data-testid="select-item-type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="text">Texto</SelectItem>
+                              <SelectItem value="number">Número</SelectItem>
+                              <SelectItem value="photo">Foto</SelectItem>
+                              <SelectItem value="checkbox">Checkbox</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Rótulo *</Label>
+                          <Input
+                            data-testid="input-item-label"
+                            value={newItem.label}
+                            onChange={(e) => setNewItem(prev => ({ ...prev, label: e.target.value }))}
+                            placeholder="Ex: Verificar pressão"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Observações</Label>
+                          <Input
+                            data-testid="input-item-description"
+                            value={newItem.description}
+                            onChange={(e) => setNewItem(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="Instruções opcionais..."
+                          />
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea
-                      id="description"
-                      data-testid="input-description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Descreva quando e como usar este template"
-                      rows={2}
-                    />
-                  </div>
+                      {/* Configurações avançadas */}
+                      {newItem.type && (
+                        <Card className="bg-slate-50">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm">Configurações - {getTypeLabel(newItem.type)}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            {/* Texto */}
+                            {newItem.type === 'text' && (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Mínimo de caracteres</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Ex: 10"
+                                    value={newItem.validation?.minLength || ""}
+                                    onChange={(e) => setNewItem(prev => ({
+                                      ...prev,
+                                      validation: {
+                                        ...prev.validation,
+                                        minLength: e.target.value ? parseInt(e.target.value) : undefined
+                                      }
+                                    }))}
+                                    className="h-8 text-xs"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Máximo de caracteres</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Ex: 500"
+                                    value={newItem.validation?.maxLength || ""}
+                                    onChange={(e) => setNewItem(prev => ({
+                                      ...prev,
+                                      validation: {
+                                        ...prev.validation,
+                                        maxLength: e.target.value ? parseInt(e.target.value) : undefined
+                                      }
+                                    }))}
+                                    className="h-8 text-xs"
+                                  />
+                                </div>
+                              </div>
+                            )}
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="items">Itens do Checklist (JSON) *</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addSampleItem}
-                        data-testid="button-add-sample"
+                            {/* Número */}
+                            {newItem.type === 'number' && (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Valor mínimo</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Ex: 0"
+                                    value={newItem.validation?.minValue || ""}
+                                    onChange={(e) => setNewItem(prev => ({
+                                      ...prev,
+                                      validation: {
+                                        ...prev.validation,
+                                        minValue: e.target.value ? parseInt(e.target.value) : undefined
+                                      }
+                                    }))}
+                                    className="h-8 text-xs"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Valor máximo</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Ex: 100"
+                                    value={newItem.validation?.maxValue || ""}
+                                    onChange={(e) => setNewItem(prev => ({
+                                      ...prev,
+                                      validation: {
+                                        ...prev.validation,
+                                        maxValue: e.target.value ? parseInt(e.target.value) : undefined
+                                      }
+                                    }))}
+                                    className="h-8 text-xs"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Foto */}
+                            {newItem.type === 'photo' && (
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Mínimo de fotos</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Ex: 1"
+                                    value={newItem.validation?.photoMinCount || ""}
+                                    onChange={(e) => setNewItem(prev => ({
+                                      ...prev,
+                                      validation: {
+                                        ...prev.validation,
+                                        photoMinCount: e.target.value ? parseInt(e.target.value) : undefined
+                                      }
+                                    }))}
+                                    className="h-8 text-xs"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Máximo de fotos</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Ex: 5"
+                                    value={newItem.validation?.photoMaxCount || ""}
+                                    onChange={(e) => setNewItem(prev => ({
+                                      ...prev,
+                                      validation: {
+                                        ...prev.validation,
+                                        photoMaxCount: e.target.value ? parseInt(e.target.value) : undefined
+                                      }
+                                    }))}
+                                    className="h-8 text-xs"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Campo obrigatório */}
+                            <div className="flex items-center space-x-2 pt-2">
+                              <Switch
+                                id="required"
+                                checked={newItem.required}
+                                onCheckedChange={(checked) => setNewItem(prev => ({ ...prev, required: checked }))}
+                              />
+                              <Label htmlFor="required" className="text-sm cursor-pointer">
+                                Campo obrigatório
+                              </Label>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      <Button 
+                        onClick={handleAddItem} 
+                        className="w-full"
+                        data-testid="button-add-item"
                       >
-                        Adicionar Exemplo
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Item
                       </Button>
-                    </div>
-                    <Textarea
-                      id="items"
-                      data-testid="input-items"
-                      value={checklistItems}
-                      onChange={(e) => setChecklistItems(e.target.value)}
-                      placeholder='[{"id": "1", "description": "Item 1", "required": true}]'
-                      rows={8}
-                      className="font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Formato: Array de objetos com id, description e required
-                    </p>
-                  </div>
-                </div>
+                    </CardContent>
+                  </Card>
 
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                    data-testid="button-cancel"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={handleCreate}
-                    disabled={createTemplateMutation.isPending}
-                    data-testid="button-save"
-                  >
-                    {createTemplateMutation.isPending ? "Criando..." : "Criar Template"}
-                  </Button>
+                  {/* Lista de itens adicionados */}
+                  {templateForm.items.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Itens do Checklist ({templateForm.items.length})</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {templateForm.items.map((item, index) => (
+                            <div 
+                              key={item.id} 
+                              className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100"
+                              data-testid={`item-${item.id}`}
+                            >
+                              <div className="flex items-center space-x-3 flex-1">
+                                <span className="text-sm font-medium text-slate-500 w-8">
+                                  {index + 1}.
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                  {getTypeIcon(item.type)}
+                                  <Badge variant="outline" className="text-xs">
+                                    {getTypeLabel(item.type)}
+                                  </Badge>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium text-sm">{item.label}</div>
+                                  {item.description && (
+                                    <div className="text-xs text-slate-500">{item.description}</div>
+                                  )}
+                                </div>
+                                {item.required && (
+                                  <Badge variant="destructive" className="text-xs">Obrigatório</Badge>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveItem(item.id)}
+                                data-testid={`button-remove-item-${item.id}`}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setIsCreateDialogOpen(false);
+                        setEditingTemplate(null);
+                        resetForm();
+                      }}
+                      data-testid="button-cancel"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleSubmit}
+                      disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
+                      data-testid="button-save-template"
+                    >
+                      {editingTemplate ? "Atualizar" : "Criar"} Template
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
-          </CardHeader>
+          </div>
+        </div>
+      </div>
 
+      {/* Content */}
+      <div className="p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Templates de Checklist de Manutenção</CardTitle>
+          </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Carregando templates...</div>
-            ) : !Array.isArray(templates) || templates.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhum template cadastrado
+            {!templates || (templates as any[]).length === 0 ? (
+              <div className="text-center py-12">
+                <List className="w-16 h-16 mx-auto text-slate-300 mb-4" />
+                <p className="text-slate-500">Nenhum template cadastrado</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Tipo de Equipamento</TableHead>
-                    <TableHead>Equipamento Específico</TableHead>
+                    <TableHead>Local</TableHead>
+                    <TableHead>Zona</TableHead>
+                    <TableHead>Equipamento</TableHead>
                     <TableHead>Versão</TableHead>
                     <TableHead>Itens</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Array.isArray(templates) && templates.map((template: any) => (
+                  {(templates as any[]).map((template) => (
                     <TableRow key={template.id} data-testid={`row-template-${template.id}`}>
                       <TableCell className="font-medium">{template.name}</TableCell>
                       <TableCell>
-                        {template.equipmentType ? (
-                          <Badge variant="outline" className="capitalize">
-                            {template.equipmentType}
-                          </Badge>
+                        {template.siteId ? (
+                          <Badge variant="outline">{getSiteName(template.siteId)}</Badge>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {template.zoneId ? (
+                          <Badge variant="outline">{getZoneName(template.zoneId)}</Badge>
+                        ) : (
+                          <span className="text-slate-400">-</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {template.equipmentId ? (
-                          <span>{getEquipmentName(template.equipmentId) || template.equipmentId}</span>
+                          <Badge variant="outline">{getEquipmentName(template.equipmentId)}</Badge>
                         ) : (
-                          <span className="text-muted-foreground">Genérico</span>
+                          <span className="text-slate-400">-</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{template.version}</Badge>
                       </TableCell>
                       <TableCell>
-                        {Array.isArray(template.items) ? template.items.length : 0} itens
+                        <Badge>{(template.items || []).length}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end space-x-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEdit(template)}
                             data-testid={`button-edit-${template.id}`}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit3 className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -440,7 +806,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                             onClick={() => handleDelete(template.id)}
                             data-testid={`button-delete-${template.id}`}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
                       </TableCell>
@@ -451,118 +817,6 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
             )}
           </CardContent>
         </Card>
-
-        {/* Edit Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Editar Template de Checklist</DialogTitle>
-            </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label>Nome do Template *</Label>
-                <Input
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tipo de Equipamento (Genérico)</Label>
-                  <Select value={equipmentType} onValueChange={setEquipmentType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      <SelectItem value="hvac">HVAC</SelectItem>
-                      <SelectItem value="eletrico">Elétrico</SelectItem>
-                      <SelectItem value="hidraulico">Hidráulico</SelectItem>
-                      <SelectItem value="mecanico">Mecânico</SelectItem>
-                      <SelectItem value="eletronico">Eletrônico</SelectItem>
-                      <SelectItem value="outro">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Equipamento Específico</Label>
-                  <Select value={selectedEquipmentId} onValueChange={setSelectedEquipmentId}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {Array.isArray(equipment) && equipment.map((equip: any) => (
-                        <SelectItem key={equip.id} value={equip.id}>
-                          {equip.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Versão</Label>
-                <Input
-                  value={version}
-                  onChange={(e) => setVersion(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Descrição</Label>
-                <Textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Itens do Checklist (JSON) *</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addSampleItem}
-                  >
-                    Adicionar Exemplo
-                  </Button>
-                </div>
-                <Textarea
-                  value={checklistItems}
-                  onChange={(e) => setChecklistItems(e.target.value)}
-                  rows={8}
-                  className="font-mono text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingTemplate(null);
-                  resetForm();
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleUpdate}
-                disabled={updateTemplateMutation.isPending}
-              >
-                {updateTemplateMutation.isPending ? "Atualizando..." : "Atualizar"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

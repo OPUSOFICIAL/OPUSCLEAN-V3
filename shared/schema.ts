@@ -504,9 +504,11 @@ export const maintenanceChecklistTemplates = pgTable("maintenance_checklist_temp
   customerId: varchar("customer_id").notNull().references(() => customers.id),
   name: varchar("name").notNull(),
   description: text("description"),
+  siteId: varchar("site_id").references(() => sites.id),
+  zoneId: varchar("zone_id").references(() => zones.id),
   equipmentType: varchar("equipment_type"),
   equipmentId: varchar("equipment_id").references(() => equipment.id),
-  version: integer("version").notNull().default(1),
+  version: varchar("version").notNull().default('1.0'),
   items: jsonb("items").notNull(),
   module: moduleEnum("module").notNull().default('maintenance'),
   isActive: boolean("is_active").default(true),
@@ -946,6 +948,14 @@ export const maintenanceChecklistTemplatesRelations = relations(maintenanceCheck
   customer: one(customers, {
     fields: [maintenanceChecklistTemplates.customerId],
     references: [customers.id],
+  }),
+  site: one(sites, {
+    fields: [maintenanceChecklistTemplates.siteId],
+    references: [sites.id],
+  }),
+  zone: one(zones, {
+    fields: [maintenanceChecklistTemplates.zoneId],
+    references: [zones.id],
   }),
   equipment: one(equipment, {
     fields: [maintenanceChecklistTemplates.equipmentId],
