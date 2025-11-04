@@ -113,7 +113,7 @@ export interface IStorage {
   deleteUser(id: string): Promise<void>;
 
   // Services
-  getServicesByZone(customerId: string, zoneId: string): Promise<Service[]>;
+  getServicesByZone(customerId: string, zoneId: string, module?: 'clean' | 'maintenance'): Promise<Service[]>;
   getService(id: string): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
   updateService(id: string, service: Partial<InsertService>): Promise<Service>;
@@ -1808,8 +1808,8 @@ export class DatabaseStorage implements IStorage {
         return null;
       }
 
-      // Get available services for this zone
-      const services = await this.getServicesByZone(site.customerId, zone.id);
+      // Get available services for this zone filtered by QR code module
+      const services = await this.getServicesByZone(site.customerId, zone.id, qrPoint.module);
 
       // Get default service and checklist if specified  
       let defaultService: Service | undefined;
@@ -1914,15 +1914,22 @@ export class DatabaseStorage implements IStorage {
       .orderBy(services.name);
   }
 
-  async getServicesByZone(customerId: string, zoneId: string): Promise<Service[]> {
+  async getServicesByZone(customerId: string, zoneId: string, module?: 'clean' | 'maintenance'): Promise<Service[]> {
     try {
-      // Return all active services for this customer
-      // Future enhancement: Filter by zone-specific services when needed
+      // Return all active services for this customer filtered by module if provided
+      const whereCondition = module
+        ? and(
+            eq(services.customerId, customerId),
+            eq(services.isActive, true),
+            eq(services.module, module)
+          )
+        : and(
+            eq(services.customerId, customerId),
+            eq(services.isActive, true)
+          );
+      
       const servicesList = await db.select().from(services)
-        .where(and(
-          eq(services.customerId, customerId),
-          eq(services.isActive, true)
-        ))
+        .where(whereCondition)
         .orderBy(services.name);
         
       return servicesList;
