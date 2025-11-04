@@ -2553,10 +2553,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Company ID is required" });
       }
       
-      // Default window: APENAS MÊS CORRENTE (1 mês)
+      // Default window: 12 MESES À FRENTE para planos de manutenção
       const now = new Date();
       const startDate = windowStart ? new Date(windowStart) : new Date(now.getFullYear(), now.getMonth(), 1);
-      const endDate = windowEnd ? new Date(windowEnd) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      // Para planos de manutenção, gerar OSs para os próximos 12 meses
+      const endDate = windowEnd ? new Date(windowEnd) : new Date(now.getFullYear(), now.getMonth() + 12, 0, 23, 59, 59);
       
       console.log(`[SCHEDULER MAINTENANCE] Gerando OSs de manutenção para período: ${startDate.toISOString()} até ${endDate.toISOString()}`);
       
