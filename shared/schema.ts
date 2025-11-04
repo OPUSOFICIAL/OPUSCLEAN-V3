@@ -15,6 +15,7 @@ export const qrCodeTypeEnum = pgEnum('qr_code_type', ['execucao', 'atendimento']
 export const frequencyEnum = pgEnum('frequency', ['diaria', 'semanal', 'mensal', 'trimestral', 'semestral', 'anual', 'turno', 'custom']);
 export const bathroomCounterActionEnum = pgEnum('bathroom_counter_action', ['increment', 'decrement', 'reset']);
 export const moduleEnum = pgEnum('module', ['clean', 'maintenance']);
+export const equipmentStatusEnum = pgEnum('equipment_status', ['operacional', 'em_manutencao', 'inoperante', 'aposentado']);
 
 // Sistema de permissões granulares
 export const permissionKeyEnum = pgEnum('permission_key', [
@@ -486,6 +487,7 @@ export const equipment = pgTable("equipment", {
   purchaseDate: date("purchase_date"),
   warrantyExpiry: date("warranty_expiry"),
   installationDate: date("installation_date"),
+  status: equipmentStatusEnum("status").notNull().default('operacional'),
   technicalSpecs: jsonb("technical_specs"),
   maintenanceNotes: text("maintenance_notes"),
   qrCodeUrl: varchar("qr_code_url"),

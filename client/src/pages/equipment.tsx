@@ -336,7 +336,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="operacional">Operacional</SelectItem>
-                          <SelectItem value="manutencao">Em Manutenção</SelectItem>
+                          <SelectItem value="em_manutencao">Em Manutenção</SelectItem>
                           <SelectItem value="inoperante">Inoperante</SelectItem>
                           <SelectItem value="aposentado">Aposentado</SelectItem>
                         </SelectContent>
@@ -469,12 +469,12 @@ export default function Equipment({ customerId }: EquipmentProps) {
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                           equip.status === 'operacional' ? 'bg-green-100 text-green-800' :
-                          equip.status === 'manutencao' ? 'bg-yellow-100 text-yellow-800' :
+                          equip.status === 'em_manutencao' ? 'bg-yellow-100 text-yellow-800' :
                           equip.status === 'inoperante' ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {equip.status === 'operacional' ? 'Operacional' :
-                           equip.status === 'manutencao' ? 'Em Manutenção' :
+                           equip.status === 'em_manutencao' ? 'Em Manutenção' :
                            equip.status === 'inoperante' ? 'Inoperante' :
                            'Aposentado'}
                         </span>
@@ -598,7 +598,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="operacional">Operacional</SelectItem>
-                      <SelectItem value="manutencao">Em Manutenção</SelectItem>
+                      <SelectItem value="em_manutencao">Em Manutenção</SelectItem>
                       <SelectItem value="inoperante">Inoperante</SelectItem>
                       <SelectItem value="aposentado">Aposentado</SelectItem>
                     </SelectContent>
