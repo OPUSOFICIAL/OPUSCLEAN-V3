@@ -134,7 +134,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     description: "",
     siteIds: [] as string[],
     zoneIds: [] as string[],
-    equipmentTag: "",
+    tagIds: [] as string[],
     version: "1.0",
     items: [] as ChecklistItem[]
   });
@@ -182,6 +182,12 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       if (!res.ok) throw new Error('Failed to fetch zones');
       return res.json();
     },
+  });
+
+  // Fetch equipment tags
+  const { data: equipmentTags = [] } = useQuery({
+    queryKey: [`/api/customers/${customerId}/equipment-tags`, { module: currentModule }],
+    enabled: !!customerId,
   });
 
   const createTemplateMutation = useMutation({
