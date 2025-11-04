@@ -1363,11 +1363,9 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
       const companyId = result.companyId || "company-opus-default";
       
       try {
-        const response = await apiRequest("POST", "/api/scheduler/generate-maintenance-work-orders", {
+        const data = await apiRequest("POST", "/api/scheduler/generate-maintenance-work-orders", {
           companyId
         });
-        
-        const data = await response.json();
         
         queryClient.invalidateQueries({ 
           queryKey: ["/api/customers", activeClientId, "work-orders"] 
