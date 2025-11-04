@@ -10,6 +10,20 @@ import { Clock, AlertTriangle, CheckCircle2, Search, Plus, Eye, Filter, RefreshC
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
+// Helper para parsear data local sem conversão de timezone
+const parseLocalDate = (dateString: string | null): Date | null => {
+  if (!dateString) return null;
+  
+  // Se a data já tem horário, usar como está
+  if (dateString.includes('T') || dateString.includes(' ')) {
+    return new Date(dateString);
+  }
+  
+  // Para datas sem horário (YYYY-MM-DD), criar data local
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 interface MultiSelectOption {
   value: string;
   label: string;
@@ -329,7 +343,7 @@ export default function WorkOrdersMobile({ customerId }: WorkOrdersMobileProps) 
                     <div>
                       <p className="text-gray-500 text-xs">Agendado</p>
                       <p className="font-medium text-blue-600" data-testid={`text-workorder-date-${wo.id}`}>
-                        {wo.scheduledDate ? new Date(wo.scheduledDate).toLocaleDateString('pt-BR') : '-'}
+                        {wo.scheduledDate ? parseLocalDate(wo.scheduledDate)?.toLocaleDateString('pt-BR') : '-'}
                       </p>
                     </div>
                   </div>

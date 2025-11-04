@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Building2, X, Wrench, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface ServiceSelectionModalProps {
   isOpen: boolean;
@@ -15,6 +15,20 @@ interface ServiceSelectionModalProps {
   scannedQrCode: string;
   onServiceSelect: (serviceId: string, checklistAnswers?: any, workOrderId?: string) => void;
 }
+
+// Helper para parsear data local sem conversão de timezone
+const parseLocalDate = (dateString: string | null): Date | null => {
+  if (!dateString) return null;
+  
+  // Se a data já tem horário, use parseISO normal
+  if (dateString.includes('T') || dateString.includes(' ')) {
+    return parseISO(dateString);
+  }
+  
+  // Para datas sem horário (YYYY-MM-DD), criar data local
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
 
 export default function ServiceSelectionModal({
   isOpen,
@@ -98,10 +112,10 @@ export default function ServiceSelectionModal({
     } else if (dateFilter === 'today') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const scheduledDate = wo.scheduledDate ? new Date(wo.scheduledDate) : null;
+      const scheduledDate = parseLocalDate(wo.scheduledDate);
       return scheduledDate && scheduledDate.toDateString() === today.toDateString();
     } else if (dateFilter === 'upcoming') {
-      const scheduledDate = wo.scheduledDate ? new Date(wo.scheduledDate) : null;
+      const scheduledDate = parseLocalDate(wo.scheduledDate);
       return scheduledDate && scheduledDate >= new Date();
     }
     return true;
@@ -269,7 +283,7 @@ export default function ServiceSelectionModal({
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                       {filteredWorkOrders.map((wo) => {
                         const isSelected = selectedWorkOrder === wo.id;
-                        const scheduledDate = wo.scheduledDate ? new Date(wo.scheduledDate) : null;
+                        const scheduledDate = parseLocalDate(wo.scheduledDate);
                         const isToday = scheduledDate && 
                           scheduledDate.toDateString() === new Date().toDateString();
                         
