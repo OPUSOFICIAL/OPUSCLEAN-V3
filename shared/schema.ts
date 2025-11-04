@@ -484,20 +484,6 @@ export const equipmentTypes = pgTable("equipment_types", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
-// 28b. TABELA: equipment_tags (Tags de Equipamentos)
-export const equipmentTags = pgTable("equipment_tags", {
-  id: varchar("id").primaryKey(),
-  companyId: varchar("company_id").notNull().references(() => companies.id),
-  customerId: varchar("customer_id").notNull().references(() => customers.id),
-  name: varchar("name").notNull(),
-  description: text("description"),
-  color: varchar("color"),
-  module: moduleEnum("module").notNull().default('maintenance'),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").default(sql`now()`),
-  updatedAt: timestamp("updated_at").default(sql`now()`),
-});
-
 // 29. TABELA: equipment (Equipamentos)
 export const equipment = pgTable("equipment", {
   id: varchar("id").primaryKey(),
@@ -507,7 +493,6 @@ export const equipment = pgTable("equipment", {
   zoneId: varchar("zone_id").notNull().references(() => zones.id),
   equipmentTypeId: varchar("equipment_type_id").references(() => equipmentTypes.id),
   name: varchar("name").notNull(),
-  tagIds: varchar("tag_ids").array(),
   internalCode: varchar("internal_code"),
   manufacturer: varchar("manufacturer"),
   model: varchar("model"),
@@ -1149,7 +1134,6 @@ export const insertPublicRequestLogSchema = createInsertSchema(publicRequestLogs
 export const insertWorkOrderCommentSchema = createInsertSchema(workOrderComments);
 
 // Maintenance insert schemas
-export const insertEquipmentTagSchema = createInsertSchema(equipmentTags).omit({ id: true });
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true });
 export const insertMaintenanceChecklistTemplateSchema = createInsertSchema(maintenanceChecklistTemplates).omit({ id: true });
 export const insertMaintenanceChecklistExecutionSchema = createInsertSchema(maintenanceChecklistExecutions).omit({ id: true });
@@ -1243,9 +1227,6 @@ export type InsertWorkOrderComment = z.infer<typeof insertWorkOrderCommentSchema
 // Maintenance types
 export type Equipment = typeof equipment.$inferSelect;
 export type InsertEquipment = z.infer<typeof insertEquipmentSchema>;
-
-export type EquipmentTag = typeof equipmentTags.$inferSelect;
-export type InsertEquipmentTag = z.infer<typeof insertEquipmentTagSchema>;
 
 export type MaintenanceChecklistTemplate = typeof maintenanceChecklistTemplates.$inferSelect;
 export type InsertMaintenanceChecklistTemplate = z.infer<typeof insertMaintenanceChecklistTemplateSchema>;
