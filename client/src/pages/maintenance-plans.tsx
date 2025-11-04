@@ -535,35 +535,35 @@ export default function MaintenancePlans() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {/* Legenda */}
-              <div className="flex flex-wrap gap-4 mb-6 p-4 bg-slate-50 rounded-lg border">
+              {/* Legenda por Frequência */}
+              <div className="flex flex-wrap gap-3 mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-green-500 rounded"></div>
-                  <span className="text-sm font-medium">Preventivas</span>
+                  <span className="text-sm font-medium text-slate-700">Diária</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                  <span className="text-sm font-medium">Preditivas</span>
+                  <span className="text-sm font-medium text-slate-700">Semanal</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-orange-500 rounded"></div>
-                  <span className="text-sm font-medium">Corretivas</span>
+                  <span className="text-sm font-medium text-slate-700">Turno</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-purple-500 rounded"></div>
-                  <span className="text-sm font-medium">Mensais</span>
+                  <span className="text-sm font-medium text-slate-700">Mensal</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-indigo-500 rounded"></div>
-                  <span className="text-sm font-medium">Trimestrais</span>
+                  <span className="text-sm font-medium text-slate-700">Trimestral</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-violet-500 rounded"></div>
-                  <span className="text-sm font-medium">Semestrais</span>
+                  <span className="text-sm font-medium text-slate-700">Semestral</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-rose-500 rounded"></div>
-                  <span className="text-sm font-medium">Anuais</span>
+                  <span className="text-sm font-medium text-slate-700">Anual</span>
                 </div>
               </div>
 
@@ -613,15 +613,21 @@ export default function MaintenancePlans() {
                             </div>
                             <div className="space-y-1">
                               {dayActivities.slice(0, 3).map((activity: any, idx: number) => {
-                                const typeColor = 
-                                  activity.type === 'preventiva' ? 'bg-green-500' :
-                                  activity.type === 'preditiva' ? 'bg-blue-500' :
-                                  'bg-orange-500';
+                                // Cores por frequência
+                                const frequencyColor = 
+                                  activity.frequency === 'diaria' ? 'bg-green-500' :
+                                  activity.frequency === 'semanal' ? 'bg-blue-500' :
+                                  activity.frequency === 'turno' ? 'bg-orange-500' :
+                                  activity.frequency === 'mensal' ? 'bg-purple-500' :
+                                  activity.frequency === 'trimestral' ? 'bg-indigo-500' :
+                                  activity.frequency === 'semestral' ? 'bg-violet-500' :
+                                  activity.frequency === 'anual' ? 'bg-rose-500' :
+                                  'bg-slate-500';
                                 
                                 return (
                                   <div
                                     key={idx}
-                                    className={`text-xs p-1.5 rounded text-white ${typeColor} truncate`}
+                                    className={`text-xs p-1.5 rounded text-white ${frequencyColor} truncate font-medium`}
                                     title={activity.name}
                                   >
                                     {activity.name.length > 20 ? activity.name.substring(0, 20) + '...' : activity.name}
