@@ -15,7 +15,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
-import type { EquipmentTag } from "@shared/schema";
 import { 
   Plus, 
   Settings, 
@@ -147,7 +146,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
   // Form states
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
-  const [tagIds, setTagIds] = useState<string[]>([]);
   const [equipmentName, setEquipmentName] = useState("");
   const [equipmentType, setEquipmentType] = useState("");
   const [manufacturer, setManufacturer] = useState("");
@@ -185,7 +183,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
   });
 
   // Fetch equipment tags
-  const { data: equipmentTags = [] } = useQuery<EquipmentTag[]>({
     queryKey: [`/api/customers/${customerId}/equipment-tags`, { module: currentModule }],
     enabled: !!customerId,
   });
@@ -273,7 +270,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
       customerId,
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
-      tagIds: tagIds.length > 0 ? tagIds : null,
       name: equipmentName,
       equipmentType,
       manufacturer: manufacturer || null,
@@ -291,7 +287,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setEditingEquipment(equip);
     setSelectedSiteId(equip.siteId);
     setSelectedZoneId(equip.zoneId || "");
-    setTagIds(equip.tagIds || []);
     setEquipmentName(equip.name);
     setEquipmentType(equip.equipmentType);
     setManufacturer(equip.manufacturer || "");
@@ -314,7 +309,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
       customerId,
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
-      tagIds: tagIds.length > 0 ? tagIds : null,
       name: equipmentName,
       equipmentType,
       manufacturer: manufacturer || null,
@@ -409,8 +403,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <MultiSelect
                       label="Tags"
-                      options={equipmentTags.map(tag => ({ value: tag.id, label: tag.name }))}
-                      value={tagIds}
                       onChange={setTagIds}
                       placeholder="Selecione as tags"
                       data-testid="select-equipment-tags"
@@ -584,9 +576,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {equip.tagIds && equip.tagIds.length > 0 ? (
-                            equip.tagIds.map((tagId: string) => {
-                              const tagObj = equipmentTags.find(t => t.id === tagId);
                               return tagObj ? (
                                 <Badge key={tagId} variant="secondary" className="text-xs">
                                   {tagObj.name}
@@ -692,8 +681,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
               <div className="grid grid-cols-2 gap-4">
                 <MultiSelect
                   label="Tags"
-                  options={equipmentTags.map(tag => ({ value: tag.id, label: tag.name }))}
-                  value={tagIds}
                   onChange={setTagIds}
                   placeholder="Selecione as tags"
                   data-testid="select-edit-equipment-tags"
