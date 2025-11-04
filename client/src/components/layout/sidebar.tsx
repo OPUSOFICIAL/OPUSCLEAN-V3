@@ -184,22 +184,18 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {allowedModules.includes('clean') && (
-                <SelectItem value="clean">
-                  <span className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-blue-600" />
-                    {MODULE_CONFIGS.clean.displayName}
-                  </span>
-                </SelectItem>
-              )}
-              {allowedModules.includes('maintenance') && (
-                <SelectItem value="maintenance">
-                  <span className="flex items-center gap-2">
-                    <Cog className="w-4 h-4 text-orange-600" />
-                    {MODULE_CONFIGS.maintenance.displayName}
-                  </span>
-                </SelectItem>
-              )}
+              <SelectItem value="clean" disabled={!allowedModules.includes('clean')}>
+                <span className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-blue-600" />
+                  {MODULE_CONFIGS.clean.displayName}
+                </span>
+              </SelectItem>
+              <SelectItem value="maintenance" disabled={!allowedModules.includes('maintenance')}>
+                <span className="flex items-center gap-2">
+                  <Cog className="w-4 h-4 text-orange-600" />
+                  {MODULE_CONFIGS.maintenance.displayName}
+                </span>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
