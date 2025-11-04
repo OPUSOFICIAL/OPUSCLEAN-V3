@@ -419,6 +419,10 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     return (equipmentTags as any[])?.find(t => t.id === tagId)?.name || tagId;
   };
 
+  const getEquipmentName = (equipmentId: string) => {
+    return (equipment as any[])?.find(e => e.id === equipmentId)?.name || equipmentId;
+  };
+
   if (isLoading) {
     return (
       <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -895,7 +899,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     <TableHead>Nome</TableHead>
                     <TableHead>Local</TableHead>
                     <TableHead>Zona</TableHead>
-                    <TableHead>Tags</TableHead>
+                    <TableHead>Aplicado a</TableHead>
                     <TableHead>Versão</TableHead>
                     <TableHead>Itens</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -921,14 +925,18 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {template.tagIds && template.tagIds.length > 0 ? (
+                          {template.equipmentId ? (
+                            <Badge variant="default" className="text-xs bg-purple-600">
+                              Equipamento: {getEquipmentName(template.equipmentId)}
+                            </Badge>
+                          ) : template.tagIds && template.tagIds.length > 0 ? (
                             template.tagIds.map((tagId: string) => (
                               <Badge key={tagId} variant="outline" className="text-xs">
-                                {getTagName(tagId)}
+                                Tag: {getTagName(tagId)}
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-slate-400">-</span>
+                            <span className="text-slate-400 text-xs">Todos</span>
                           )}
                         </div>
                       </TableCell>
