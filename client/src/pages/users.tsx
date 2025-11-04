@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
@@ -41,7 +41,7 @@ export default function Users({ customerId }: UsersProps) {
   const [userUsername, setUserUsername] = useState("");
   const [userRole, setUserRole] = useState<string>("");
   const [userPassword, setUserPassword] = useState("");
-  const [userModules, setUserModules] = useState<string[]>(['clean']);
+  const [userModules, setUserModules] = useState<string[]>([]);
   
   // Edit user states
   const [editName, setEditName] = useState("");
@@ -55,6 +55,18 @@ export default function Users({ customerId }: UsersProps) {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Resetar campos do formulário quando o diálogo fechar
+  useEffect(() => {
+    if (!isCreateDialogOpen) {
+      setUserName("");
+      setUserEmail("");
+      setUserUsername("");
+      setUserPassword("");
+      setUserRole("");
+      setUserModules([]);
+    }
+  }, [isCreateDialogOpen]);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["/api/customers", customerId, "users"],
@@ -84,7 +96,7 @@ export default function Users({ customerId }: UsersProps) {
       setUserUsername("");
       setUserPassword("");
       setUserRole("");
-      setUserModules(['clean']);
+      setUserModules([]);
     },
     onError: (error: any) => {
       const errorMessage = error?.message || "Erro ao criar usuário";
