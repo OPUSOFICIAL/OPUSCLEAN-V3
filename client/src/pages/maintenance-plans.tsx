@@ -655,21 +655,21 @@ export default function MaintenancePlans() {
                             </div>
                             <div className="space-y-1.5">
                               {dayActivities.slice(0, 2).map((activity: any, idx: number) => {
-                                // Cores por frequência
-                                const frequencyColor = 
-                                  activity.frequency === 'diaria' ? 'bg-green-500' :
-                                  activity.frequency === 'semanal' ? 'bg-blue-500' :
-                                  activity.frequency === 'turno' ? 'bg-orange-500' :
-                                  activity.frequency === 'mensal' ? 'bg-purple-500' :
-                                  activity.frequency === 'trimestral' ? 'bg-indigo-500' :
-                                  activity.frequency === 'semestral' ? 'bg-violet-500' :
-                                  activity.frequency === 'anual' ? 'bg-rose-500' :
-                                  'bg-slate-500';
+                                // Gradientes por frequência
+                                const frequencyGradient = 
+                                  activity.frequency === 'diaria' ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+                                  activity.frequency === 'semanal' ? 'bg-gradient-to-r from-blue-500 to-cyan-600' :
+                                  activity.frequency === 'turno' ? 'bg-gradient-to-r from-orange-500 to-amber-600' :
+                                  activity.frequency === 'mensal' ? 'bg-gradient-to-r from-purple-500 to-fuchsia-600' :
+                                  activity.frequency === 'trimestral' ? 'bg-gradient-to-r from-indigo-500 to-blue-700' :
+                                  activity.frequency === 'semestral' ? 'bg-gradient-to-r from-violet-500 to-purple-700' :
+                                  activity.frequency === 'anual' ? 'bg-gradient-to-r from-rose-500 to-pink-600' :
+                                  'bg-gradient-to-r from-slate-500 to-slate-600';
                                 
                                 return (
                                   <div
                                     key={idx}
-                                    className={`text-[10px] px-2 py-1 rounded-md text-white ${frequencyColor} truncate font-medium shadow-sm`}
+                                    className={`text-[10px] px-2 py-1 rounded-md text-white ${frequencyGradient} truncate font-medium shadow-md`}
                                     title={activity.name}
                                   >
                                     {activity.name.length > 15 ? activity.name.substring(0, 15) + '...' : activity.name}
