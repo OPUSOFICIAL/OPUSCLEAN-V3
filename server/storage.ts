@@ -133,12 +133,13 @@ export interface IStorage {
   deleteServiceType(id: string): Promise<void>;
 
   // Service Categories
-  getServiceCategoriesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceCategory[]>;
+  // CATEGORIAS - INTERFACE COMENTADA
+  /* getServiceCategoriesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceCategory[]>;
   getServiceCategoriesByType(typeId: string): Promise<ServiceCategory[]>;
   getServiceCategory(id: string): Promise<ServiceCategory | undefined>;
   createServiceCategory(serviceCategory: InsertServiceCategory): Promise<ServiceCategory>;
   updateServiceCategory(id: string, serviceCategory: Partial<InsertServiceCategory>): Promise<ServiceCategory>;
-  deleteServiceCategory(id: string): Promise<void>;
+  deleteServiceCategory(id: string): Promise<void>; */
 
   // Checklist Templates
   getChecklistTemplatesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]>;
@@ -2031,14 +2032,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteServiceType(id: string): Promise<void> {
-    // First, delete all service categories that reference this type
-    await db.delete(serviceCategories).where(eq(serviceCategories.typeId, id));
-    // Then delete the service type
+    // CATEGORIAS - COMENTADO (categorias foram removidas do sistema)
+    // await db.delete(serviceCategories).where(eq(serviceCategories.typeId, id));
     await db.delete(serviceTypes).where(eq(serviceTypes.id, id));
   }
 
-  // Service Categories
-  async getServiceCategoriesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceCategory[]> {
+  // CATEGORIAS - TODAS AS FUNÇÕES COMENTADAS (MANTER PARA REFERÊNCIA FUTURA)
+  /* async getServiceCategoriesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ServiceCategory[]> {
     const conditions = [eq(serviceCategories.customerId, customerId)];
     if (module) {
       conditions.push(eq(serviceCategories.module, module));
@@ -2077,7 +2077,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteServiceCategory(id: string): Promise<void> {
     await db.delete(serviceCategories).where(eq(serviceCategories.id, id));
-  }
+  } */
 
   // Checklist Templates
   async getChecklistTemplatesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]> {
