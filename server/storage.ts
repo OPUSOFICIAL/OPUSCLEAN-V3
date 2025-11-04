@@ -2463,7 +2463,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(equipment.customerId, activity.customerId));
         
         equipmentList = allEquipment.filter(equipItem => 
-          equipItem.tags && activity.tagIds.some((tagId: string) => equipItem.tags.includes(tagId))
+          equipItem.tagIds && activity.tagIds.some((tagId: string) => equipItem.tagIds.includes(tagId))
         );
       } else if (activity.applicationTarget === 'equipment' && activity.equipmentId) {
         // Get specific equipment

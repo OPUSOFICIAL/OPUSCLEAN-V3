@@ -245,6 +245,7 @@ export const workOrders = pgTable("work_orders", {
   zoneId: varchar("zone_id").references(() => zones.id),
   serviceId: varchar("service_id").references(() => services.id),
   cleaningActivityId: varchar("cleaning_activity_id").references(() => cleaningActivities.id),
+  maintenanceActivityId: varchar("maintenance_activity_id").references(() => maintenanceActivities.id),
   checklistTemplateId: varchar("checklist_template_id").references(() => checklistTemplates.id),
   equipmentId: varchar("equipment_id").references(() => equipment.id),
   maintenancePlanEquipmentId: varchar("maintenance_plan_equipment_id").references(() => maintenancePlanEquipments.id),
