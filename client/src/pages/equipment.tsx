@@ -6,9 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -17,102 +14,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
 import { 
   Plus, 
-  Settings, 
   Edit, 
   Trash2,
-  Wrench,
-  MapPin,
-  ChevronDown
+  Wrench
 } from "lucide-react";
 
 interface EquipmentProps {
   customerId: string;
-}
-
-function MultiSelect({
-  label,
-  options,
-  value,
-  onChange,
-  placeholder,
-  disabled,
-  "data-testid": dataTestId,
-}: {
-  label: string;
-  options: { value: string; label: string }[];
-  value: string[];
-  onChange: (vals: string[]) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  "data-testid"?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  
-  const toggleOption = (optionValue: string) => {
-    if (value.includes(optionValue)) {
-      onChange(value.filter(v => v !== optionValue));
-    } else {
-      onChange([...value, optionValue]);
-    }
-  };
-
-  const selectedLabels = options
-    .filter(opt => value.includes(opt.value))
-    .map(opt => opt.label)
-    .join(", ");
-
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-            disabled={disabled}
-            data-testid={dataTestId}
-          >
-            <span className="truncate">
-              {selectedLabels || placeholder || "Selecione..."}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <div className="max-h-64 overflow-auto p-2">
-            {options.length === 0 ? (
-              <div className="p-2 text-sm text-muted-foreground">
-                {placeholder || "Sem opções"}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {options.map((option) => (
-                  <div
-                    key={option.value}
-                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
-                    onClick={() => toggleOption(option.value)}
-                  >
-                    <Checkbox
-                      checked={value.includes(option.value)}
-                      onCheckedChange={() => toggleOption(option.value)}
-                    />
-                    <label className="flex-1 cursor-pointer text-sm">
-                      {option.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </PopoverContent>
-      </Popover>
-      <div className="text-xs text-slate-500">
-        {value?.length ? `${value.length} selecionado(s)` : "Nenhum selecionado"}
-      </div>
-    </div>
-  );
 }
 
 export default function Equipment({ customerId }: EquipmentProps) {
@@ -182,11 +90,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
     enabled: !!customerId,
   });
 
-  // Fetch equipment tags
-    queryKey: [`/api/customers/${customerId}/equipment-tags`, { module: currentModule }],
-    enabled: !!customerId,
-  });
-
   const createEquipmentMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/equipment", data);
@@ -243,7 +146,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const resetForm = () => {
     setSelectedSiteId("");
     setSelectedZoneId("");
-    setTagIds([]);
     setEquipmentName("");
     setEquipmentType("");
     setManufacturer("");
@@ -401,13 +303,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <MultiSelect
-                      label="Tags"
-                      onChange={setTagIds}
-                      placeholder="Selecione as tags"
-                      data-testid="select-equipment-tags"
-                    />
-
                     <div className="space-y-2">
                       <Label htmlFor="name">Nome do Equipamento *</Label>
                       <Input
@@ -418,9 +313,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         placeholder="Ex: Ar Condicionado"
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="type">Tipo de Equipamento *</Label>
                       <Select value={equipmentType} onValueChange={setEquipmentType}>
@@ -437,7 +330,9 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="status">Status</Label>
                       <Select value={status} onValueChange={setStatus}>
@@ -452,9 +347,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="manufacturer">Fabricante</Label>
                       <Input
@@ -465,7 +358,9 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         placeholder="Ex: Samsung"
                       />
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="model">Modelo</Label>
                       <Input
@@ -476,9 +371,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         placeholder="Ex: AR9000"
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="serialNumber">Número de Série</Label>
                       <Input
@@ -489,7 +382,9 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         placeholder="SN123456"
                       />
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="installationDate">Data de Instalação</Label>
                       <Input
@@ -500,17 +395,17 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         onChange={(e) => setInstallationDate(e.target.value)}
                       />
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="warrantyExpiry">Vencimento da Garantia</Label>
-                    <Input
-                      id="warrantyExpiry"
-                      type="date"
-                      data-testid="input-warranty-expiry"
-                      value={warrantyExpiry}
-                      onChange={(e) => setWarrantyExpiry(e.target.value)}
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="warrantyExpiry">Vencimento da Garantia</Label>
+                      <Input
+                        id="warrantyExpiry"
+                        type="date"
+                        data-testid="input-warranty-expiry"
+                        value={warrantyExpiry}
+                        onChange={(e) => setWarrantyExpiry(e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -558,7 +453,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Código</TableHead>
-                    <TableHead>TAG</TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Local</TableHead>
@@ -573,19 +467,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     <TableRow key={equip.id} data-testid={`row-equipment-${equip.id}`}>
                       <TableCell className="font-mono text-sm">
                         {equip.internalCode || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                              return tagObj ? (
-                                <Badge key={tagId} variant="secondary" className="text-xs">
-                                  {tagObj.name}
-                                </Badge>
-                              ) : null;
-                            })
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </div>
                       </TableCell>
                       <TableCell className="font-medium">{equip.name}</TableCell>
                       <TableCell className="capitalize">{equip.equipmentType}</TableCell>
@@ -679,13 +560,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <MultiSelect
-                  label="Tags"
-                  onChange={setTagIds}
-                  placeholder="Selecione as tags"
-                  data-testid="select-edit-equipment-tags"
-                />
-
                 <div className="space-y-2">
                   <Label>Nome do Equipamento *</Label>
                   <Input
@@ -693,9 +567,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     onChange={(e) => setEquipmentName(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Tipo de Equipamento *</Label>
                   <Select value={equipmentType} onValueChange={setEquipmentType}>
@@ -712,7 +584,9 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Status</Label>
                   <Select value={status} onValueChange={setStatus}>
@@ -727,9 +601,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Fabricante</Label>
                   <Input
@@ -737,7 +609,9 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     onChange={(e) => setManufacturer(e.target.value)}
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Modelo</Label>
                   <Input
@@ -745,9 +619,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     onChange={(e) => setModel(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Número de Série</Label>
                   <Input
@@ -755,7 +627,9 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     onChange={(e) => setSerialNumber(e.target.value)}
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Data de Instalação</Label>
                   <Input
@@ -764,15 +638,15 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     onChange={(e) => setInstallationDate(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>Vencimento da Garantia</Label>
-                <Input
-                  type="date"
-                  value={warrantyExpiry}
-                  onChange={(e) => setWarrantyExpiry(e.target.value)}
-                />
+                <div className="space-y-2">
+                  <Label>Vencimento da Garantia</Label>
+                  <Input
+                    type="date"
+                    value={warrantyExpiry}
+                    onChange={(e) => setWarrantyExpiry(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">

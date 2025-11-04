@@ -13,7 +13,7 @@ import {
   insertCustomRoleSchema, insertRolePermissionSchema, insertUserRoleAssignmentSchema,
   insertUserSiteAssignmentSchema, insertPublicRequestLogSchema, insertSiteShiftSchema,
   insertBathroomCounterLogSchema, insertCompanyCounterSchema,
-  insertEquipmentTagSchema, insertEquipmentSchema, insertMaintenanceChecklistTemplateSchema,
+  insertEquipmentSchema, insertMaintenanceChecklistTemplateSchema,
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
   insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
   type User
