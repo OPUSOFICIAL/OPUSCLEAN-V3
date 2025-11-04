@@ -45,12 +45,24 @@ export default function MobileDashboard() {
     queryKey: ["/api/customers", effectiveCustomerId, "work-orders", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
     queryFn: async () => {
-      let url = `/api/customers/${effectiveCustomerId}/work-orders`;
+      const params = new URLSearchParams();
+      
+      // Add module filter
+      if (currentModule) {
+        params.append('module', currentModule);
+      }
       
       // If we have a current location (from QR scan), filter by zone
       if (currentLocation?.zoneId) {
-        url += `?zoneId=${currentLocation.zoneId}`;
+        params.append('zoneId', currentLocation.zoneId);
       }
+      
+      // If user is an operator, filter by assignedTo
+      if (user?.id) {
+        params.append('assignedTo', user.id);
+      }
+      
+      const url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
       
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch work orders');
