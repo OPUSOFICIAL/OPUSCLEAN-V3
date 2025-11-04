@@ -4,7 +4,7 @@ import {
   serviceTypes, serviceCategories, serviceZones, dashboardGoals, auditLogs, customers,
   userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters,
   workOrderComments,
-  equipment, equipmentTypes, maintenanceChecklistTemplates, checklistAssociations,
+  equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
@@ -27,7 +27,6 @@ import {
   type Equipment, type InsertEquipment,
   type EquipmentType, type InsertEquipmentType,
   type MaintenanceChecklistTemplate, type InsertMaintenanceChecklistTemplate,
-  type ChecklistAssociation, type InsertChecklistAssociation,
   type MaintenanceChecklistExecution, type InsertMaintenanceChecklistExecution,
   type MaintenancePlan, type InsertMaintenancePlan,
   type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment
@@ -4329,52 +4328,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEquipmentType(id: string): Promise<void> {
     await db.delete(equipmentTypes).where(eq(equipmentTypes.id, id));
-  }
-
-  // Checklist Associations Implementation
-  
-  async getChecklistAssociationsByTemplate(templateId: string): Promise<ChecklistAssociation[]> {
-    return await db.select()
-      .from(checklistAssociations)
-      .where(eq(checklistAssociations.checklistTemplateId, templateId))
-      .orderBy(desc(checklistAssociations.createdAt));
-  }
-
-  async getChecklistAssociationsBySite(siteId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistAssociation[]> {
-    const conditions = [eq(checklistAssociations.siteId, siteId)];
-    if (module) {
-      conditions.push(eq(checklistAssociations.module, module));
-    }
-    return await db.select()
-      .from(checklistAssociations)
-      .where(and(...conditions))
-      .orderBy(desc(checklistAssociations.createdAt));
-  }
-
-  async getChecklistAssociation(id: string): Promise<ChecklistAssociation | undefined> {
-    const [result] = await db.select().from(checklistAssociations).where(eq(checklistAssociations.id, id));
-    return result;
-  }
-
-  async createChecklistAssociation(association: InsertChecklistAssociation): Promise<ChecklistAssociation> {
-    const id = nanoid();
-    const [newAssociation] = await db.insert(checklistAssociations).values({ 
-      ...association, 
-      id 
-    }).returning();
-    return newAssociation;
-  }
-
-  async updateChecklistAssociation(id: string, association: Partial<InsertChecklistAssociation>): Promise<ChecklistAssociation> {
-    const [updatedAssociation] = await db.update(checklistAssociations)
-      .set({ ...association, updatedAt: sql`now()` })
-      .where(eq(checklistAssociations.id, id))
-      .returning();
-    return updatedAssociation;
-  }
-
-  async deleteChecklistAssociation(id: string): Promise<void> {
-    await db.delete(checklistAssociations).where(eq(checklistAssociations.id, id));
   }
 }
 

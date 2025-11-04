@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
-import { Plus, Edit3, Trash2, List, FileText, Eye, Hash } from "lucide-react";
+import { Plus, Edit3, Trash2, List, FileText, Eye, Hash, ChevronDown } from "lucide-react";
 import { nanoid } from "nanoid";
 
 interface ChecklistItem {
@@ -36,6 +38,92 @@ interface MaintenanceChecklistTemplatesProps {
   customerId: string;
 }
 
+function MultiSelect({
+  label,
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  "data-testid": dataTestId,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (vals: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  "data-testid"?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  
+  const toggleOption = (optionValue: string) => {
+    if (value.includes(optionValue)) {
+      onChange(value.filter(v => v !== optionValue));
+    } else {
+      onChange([...value, optionValue]);
+    }
+  };
+
+  const selectedLabels = options
+    .filter(opt => value.includes(opt.value))
+    .map(opt => opt.label)
+    .join(", ");
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+            disabled={disabled}
+            data-testid={dataTestId}
+          >
+            <span className="truncate">
+              {selectedLabels || placeholder || "Selecione..."}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <div className="max-h-64 overflow-auto p-2">
+            {options.length === 0 ? (
+              <div className="p-2 text-sm text-muted-foreground">
+                {placeholder || "Sem opções"}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {options.map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                    onClick={() => toggleOption(option.value)}
+                  >
+                    <Checkbox
+                      checked={value.includes(option.value)}
+                      onCheckedChange={() => toggleOption(option.value)}
+                    />
+                    <label className="flex-1 cursor-pointer text-sm">
+                      {option.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <div className="text-xs text-slate-500">
+        {value?.length ? `${value.length} selecionado(s)` : "Nenhum selecionado"}
+      </div>
+    </div>
+  );
+}
+
 export default function MaintenanceChecklistTemplates({ customerId }: MaintenanceChecklistTemplatesProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
@@ -44,9 +132,9 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const [templateForm, setTemplateForm] = useState({
     name: "",
     description: "",
-    siteId: "none",
-    zoneId: "none",
-    equipmentId: "none",
+    siteIds: [] as string[],
+    zoneIds: [] as string[],
+    equipmentTag: "",
     version: "1.0",
     items: [] as ChecklistItem[]
   });
@@ -80,20 +168,20 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     enabled: !!customerId,
   });
 
-  // Fetch zones based on selected site
+  // Fetch zones based on selected sites
   const { data: zones = [] } = useQuery({
-    queryKey: [`/api/sites/${templateForm.siteId}/zones`, { module: currentModule }],
-    enabled: templateForm.siteId !== "none" && !!templateForm.siteId,
-  });
-
-  // Fetch equipment based on site and zone
-  const { data: equipment = [] } = useQuery({
-    queryKey: [`/api/customers/${customerId}/equipment`, { 
-      module: currentModule,
-      siteId: templateForm.siteId !== "none" ? templateForm.siteId : undefined,
-      zoneId: templateForm.zoneId !== "none" ? templateForm.zoneId : undefined,
-    }],
-    enabled: !!customerId,
+    queryKey: ["/api/zones", (templateForm.siteIds || []).join(","), { module: currentModule }],
+    enabled: Array.isArray(templateForm.siteIds) && templateForm.siteIds.length > 0,
+    queryFn: async () => {
+      const ids = templateForm.siteIds;
+      if (!ids || ids.length === 0) return [];
+      const qs = new URLSearchParams();
+      qs.set("siteIds", ids.join(","));
+      qs.set("module", currentModule);
+      const res = await fetch(`/api/zones?${qs.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch zones');
+      return res.json();
+    },
   });
 
   const createTemplateMutation = useMutation({
@@ -153,9 +241,9 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     setTemplateForm({
       name: "",
       description: "",
-      siteId: "none",
-      zoneId: "none",
-      equipmentId: "none",
+      siteIds: [],
+      zoneIds: [],
+      equipmentTag: "",
       version: "1.0",
       items: []
     });
@@ -233,11 +321,12 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       customerId,
       name: templateForm.name,
       description: templateForm.description || null,
-      siteId: templateForm.siteId === "none" ? null : templateForm.siteId,
-      zoneId: templateForm.zoneId === "none" ? null : templateForm.zoneId,
-      equipmentId: templateForm.equipmentId === "none" ? null : templateForm.equipmentId,
+      siteIds: templateForm.siteIds && templateForm.siteIds.length > 0 ? templateForm.siteIds : null,
+      zoneIds: templateForm.zoneIds && templateForm.zoneIds.length > 0 ? templateForm.zoneIds : null,
+      equipmentTag: templateForm.equipmentTag || null,
       version: templateForm.version,
       items: templateForm.items,
+      module: currentModule,
     };
 
     if (editingTemplate) {
@@ -252,9 +341,9 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     setTemplateForm({
       name: template.name,
       description: template.description || "",
-      siteId: template.siteId || "none",
-      zoneId: template.zoneId || "none",
-      equipmentId: template.equipmentId || "none",
+      siteIds: template.siteIds || [],
+      zoneIds: template.zoneIds || [],
+      equipmentTag: template.equipmentTag || "",
       version: template.version,
       items: template.items || []
     });
@@ -389,76 +478,36 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     />
                   </div>
 
-                  {/* Local, Zona e Equipamento */}
+                  {/* Local, Zona e TAG de Equipamento */}
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Local</Label>
-                      <Select 
-                        value={templateForm.siteId} 
-                        onValueChange={(value) => setTemplateForm(prev => ({ 
-                          ...prev, 
-                          siteId: value,
-                          zoneId: "none",
-                          equipmentId: "none"
-                        }))}
-                      >
-                        <SelectTrigger data-testid="select-template-site">
-                          <SelectValue placeholder="Selecione o local" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhum</SelectItem>
-                          {(sites as any[])?.map((site) => (
-                            <SelectItem key={site.id} value={site.id}>
-                              {site.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <MultiSelect
+                      label="Local *"
+                      options={(sites as any[])?.map(site => ({ value: site.id, label: site.name })) || []}
+                      value={templateForm.siteIds || []}
+                      onChange={(vals) => setTemplateForm(prev => ({ ...prev, siteIds: vals, zoneIds: [] }))}
+                      placeholder="Selecione um ou mais locais"
+                      data-testid="select-template-sites"
+                    />
+
+                    <MultiSelect
+                      label="Zona *"
+                      options={(zones as any[])?.map(zone => ({ value: zone.id, label: zone.name })) || []}
+                      value={templateForm.zoneIds || []}
+                      onChange={(vals) => setTemplateForm(prev => ({ ...prev, zoneIds: vals }))}
+                      placeholder={(templateForm.siteIds?.length ?? 0) > 0 ? "Selecione uma ou mais zonas" : "Selecione ao menos um local"}
+                      disabled={!(templateForm.siteIds?.length)}
+                      data-testid="select-template-zones"
+                    />
 
                     <div className="space-y-2">
-                      <Label>Zona</Label>
-                      <Select 
-                        value={templateForm.zoneId} 
-                        onValueChange={(value) => setTemplateForm(prev => ({ 
-                          ...prev, 
-                          zoneId: value,
-                          equipmentId: "none"
-                        }))}
-                        disabled={templateForm.siteId === "none"}
-                      >
-                        <SelectTrigger data-testid="select-template-zone">
-                          <SelectValue placeholder="Selecione a zona" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhuma</SelectItem>
-                          {(zones as any[])?.map((zone) => (
-                            <SelectItem key={zone.id} value={zone.id}>
-                              {zone.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Equipamento Específico</Label>
-                      <Select 
-                        value={templateForm.equipmentId} 
-                        onValueChange={(value) => setTemplateForm(prev => ({ ...prev, equipmentId: value }))}
-                      >
-                        <SelectTrigger data-testid="select-template-equipment">
-                          <SelectValue placeholder="Selecione o equipamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhum</SelectItem>
-                          {(equipment as any[])?.map((equip) => (
-                            <SelectItem key={equip.id} value={equip.id}>
-                              {equip.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="equipment-tag">TAG de Equipamento</Label>
+                      <Input
+                        id="equipment-tag"
+                        data-testid="input-template-equipment-tag"
+                        value={templateForm.equipmentTag}
+                        onChange={(e) => setTemplateForm(prev => ({ ...prev, equipmentTag: e.target.value }))}
+                        placeholder="Ex: AC-01, ELV-02"
+                      />
                     </div>
                   </div>
 

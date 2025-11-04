@@ -517,21 +517,10 @@ export const maintenanceChecklistTemplates = pgTable("maintenance_checklist_temp
   name: varchar("name").notNull(),
   description: text("description"),
   version: varchar("version").notNull().default('1.0'),
+  siteIds: varchar("site_ids").array(),
+  zoneIds: varchar("zone_ids").array(),
+  equipmentTag: varchar("equipment_tag"),
   items: jsonb("items").notNull(),
-  module: moduleEnum("module").notNull().default('maintenance'),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").default(sql`now()`),
-  updatedAt: timestamp("updated_at").default(sql`now()`),
-});
-
-// 31. TABELA: checklist_associations (Associações de Checklist com Locais/Zonas/Equipamentos)
-export const checklistAssociations = pgTable("checklist_associations", {
-  id: varchar("id").primaryKey(),
-  checklistTemplateId: varchar("checklist_template_id").notNull().references(() => maintenanceChecklistTemplates.id),
-  siteId: varchar("site_id").notNull().references(() => sites.id),
-  zoneId: varchar("zone_id").references(() => zones.id),
-  equipmentTypeId: varchar("equipment_type_id").references(() => equipmentTypes.id),
-  equipmentId: varchar("equipment_id").references(() => equipment.id),
   module: moduleEnum("module").notNull().default('maintenance'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
@@ -959,7 +948,6 @@ export const equipmentRelations = relations(equipment, ({ one, many }) => ({
     fields: [equipment.equipmentTypeId],
     references: [equipmentTypes.id],
   }),
-  checklistAssociations: many(checklistAssociations),
   maintenanceChecklistExecutions: many(maintenanceChecklistExecutions),
   maintenancePlanEquipments: many(maintenancePlanEquipments),
   workOrders: many(workOrders),
@@ -972,7 +960,6 @@ export const equipmentTypesRelations = relations(equipmentTypes, ({ one, many })
     references: [companies.id],
   }),
   equipment: many(equipment),
-  checklistAssociations: many(checklistAssociations),
 }));
 
 export const maintenanceChecklistTemplatesRelations = relations(maintenanceChecklistTemplates, ({ one, many }) => ({
@@ -984,32 +971,8 @@ export const maintenanceChecklistTemplatesRelations = relations(maintenanceCheck
     fields: [maintenanceChecklistTemplates.customerId],
     references: [customers.id],
   }),
-  checklistAssociations: many(checklistAssociations),
   maintenanceChecklistExecutions: many(maintenanceChecklistExecutions),
   maintenancePlanEquipments: many(maintenancePlanEquipments),
-}));
-
-export const checklistAssociationsRelations = relations(checklistAssociations, ({ one }) => ({
-  checklistTemplate: one(maintenanceChecklistTemplates, {
-    fields: [checklistAssociations.checklistTemplateId],
-    references: [maintenanceChecklistTemplates.id],
-  }),
-  site: one(sites, {
-    fields: [checklistAssociations.siteId],
-    references: [sites.id],
-  }),
-  zone: one(zones, {
-    fields: [checklistAssociations.zoneId],
-    references: [zones.id],
-  }),
-  equipmentType: one(equipmentTypes, {
-    fields: [checklistAssociations.equipmentTypeId],
-    references: [equipmentTypes.id],
-  }),
-  equipment: one(equipment, {
-    fields: [checklistAssociations.equipmentId],
-    references: [equipment.id],
-  }),
 }));
 
 export const maintenanceChecklistExecutionsRelations = relations(maintenanceChecklistExecutions, ({ one }) => ({
