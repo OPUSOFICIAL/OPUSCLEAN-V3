@@ -45,7 +45,7 @@ export default function Login() {
       
       // Check available modules for the user
       try {
-        const modulesResponse = await fetch("/api/auth/available-modules", {
+        const modulesResponse = await fetch("/api/auth/user-modules", {
           headers: {
             "Authorization": `Bearer ${token}`,
           },

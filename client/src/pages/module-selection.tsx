@@ -13,8 +13,8 @@ export default function ModuleSelection() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Get available modules for the user
-  const { data: modulesData, isLoading: isLoadingModules } = useQuery<{ modules: string[] }>({
-    queryKey: ["/api/auth/available-modules"],
+  const { data: modulesData, isLoading: isLoadingModules } = useQuery<{ modules: string[]; defaultModule: string }>({
+    queryKey: ["/api/auth/user-modules"],
   });
 
   const availableModules = modulesData?.modules || [];
