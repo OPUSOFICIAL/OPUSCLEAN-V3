@@ -598,17 +598,17 @@ export const maintenanceActivities = pgTable("maintenance_activities", {
   customerId: varchar("customer_id").notNull().references(() => customers.id),
   
   // Novos campos para múltiplos locais/zonas
-  siteIds: varchar("site_ids").array(),
-  zoneIds: varchar("zone_ids").array(),
+  siteIds: varchar("site_ids").array().notNull(),
+  zoneIds: varchar("zone_ids").array().notNull(),
   
   // Seleção de aplicação: tags ou equipamento específico
-  applicationTarget: varchar("application_target"), // "tags" ou "equipment"
+  applicationTarget: varchar("application_target").notNull(), // "tags" ou "equipment"
   tagIds: varchar("tag_ids").array(), // Array de tags quando applicationTarget = "tags"
   equipmentId: varchar("equipment_id").references(() => equipment.id), // Equipamento específico quando applicationTarget = "equipment"
   
-  // Campos antigos mantidos para compatibilidade (deprecated)
-  siteId: varchar("site_id").references(() => sites.id),
-  zoneId: varchar("zone_id").references(() => zones.id),
+  // Campos antigos mantidos para compatibilidade (deprecated) - agora nullable
+  siteId: varchar("site_id"),
+  zoneId: varchar("zone_id"),
   
   name: varchar("name").notNull(),
   description: text("description"),

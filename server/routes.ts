@@ -2428,6 +2428,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create maintenance activity
   app.post("/api/maintenance-activities", async (req, res) => {
     try {
+      console.log("[DEBUG] Request body:", JSON.stringify(req.body, null, 2));
+      
       const cleanedData = { 
         ...req.body,
         module: 'maintenance'
@@ -2452,6 +2454,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cleanedData.endTime = null;
       }
       
+      console.log("[DEBUG] Cleaned data:", JSON.stringify(cleanedData, null, 2));
+      
       const activityData = insertMaintenanceActivitySchema.parse(cleanedData);
       
       const activityWithId = {
@@ -2463,6 +2467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(activity);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("[DEBUG] Zod validation errors:", JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       console.error("Error creating maintenance activity:", error);
