@@ -28,6 +28,10 @@ An Express.js server, written in TypeScript, follows RESTful API principles. It 
 
 The platform implements a hierarchical multi-tenancy model (Companies > Sites > Zones) with robust role-based access controls and client-specific, module-isolated data filtering. Each module (OPUS Clean, OPUS Manutenção) has completely isolated data for sites, zones, work orders, QR codes, and configuration tables (service categories, checklist templates, SLA configs, equipment, maintenance checklist templates, maintenance plans).
 
+### Equipment Tag System (Maintenance Module)
+
+The Maintenance module uses a tag-based system for equipment identification and checklist assignment. Equipment can be linked to multiple tags (e.g., "Coffee Machine", "AC Unit"), and maintenance checklist templates can target all equipment with selected tags. This enables efficient maintenance management across similar equipment types. Tags are customer-specific and module-specific, managed through the Equipment Tags configuration page accessible via sidebar navigation.
+
 ### QR Code System
 
 Supports two types of QR codes: Execution QRs for internal staff work order management and Public QRs for end-users to submit service requests, which automatically generate corrective work orders.
