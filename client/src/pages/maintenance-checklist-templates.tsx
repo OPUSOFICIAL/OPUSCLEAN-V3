@@ -249,7 +249,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: "",
       siteIds: [],
       zoneIds: [],
-      equipmentTag: "",
+      tagIds: [],
       version: "1.0",
       items: []
     });
@@ -329,7 +329,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: templateForm.description || null,
       siteIds: templateForm.siteIds && templateForm.siteIds.length > 0 ? templateForm.siteIds : null,
       zoneIds: templateForm.zoneIds && templateForm.zoneIds.length > 0 ? templateForm.zoneIds : null,
-      equipmentTag: templateForm.equipmentTag || null,
+      tagIds: templateForm.tagIds && templateForm.tagIds.length > 0 ? templateForm.tagIds : null,
       version: templateForm.version,
       items: templateForm.items,
       module: currentModule,
@@ -349,7 +349,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       description: template.description || "",
       siteIds: template.siteIds || [],
       zoneIds: template.zoneIds || [],
-      equipmentTag: template.equipmentTag || "",
+      tagIds: template.tagIds || [],
       version: template.version,
       items: template.items || []
     });
@@ -390,9 +390,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     return (zones as any[])?.find(z => z.id === zoneId)?.name || null;
   };
 
-  const getEquipmentName = (equipmentId: string | null) => {
-    if (!equipmentId) return null;
-    return (equipment as any[])?.find(e => e.id === equipmentId)?.name || null;
+  const getTagName = (tagId: string) => {
+    return (equipmentTags as any[])?.find(t => t.id === tagId)?.name || tagId;
   };
 
   if (isLoading) {
@@ -505,16 +504,14 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                       data-testid="select-template-zones"
                     />
 
-                    <div className="space-y-2">
-                      <Label htmlFor="equipment-tag">TAG de Equipamento</Label>
-                      <Input
-                        id="equipment-tag"
-                        data-testid="input-template-equipment-tag"
-                        value={templateForm.equipmentTag}
-                        onChange={(e) => setTemplateForm(prev => ({ ...prev, equipmentTag: e.target.value }))}
-                        placeholder="Ex: AC-01, ELV-02"
-                      />
-                    </div>
+                    <MultiSelect
+                      label="Tags de Equipamentos (Opcional)"
+                      options={(equipmentTags as any[])?.map(tag => ({ value: tag.id, label: tag.name })) || []}
+                      value={templateForm.tagIds || []}
+                      onChange={(val) => setTemplateForm(prev => ({ ...prev, tagIds: val }))}
+                      placeholder="Selecione tags para aplicar este template"
+                      data-testid="select-template-tags"
+                    />
                   </div>
 
                   {/* Adicionar item */}
@@ -808,7 +805,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     <TableHead>Nome</TableHead>
                     <TableHead>Local</TableHead>
                     <TableHead>Zona</TableHead>
-                    <TableHead>Equipamento</TableHead>
+                    <TableHead>Tags</TableHead>
                     <TableHead>Versão</TableHead>
                     <TableHead>Itens</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -833,11 +830,17 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                         )}
                       </TableCell>
                       <TableCell>
-                        {template.equipmentId ? (
-                          <Badge variant="outline">{getEquipmentName(template.equipmentId)}</Badge>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {template.tagIds && template.tagIds.length > 0 ? (
+                            template.tagIds.map((tagId: string) => (
+                              <Badge key={tagId} variant="outline" className="text-xs">
+                                {getTagName(tagId)}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{template.version}</Badge>
