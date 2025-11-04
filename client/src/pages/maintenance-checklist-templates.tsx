@@ -439,6 +439,11 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     });
   };
 
+  const getServiceName = (serviceId: string | null) => {
+    if (!serviceId) return null;
+    return (services as any[])?.find(s => s.id === serviceId)?.name || null;
+  };
+
   if (isLoading) {
     return (
       <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -881,6 +886,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
+                    <TableHead>Serviço</TableHead>
                     <TableHead>Local</TableHead>
                     <TableHead>Zona</TableHead>
                     <TableHead>Aplicado a</TableHead>
@@ -893,6 +899,15 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                   {(templates as any[]).map((template) => (
                     <TableRow key={template.id} data-testid={`row-template-${template.id}`}>
                       <TableCell className="font-medium">{template.name}</TableCell>
+                      <TableCell>
+                        {template.serviceId ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            {getServiceName(template.serviceId)}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-400 text-xs">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {template.siteId ? (
                           <Badge variant="outline">{getSiteName(template.siteId)}</Badge>
