@@ -82,7 +82,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     
     // OPUS Manutenção - Menu items específicos
     ...(currentModule === 'maintenance' && can.viewQRCodes(activeClientId) ? [{ path: "/equipment", label: "Equipamentos", icon: Wrench }] : []),
-    ...(currentModule === 'maintenance' && can.viewServiceSettings(activeClientId) ? [{ path: "/equipment-tags", label: "Tags de Equipamentos", icon: Tag }] : []),
     ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ path: "/maintenance-plans", label: "Planos de Manutenção", icon: CalendarCheck }] : []),
     ...(currentModule === 'maintenance' && can.viewChecklists(activeClientId) ? [{ path: "/maintenance-checklist-templates", label: "Templates de Checklist", icon: List }] : []),
     
