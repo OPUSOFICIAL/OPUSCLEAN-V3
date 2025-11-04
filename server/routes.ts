@@ -1374,8 +1374,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Service Categories
-  app.get("/api/customers/:customerId/service-categories", async (req, res) => {
+  // CATEGORIAS - TODAS AS ROTAS COMENTADAS (MANTER PARA REFERÊNCIA FUTURA)
+  /* app.get("/api/customers/:customerId/service-categories", async (req, res) => {
     try {
       const module = req.query.module as 'clean' | 'maintenance' | undefined;
       const serviceCategories = await storage.getServiceCategoriesByCustomer(req.params.customerId, module);
@@ -1444,7 +1444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to delete service category" });
     }
-  });
+  }); */
 
   // Work Orders
   app.get("/api/companies/:companyId/work-orders", async (req, res) => {
