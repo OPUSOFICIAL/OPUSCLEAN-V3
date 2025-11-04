@@ -492,6 +492,7 @@ export const equipment = pgTable("equipment", {
   zoneId: varchar("zone_id").notNull().references(() => zones.id),
   equipmentTypeId: varchar("equipment_type_id").references(() => equipmentTypes.id),
   name: varchar("name").notNull(),
+  tag: varchar("tag"),
   internalCode: varchar("internal_code"),
   manufacturer: varchar("manufacturer"),
   model: varchar("model"),

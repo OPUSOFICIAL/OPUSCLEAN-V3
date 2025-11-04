@@ -35,6 +35,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
   const [internalCode, setInternalCode] = useState("");
+  const [tag, setTag] = useState("");
   const [equipmentName, setEquipmentName] = useState("");
   const [equipmentType, setEquipmentType] = useState("");
   const [manufacturer, setManufacturer] = useState("");
@@ -128,6 +129,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSelectedSiteId("");
     setSelectedZoneId("");
     setInternalCode("");
+    setTag("");
     setEquipmentName("");
     setEquipmentType("");
     setManufacturer("");
@@ -155,6 +157,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
       internalCode,
+      tag: tag || null,
       name: equipmentName,
       equipmentType,
       manufacturer: manufacturer || null,
@@ -172,6 +175,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSelectedSiteId(equip.siteId);
     setSelectedZoneId(equip.zoneId || "");
     setInternalCode(equip.internalCode || "");
+    setTag(equip.tag || "");
     setEquipmentName(equip.name);
     setEquipmentType(equip.equipmentType);
     setManufacturer(equip.manufacturer || "");
@@ -195,6 +199,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
       internalCode,
+      tag: tag || null,
       name: equipmentName,
       equipmentType,
       manufacturer: manufacturer || null,
@@ -286,7 +291,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="internalCode">Código Interno</Label>
                       <Input
@@ -295,6 +300,17 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         value={internalCode}
                         onChange={(e) => setInternalCode(e.target.value)}
                         placeholder="EQ-001"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tag">TAG</Label>
+                      <Input
+                        id="tag"
+                        data-testid="input-equipment-tag"
+                        value={tag}
+                        onChange={(e) => setTag(e.target.value)}
+                        placeholder="AC-01, ELV-02"
                       />
                     </div>
 
@@ -448,6 +464,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Código</TableHead>
+                    <TableHead>TAG</TableHead>
                     <TableHead>Nome</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Local</TableHead>
@@ -462,6 +479,9 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     <TableRow key={equip.id} data-testid={`row-equipment-${equip.id}`}>
                       <TableCell className="font-mono text-sm">
                         {equip.internalCode || "-"}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm font-medium">
+                        {equip.tag || "-"}
                       </TableCell>
                       <TableCell className="font-medium">{equip.name}</TableCell>
                       <TableCell className="capitalize">{equip.equipmentType}</TableCell>
@@ -554,12 +574,21 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Código Interno</Label>
                   <Input
                     value={internalCode}
                     onChange={(e) => setInternalCode(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>TAG</Label>
+                  <Input
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
+                    placeholder="AC-01, ELV-02"
                   />
                 </div>
 
