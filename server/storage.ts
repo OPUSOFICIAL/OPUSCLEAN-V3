@@ -2507,6 +2507,17 @@ export class DatabaseStorage implements IStorage {
             title = `${activity.name} - ${equipItem.name} - ${occ.occurrence}ª/${occ.total}`;
           }
           
+          // Verify if checklist template exists
+          let validChecklistTemplateId = null;
+          if (activity.checklistTemplateId) {
+            const [template] = await db.select().from(checklistTemplates)
+              .where(eq(checklistTemplates.id, activity.checklistTemplateId))
+              .limit(1);
+            if (template) {
+              validChecklistTemplateId = activity.checklistTemplateId;
+            }
+          }
+          
           // Create work order
           const workOrderData = {
             id: crypto.randomUUID(),
@@ -2514,7 +2525,7 @@ export class DatabaseStorage implements IStorage {
             companyId: companyId,
             equipmentId: equipItem.id,
             maintenanceActivityId: activity.id,
-            checklistTemplateId: activity.checklistTemplateId,
+            checklistTemplateId: validChecklistTemplateId,
             type: 'programada' as const,
             status: 'aberta' as const,
             priority: 'media' as const,
