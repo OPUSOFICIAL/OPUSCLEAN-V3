@@ -21,8 +21,8 @@ export function useUserModules() {
 
   // Normalizar: garantir que sempre tenha pelo menos um módulo
   const rawModules = data?.modules || [];
-  const allowedModules = rawModules.length > 0 ? rawModules : ['clean'];
-  const defaultModule = data?.defaultModule || 'clean';
+  const allowedModules: ModuleType[] = rawModules.length > 0 ? rawModules : ['clean'];
+  const defaultModule: ModuleType = data?.defaultModule || 'clean';
   const hasMultipleModules = allowedModules.length > 1;
   const hasSingleModule = allowedModules.length === 1;
 
