@@ -50,10 +50,13 @@ export default function ServiceSelectionModal({
   const loadServices = async () => {
     setIsLoadingServices(true);
     try {
-      const response = await fetch(`/api/customers/${resolvedContext.customer.id}/services`);
+      const module = resolvedContext?.qrPoint?.module || 'clean';
+      const response = await fetch(`/api/customers/${resolvedContext.customer.id}/services?module=${module}`);
       if (response.ok) {
         const data = await response.json();
-        setServices(data || []);
+        // Additional filter by module on client side to ensure consistency
+        const filteredData = data.filter((s: any) => s.module === module);
+        setServices(filteredData || []);
       }
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
@@ -66,18 +69,20 @@ export default function ServiceSelectionModal({
     setIsLoadingWorkOrders(true);
     setSelectedWorkOrder(null);
     try {
-      const response = await fetch(`/api/customers/${resolvedContext.customer.id}/work-orders`);
+      const module = resolvedContext?.qrPoint?.module || 'clean';
+      const response = await fetch(`/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}`);
       if (response.ok) {
         const allWorkOrders = await response.json();
         
-        // Filtrar work orders do serviço selecionado e zona atual que estão pendentes ou pausadas
+        // Filtrar work orders do serviço selecionado, zona atual e módulo correto que estão pendentes ou pausadas
         const filtered = allWorkOrders.filter((wo: any) => 
           wo.serviceId === serviceId && 
           wo.zoneId === resolvedContext.zone.id &&
+          wo.module === module &&
           (wo.status === 'aberta' || wo.status === 'em_execucao' || wo.status === 'pausada')
         );
         
-        console.log('[SERVICE MODAL] Work orders filtradas:', filtered);
+        console.log('[SERVICE MODAL] Work orders filtradas por módulo:', module, filtered);
         setAvailableWorkOrders(filtered);
       }
     } catch (error) {
