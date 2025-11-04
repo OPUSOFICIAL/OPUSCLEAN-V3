@@ -2313,17 +2313,91 @@ export class DatabaseStorage implements IStorage {
           break;
           
         case 'mensal':
-          // Monthly: 1 OS por mês
+          // Monthly: Verifica se é o primeiro dia do mês no loop para adicionar uma ocorrência
           const monthDay = (frequencyConfig as any)?.monthDay || 1;
-          if (current.getDate() === monthDay) {
-            const occurrence = new Date(current);
-            occurrence.setHours(10, 0, 0, 0); // Fixed time for monthly tasks
-            if (occurrence >= effectiveStart && occurrence <= effectiveEnd) {
+          
+          // Só processar uma vez por mês - verificar se estamos no primeiro dia do mês atual no loop
+          if (current.getDate() === 1 || current.getTime() === effectiveStart.getTime()) {
+            // Calcular a data da ocorrência para este mês
+            const occurrenceDate = new Date(current.getFullYear(), current.getMonth(), monthDay, 10, 0, 0, 0);
+            
+            // Verificar se a ocorrência está dentro da janela válida
+            if (occurrenceDate >= effectiveStart && occurrenceDate <= effectiveEnd) {
               occurrences.push({
-                date: new Date(occurrence),
+                date: new Date(occurrenceDate),
                 occurrence: 1,
                 total: 1
               });
+            }
+          }
+          break;
+          
+        case 'trimestral':
+          // Quarterly: 1 OS a cada 3 meses
+          const quarterMonthDay = (frequencyConfig as any)?.monthDay || 1;
+          
+          if (current.getDate() === 1 || current.getTime() === effectiveStart.getTime()) {
+            const currentMonth = current.getMonth();
+            const currentYear = current.getFullYear();
+            
+            // Verificar se este é um mês de execução trimestral (0, 3, 6, 9)
+            if (currentMonth % 3 === 0) {
+              const occurrenceDate = new Date(currentYear, currentMonth, quarterMonthDay, 10, 0, 0, 0);
+              
+              if (occurrenceDate >= effectiveStart && occurrenceDate <= effectiveEnd) {
+                occurrences.push({
+                  date: new Date(occurrenceDate),
+                  occurrence: 1,
+                  total: 1
+                });
+              }
+            }
+          }
+          break;
+          
+        case 'semestral':
+          // Semi-annual: 1 OS a cada 6 meses
+          const semiAnnualMonthDay = (frequencyConfig as any)?.monthDay || 1;
+          
+          if (current.getDate() === 1 || current.getTime() === effectiveStart.getTime()) {
+            const currentMonth = current.getMonth();
+            const currentYear = current.getFullYear();
+            
+            // Verificar se este é um mês de execução semestral (0, 6)
+            if (currentMonth === 0 || currentMonth === 6) {
+              const occurrenceDate = new Date(currentYear, currentMonth, semiAnnualMonthDay, 10, 0, 0, 0);
+              
+              if (occurrenceDate >= effectiveStart && occurrenceDate <= effectiveEnd) {
+                occurrences.push({
+                  date: new Date(occurrenceDate),
+                  occurrence: 1,
+                  total: 1
+                });
+              }
+            }
+          }
+          break;
+          
+        case 'anual':
+          // Annual: 1 OS por ano
+          const annualMonthDay = (frequencyConfig as any)?.monthDay || 1;
+          const annualMonth = ((frequencyConfig as any)?.month || 1) - 1; // 0-indexed
+          
+          if (current.getDate() === 1 || current.getTime() === effectiveStart.getTime()) {
+            const currentMonth = current.getMonth();
+            const currentYear = current.getFullYear();
+            
+            // Verificar se este é o mês de execução anual
+            if (currentMonth === annualMonth) {
+              const occurrenceDate = new Date(currentYear, annualMonth, annualMonthDay, 10, 0, 0, 0);
+              
+              if (occurrenceDate >= effectiveStart && occurrenceDate <= effectiveEnd) {
+                occurrences.push({
+                  date: new Date(occurrenceDate),
+                  occurrence: 1,
+                  total: 1
+                });
+              }
             }
           }
           break;

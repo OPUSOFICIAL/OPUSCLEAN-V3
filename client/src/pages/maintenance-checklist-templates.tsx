@@ -537,14 +537,14 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                   <div className="space-y-2">
                     <Label htmlFor="service">Serviço (Opcional)</Label>
                     <Select
-                      value={templateForm.serviceId}
-                      onValueChange={(value) => setTemplateForm(prev => ({ ...prev, serviceId: value }))}
+                      value={templateForm.serviceId || "none"}
+                      onValueChange={(value) => setTemplateForm(prev => ({ ...prev, serviceId: value === "none" ? "" : value }))}
                     >
                       <SelectTrigger data-testid="select-template-service">
                         <SelectValue placeholder="Selecione um serviço" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
+                        <SelectItem value="none">Nenhum</SelectItem>
                         {(services as any[])?.map((service: any) => (
                           <SelectItem key={service.id} value={service.id}>
                             {service.name}
