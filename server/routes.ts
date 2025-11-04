@@ -2602,6 +2602,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const activity = await storage.createMaintenanceActivity(activityWithId as any);
+      
+      // Generate work orders for current month immediately
+      if (activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        
+        try {
+          await storage.generateMaintenanceWorkOrders(
+            activity.companyId,
+            startOfMonth,
+            endOfMonth
+          );
+          console.log(`[PLAN CREATED] Generated work orders for current month for activity ${activity.id}`);
+        } catch (error) {
+          console.error(`[PLAN CREATED] Failed to generate work orders:`, error);
+          // Don't fail the request if work order generation fails
+        }
+      }
+      
       res.status(201).json(activity);
     } catch (error) {
       if (error instanceof z.ZodError) {
