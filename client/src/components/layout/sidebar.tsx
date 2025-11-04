@@ -45,7 +45,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   const { user, canManageClients } = useAuth();
   const { can } = usePermissions();
   const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
-  const { currentModule, setModule, moduleConfig } = useModule();
+  const { currentModule, setModule, moduleConfig, allowedModules, hasMultipleModules } = useModule();
   
   // Usuários do tipo customer_user não podem alterar o cliente
   const isCustomerUser = user?.userType === 'customer_user';
@@ -175,8 +175,8 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
         </div>
       )}
 
-      {/* Module/Platform Selector */}
-      {!isCollapsed && (
+      {/* Module/Platform Selector - apenas se tiver múltiplos módulos */}
+      {!isCollapsed && hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
           <label className="block text-sm font-semibold text-slate-700 mb-2">Plataforma</label>
           <Select value={currentModule} onValueChange={(value) => setModule(value as 'clean' | 'maintenance')}>
@@ -184,20 +184,47 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="clean">
-                <span className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-blue-600" />
-                  {MODULE_CONFIGS.clean.displayName}
-                </span>
-              </SelectItem>
-              <SelectItem value="maintenance">
-                <span className="flex items-center gap-2">
-                  <Cog className="w-4 h-4 text-orange-600" />
-                  {MODULE_CONFIGS.maintenance.displayName}
-                </span>
-              </SelectItem>
+              {allowedModules.includes('clean') && (
+                <SelectItem value="clean">
+                  <span className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-blue-600" />
+                    {MODULE_CONFIGS.clean.displayName}
+                  </span>
+                </SelectItem>
+              )}
+              {allowedModules.includes('maintenance') && (
+                <SelectItem value="maintenance">
+                  <span className="flex items-center gap-2">
+                    <Cog className="w-4 h-4 text-orange-600" />
+                    {MODULE_CONFIGS.maintenance.displayName}
+                  </span>
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
+        </div>
+      )}
+      
+      {/* Module Indicator - para usuários com módulo único */}
+      {!isCollapsed && !hasMultipleModules && (
+        <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
+          <label className="block text-sm font-semibold text-slate-500 mb-2">Plataforma</label>
+          <div className={`px-3 py-2 border rounded-md shadow-sm ${
+            currentModule === 'maintenance'
+              ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'
+              : 'bg-gradient-to-br from-blue-50 to-slate-50 border-blue-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {currentModule === 'maintenance' ? (
+                <Cog className="w-4 h-4 text-orange-600" />
+              ) : (
+                <Building className="w-4 h-4 text-blue-600" />
+              )}
+              <p className="text-sm font-medium text-slate-700">
+                {MODULE_CONFIGS[currentModule].displayName}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

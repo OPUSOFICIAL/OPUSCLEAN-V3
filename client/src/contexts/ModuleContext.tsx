@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useUserModules } from '@/hooks/useUserModules';
 
 export type ModuleType = 'clean' | 'maintenance';
 
@@ -41,36 +42,88 @@ interface ModuleContextType {
   moduleConfig: ModuleConfig;
   setModule: (module: ModuleType) => void;
   getModuleRoute: (path: string) => string;
+  allowedModules: ModuleType[];
+  canAccessModule: (module: ModuleType) => boolean;
+  hasMultipleModules: boolean;
 }
 
 const ModuleContext = createContext<ModuleContextType | undefined>(undefined);
 
 export function ModuleProvider({ children }: { children: React.ReactNode }) {
-  const [currentModule, setCurrentModule] = useState<ModuleType>(() => {
-    const stored = localStorage.getItem('opus:currentModule');
-    return (stored === 'clean' || stored === 'maintenance') ? stored : 'clean';
-  });
+  const { 
+    allowedModules, 
+    defaultModule, 
+    canAccessModule, 
+    getValidModule,
+    hasMultipleModules,
+    isLoading 
+  } = useUserModules();
 
-  const moduleConfig = MODULE_CONFIGS[currentModule];
+  // Inicializar com null e esperar os dados carregarem
+  const [currentModule, setCurrentModule] = useState<ModuleType | null>(null);
+
+  const moduleConfig = currentModule ? MODULE_CONFIGS[currentModule] : MODULE_CONFIGS.clean;
+
+  // Inicializar o módulo apenas DEPOIS que os dados do usuário carregarem
+  useEffect(() => {
+    if (!isLoading && currentModule === null) {
+      // Se não tem módulos configurados, forçar 'clean' como padrão seguro
+      const safeDefaultModule = allowedModules.length > 0 ? defaultModule : 'clean';
+      
+      // Primeira inicialização - usar localStorage ou defaultModule
+      const stored = localStorage.getItem('opus:currentModule');
+      const storedModule = (stored === 'clean' || stored === 'maintenance') ? stored : null;
+      
+      // Validar se o módulo salvo é permitido
+      if (storedModule && allowedModules.length > 0 && canAccessModule(storedModule)) {
+        console.log(`[MODULE] Inicializando com módulo salvo: ${storedModule}`);
+        setCurrentModule(storedModule);
+      } else {
+        console.log(`[MODULE] Inicializando com módulo padrão: ${safeDefaultModule}`);
+        setCurrentModule(safeDefaultModule);
+      }
+    }
+  }, [isLoading, allowedModules, currentModule, canAccessModule, defaultModule]);
 
   useEffect(() => {
-    localStorage.setItem('opus:currentModule', currentModule);
-    
-    document.documentElement.setAttribute('data-module', currentModule);
-    
-    document.documentElement.style.setProperty('--module-primary', moduleConfig.primaryColor);
-    document.documentElement.style.setProperty('--module-secondary', moduleConfig.secondaryColor);
-    document.documentElement.style.setProperty('--module-accent', moduleConfig.accentColor);
+    if (currentModule) {
+      localStorage.setItem('opus:currentModule', currentModule);
+      
+      document.documentElement.setAttribute('data-module', currentModule);
+      
+      document.documentElement.style.setProperty('--module-primary', moduleConfig.primaryColor);
+      document.documentElement.style.setProperty('--module-secondary', moduleConfig.secondaryColor);
+      document.documentElement.style.setProperty('--module-accent', moduleConfig.accentColor);
+    }
   }, [currentModule, moduleConfig]);
 
   const setModule = (module: ModuleType) => {
-    setCurrentModule(module);
+    // Validar se o usuário pode acessar o módulo antes de trocar
+    if (canAccessModule(module)) {
+      setCurrentModule(module);
+    } else {
+      console.warn(`[MODULE] Tentativa de acesso negada ao módulo: ${module}`);
+      // Se tentou acessar módulo não autorizado, forçar defaultModule
+      setCurrentModule(defaultModule);
+    }
   };
 
   const getModuleRoute = (path: string) => {
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `/${currentModule}${cleanPath}`;
   };
+
+  // Se ainda está carregando, não renderizar nada
+  if (isLoading || currentModule === null) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ModuleContext.Provider
@@ -79,6 +132,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
         moduleConfig,
         setModule,
         getModuleRoute,
+        allowedModules,
+        canAccessModule,
+        hasMultipleModules,
       }}
     >
       {children}

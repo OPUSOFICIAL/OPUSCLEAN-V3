@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
+import { MobileHeader } from "@/components/mobile-header";
 
 interface WorkOrder {
   id: string;
@@ -222,41 +223,32 @@ export default function MobileDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-x-hidden">
-      {/* Header Mobile */}
-      <div className="bg-white/90 backdrop-blur-lg border-b border-white/20 shadow-lg sticky top-0 z-50">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900">{user.name}</h1>
-                <p className="text-sm text-slate-600">Colaborador</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleRefresh}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                data-testid="button-refresh-mobile"
-              >
-                <RefreshCw className={`w-5 h-5 transition-transform duration-1000 ${isRefreshing ? 'rotate-360' : ''}`} />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleLogout}
-                className="text-slate-600"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Header Mobile com indicador de módulo */}
+      <MobileHeader
+        title={user.name}
+        subtitle="Colaborador"
+        actions={
+          <>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleRefresh}
+              className="text-white hover:bg-white/20"
+              data-testid="button-refresh-mobile"
+            >
+              <RefreshCw className={`w-5 h-5 transition-transform duration-1000 ${isRefreshing ? 'rotate-360' : ''}`} />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleLogout}
+              className="text-white hover:bg-white/20"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </>
+        }
+      />
 
       <div className="p-4 space-y-6">
         {/* Filtros de Data */}

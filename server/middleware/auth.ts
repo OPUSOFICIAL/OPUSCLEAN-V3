@@ -14,6 +14,7 @@ export interface SessionUser {
   email: string;
   name: string;
   role: UserRole;
+  userType?: string;
   isActive: boolean;
 }
 
@@ -95,6 +96,7 @@ async function getUserFromToken(req: Request): Promise<SessionUser | null> {
         email: user.email,
         name: user.name,
         role: effectiveRole,
+        userType: user.userType || 'opus_user',
         isActive: user.isActive
       };
     } catch (jwtError) {
@@ -127,6 +129,7 @@ async function getUserFromToken(req: Request): Promise<SessionUser | null> {
           email: user.email,
           name: user.name,
           role: effectiveRole,
+          userType: user.userType || 'opus_user',
           isActive: user.isActive
         };
       }

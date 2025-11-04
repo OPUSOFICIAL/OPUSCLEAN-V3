@@ -60,6 +60,8 @@ This approach balances operational planning needs (users can see future schedule
 
 Supports Microsoft SSO (Entra ID) and email/password authentication. Security measures include JWT, Bcrypt for password hashing, rate limiting, data sanitization, CORS, Helmet.js, and SQL injection prevention. A custom role system provides granular, permission-based access for predefined roles with differentiated routing for web and mobile users.
 
+**Module Access Control**: The system implements strict module-based access control for both web and mobile platforms. Each user (stored in `users.modules` array) and customer (stored in `customers.modules` array) has assigned modules (`clean`, `maintenance`, or both). The `ModuleContext` validates module access on every route, automatically correcting invalid module selections and enforcing restrictions. Mobile users see a visual module indicator in the header, and the sidebar dynamically shows/hides the module selector based on user permissions (hidden if only 1 module, shown as dropdown if 2+ modules). This ensures collaborators registered for maintenance only see maintenance data and cannot access cleaning module features, and vice versa.
+
 ### Dashboard
 
 Provides analytical charts for work orders, including distribution by priority and location, average completion time, and activity trends, all powered by real-time data. Dashboard goals are integrated with visual indicators.

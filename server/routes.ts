@@ -2167,6 +2167,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user modules with default module (for mobile module restriction)
+  // SECURED: Uses requireAuth middleware to ensure proper authentication
+  app.get("/api/auth/user-modules", requireAuth, async (req, res) => {
+    try {
+      // User is already validated by requireAuth middleware
+      const user = req.user;
+      
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      let modules: ('clean' | 'maintenance')[] = [];
+
+      // Separate logic for OPUS users and customer users
+      if (user.userType === 'customer_user') {
+        // Customer users: get modules from their associated customer
+        if (user.customerId) {
+          const customer = await storage.getCustomer(user.customerId);
+          if (customer) {
+            modules = (customer.modules || ['clean']) as ('clean' | 'maintenance')[];
+          }
+        }
+      } else {
+        // OPUS users: get modules from the user directly
+        const fullUser = await storage.getUser(user.id);
+        if (fullUser) {
+          modules = (fullUser.modules || ['clean']) as ('clean' | 'maintenance')[];
+        }
+      }
+      
+      // SEGURANÇA: Garantir que sempre retorne pelo menos 1 módulo
+      // Se modules estiver vazio, forçar 'clean' como fallback seguro
+      if (modules.length === 0) {
+        modules = ['clean'];
+      }
+      
+      // Default to first available module
+      const defaultModule = modules[0];
+      
+      res.json({ 
+        modules,
+        defaultModule 
+      });
+    } catch (error) {
+      console.error("Get user modules error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // === ROLES MANAGEMENT ===
   
   // Listar todas as funções
