@@ -2455,6 +2455,12 @@ export class DatabaseStorage implements IStorage {
       
       const occurrences = this.expandOccurrences(activityForExpansion, windowStart, windowEnd);
       
+      console.log(`[SCHEDULER DEBUG] Activity: "${activity.name}" (${activity.id})`);
+      console.log(`[SCHEDULER DEBUG] Occurrences generated: ${occurrences.length}`);
+      occurrences.forEach((occ, idx) => {
+        console.log(`  ${idx + 1}. ${occ.date.toISOString().split('T')[0]} (${occ.occurrence}/${occ.total})`);
+      });
+      
       // Get equipment based on application target
       let equipmentList: any[] = [];
       if (activity.applicationTarget === 'tags' && activity.tagIds && activity.tagIds.length > 0) {
@@ -2497,8 +2503,11 @@ export class DatabaseStorage implements IStorage {
             .limit(1);
             
           if (existing.length > 0) {
+            console.log(`[SCHEDULER DEBUG] ⏭️  Skipping - OS already exists for ${occ.date.toISOString().split('T')[0]}`);
             continue; // Skip if already exists
           }
+          
+          console.log(`[SCHEDULER DEBUG] ✅ Creating OS for ${occ.date.toISOString().split('T')[0]}`);
           
           // Generate work order number
           const workOrderNumber = await this.getNextWorkOrderNumber(companyId);
