@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Building, Wrench, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useModule } from "@/contexts/ModuleContext";
-import { getAuthState } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Customer {
   id: string;
@@ -18,9 +18,8 @@ export default function ModuleSelection() {
   const [, setLocation] = useLocation();
   const { setModule } = useModule();
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
-  const auth = getAuthState();
-  const user = auth?.user;
   const companyId = user?.companyId || "company-opus-default";
   const isCustomerUser = user?.userType === 'customer_user';
   const userCustomerId = user?.customerId;
@@ -49,11 +48,10 @@ export default function ModuleSelection() {
 
   // Check if user is authenticated
   useEffect(() => {
-    const auth = getAuthState();
-    if (!auth) {
+    if (!user) {
       setLocation("/login");
     }
-  }, [setLocation]);
+  }, [user, setLocation]);
 
   const handleModuleSelect = async (module: 'clean' | 'maintenance') => {
     setIsLoading(true);
