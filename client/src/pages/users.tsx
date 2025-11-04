@@ -61,7 +61,7 @@ export default function Users({ customerId }: UsersProps) {
     enabled: !!customerId,
   });
 
-  const { data: customer } = useQuery({
+  const { data: customer } = useQuery<{ modules?: string[] }>({
     queryKey: ["/api/customers", customerId],
     enabled: !!customerId,
   });

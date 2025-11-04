@@ -944,6 +944,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validar dados do usuário (sem o role que vem como customRoleId)
       const validatedData = insertUserSchema.omit({ role: true }).parse(userData);
       
+      // VALIDAÇÃO DE MÓDULOS: Verificar se os módulos solicitados são compatíveis com o cliente
+      if (validatedData.userType === 'customer_user' && validatedData.customerId) {
+        const customer = await storage.getCustomer(validatedData.customerId);
+        
+        if (!customer) {
+          return res.status(400).json({
+            message: "Cliente não encontrado",
+            details: "O cliente selecionado não existe no sistema."
+          });
+        }
+        
+        const customerModules = customer.modules || ['clean'];
+        const requestedModules = validatedData.modules || ['clean'];
+        
+        // Verificar se todos os módulos solicitados estão disponíveis no cliente
+        const invalidModules = requestedModules.filter(m => !customerModules.includes(m));
+        
+        if (invalidModules.length > 0) {
+          return res.status(400).json({
+            message: "Módulos incompatíveis",
+            details: `Os módulos ${invalidModules.join(', ')} não estão disponíveis para o cliente "${customer.name}". Módulos disponíveis: ${customerModules.join(', ')}`
+          });
+        }
+      }
+      
       // Generate unique user ID
       const userId = `user-${validatedData.username}-${Date.now()}`;
       
