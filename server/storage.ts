@@ -2518,7 +2518,7 @@ export class DatabaseStorage implements IStorage {
             }
           }
           
-          // Create work order
+          // Create work order with site and zone from equipment
           const workOrderData = {
             id: crypto.randomUUID(),
             number: workOrderNumber,
@@ -2534,7 +2534,8 @@ export class DatabaseStorage implements IStorage {
             scheduledDate: occ.date,
             dueDate: new Date(occ.date.getTime() + (4 * 60 * 60 * 1000)), // 4 hours after scheduled
             origin: 'Sistema - Plano de Manutenção',
-            module: 'maintenance' as const
+            module: 'maintenance' as const,
+            zoneId: equipItem.zoneId  // Add zone from equipment
           };
           
           const [createdOrder] = await db.insert(workOrders).values(workOrderData).returning();
