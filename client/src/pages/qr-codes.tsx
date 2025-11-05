@@ -411,8 +411,10 @@ export default function QrCodes() {
         actions={
           <Button 
             onClick={handleRefresh}
-            className={cn("flex items-center gap-2", theme.buttons.outline)}
+            variant="outline"
+            className="flex items-center gap-2"
             size="sm"
+            data-testid="button-refresh-header"
           >
             <RefreshCw className="w-4 h-4" />
             Atualizar
@@ -420,7 +422,7 @@ export default function QrCodes() {
         }
       />
       
-      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
+      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
         <ModernCard variant="default">
           <ModernCardHeader icon={<Plus className="w-6 h-6" />}>
             Criar Novo QR Code
