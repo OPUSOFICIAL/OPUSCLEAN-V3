@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import WorkOrderModal from "@/components/work-order-modal";
 import CreateWorkOrderModal from "@/components/create-work-order-modal";
+import CancelWorkOrderDialog from "@/components/CancelWorkOrderDialog";
 import { cn } from "@/lib/utils";
 
 interface MultiSelectOption {
@@ -139,6 +140,8 @@ export default function WorkOrders() {
   const [endDate, setEndDate] = useState("");
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [workOrderToCancel, setWorkOrderToCancel] = useState<{ id: string; title: string } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -174,14 +177,17 @@ export default function WorkOrders() {
   });
 
   const cancelWorkOrderMutation = useMutation({
-    mutationFn: async (workOrderId: string) => {
+    mutationFn: async ({ workOrderId, reason }: { workOrderId: string; reason: string }) => {
       return await apiRequest("PUT", `/api/work-orders/${workOrderId}`, {
-        status: 'cancelada'
+        status: 'cancelada',
+        cancellationReason: reason
       });
     },
     onSuccess: () => {
       toast({ title: "Ordem de serviço cancelada com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
+      setCancelDialogOpen(false);
+      setWorkOrderToCancel(null);
     },
     onError: () => {
       toast({ 
@@ -198,8 +204,16 @@ export default function WorkOrders() {
   };
 
   const handleCancelWorkOrder = (workOrderId: string, workOrderTitle: string) => {
-    if (window.confirm(`Tem certeza que deseja cancelar a OS "${workOrderTitle}"?`)) {
-      cancelWorkOrderMutation.mutate(workOrderId);
+    setWorkOrderToCancel({ id: workOrderId, title: workOrderTitle });
+    setCancelDialogOpen(true);
+  };
+
+  const handleConfirmCancel = (reason: string) => {
+    if (workOrderToCancel) {
+      cancelWorkOrderMutation.mutate({ 
+        workOrderId: workOrderToCancel.id, 
+        reason 
+      });
     }
   };
 
@@ -639,6 +653,15 @@ export default function WorkOrders() {
             setShowCreateModal(false);
             queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
           }}
+        />
+      )}
+      {workOrderToCancel && (
+        <CancelWorkOrderDialog
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+          onConfirm={handleConfirmCancel}
+          workOrderTitle={workOrderToCancel.title}
+          isPending={cancelWorkOrderMutation.isPending}
         />
       )}
     </>
