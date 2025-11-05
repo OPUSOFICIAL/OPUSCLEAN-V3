@@ -219,6 +219,24 @@ export default function MobileWorkOrderExecute() {
             return false;
           }
         }
+        if (item.type === 'checkbox') {
+          const selected = answer || [];
+          const minChecked = item.validation?.minChecked || 0;
+          if (selected.length < minChecked) {
+            return false;
+          }
+        }
+      }
+      
+      // Validar limites mesmo se não for required
+      if (item.type === 'checkbox' && answers[item.id]) {
+        const selected = answers[item.id] || [];
+        const minChecked = item.validation?.minChecked || 0;
+        const maxChecked = item.validation?.maxChecked;
+        
+        if (selected.length < minChecked || (maxChecked && selected.length > maxChecked)) {
+          return false;
+        }
       }
     }
     return true;
@@ -382,12 +400,21 @@ export default function MobileWorkOrderExecute() {
           for (const item of checklist.items) {
             if (item.type === 'photo' && checklistAnswers[item.id]?.photos) {
               allPhotos.push(...checklistAnswers[item.id].photos);
-              checklistSummary += `• ${item.title}: ${checklistAnswers[item.id].count} foto(s) anexada(s)\n`;
+              checklistSummary += `• ${item.label}: ${checklistAnswers[item.id].count} foto(s) anexada(s)\n`;
             } else if (item.type === 'checkbox') {
-              const checked = checklistAnswers[item.id] ? '✓' : '✗';
-              checklistSummary += `${checked} ${item.title}\n`;
+              const selectedOptions = checklistAnswers[item.id] || [];
+              if (selectedOptions.length > 0) {
+                checklistSummary += `✓ ${item.label}: ${selectedOptions.join(', ')}\n`;
+              } else {
+                checklistSummary += `○ ${item.label}: Nenhuma opção selecionada\n`;
+              }
+            } else if (item.type === 'boolean') {
+              const answer = checklistAnswers[item.id];
+              const symbol = answer === true ? '✓' : answer === false ? '✗' : '○';
+              const text = answer === true ? 'SIM' : answer === false ? 'NÃO' : 'Não respondido';
+              checklistSummary += `${symbol} ${item.label}: ${text}\n`;
             } else if (item.type === 'text' && checklistAnswers[item.id]) {
-              checklistSummary += `• ${item.title}: ${checklistAnswers[item.id]}\n`;
+              checklistSummary += `• ${item.label}: ${checklistAnswers[item.id]}\n`;
             }
           }
         }
@@ -653,6 +680,59 @@ export default function MobileWorkOrderExecute() {
                           {/* Contador */}
                           <p className="text-xs text-center text-slate-500">
                             {answers[item.id]?.length || 0} foto(s) adicionada(s)
+                          </p>
+                        </div>
+                      ) : item.type === 'checkbox' ? (
+                        <div className="mt-2 space-y-2">
+                          {item.options && item.options.length > 0 ? (
+                            item.options.map((option: string, optIdx: number) => (
+                              <div key={optIdx} className="flex items-center gap-3 p-3 border rounded-lg bg-white hover:bg-slate-50 transition-colors">
+                                <Checkbox
+                                  id={`${item.id}-${optIdx}`}
+                                  checked={(answers[item.id] || []).includes(option)}
+                                  onCheckedChange={(checked) => {
+                                    setAnswers(prev => {
+                                      const current = prev[item.id] || [];
+                                      if (checked) {
+                                        // Verificar maxChecked se configurado
+                                        if (item.validation?.maxChecked && current.length >= item.validation.maxChecked) {
+                                          return prev;
+                                        }
+                                        return { ...prev, [item.id]: [...current, option] };
+                                      } else {
+                                        return { ...prev, [item.id]: current.filter((o: string) => o !== option) };
+                                      }
+                                    });
+                                  }}
+                                  data-testid={`checkbox-${item.id}-${optIdx}`}
+                                />
+                                <Label 
+                                  htmlFor={`${item.id}-${optIdx}`}
+                                  className="flex-1 cursor-pointer text-sm"
+                                >
+                                  {option}
+                                </Label>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-slate-500 italic">Nenhuma opção configurada</p>
+                          )}
+                          
+                          {/* Info de validação */}
+                          {(item.validation?.minChecked || item.validation?.maxChecked) && (
+                            <p className="text-xs text-slate-600 mt-2">
+                              {item.validation?.minChecked && item.validation?.maxChecked
+                                ? `Selecione entre ${item.validation.minChecked} e ${item.validation.maxChecked} opções`
+                                : item.validation?.minChecked
+                                ? `Selecione no mínimo ${item.validation.minChecked} opção(ões)`
+                                : `Selecione no máximo ${item.validation.maxChecked} opção(ões)`
+                              }
+                            </p>
+                          )}
+                          
+                          {/* Contador de selecionados */}
+                          <p className="text-xs text-center text-slate-500 mt-1">
+                            {(answers[item.id] || []).length} opção(ões) selecionada(s)
                           </p>
                         </div>
                       ) : (
