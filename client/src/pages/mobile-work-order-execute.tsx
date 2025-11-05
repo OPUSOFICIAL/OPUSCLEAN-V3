@@ -53,8 +53,9 @@ export default function MobileWorkOrderExecute() {
       console.log('[MOBILE] workOrder.site:', woData.site);
       console.log('[MOBILE] workOrder.zone:', woData.zone);
       
-      // Se a OS está aberta ou pausada, iniciar execução
-      if (woData.status === 'aberta' || woData.status === 'pausada') {
+      // Se a OS está aberta, iniciar execução automaticamente
+      // ⚠️ NÃO iniciar automaticamente se status = 'pausada' - usuário deve retomar manualmente
+      if (woData.status === 'aberta') {
         try {
           const authStr = localStorage.getItem('opus_clean_auth');
           if (authStr) {
@@ -69,7 +70,7 @@ export default function MobileWorkOrderExecute() {
                 body: JSON.stringify({
                   assignedUserId: user.id,
                   status: 'em_execucao',
-                  startedAt: woData.status === 'aberta' ? new Date().toISOString() : woData.startedAt,
+                  startedAt: new Date().toISOString(),
                 }),
               });
               
@@ -79,33 +80,13 @@ export default function MobileWorkOrderExecute() {
                 woData.status = updatedWo.status;
                 woData.startedAt = updatedWo.startedAt;
                 
-                // Buscar comentários anteriores para determinar se é "iniciou" ou "retomou"
-                let actionText = 'iniciou'; // Padrão: primeira vez
-                try {
-                  const commentsResponse = await fetch(`/api/work-orders/${id}/comments`);
-                  if (commentsResponse.ok) {
-                    const existingComments = await commentsResponse.json();
-                    // Verificar se já existe comentário de início/retomada anterior
-                    const hasStartedBefore = existingComments.some((c: any) => 
-                      c.comment.includes('iniciou a execução') || 
-                      c.comment.includes('retomou a execução')
-                    );
-                    // Se já foi iniciada antes, usar "retomou"
-                    if (hasStartedBefore) {
-                      actionText = 'retomou';
-                    }
-                  }
-                } catch (err) {
-                  console.error('Erro ao verificar histórico:', err);
-                }
-                
-                // Criar comentário de início/retomada
+                // Criar comentário de início
                 await fetch(`/api/work-orders/${id}/comments`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     userId: user.id,
-                    comment: `⏯️ ${user.name} ${actionText} a execução da OS`,
+                    comment: `⏯️ ${user.name} iniciou a execução da OS`,
                   }),
                 });
               }

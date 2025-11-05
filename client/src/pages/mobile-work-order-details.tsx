@@ -14,6 +14,7 @@ export default function MobileWorkOrderDetails() {
   const [workOrder, setWorkOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [comments, setComments] = useState<any[]>([]);
+  const [isResuming, setIsResuming] = useState(false);
 
   useEffect(() => {
     if (params?.id) {
@@ -49,6 +50,68 @@ export default function MobileWorkOrderDetails() {
       setLocation('/mobile');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResumeExecution = async () => {
+    if (!workOrder) return;
+    
+    setIsResuming(true);
+    try {
+      const authStr = localStorage.getItem('opus_clean_auth');
+      if (!authStr) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const authData = JSON.parse(authStr);
+      const user = authData.user;
+
+      // Retomar execução - mudar status para em_execucao
+      const response = await fetch(`/api/work-orders/${workOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'em_execucao',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao retomar ordem de serviço');
+      }
+
+      // Criar comentário de retomada
+      await fetch(`/api/work-orders/${workOrder.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          comment: `▶️ ${user?.name || 'Operador'} retomou a execução da OS`,
+        }),
+      });
+
+      toast({
+        title: "✅ Execução Retomada",
+        description: "A ordem de serviço foi retomada com sucesso.",
+      });
+
+      // Redirecionar para página de execução
+      setTimeout(() => {
+        setLocation(`/mobile/work-order/${workOrder.id}`);
+      }, 1000);
+    } catch (error) {
+      console.error('Erro ao retomar OS:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível retomar a ordem de serviço.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResuming(false);
     }
   };
 
@@ -305,6 +368,33 @@ export default function MobileWorkOrderDetails() {
             })}
           </CardContent>
         </Card>
+
+        {/* Resume Button - Só aparece se O.S está pausada */}
+        {workOrder.status === 'pausada' && (
+          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0 shadow-xl">
+            <CardContent className="p-6">
+              <Button 
+                onClick={handleResumeExecution}
+                disabled={isResuming}
+                data-testid="button-resume-execution"
+                className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 h-16 text-lg font-semibold disabled:opacity-50"
+                size="lg"
+              >
+                <div className="flex items-center space-x-3 justify-center">
+                  <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center">
+                    <PlayCircle className="w-6 h-6" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-lg font-bold">
+                      {isResuming ? 'Retomando...' : '▶️ Retomar Execução'}
+                    </div>
+                    <div className="text-sm opacity-90">Continuar com a OS pausada</div>
+                  </div>
+                </div>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* QR Scanner Button */}
         <Card className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-0 shadow-xl">
