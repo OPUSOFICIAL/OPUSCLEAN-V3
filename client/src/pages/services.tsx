@@ -14,12 +14,7 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Clock, 
-  AlertTriangle,
-  Wrench,
-  Users,
-  Building,
-  Zap
+  Clock
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,40 +29,12 @@ interface ServicesProps {
 const serviceFormSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   description: z.string().optional(),
-  categoryId: z.string().min(1, "Categoria é obrigatória"),
   typeId: z.string().min(1, "Tipo é obrigatório"),
   estimatedDurationMinutes: z.number().min(1).optional(),
   priority: z.enum(["baixa", "media", "alta", "critica"]).default("media"),
 });
 
 type ServiceFormData = z.infer<typeof serviceFormSchema>;
-
-const categoryLabels = {
-  // Hard Services
-  manutencao_eletrica: "Manutenção Elétrica",
-  manutencao_hidraulica: "Manutenção Hidráulica", 
-  climatizacao_hvac: "Climatização (HVAC)",
-  elevadores_equipamentos: "Elevadores e Equipamentos",
-  sistemas_seguranca_fisica: "Sistemas de Segurança Física",
-  manutencao_preventiva: "Manutenção Preventiva",
-  manutencao_corretiva: "Manutenção Corretiva",
-  sistema_incendio: "Sistema de Incêndio",
-  telecomunicacoes_dados: "Telecomunicações e Dados",
-  infraestrutura_predial: "Infraestrutura Predial",
-  automacao_predial: "Automação Predial",
-  // Soft Services
-  limpeza_conservacao: "Limpeza e Conservação",
-  portaria_recepcao: "Portaria e Recepção",
-  jardinagem_paisagismo: "Jardinagem e Paisagismo",
-  seguranca_patrimonial: "Segurança Patrimonial",
-  servicos_administrativos: "Serviços Administrativos",
-  gestao_residuos: "Gestão de Resíduos",
-  controle_pragas: "Controle de Pragas",
-  catering_alimentacao: "Catering e Alimentação",
-  decoracao_ambientacao: "Decoração e Ambientação",
-  correio_interno: "Correio Interno",
-  atendimento_telefone: "Atendimento Telefônico"
-};
 
 const typeLabels = {
   hard_service: "Hard Service",
@@ -98,11 +65,6 @@ export default function Services({ customerId }: ServicesProps) {
     enabled: !!customerId,
   });
 
-  // Get service categories from database
-  const { data: serviceCategories = [] } = useQuery<any[]>({
-    queryKey: ["/api/customers", customerId, "service-categories"],
-    enabled: !!customerId,
-  });
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceFormSchema),
@@ -191,7 +153,6 @@ export default function Services({ customerId }: ServicesProps) {
     form.reset({
       name: service.name,
       description: service.description || "",
-      categoryId: service.categoryId,
       typeId: service.typeId,
       estimatedDurationMinutes: service.estimatedDurationMinutes || undefined,
       priority: service.priority,
@@ -202,24 +163,6 @@ export default function Services({ customerId }: ServicesProps) {
   const handleDelete = (serviceId: string) => {
     if (confirm("Tem certeza que deseja excluir este serviço?")) {
       deleteMutation.mutate(serviceId);
-    }
-  };
-
-  const getCategoryIcon = (category: string) => {
-    const hardServiceCategories = ["manutencao_eletrica", "manutencao_hidraulica", "climatizacao", "elevadores", "sistemas_seguranca"];
-    
-    if (hardServiceCategories.includes(category)) {
-      switch (category) {
-        case "manutencao_eletrica": return <Zap className="w-4 h-4" />;
-        case "sistemas_seguranca": return <AlertTriangle className="w-4 h-4" />;
-        default: return <Wrench className="w-4 h-4" />;
-      }
-    } else {
-      switch (category) {
-        case "portaria_recepcao": return <Users className="w-4 h-4" />;
-        case "jardinagem_paisagismo": return <Building className="w-4 h-4" />;
-        default: return <Settings className="w-4 h-4" />;
-      }
     }
   };
 
@@ -299,31 +242,6 @@ export default function Services({ customerId }: ServicesProps) {
                           {serviceTypes.map((type: any) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a categoria" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {serviceCategories.map((category: any) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -431,7 +349,7 @@ export default function Services({ customerId }: ServicesProps) {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 rounded-lg bg-blue-50">
-                      {getCategoryIcon(service.category)}
+                      <Settings className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{service.name}</CardTitle>
@@ -463,25 +381,10 @@ export default function Services({ customerId }: ServicesProps) {
                 )}
                 
                 <div className="flex flex-wrap gap-2">
-                  {/* Bolinha do Tipo com texto */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      T
-                    </div>
-                    <Badge className="bg-purple-100 text-purple-800">
-                      {serviceTypes.find(t => t.id === service.typeId)?.name || 'Tipo'}
-                    </Badge>
-                  </div>
-                  
-                  {/* Bolinha da Categoria com texto */}
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-slate-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      C
-                    </div>
-                    <Badge variant="outline">
-                      {serviceCategories.find(c => c.id === service.categoryId)?.name || 'Categoria'}
-                    </Badge>
-                  </div>
+                  {/* Badge do Tipo */}
+                  <Badge className="bg-purple-100 text-purple-800">
+                    {serviceTypes.find(t => t.id === service.typeId)?.name || 'Tipo'}
+                  </Badge>
                   
                   <Badge className={getPriorityColor(service.priority)}>
                     {priorityLabels[service.priority as keyof typeof priorityLabels]}
