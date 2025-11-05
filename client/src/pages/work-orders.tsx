@@ -132,7 +132,6 @@ export default function WorkOrders() {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [zoneFilter, setZoneFilter] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string>("todos");
-  const [stateFilter, setStateFilter] = useState<string>("ativas");
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -259,14 +258,6 @@ export default function WorkOrders() {
     const matchesZone = zoneFilter.length === 0 || zoneFilter.includes(wo.zoneId);
     const matchesType = typeFilter === "todos" || wo.type === typeFilter;
     
-    let matchesState = true;
-    if (stateFilter === "ativas") {
-      matchesState = wo.status !== "concluida" && wo.status !== "cancelada";
-    } else if (stateFilter === "concluidas") {
-      matchesState = wo.status === "concluida";
-    }
-    // Se stateFilter === "todas", não filtra
-    
     const matchesSearch = wo.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          wo.number?.toString().includes(searchTerm) ||
                          wo.id?.toString().includes(searchTerm);
@@ -290,7 +281,7 @@ export default function WorkOrders() {
       }
     }
     
-    return matchesStatus && matchesZone && matchesType && matchesState && matchesSearch && matchesDateRange;
+    return matchesStatus && matchesZone && matchesType && matchesSearch && matchesDateRange;
   }).sort((a: any, b: any) => {
     if (a.scheduledDate && b.scheduledDate) {
       return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
@@ -455,7 +446,7 @@ export default function WorkOrders() {
               </div>
 
               {/* Filters Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-4 border-t">
                 <Select 
                   value={statusFilter.length === 0 ? "todos" : statusFilter.length === 1 ? statusFilter[0] : "multiplos"}
                   onValueChange={(value) => {
@@ -512,17 +503,6 @@ export default function WorkOrders() {
                     <SelectItem value="programada">Programada</SelectItem>
                     <SelectItem value="corretiva_interna">Corretiva Interna</SelectItem>
                     <SelectItem value="corretiva_publica">Corretiva Pública</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={stateFilter} onValueChange={setStateFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ativas">Ativas</SelectItem>
-                    <SelectItem value="concluidas">Concluídas</SelectItem>
-                    <SelectItem value="todas">Todas</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
