@@ -28,7 +28,9 @@ import {
   Settings,
   Wrench,
   RefreshCw,
-  CalendarRange
+  CalendarRange,
+  ClipboardList,
+  XCircle
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -61,6 +63,7 @@ export default function MaintenancePlans() {
   const [showEditActivityModal, setShowEditActivityModal] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
+  const [showActiveActivitiesModal, setShowActiveActivitiesModal] = useState(false);
 
   const { data: activities, isLoading } = useQuery({
     queryKey: ["/api/customers", activeClientId, "maintenance-activities"],
@@ -118,6 +121,35 @@ export default function MaintenancePlans() {
   const handleDeleteActivity = async (activity: any) => {
     if (confirm(`Deseja realmente excluir a atividade "${activity.name}"? Esta ação não pode ser desfeita.`)) {
       await deleteMaintenanceActivityMutation.mutateAsync(activity.id);
+    }
+  };
+
+  // Mutation to toggle activity active status
+  const toggleActivityStatusMutation = useMutation({
+    mutationFn: async ({ activityId, isActive }: { activityId: string; isActive: boolean }) => {
+      await apiRequest('PUT', `/api/maintenance-activities/${activityId}`, { isActive });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "maintenance-activities"] });
+      toast({
+        title: "Status atualizado",
+        description: "O status da atividade foi atualizado com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status da atividade.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleActivityStatus = async (activity: any) => {
+    const newStatus = !activity.isActive;
+    const actionText = newStatus ? 'ativar' : 'inativar';
+    if (confirm(`Deseja realmente ${actionText} a atividade "${activity.name}"?`)) {
+      await toggleActivityStatusMutation.mutateAsync({ activityId: activity.id, isActive: newStatus });
     }
   };
 
@@ -420,8 +452,12 @@ export default function MaintenancePlans() {
           <ModernCardContent>
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", theme.backgrounds.light)}>
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors group"
+                onClick={() => setShowActiveActivitiesModal(true)}
+                data-testid="card-active-activities"
+              >
+                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", theme.backgrounds.light, "group-hover:scale-110 transition-transform")}>
                   <Wrench className={cn("w-5 h-5", theme.text.primary)} />
                 </div>
                 <div>
@@ -1180,6 +1216,92 @@ export default function MaintenancePlans() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Atividades Ativas */}
+        <Dialog open={showActiveActivitiesModal} onOpenChange={setShowActiveActivitiesModal}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Wrench className={cn("w-5 h-5", theme.text.primary)} />
+                Atividades Ativas
+              </DialogTitle>
+              <DialogDescription>
+                Gerencie suas atividades de manutenção ativas. Você pode inativar atividades para pausar a geração automática de ordens de serviço.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-3">
+              {(activities as any[])?.filter((a: any) => a.isActive).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Wrench className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>Nenhuma atividade ativa encontrada</p>
+                </div>
+              ) : (
+                (activities as any[])?.filter((a: any) => a.isActive).map((activity: any) => (
+                  <Card key={activity.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-base">{activity.name}</h3>
+                            {getTypeBadge(activity.type)}
+                            {getFrequencyBadge(activity.frequency)}
+                          </div>
+                          
+                          {activity.description && (
+                            <p className="text-sm text-muted-foreground">{activity.description}</p>
+                          )}
+                          
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            {activity.equipmentIds && activity.equipmentIds.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Settings className="w-4 h-4" />
+                                <span>{activity.equipmentIds.length} equipamento(s)</span>
+                              </div>
+                            )}
+                            {activity.checklistTemplateId && (
+                              <div className="flex items-center gap-1">
+                                <ClipboardList className="w-4 h-4" />
+                                <span>Checklist vinculado</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowActiveActivitiesModal(false);
+                              setShowActivityDetailsModal(true);
+                            }}
+                            title="Ver detalhes"
+                            data-testid={`button-view-activity-${activity.id}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleActivityStatus(activity)}
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            title="Inativar atividade"
+                            disabled={toggleActivityStatusMutation.isPending}
+                            data-testid={`button-inactivate-${activity.id}`}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>
