@@ -135,7 +135,11 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
             <img 
               src={currentModule === 'maintenance' ? opusMaintenanceLogo : opusCleanLogo} 
               alt={currentModule === 'maintenance' ? 'OPUS FACILITY' : 'OPUS CLEAN'} 
-              className={`${isCollapsed ? 'h-12 w-auto' : 'h-16 w-auto max-w-full'} object-contain transition-all duration-300`}
+              className={`${
+                currentModule === 'maintenance' 
+                  ? (isCollapsed ? 'h-14 w-auto' : 'h-20 w-auto max-w-full')
+                  : (isCollapsed ? 'h-12 w-auto' : 'h-16 w-auto max-w-full')
+              } object-contain transition-all duration-300`}
             />
           </div>
           {!isCollapsed && (
