@@ -32,6 +32,12 @@ O frontend utiliza:
 - `glass`: Card glassmorphism com backdrop-blur e gradiente translúcido
 - `featured`: Card com cor do módulo (destaque)
 
+**Páginas com Design Moderno Aplicado**:
+- Dashboard (ambos módulos) - gradientes de página e section, cards glass
+- Equipment (Manutenção) - gradientes modernos, cards gradient
+- Maintenance Plans (Manutenção) - gradientes de página, cards glass com calendário integrado
+- Checklists (Clean) - gradientes modernos, ModernCard com variantes gradient e glass
+
 Mobile interfaces são otimizadas para elementos touch-friendly, incluindo sticky headers e funcionalidade pull-to-refresh.
 
 ## Technical Implementations
