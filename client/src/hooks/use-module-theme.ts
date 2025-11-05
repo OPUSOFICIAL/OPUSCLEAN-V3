@@ -15,23 +15,38 @@ export function useModuleTheme() {
     primary: isClean ? 'blue' : 'orange',
     primaryHex: isClean ? '#3B82F6' : '#F97316',
     
-    // Gradientes SUTIS - predominantemente branco
+    // Gradientes MODERNOS - predominantemente branco com detalhes sofisticados
     gradients: {
-      // Gradiente muito sutil para backgrounds (quase branco)
-      subtle: 'bg-gradient-to-br from-white via-slate-50/30 to-white',
+      // Gradiente sutil para backgrounds de páginas
+      page: 'bg-gradient-to-br from-white via-slate-50/40 to-slate-100/20',
+      
+      // Gradiente muito leve para sections
+      section: 'bg-gradient-to-b from-white to-slate-50/30',
       
       // Gradiente para headers (cor do módulo)
       header: isClean
         ? 'bg-gradient-to-r from-blue-600 to-blue-700'
         : 'bg-gradient-to-r from-orange-600 to-orange-700',
         
-      // Gradiente extremamente sutil para cards
-      card: 'bg-white',
+      // Gradiente sutil para cards especiais (glassmorphism)
+      glass: isClean
+        ? 'bg-gradient-to-br from-white/95 via-blue-50/30 to-white/90 backdrop-blur-sm'
+        : 'bg-gradient-to-br from-white/95 via-orange-50/30 to-white/90 backdrop-blur-sm',
+        
+      // Gradiente para cards destacados (muito sutil)
+      cardAccent: isClean
+        ? 'bg-gradient-to-br from-white to-blue-50/20'
+        : 'bg-gradient-to-br from-white to-orange-50/20',
         
       // Gradiente para stats cards (cor do módulo)
       stat: isClean
         ? 'bg-gradient-to-br from-blue-500 to-blue-600'
         : 'bg-gradient-to-br from-orange-500 to-orange-600',
+        
+      // Gradiente para hover effects
+      hover: isClean
+        ? 'hover:bg-gradient-to-br hover:from-white hover:to-blue-50/30'
+        : 'hover:bg-gradient-to-br hover:from-white hover:to-orange-50/30',
     },
     
     // Sombras neutras (sem cor)
@@ -70,15 +85,20 @@ export function useModuleTheme() {
         : 'bg-orange-50/50 text-orange-600',
     },
     
-    // Cards BRANCOS com detalhes sutis
+    // Cards MODERNOS com gradientes sutis
     cards: {
-      // Card padrão - BRANCO com borda sutil
+      // Card padrão - BRANCO limpo com borda sutil
       modern: 'bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200',
       
-      // Card com borda da cor do módulo
+      // Card com gradiente muito sutil
       gradient: isClean
-        ? 'bg-white border-l-4 border-l-blue-500 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200'
-        : 'bg-white border-l-4 border-l-orange-500 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200',
+        ? 'bg-gradient-to-br from-white to-blue-50/20 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300'
+        : 'bg-gradient-to-br from-white to-orange-50/20 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300',
+        
+      // Card glassmorphism - moderno e sofisticado
+      glass: isClean
+        ? 'bg-gradient-to-br from-white/95 via-blue-50/20 to-white/90 backdrop-blur-sm border border-slate-200/60 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300'
+        : 'bg-gradient-to-br from-white/95 via-orange-50/20 to-white/90 backdrop-blur-sm border border-slate-200/60 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300',
         
       // Card de destaque - cor do módulo
       featured: isClean

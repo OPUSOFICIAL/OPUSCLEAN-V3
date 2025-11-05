@@ -414,7 +414,7 @@ export default function MaintenancePlans() {
       
       <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
         {/* Filters and Stats Combined */}
-        <ModernCard variant="default">
+        <ModernCard variant="glass">
           <ModernCardContent>
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -527,7 +527,7 @@ export default function MaintenancePlans() {
 
         {/* Calendar Views or Activities List */}
         {viewMode === "monthly" ? (
-          <ModernCard variant="default">
+          <ModernCard variant="gradient">
             <ModernCardHeader icon={<Calendar className="w-5 h-5" />}>
               <div className="flex items-center justify-between w-full">
                 <span>Calendário de Manutenção</span>

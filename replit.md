@@ -14,15 +14,23 @@ Preferred communication style: Simple, everyday language.
 
 ## UI/UX Decisions
 
-**Design System (Atualizado em 05/11/2025)**: O sistema implementa um design **predominantemente BRANCO e minimalista**, onde as cores dos módulos (azul para Clean, laranja para Manutenção) aparecem apenas como identificação sutil em badges, botões primários e bordas de ênfase. 
+**Design System (Atualizado em 05/11/2025)**: O sistema implementa um design **predominantemente BRANCO e moderno**, com gradientes sutis que criam profundidade visual. As cores dos módulos (azul para Clean, laranja para Manutenção) aparecem apenas como identificação em badges, botões primários e bordas de ênfase. 
 
 O frontend utiliza:
 - **shadcn/ui** com Radix UI primitives e Tailwind CSS
 - **Componentes modernos reutilizáveis**: ModernCard, ModernPageHeader, ModernCardContent
 - **Hook de tema dinâmico**: `use-module-theme` que adapta cores baseado no módulo ativo
-- **Paleta neutra**: Fundos brancos, sombras cinza sutis, bordas discretas
+- **Gradientes sutis**: Backgrounds com gradientes white-to-light-gray que criam profundidade
+- **Glassmorphism**: Cards com efeito glass (backdrop-blur) para visual sofisticado
+- **Paleta neutra**: Fundos com gradientes suaves, sombras cinza discretas, bordas limpas
 - **Identificação por módulo**: Cor do módulo apenas em elementos focais (botões, badges, ícones)
 - **Responsividade**: Design otimizado para desktop e mobile com navegação streamlined
+
+**Variantes de Cards**:
+- `default`: Card branco limpo com borda sutil
+- `gradient`: Card com gradiente muito sutil (white-to-module-color/20)
+- `glass`: Card glassmorphism com backdrop-blur e gradiente translúcido
+- `featured`: Card com cor do módulo (destaque)
 
 Mobile interfaces são otimizadas para elementos touch-friendly, incluindo sticky headers e funcionalidade pull-to-refresh.
 

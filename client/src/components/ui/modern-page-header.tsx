@@ -28,13 +28,10 @@ export function ModernPageHeader({
   const theme = useModuleTheme();
   
   return (
-    <div className="relative overflow-hidden">
-      {/* Background com gradiente */}
-      <div className={cn(
-        "absolute inset-0 opacity-50",
-        theme.gradients.subtle
-      )} />
-      
+    <div className={cn(
+      "relative overflow-hidden",
+      theme.gradients.page
+    )}>
       {/* Conteúdo */}
       <div className="relative px-6 py-8">
         <div className="max-w-7xl mx-auto">

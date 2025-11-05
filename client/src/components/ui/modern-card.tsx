@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface ModernCardProps {
   children: React.ReactNode;
   className?: string;
-  variant?: 'default' | 'gradient' | 'featured';
+  variant?: 'default' | 'gradient' | 'glass' | 'featured';
   hover?: boolean;
   shimmer?: boolean;
 }
@@ -27,6 +27,9 @@ export function ModernCard({
     case 'gradient':
       baseClasses = theme.cards.gradient;
       break;
+    case 'glass':
+      baseClasses = theme.cards.glass;
+      break;
     case 'featured':
       baseClasses = theme.cards.featured;
       break;
@@ -37,7 +40,7 @@ export function ModernCard({
   return (
     <div className={cn(
       baseClasses,
-      hover && theme.hover.card,
+      hover && variant !== 'glass' && theme.hover.card,
       shimmer && theme.animations.shimmer,
       className
     )}>
