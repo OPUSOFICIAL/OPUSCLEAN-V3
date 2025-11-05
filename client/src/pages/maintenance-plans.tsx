@@ -379,13 +379,6 @@ export default function MaintenancePlans() {
         title="Plano de Manutenção" 
         description="Gerenciamento de atividades de manutenção programadas"
         icon={CalendarRange}
-        stats={[
-          { 
-            label: "Atividades Ativas", 
-            value: Array.isArray(activities) ? activities.length : 0,
-            icon: Wrench
-          }
-        ]}
         actions={
           <div className="flex items-center gap-2">
             <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
@@ -420,12 +413,64 @@ export default function MaintenancePlans() {
       />
       
       <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
-        {/* Filters */}
+        {/* Filters and Stats Combined */}
         <ModernCard variant="default">
           <ModernCardContent>
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", theme.backgrounds.light)}>
+                  <Wrench className={cn("w-5 h-5", theme.text.primary)} />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Ativas</p>
+                  <p className="text-xl font-bold text-foreground">
+                    {(activities as any[])?.filter((a: any) => a.isActive).length || 0}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Preventivas</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {(activities as any[])?.filter((a: any) => a.type === 'preventiva').length || 0}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Timer className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Preditivas</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    {(activities as any[])?.filter((a: any) => a.type === 'preditiva').length || 0}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Equipamentos</p>
+                  <p className="text-xl font-bold text-foreground">
+                    {new Set((activities as any[])?.flatMap((a: any) => a.equipmentIds || [])).size || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Filters Row */}
+            <div className="flex flex-wrap gap-3 pt-4 border-t">
               <Select value={siteFilter} onValueChange={setSiteFilter}>
-                <SelectTrigger className="w-48" data-testid="select-site-filter">
+                <SelectTrigger className="w-44" data-testid="select-site-filter">
                   <SelectValue placeholder="Filtrar por local" />
                 </SelectTrigger>
                 <SelectContent>
@@ -439,7 +484,7 @@ export default function MaintenancePlans() {
               </Select>
               
               <Select defaultValue="todas">
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -455,7 +500,7 @@ export default function MaintenancePlans() {
               </Select>
 
               <Select defaultValue="todos">
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -467,7 +512,7 @@ export default function MaintenancePlans() {
               </Select>
 
               <Select defaultValue="ativas">
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -480,113 +525,39 @@ export default function MaintenancePlans() {
           </ModernCardContent>
         </ModernCard>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <ModernCard variant="default">
-            <ModernCardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Atividades Ativas</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {(activities as any[])?.filter((a: any) => a.isActive).length || 0}
-                  </p>
-                </div>
-                <Wrench className="w-8 h-8 text-primary" />
-              </div>
-            </ModernCardContent>
-          </ModernCard>
-
-          <ModernCard variant="default">
-            <ModernCardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Preventivas</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {(activities as any[])?.filter((a: any) => a.type === 'preventiva').length || 0}
-                  </p>
-                </div>
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-green-600" />
-                </div>
-              </div>
-            </ModernCardContent>
-          </ModernCard>
-
-          <ModernCard variant="default">
-            <ModernCardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Preditivas</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {(activities as any[])?.filter((a: any) => a.type === 'preditiva').length || 0}
-                  </p>
-                </div>
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Timer className="w-4 h-4 text-blue-600" />
-                </div>
-              </div>
-            </ModernCardContent>
-          </ModernCard>
-
-          <ModernCard variant="default">
-            <ModernCardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Equipamentos</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {new Set((activities as any[])?.flatMap((a: any) => a.equipmentIds || [])).size || 0}
-                  </p>
-                </div>
-                <MapPin className="w-8 h-8 text-chart-1" />
-              </div>
-            </ModernCardContent>
-          </ModernCard>
-        </div>
-
         {/* Calendar Views or Activities List */}
         {viewMode === "monthly" ? (
           <ModernCard variant="default">
-            {/* Modern Header com navegação */}
-            <div className="bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 p-6 rounded-t-xl">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
-                    <Calendar className="w-6 h-6 text-white" />
+            <ModernCardHeader icon={<Calendar className="w-5 h-5" />}>
+              <div className="flex items-center justify-between w-full">
+                <span>Calendário de Manutenção</span>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => navigateMonth('prev')}
+                    className="h-8 w-8 hover:bg-muted rounded-lg"
+                    data-testid="button-prev-month"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <div className="px-4 py-1 bg-muted/50 rounded-lg">
+                    <span className="font-semibold text-sm">
+                      {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
+                    </span>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">Calendário de Manutenção</h2>
-                    <p className="text-orange-100 text-sm">Visualize suas atividades programadas</p>
-                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => navigateMonth('next')}
+                    className="h-8 w-8 hover:bg-muted rounded-lg"
+                    data-testid="button-next-month"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-              
-              {/* Navegação de mês */}
-              <div className="flex items-center justify-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => navigateMonth('prev')}
-                  className="h-10 w-10 bg-white/10 hover:bg-white/20 text-white border-0 rounded-lg transition-all"
-                  data-testid="button-prev-month"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-                <div className="bg-white/10 backdrop-blur-sm px-6 py-2 rounded-lg border border-white/20">
-                  <span className="font-bold text-xl text-white">
-                    {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
-                  </span>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => navigateMonth('next')}
-                  className="h-10 w-10 bg-white/10 hover:bg-white/20 text-white border-0 rounded-lg transition-all"
-                  data-testid="button-next-month"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
+            </ModernCardHeader>
 
             <ModernCardContent>
               {/* Legenda compacta e moderna */}
