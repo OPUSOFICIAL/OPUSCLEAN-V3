@@ -416,9 +416,9 @@ export default function MaintenancePlans() {
         description="Gerenciamento de atividades de manutenção programadas"
         icon={CalendarRange}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
-              <SelectTrigger className="w-28 sm:w-32" data-testid="select-view-mode">
+              <SelectTrigger className="w-32 sm:w-36" data-testid="select-view-mode">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -431,7 +431,7 @@ export default function MaintenancePlans() {
               variant="outline"
               disabled={generateWorkOrdersMutation.isPending}
               data-testid="button-generate-work-orders"
-              className={cn("flex items-center gap-2", theme.buttons.outline)}
+              className={cn("flex items-center gap-2 px-4", theme.buttons.outline)}
             >
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs'}</span>
@@ -439,7 +439,7 @@ export default function MaintenancePlans() {
             </Button>
             <Button 
               onClick={() => setShowCreateModal(true)}
-              className={theme.buttons.primary}
+              className={cn(theme.buttons.primary, "px-4")}
               data-testid="button-create-activity"
             >
               <Plus className="w-4 h-4 sm:mr-2" />
