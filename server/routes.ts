@@ -1563,6 +1563,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/work-orders/:id", async (req, res) => {
     try {
       const workOrder = insertWorkOrderSchema.partial().parse(req.body);
+      
+      // Se está sendo cancelada, adicionar timestamp e usuário
+      if (workOrder.status === 'cancelada') {
+        workOrder.cancelledAt = new Date();
+        workOrder.cancelledBy = req.user?.id;
+      }
+      
       const updatedWorkOrder = await storage.updateWorkOrder(req.params.id, workOrder);
       
       // Send webhook notification if configured
@@ -1580,6 +1587,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/work-orders/:id", async (req, res) => {
     try {
       const workOrder = insertWorkOrderSchema.partial().parse(req.body);
+      
+      // Se está sendo cancelada, adicionar timestamp e usuário
+      if (workOrder.status === 'cancelada') {
+        workOrder.cancelledAt = new Date();
+        workOrder.cancelledBy = req.user?.id;
+      }
+      
       const updatedWorkOrder = await storage.updateWorkOrder(req.params.id, workOrder);
       
       // Send webhook notification if configured
