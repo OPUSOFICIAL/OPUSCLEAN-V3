@@ -332,7 +332,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
-      <Header />
+      <Header title="Configurações do Sistema" />
       
       {/* Container com padding adequado - não colar nas extremidades */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -349,12 +349,7 @@ export default function Settings() {
             <TabsList className="flex gap-1 bg-transparent w-max min-w-full">
               <TabsTrigger 
                 value="types" 
-                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
-                style={{
-                  // @ts-ignore
-                  '--active-bg': theme.colors.light,
-                  '--active-text': theme.colors.primary,
-                } as any}
+                className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 transition-all whitespace-nowrap data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-sm"
                 data-testid="tab-types"
               >
                 <Bookmark className="w-4 h-4" />
@@ -362,12 +357,7 @@ export default function Settings() {
               </TabsTrigger>
               <TabsTrigger 
                 value="services" 
-                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
-                style={{
-                  // @ts-ignore
-                  '--active-bg': theme.colors.light,
-                  '--active-text': theme.colors.primary,
-                } as any}
+                className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 transition-all whitespace-nowrap data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-sm"
                 data-testid="tab-services"
               >
                 <SettingsIcon className="w-4 h-4" />
@@ -375,12 +365,7 @@ export default function Settings() {
               </TabsTrigger>
               <TabsTrigger 
                 value="goals" 
-                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
-                style={{
-                  // @ts-ignore
-                  '--active-bg': theme.colors.light,
-                  '--active-text': theme.colors.primary,
-                } as any}
+                className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 transition-all whitespace-nowrap data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-sm"
                 data-testid="tab-goals"
               >
                 <Target className="w-4 h-4" />
@@ -388,12 +373,7 @@ export default function Settings() {
               </TabsTrigger>
               <TabsTrigger 
                 value="sites" 
-                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
-                style={{
-                  // @ts-ignore
-                  '--active-bg': theme.colors.light,
-                  '--active-text': theme.colors.primary,
-                } as any}
+                className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 transition-all whitespace-nowrap data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-sm"
                 data-testid="tab-sites"
               >
                 <Building className="w-4 h-4" />
@@ -401,12 +381,7 @@ export default function Settings() {
               </TabsTrigger>
               <TabsTrigger 
                 value="users" 
-                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
-                style={{
-                  // @ts-ignore
-                  '--active-bg': theme.colors.light,
-                  '--active-text': theme.colors.primary,
-                } as any}
+                className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 transition-all whitespace-nowrap data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-sm"
                 data-testid="tab-users"
               >
                 <UsersIcon className="w-4 h-4" />
