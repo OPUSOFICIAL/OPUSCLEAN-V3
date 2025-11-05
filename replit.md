@@ -40,6 +40,12 @@ O frontend utiliza:
 
 Mobile interfaces são otimizadas para elementos touch-friendly, incluindo sticky headers e funcionalidade pull-to-refresh.
 
+**Mobile Dashboard - Indicador Visual de O.S em Execução (Atualizado em 05/11/2025)**: O dashboard mobile do colaborador apresenta um sistema visual destacado para mostrar quais ordens de serviço estão sendo executadas atualmente pelo colaborador:
+- **Seção Destacada no Topo**: Card verde com gradiente (green-to-emerald) que lista todas as O.S com status "em_execucao" do colaborador, incluindo número da OS, título, local/zona, prazo e tipo
+- **Card de Estatística Especial**: Card maior no grid de estatísticas mostrando contador de O.S em execução com ícone Zap e emoji 🔥
+- **Separação Inteligente**: O.S em execução são filtradas separadamente das "Pendentes", evitando duplicação
+- **Design Visual**: Usa gradientes verde-esmeralda, ícones animados (pulse), e efeito glassmorphism para destacar visualmente as tarefas ativas
+
 ## Technical Implementations
 
 ### Frontend
