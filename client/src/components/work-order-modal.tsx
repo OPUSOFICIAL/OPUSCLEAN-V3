@@ -51,6 +51,8 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
     if (comments && Array.isArray(comments)) {
       let lastExecutionStart: Date | null = new Date((workOrder as any).startedAt);
       
+      console.log('[CALC TIME] Iniciando cálculo - startedAt:', (workOrder as any).startedAt);
+      
       for (const comment of comments as any[]) {
         const commentText = comment.comment || "";
         const commentTime = new Date(comment.createdAt);
@@ -58,27 +60,38 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
         // Quando pausa: finaliza o período de execução atual
         if (commentText.includes("⏸️") && commentText.includes("pausou a OS") && lastExecutionStart) {
           const executionDuration = commentTime.getTime() - lastExecutionStart.getTime();
+          console.log('[CALC TIME] Pausou - Período:', executionDuration / 1000, 's');
           totalExecutionTime += executionDuration;
           lastExecutionStart = null; // Reseta para indicar que não está em execução
         }
         
-        // Quando retoma: inicia novo período de execução
-        if (commentText.includes("▶️") && commentText.includes("retomou a execução")) {
+        // Quando retoma OU inicia: inicia novo período de execução
+        if ((commentText.includes("⏯️") || commentText.includes("▶️")) && 
+            (commentText.includes("retomou a execução") || commentText.includes("iniciou a execução"))) {
+          console.log('[CALC TIME] Retomou/Iniciou -', comment.createdAt);
           lastExecutionStart = commentTime;
         }
       }
       
+      console.log('[CALC TIME] Total antes final:', totalExecutionTime / 1000, 's');
+      console.log('[CALC TIME] lastExecutionStart:', lastExecutionStart);
+      console.log('[CALC TIME] status:', (workOrder as any)?.status);
+      
       // Se ainda está em execução, adicionar o tempo desde o último início até agora
       if (lastExecutionStart && (workOrder as any)?.status === 'em_execucao') {
         const currentExecutionDuration = new Date().getTime() - lastExecutionStart.getTime();
+        console.log('[CALC TIME] Em execução - adiciona:', currentExecutionDuration / 1000, 's');
         totalExecutionTime += currentExecutionDuration;
       }
       
       // Se foi concluída, adicionar o tempo desde o último início até a conclusão
       if (lastExecutionStart && (workOrder as any)?.status === 'concluida' && (workOrder as any)?.completedAt) {
         const finalExecutionDuration = new Date((workOrder as any).completedAt).getTime() - lastExecutionStart.getTime();
+        console.log('[CALC TIME] Concluída - adiciona:', finalExecutionDuration / 1000, 's');
         totalExecutionTime += finalExecutionDuration;
       }
+      
+      console.log('[CALC TIME] Total FINAL:', totalExecutionTime / 1000, 's');
     } else {
       // Caso não tenha comentários (sem pausas), calcular direto
       const endTime = (workOrder as any)?.completedAt 
