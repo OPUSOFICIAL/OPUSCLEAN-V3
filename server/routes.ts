@@ -1560,7 +1560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/work-orders/:id", async (req, res) => {
+  app.put("/api/work-orders/:id", requireAuth, async (req, res) => {
     try {
       const workOrder = insertWorkOrderSchema.partial().parse(req.body);
       
@@ -1584,7 +1584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/work-orders/:id", async (req, res) => {
+  app.patch("/api/work-orders/:id", requireAuth, async (req, res) => {
     try {
       const workOrder = insertWorkOrderSchema.partial().parse(req.body);
       
