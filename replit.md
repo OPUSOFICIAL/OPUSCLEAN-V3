@@ -14,7 +14,17 @@ Preferred communication style: Simple, everyday language.
 
 ## UI/UX Decisions
 
-The system utilizes a consistent brand identity with a navy and slate blue palette. The frontend employs shadcn/ui with Radix UI primitives and Tailwind CSS for a responsive design, featuring gradient cards, color-coded charts, and streamlined navigation. Mobile interfaces are optimized for touch-friendly elements, including sticky headers and pull-to-refresh functionality.
+**Design System (Atualizado em 05/11/2025)**: O sistema implementa um design **predominantemente BRANCO e minimalista**, onde as cores dos módulos (azul para Clean, laranja para Manutenção) aparecem apenas como identificação sutil em badges, botões primários e bordas de ênfase. 
+
+O frontend utiliza:
+- **shadcn/ui** com Radix UI primitives e Tailwind CSS
+- **Componentes modernos reutilizáveis**: ModernCard, ModernPageHeader, ModernCardContent
+- **Hook de tema dinâmico**: `use-module-theme` que adapta cores baseado no módulo ativo
+- **Paleta neutra**: Fundos brancos, sombras cinza sutis, bordas discretas
+- **Identificação por módulo**: Cor do módulo apenas em elementos focais (botões, badges, ícones)
+- **Responsividade**: Design otimizado para desktop e mobile com navegação streamlined
+
+Mobile interfaces são otimizadas para elementos touch-friendly, incluindo sticky headers e funcionalidade pull-to-refresh.
 
 ## Technical Implementations
 
