@@ -411,8 +411,7 @@ export default function QrCodes() {
         actions={
           <Button 
             onClick={handleRefresh}
-            variant="outline"
-            className="flex items-center gap-2"
+            className={cn("flex items-center gap-2", theme.buttons.outline)}
             size="sm"
             data-testid="button-refresh-header"
           >
