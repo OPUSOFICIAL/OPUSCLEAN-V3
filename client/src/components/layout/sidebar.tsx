@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import opusFacilitiesLogo from "@assets/image_1762386567820.png";
-import opusMaintenanceLogo from "@assets/ChatGPT Image 5 de nov. de 2025, 20_52_56_1762386844399.png";
+import opusMaintenanceLogo from "@assets/imagem_2025-11-05_205522349-Photoroom_1762386947229.png";
 import { 
   Building, 
   Calendar, 
