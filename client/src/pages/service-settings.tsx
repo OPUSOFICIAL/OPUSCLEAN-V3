@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import Header from "@/components/layout/header";
 import Sites from "./sites";
 import Users from "./users";
 import Services from "./services";
@@ -332,8 +331,6 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
-      <Header title="Configurações do Sistema" />
-      
       {/* Container com padding adequado - não colar nas extremidades */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header Moderno */}
