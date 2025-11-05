@@ -574,60 +574,6 @@ export default function MobileDashboard() {
           </CardContent>
         </Card>
 
-        {/* Work Orders List - Disponíveis */}
-        {availableOrders.length > 0 && (
-          <div className="space-y-4" id="disponiveis-section">
-            <h2 className="text-xl font-bold text-orange-900 flex items-center gap-2">
-              <AlertCircle className="w-6 h-6" />
-              OS Disponíveis ({availableOrders.length})
-            </h2>
-
-            {availableOrders.map((workOrder) => (
-              <Card key={workOrder.id} className="bg-orange-50/80 backdrop-blur-sm border-orange-200 shadow-lg">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="bg-orange-600 text-white border-orange-700 font-bold">
-                          OS #{workOrder.number}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-lg text-orange-900 break-words">{workOrder.title}</CardTitle>
-                      <div className="flex items-center space-x-2 text-sm text-orange-700">
-                        <MapPin className="w-4 h-4" />
-                        <span>{workOrder.siteName} - {workOrder.zoneName}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(workOrder.priority)}`}></div>
-                      <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
-                        Disponível
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-orange-800 mb-3">{workOrder.description}</p>
-                  <div className="flex items-center justify-between text-sm text-orange-600 mb-3">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Prazo: {formatDate(workOrder.dueDate)}</span>
-                    </div>
-                    <span className="font-medium capitalize">{workOrder.type.replace('_', ' ')}</span>
-                  </div>
-                  <Button 
-                    className="w-full bg-orange-600 hover:bg-orange-700" 
-                    data-testid={`button-view-order-${workOrder.id}`}
-                    onClick={() => setLocation(`/mobile/work-order-details/${workOrder.id}`)}
-                  >
-                    Ver Detalhes
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
         {/* Work Orders List - Minhas Pendentes */}
         <div className="space-y-4" id="pendentes-section">
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -693,6 +639,60 @@ export default function MobileDashboard() {
             ))
           )}
         </div>
+
+        {/* Work Orders List - Disponíveis */}
+        {availableOrders.length > 0 && (
+          <div className="space-y-4" id="disponiveis-section">
+            <h2 className="text-xl font-bold text-orange-900 flex items-center gap-2">
+              <AlertCircle className="w-6 h-6" />
+              OS Disponíveis ({availableOrders.length})
+            </h2>
+
+            {availableOrders.map((workOrder) => (
+              <Card key={workOrder.id} className="bg-orange-50/80 backdrop-blur-sm border-orange-200 shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="bg-orange-600 text-white border-orange-700 font-bold">
+                          OS #{workOrder.number}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-lg text-orange-900 break-words">{workOrder.title}</CardTitle>
+                      <div className="flex items-center space-x-2 text-sm text-orange-700">
+                        <MapPin className="w-4 h-4" />
+                        <span>{workOrder.siteName} - {workOrder.zoneName}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end space-y-2">
+                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(workOrder.priority)}`}></div>
+                      <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+                        Disponível
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-orange-800 mb-3">{workOrder.description}</p>
+                  <div className="flex items-center justify-between text-sm text-orange-600 mb-3">
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-4 h-4" />
+                      <span>Prazo: {formatDate(workOrder.dueDate)}</span>
+                    </div>
+                    <span className="font-medium capitalize">{workOrder.type.replace('_', ' ')}</span>
+                  </div>
+                  <Button 
+                    className="w-full bg-orange-600 hover:bg-orange-700" 
+                    data-testid={`button-view-order-${workOrder.id}`}
+                    onClick={() => setLocation(`/mobile/work-order-details/${workOrder.id}`)}
+                  >
+                    Ver Detalhes
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Work Orders List - Pausadas */}
         {myPausedOrders.length > 0 && (
