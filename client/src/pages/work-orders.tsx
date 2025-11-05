@@ -369,18 +369,18 @@ export default function WorkOrders() {
           <ModernCard variant="gradient">
             <ModernCardContent>
               {/* Cards de Estatísticas */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", 
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="flex items-center gap-4">
+                  <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center", 
                     currentModule === 'maintenance' ? 'bg-orange-50' : 'bg-blue-50'
                   )}>
-                    <Clock className={cn("w-5 h-5", 
+                    <Clock className={cn("w-7 h-7", 
                       currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
                     )} />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Abertas</p>
-                    <p className={cn("text-xl font-bold", 
+                    <p className="text-sm text-muted-foreground font-medium">Abertas</p>
+                    <p className={cn("text-3xl font-bold", 
                       currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
                     )}>
                       {totalAbertas}
@@ -388,41 +388,41 @@ export default function WorkOrders() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center">
+                    <AlertTriangle className="w-7 h-7 text-red-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Vencidas</p>
-                    <p className="text-xl font-bold text-red-600">
+                    <p className="text-sm text-muted-foreground font-medium">Vencidas</p>
+                    <p className="text-3xl font-bold text-red-600">
                       {totalVencidas}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center",
+                <div className="flex items-center gap-4">
+                  <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center",
                     currentModule === 'maintenance' ? 'bg-orange-50' : 'bg-blue-50'
                   )}>
-                    <PauseCircle className={cn("w-5 h-5",
+                    <PauseCircle className={cn("w-7 h-7",
                       currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
                     )} />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Pausadas</p>
-                    <p className="text-xl font-bold text-foreground">
+                    <p className="text-sm text-muted-foreground font-medium">Pausadas</p>
+                    <p className="text-3xl font-bold text-foreground">
                       {totalPausadas}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center">
+                    <CheckCircle2 className="w-7 h-7 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Concluídas</p>
-                    <p className="text-xl font-bold text-green-600">
+                    <p className="text-sm text-muted-foreground font-medium">Concluídas</p>
+                    <p className="text-3xl font-bold text-green-600">
                       {totalConcluidas}
                     </p>
                   </div>
