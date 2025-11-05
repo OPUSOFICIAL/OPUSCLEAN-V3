@@ -1,4 +1,3 @@
-import Header from "@/components/layout/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,9 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
+import { useModuleTheme } from "@/hooks/use-module-theme";
+import { ModernCard, ModernCardHeader, ModernCardContent } from "@/components/ui/modern-card";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
 import { 
   Plus, 
   Eye, 
@@ -26,10 +28,12 @@ import {
   ChevronDown,
   X,
   MapPin,
-  PauseCircle
+  PauseCircle,
+  ClipboardList
 } from "lucide-react";
 import WorkOrderModal from "@/components/work-order-modal";
 import CreateWorkOrderModal from "@/components/create-work-order-modal";
+import { cn } from "@/lib/utils";
 
 interface MultiSelectOption {
   value: string;
@@ -120,6 +124,7 @@ function MultiSelect({ options, selected, onChange, placeholder, testId }: Multi
 export default function WorkOrders() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -280,15 +285,15 @@ export default function WorkOrders() {
 
   if (isLoading) {
     return (
-      <>
-        <Header title="Ordens de Serviço" description={headerDescription} />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando...</p>
-          </div>
+      <div className={cn("flex-1 flex items-center justify-center", theme.gradients.subtle)}>
+        <div className="text-center">
+          <div className={cn(
+            "w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4",
+            theme.borders.primary
+          )}></div>
+          <p className="text-slate-600 font-medium">Carregando ordens de serviço...</p>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -317,56 +322,76 @@ export default function WorkOrders() {
 
   return (
     <>
-      <Header 
-        title="Ordens de Serviço" 
-        description={headerDescription} 
+      <ModernPageHeader 
+        title="Ordens de Serviço"
+        description={headerDescription}
+        icon={ClipboardList}
+        stats={[
+          { label: "Abertas", value: totalAbertas, icon: Clock },
+          { label: "Vencidas", value: totalVencidas, icon: AlertTriangle },
+          { label: "Pausadas", value: totalPausadas, icon: PauseCircle },
+          { label: "Concluídas", value: totalConcluidas, icon: CheckCircle2 }
+        ]}
+        actions={
+          <>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              className={cn("flex items-center gap-2", theme.buttons.outline)}
+              data-testid="button-refresh"
+            >
+              <RefreshCw className={`w-4 h-4 transition-transform duration-1000 ${isRefreshing ? 'rotate-360' : ''}`} />
+              Atualizar
+            </Button>
+            <Button 
+              onClick={() => setShowCreateModal(true)} 
+              className={theme.buttons.primary}
+              data-testid="button-create-work-order"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nova OS
+            </Button>
+          </>
+        }
       />
       
-      <main className="flex-1 overflow-auto p-6 bg-gray-50">
+      <main className={cn("flex-1 overflow-auto p-6", theme.gradients.subtle)}>
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header com última atualização */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+          {/* Info de última atualização */}
+          <div className={cn(
+            "backdrop-blur-xl bg-white/60 rounded-lg px-4 py-2 w-fit border",
+            theme.borders.light
+          )}>
+            <span className="text-sm text-slate-600 flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5" />
               Última atualização: {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            </div>
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRefresh}
-                className="flex items-center gap-2"
-                data-testid="button-refresh"
-              >
-                <RefreshCw className={`w-4 h-4 transition-transform duration-1000 ${isRefreshing ? 'rotate-360' : ''}`} />
-                Atualizar
-              </Button>
-              <Button 
-                onClick={() => setShowCreateModal(true)} 
-                className="bg-blue-600 hover:bg-blue-700"
-                data-testid="button-create-work-order"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nova OS
-              </Button>
-            </div>
+            </span>
           </div>
 
           {/* Busca e Filtros */}
-          <Card className="bg-gradient-to-br from-slate-50 to-blue-50/30 border-slate-200 shadow-md">
-            <CardContent className="pt-6">
+          <ModernCard variant="gradient">
+            <ModernCardHeader icon={<Search className={cn("w-5 h-5", theme.text.primary)} />}>
+              Buscar e Filtrar
+            </ModernCardHeader>
+            <ModernCardContent>
               {/* Busca */}
               <div className="mb-6">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block flex items-center gap-2">
-                  <Search className="w-3.5 h-3.5 text-blue-600" />
-                  Buscar Ordem de Serviço
-                </label>
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                  <Search className={cn("absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5", theme.text.light)} />
                   <Input
                     placeholder="Digite o número da OS, título ou descrição..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 h-12 bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-base shadow-sm"
+                    className={cn(
+                      "pl-12 h-12 bg-white/80 backdrop-blur-sm border-2 text-base shadow-sm transition-all duration-200",
+                      theme.borders.light,
+                      "focus:border-current focus:ring-2 focus:ring-opacity-20"
+                    )}
+                    style={{
+                      borderColor: searchTerm ? theme.primaryHex : undefined,
+                      outlineColor: theme.primaryHex + '33'
+                    }}
                     data-testid="input-search-work-orders"
                   />
                 </div>
@@ -375,8 +400,8 @@ export default function WorkOrders() {
               {/* Filtros Rápidos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block flex items-center gap-2">
-                    <Filter className="w-3.5 h-3.5 text-indigo-600" />
+                  <label className={cn("text-xs font-semibold uppercase tracking-wide mb-2 block flex items-center gap-2", theme.text.dark)}>
+                    <Filter className={cn("w-3.5 h-3.5", theme.text.primary)} />
                     Status
                   </label>
                   <MultiSelect
@@ -396,8 +421,8 @@ export default function WorkOrders() {
                 </div>
                 
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                  <label className={cn("text-xs font-semibold uppercase tracking-wide mb-2 block flex items-center gap-2", theme.text.dark)}>
+                    <MapPin className={cn("w-3.5 h-3.5", theme.text.primary)} />
                     Zonas
                   </label>
                   <MultiSelect
@@ -414,9 +439,12 @@ export default function WorkOrders() {
               </div>
 
               {/* Filtro de Período */}
-              <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-lg p-4">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3 block flex items-center gap-2">
-                  <Calendar className="w-3.5 h-3.5 text-violet-600" />
+              <div className={cn(
+                "backdrop-blur-sm bg-white/60 border rounded-lg p-4",
+                theme.borders.light
+              )}>
+                <label className={cn("text-xs font-semibold uppercase tracking-wide mb-3 block flex items-center gap-2", theme.text.dark)}>
+                  <Calendar className={cn("w-3.5 h-3.5", theme.text.primary)} />
                   Filtrar por Período de Agendamento
                 </label>
                 <div className="flex flex-wrap items-center gap-4">
@@ -426,7 +454,7 @@ export default function WorkOrders() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="flex-1 border-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
+                      className="flex-1 border-slate-300 focus:ring-2 focus:ring-opacity-20 shadow-sm"
                       data-testid="input-start-date"
                     />
                   </div>
@@ -436,86 +464,21 @@ export default function WorkOrders() {
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="flex-1 border-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
+                      className="flex-1 border-slate-300 focus:ring-2 focus:ring-opacity-20 shadow-sm"
                       data-testid="input-end-date"
                     />
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Cards de Estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Total Abertas */}
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200" data-testid="card-stat-abertas">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-blue-700 mb-1 uppercase">Total Abertas</p>
-                    <p className="text-4xl font-bold text-blue-900" data-testid="text-total-abertas">{totalAbertas}</p>
-                    <p className="text-sm text-blue-600 mt-1">Ordens pendentes</p>
-                  </div>
-                  <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center">
-                    <Clock className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Vencidas */}
-            <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200" data-testid="card-stat-vencidas">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-red-700 mb-1 uppercase">Vencidas</p>
-                    <p className="text-4xl font-bold text-red-900" data-testid="text-total-vencidas">{totalVencidas}</p>
-                    <p className="text-sm text-red-600 mt-1">Fora do prazo</p>
-                  </div>
-                  <div className="w-16 h-16 bg-red-500 rounded-2xl flex items-center justify-center">
-                    <AlertTriangle className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pausadas */}
-            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200" data-testid="card-stat-pausadas">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-orange-700 mb-1 uppercase">Pausadas</p>
-                    <p className="text-4xl font-bold text-orange-900" data-testid="text-total-pausadas">{totalPausadas}</p>
-                    <p className="text-sm text-orange-600 mt-1">Em espera</p>
-                  </div>
-                  <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
-                    <PauseCircle className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Concluídas */}
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200" data-testid="card-stat-concluidas">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-green-700 mb-1 uppercase">Concluídas</p>
-                    <p className="text-4xl font-bold text-green-900" data-testid="text-total-concluidas">{totalConcluidas}</p>
-                    <p className="text-sm text-green-600 mt-1">Finalizadas</p>
-                  </div>
-                  <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center">
-                    <CheckCircle2 className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+            </ModernCardContent>
+          </ModernCard>
 
           {/* Tabela de Ordens de Serviço */}
-          <Card className="bg-white shadow-sm">
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Lista de Ordens de Serviço</h2>
+          <ModernCard>
+            <ModernCardHeader icon={<ClipboardList className={cn("w-5 h-5", theme.text.primary)} />}>
+              Lista de Ordens de Serviço
+            </ModernCardHeader>
+            <ModernCardContent>
               
               {filteredWorkOrders.length === 0 ? (
                 <div className="text-center py-12">
@@ -578,7 +541,11 @@ export default function WorkOrders() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setSelectedWorkOrder(wo.id)}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                className={cn(
+                                  "hover:scale-110 transition-transform",
+                                  theme.text.primary,
+                                  `hover:${theme.backgrounds.light}`
+                                )}
                                 data-testid={`button-view-${wo.id}`}
                               >
                                 <Eye className="w-4 h-4" />
@@ -587,7 +554,7 @@ export default function WorkOrders() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteWorkOrder(wo.id, wo.title)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:scale-110 transition-transform"
                                 data-testid={`button-delete-${wo.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -600,8 +567,8 @@ export default function WorkOrders() {
                   </table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
         </div>
       </main>
 
