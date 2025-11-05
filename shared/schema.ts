@@ -276,6 +276,9 @@ export const workOrders = pgTable("work_orders", {
   customerRatingComment: text("customer_rating_comment"),
   ratedAt: timestamp("rated_at"),
   ratedBy: varchar("rated_by").references(() => users.id),
+  cancellationReason: text("cancellation_reason"),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelledBy: varchar("cancelled_by").references(() => users.id),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 }, (table) => ({
