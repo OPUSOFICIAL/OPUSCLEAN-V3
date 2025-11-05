@@ -3227,6 +3227,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
+      // Check for unique constraint violation on serial number
+      if (error instanceof Error && error.message.includes('equipment_serial_number_unique')) {
+        return res.status(400).json({ message: "Este número de série já está em uso. Por favor, utilize um número de série único." });
+      }
       console.error("Error creating equipment:", error);
       res.status(500).json({ message: "Failed to create equipment" });
     }
@@ -3241,6 +3245,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      // Check for unique constraint violation on serial number
+      if (error instanceof Error && error.message.includes('equipment_serial_number_unique')) {
+        return res.status(400).json({ message: "Este número de série já está em uso. Por favor, utilize um número de série único." });
       }
       console.error("Error updating equipment:", error);
       res.status(500).json({ message: "Failed to update equipment" });

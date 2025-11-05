@@ -497,7 +497,7 @@ export const equipment = pgTable("equipment", {
   internalCode: varchar("internal_code"),
   manufacturer: varchar("manufacturer"),
   model: varchar("model"),
-  serialNumber: varchar("serial_number"),
+  serialNumber: varchar("serial_number").unique(),
   purchaseDate: date("purchase_date"),
   warrantyExpiry: date("warranty_expiry"),
   installationDate: date("installation_date"),
