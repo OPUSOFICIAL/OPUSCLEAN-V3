@@ -972,6 +972,255 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Resumo de Locais - Novo */}
+        <Card className="bg-gradient-to-br from-slate-50/80 via-white to-blue-50/80 border border-slate-200 shadow-2xl">
+          <CardHeader className="pb-6 border-b border-slate-200/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl shadow-lg">
+                  <Building className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Resumo por Local</h3>
+                  <p className="text-sm text-gray-600">Performance detalhada de cada local</p>
+                </div>
+              </div>
+              <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+                {(sites as any[] || []).length} {(sites as any[] || []).length === 1 ? 'Local' : 'Locais'}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(sites as any[] || []).map((site: any) => {
+                const siteWorkOrders = (workOrders as any[] || []).filter((wo: any) => wo.siteId === site.id);
+                const totalOS = siteWorkOrders.length;
+                const concluidas = siteWorkOrders.filter((wo: any) => wo.status === 'concluida').length;
+                const abertas = siteWorkOrders.filter((wo: any) => wo.status === 'aberta').length;
+                const vencidas = siteWorkOrders.filter((wo: any) => wo.status === 'vencida').length;
+                const taxaConclusao = totalOS > 0 ? Math.round((concluidas / totalOS) * 100) : 0;
+                
+                return (
+                  <div 
+                    key={site.id}
+                    className="group relative overflow-hidden bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200 p-5 hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
+                    onClick={() => {
+                      setSelectedSite(site.id);
+                      queryClient.invalidateQueries({ 
+                        queryKey: [`/api/customers/${activeClientId}/dashboard-stats`] 
+                      });
+                    }}
+                    data-testid={`site-card-${site.id}`}
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -translate-y-12 translate-x-12"></div>
+                    
+                    <div className="relative space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                            {site.name}
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            {(zones as any[] || []).filter((z: any) => z.siteId === site.id).length} zonas
+                          </p>
+                        </div>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          taxaConclusao >= 80 ? 'bg-emerald-100' :
+                          taxaConclusao >= 60 ? 'bg-blue-100' :
+                          taxaConclusao >= 40 ? 'bg-amber-100' : 'bg-red-100'
+                        }`}>
+                          <Building className={`w-5 h-5 ${
+                            taxaConclusao >= 80 ? 'text-emerald-600' :
+                            taxaConclusao >= 60 ? 'text-blue-600' :
+                            taxaConclusao >= 40 ? 'text-amber-600' : 'text-red-600'
+                          }`} />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Taxa de Conclusão</span>
+                          <span className={`font-bold ${
+                            taxaConclusao >= 80 ? 'text-emerald-600' :
+                            taxaConclusao >= 60 ? 'text-blue-600' :
+                            taxaConclusao >= 40 ? 'text-amber-600' : 'text-red-600'
+                          }`}>
+                            {taxaConclusao}%
+                          </span>
+                        </div>
+                        <Progress value={taxaConclusao} className="h-2" />
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-emerald-50 rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-emerald-700">{concluidas}</div>
+                          <div className="text-xs text-emerald-600">OK</div>
+                        </div>
+                        <div className="bg-amber-50 rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-amber-700">{abertas}</div>
+                          <div className="text-xs text-amber-600">Abertas</div>
+                        </div>
+                        <div className="bg-red-50 rounded-lg p-2 text-center">
+                          <div className="text-lg font-bold text-red-700">{vencidas}</div>
+                          <div className="text-xs text-red-600">Venc.</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {(sites as any[] || []).length === 0 && (
+                <div className="col-span-full text-center py-12">
+                  <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium">Nenhum local cadastrado</p>
+                  <p className="text-sm text-gray-400 mt-1">Adicione locais para visualizar as estatísticas</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Zonas - Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="bg-gradient-to-br from-emerald-50/80 via-white to-green-50/80 border border-emerald-200 shadow-2xl">
+            <CardHeader className="pb-6 border-b border-emerald-200/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gradient-to-br from-emerald-600 to-green-600 rounded-xl shadow-lg">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Top Zonas</h3>
+                    <p className="text-sm text-gray-600">Melhor performance</p>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                {(() => {
+                  const zonesWithStats = (zones as any[] || []).map((zone: any) => {
+                    const zoneWorkOrders = (workOrders as any[] || []).filter((wo: any) => wo.zoneId === zone.id);
+                    const total = zoneWorkOrders.length;
+                    const concluidas = zoneWorkOrders.filter((wo: any) => wo.status === 'concluida').length;
+                    const taxa = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+                    return { ...zone, totalOS: total, concluidas, taxa };
+                  })
+                  .filter(z => z.totalOS > 0)
+                  .sort((a, b) => b.taxa - a.taxa)
+                  .slice(0, 5);
+
+                  if (zonesWithStats.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500 text-sm">Nenhuma zona com OSs</p>
+                      </div>
+                    );
+                  }
+
+                  return zonesWithStats.map((zone: any, index: number) => (
+                    <div 
+                      key={zone.id} 
+                      className="flex items-center justify-between p-4 bg-white rounded-xl border border-emerald-100 hover:shadow-md transition-all duration-300 hover:border-emerald-300"
+                      data-testid={`top-zone-${zone.id}`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white ${
+                          index === 0 ? 'bg-gradient-to-br from-amber-400 to-yellow-500' :
+                          index === 1 ? 'bg-gradient-to-br from-slate-400 to-gray-500' :
+                          index === 2 ? 'bg-gradient-to-br from-orange-400 to-amber-600' :
+                          'bg-gradient-to-br from-emerald-400 to-green-500'
+                        }`}>
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900">{zone.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {zone.concluidas}/{zone.totalOS} OSs concluídas
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-emerald-600">{zone.taxa}%</div>
+                        <div className="text-xs text-gray-500">eficiência</div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-red-50/80 via-white to-orange-50/80 border border-red-200 shadow-2xl">
+            <CardHeader className="pb-6 border-b border-red-200/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gradient-to-br from-red-600 to-orange-600 rounded-xl shadow-lg">
+                    <AlertTriangle className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Zonas de Atenção</h3>
+                    <p className="text-sm text-gray-600">Necessitam melhorias</p>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                {(() => {
+                  const zonesWithStats = (zones as any[] || []).map((zone: any) => {
+                    const zoneWorkOrders = (workOrders as any[] || []).filter((wo: any) => wo.zoneId === zone.id);
+                    const total = zoneWorkOrders.length;
+                    const vencidas = zoneWorkOrders.filter((wo: any) => wo.status === 'vencida').length;
+                    const abertas = zoneWorkOrders.filter((wo: any) => wo.status === 'aberta').length;
+                    const taxa = total > 0 ? Math.round((vencidas / total) * 100) : 0;
+                    return { ...zone, totalOS: total, vencidas, abertas, taxa };
+                  })
+                  .filter(z => z.vencidas > 0)
+                  .sort((a, b) => b.taxa - a.taxa)
+                  .slice(0, 5);
+
+                  if (zonesWithStats.length === 0) {
+                    return (
+                      <div className="text-center py-8">
+                        <CheckCircle className="w-12 h-12 text-emerald-300 mx-auto mb-3" />
+                        <p className="text-emerald-600 font-medium">Tudo em dia!</p>
+                        <p className="text-gray-500 text-sm mt-1">Nenhuma zona com OSs vencidas</p>
+                      </div>
+                    );
+                  }
+
+                  return zonesWithStats.map((zone: any, index: number) => (
+                    <div 
+                      key={zone.id} 
+                      className="flex items-center justify-between p-4 bg-white rounded-xl border border-red-100 hover:shadow-md transition-all duration-300 hover:border-red-300"
+                      data-testid={`attention-zone-${zone.id}`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-400 to-orange-500 flex items-center justify-center">
+                          <AlertTriangle className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900">{zone.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {zone.vencidas} vencidas • {zone.abertas} abertas
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-red-600">{zone.vencidas}</div>
+                        <div className="text-xs text-gray-500">pendentes</div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
