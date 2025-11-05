@@ -477,13 +477,13 @@ export default function MaintenancePlans() {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
+          </ModernCardContent>
+        </ModernCard>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <ModernCard variant="default">
+            <ModernCardContent>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Atividades Ativas</p>
@@ -493,11 +493,11 @@ export default function MaintenancePlans() {
                 </div>
                 <Wrench className="w-8 h-8 text-primary" />
               </div>
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
 
-          <Card>
-            <CardContent className="p-4">
+          <ModernCard variant="default">
+            <ModernCardContent>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Preventivas</p>
@@ -509,11 +509,11 @@ export default function MaintenancePlans() {
                   <Clock className="w-4 h-4 text-green-600" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
 
-          <Card>
-            <CardContent className="p-4">
+          <ModernCard variant="default">
+            <ModernCardContent>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Preditivas</p>
@@ -525,11 +525,11 @@ export default function MaintenancePlans() {
                   <Timer className="w-4 h-4 text-blue-600" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
 
-          <Card>
-            <CardContent className="p-4">
+          <ModernCard variant="default">
+            <ModernCardContent>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Equipamentos</p>
@@ -539,15 +539,15 @@ export default function MaintenancePlans() {
                 </div>
                 <MapPin className="w-8 h-8 text-chart-1" />
               </div>
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
         </div>
 
         {/* Calendar Views or Activities List */}
         {viewMode === "monthly" ? (
-          <Card className="border-0 shadow-xl overflow-hidden">
+          <ModernCard variant="default">
             {/* Modern Header com navegação */}
-            <div className="bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 p-6">
+            <div className="bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 p-6 rounded-t-xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
@@ -588,7 +588,7 @@ export default function MaintenancePlans() {
               </div>
             </div>
 
-            <CardContent className="p-6 bg-gradient-to-br from-slate-50 to-white">
+            <ModernCardContent>
               {/* Legenda compacta e moderna */}
               <div className="flex flex-wrap gap-2 mb-6 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-1.5">
@@ -711,18 +711,15 @@ export default function MaintenancePlans() {
                   })
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
         ) : (
           // List View
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Lista de Atividades de Manutenção
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <ModernCard variant="default">
+            <ModernCardHeader icon={<Calendar className="w-5 h-5" />}>
+              Lista de Atividades de Manutenção
+            </ModernCardHeader>
+            <ModernCardContent>
               {(activities as any[])?.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Wrench className="w-16 h-16 mx-auto mb-4 opacity-30" />
@@ -820,8 +817,8 @@ export default function MaintenancePlans() {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
         )}
 
         {/* Modal de Detalhes do Dia */}
@@ -1209,7 +1206,7 @@ export default function MaintenancePlans() {
             )}
           </DialogContent>
         </Dialog>
-      </main>
+      </div>
     </>
   );
 }
