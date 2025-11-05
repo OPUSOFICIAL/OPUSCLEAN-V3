@@ -26,7 +26,12 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     priority: "media",
     zoneId: "",
     assignedUserId: "unassigned",
+    // Campos específicos do Clean
     serviceId: "",
+    // Campos específicos do Manutenção
+    equipmentId: "",
+    maintenanceChecklistTemplateId: "",
+    // Datas
     scheduledDate: "",
     dueDate: "",
     // Campos opcionais de horário
@@ -46,9 +51,22 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     enabled: !!customerId,
   });
 
+  // Serviços para módulo Clean
   const { data: services } = useQuery({
     queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }],
-    enabled: !!customerId,
+    enabled: !!customerId && currentModule === 'clean',
+  });
+
+  // Equipamentos para módulo Manutenção
+  const { data: equipmentList } = useQuery({
+    queryKey: ["/api/customers", customerId, "equipment"],
+    enabled: !!customerId && currentModule === 'maintenance',
+  });
+
+  // Templates de checklist de manutenção
+  const { data: maintenanceChecklistTemplates } = useQuery({
+    queryKey: ["/api/customers", customerId, "maintenance-checklist-templates"],
+    enabled: !!customerId && currentModule === 'maintenance',
   });
 
   // Buscar dados do customer para pegar o companyId
@@ -89,7 +107,6 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
         priority: data.priority,
         status: "aberta",
         zoneId: data.zoneId,
-        serviceId: data.serviceId || null,
         companyId: (customer as any)?.companyId || "company-opus-default",
         assignedUserId: data.assignedUserId === "unassigned" ? null : data.assignedUserId,
         scheduledDate: data.scheduledDate || null,
@@ -98,6 +115,17 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
         scheduledEndAt: null,
         module: currentModule, // Incluir o módulo atual
       };
+
+      // Campos específicos do módulo Clean
+      if (currentModule === 'clean') {
+        submitData.serviceId = data.serviceId || null;
+      }
+
+      // Campos específicos do módulo Manutenção
+      if (currentModule === 'maintenance') {
+        submitData.equipmentId = data.equipmentId || null;
+        submitData.maintenanceChecklistTemplateId = data.maintenanceChecklistTemplateId || null;
+      }
       
       // Calcular scheduledStartAt e scheduledEndAt se tiver horários
       if (data.scheduledDate && data.startTime) {
@@ -156,10 +184,30 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.zoneId || !formData.serviceId) {
+    // Validação básica
+    if (!formData.title || !formData.zoneId) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha o título, selecione um local e um serviço",
+        description: "Preencha o título e selecione um local",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validação específica por módulo
+    if (currentModule === 'clean' && !formData.serviceId) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Selecione um tipo de serviço",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (currentModule === 'maintenance' && !formData.equipmentId) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Selecione um equipamento",
         variant: "destructive"
       });
       return;
@@ -268,14 +316,19 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
             </div>
           </div>
 
-          {/* Local e Serviços */}
-          <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h4 className="font-semibold text-green-900 flex items-center gap-2">
+          {/* Local e Campos Específicos do Módulo */}
+          <div className={`space-y-4 p-4 rounded-lg border ${
+            currentModule === 'maintenance' ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'
+          }`}>
+            <h4 className={`font-semibold flex items-center gap-2 ${
+              currentModule === 'maintenance' ? 'text-orange-900' : 'text-green-900'
+            }`}>
               <MapPin className="w-4 h-4" />
-              Local e Serviços
+              {currentModule === 'maintenance' ? 'Local e Equipamento' : 'Local e Serviços'}
             </h4>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Local (sempre presente) */}
               <div className="space-y-2">
                 <Label htmlFor="zone">Local *</Label>
                 <Select value={formData.zoneId} onValueChange={(value) => handleChange("zoneId", value)}>
@@ -301,25 +354,84 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="service">Serviço *</Label>
-                <Select value={formData.serviceId} onValueChange={(value) => handleChange("serviceId", value)}>
-                  <SelectTrigger data-testid="select-service">
-                    <SelectValue placeholder="Selecione um serviço" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(services as any[] || []).map((service: any) => (
-                      <SelectItem key={service.id} value={service.id}>
-                        <div>
-                          <div className="font-medium">{service.name}</div>
-                          <div className="text-xs text-gray-500">{service.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Campos específicos do módulo CLEAN */}
+              {currentModule === 'clean' && (
+                <div className="space-y-2">
+                  <Label htmlFor="service">Tipo de Serviço *</Label>
+                  <Select value={formData.serviceId} onValueChange={(value) => handleChange("serviceId", value)}>
+                    <SelectTrigger data-testid="select-service">
+                      <SelectValue placeholder="Selecione um serviço" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(services as any[] || []).map((service: any) => (
+                        <SelectItem key={service.id} value={service.id}>
+                          <div>
+                            <div className="font-medium">{service.name}</div>
+                            <div className="text-xs text-gray-500">{service.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
+              {/* Campos específicos do módulo MANUTENÇÃO */}
+              {currentModule === 'maintenance' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="equipment">Equipamento *</Label>
+                    <Select value={formData.equipmentId} onValueChange={(value) => handleChange("equipmentId", value)}>
+                      <SelectTrigger data-testid="select-equipment">
+                        <SelectValue placeholder="Selecione um equipamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {!equipmentList ? (
+                          <SelectItem value="loading" disabled>Carregando equipamentos...</SelectItem>
+                        ) : Array.isArray(equipmentList) && equipmentList.length > 0 ? (
+                          (equipmentList as any[])
+                            .filter((eq: any) => eq.status === 'operacional')
+                            .map((equipment: any) => (
+                              <SelectItem key={equipment.id} value={equipment.id}>
+                                <div>
+                                  <div className="font-medium">{equipment.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {equipment.manufacturer} - {equipment.model}
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))
+                        ) : (
+                          <SelectItem value="no-equipment" disabled>Nenhum equipamento cadastrado</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="checklist">Checklist de Manutenção (Opcional)</Label>
+                    <Select 
+                      value={formData.maintenanceChecklistTemplateId || "none"} 
+                      onValueChange={(value) => handleChange("maintenanceChecklistTemplateId", value === "none" ? "" : value)}
+                    >
+                      <SelectTrigger data-testid="select-maintenance-checklist">
+                        <SelectValue placeholder="Selecione um checklist" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {(maintenanceChecklistTemplates as any[] || []).map((template: any) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            <div>
+                              <div className="font-medium">{template.name}</div>
+                              <div className="text-xs text-gray-500">{template.description}</div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
