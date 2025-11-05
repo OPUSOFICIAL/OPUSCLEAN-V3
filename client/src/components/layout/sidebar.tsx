@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import opusLogo from "@assets/image_1762386567820.png";
+import opusFacilitiesLogo from "@assets/image_1762386567820.png";
+import opusMaintenanceLogo from "@assets/ChatGPT Image 5 de nov. de 2025, 20_52_56_1762386844399.png";
 import { 
   Building, 
   Calendar, 
@@ -132,8 +133,8 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
         <div className="flex items-center justify-between">
           <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-start'}`}>
             <img 
-              src={opusLogo} 
-              alt="OPUS FACILITIES" 
+              src={currentModule === 'maintenance' ? opusMaintenanceLogo : opusFacilitiesLogo} 
+              alt={currentModule === 'maintenance' ? 'OPUS FACILITIES - Manutenção' : 'OPUS FACILITIES'} 
               className={`${
                 isCollapsed ? 'h-24 w-auto' : 'h-48 w-auto max-w-full'
               } object-contain transition-all duration-300`}
