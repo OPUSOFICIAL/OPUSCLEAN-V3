@@ -396,64 +396,68 @@ export default function CleaningSchedule() {
           </CardContent>
         </Card>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Modernizado */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-blue-50 via-blue-100/50 to-white border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Atividades Ativas</p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-sm font-semibold text-blue-600 mb-1">Atividades Ativas</p>
+                  <p className="text-3xl font-bold text-blue-900">
                     {(activities as any[])?.filter((a: any) => a.isActive).length || 0}
                   </p>
                 </div>
-                <Calendar className="w-8 h-8 text-primary" />
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                  <Calendar className="w-7 h-7 text-white" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-emerald-50 via-emerald-100/50 to-white border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Diárias</p>
-                  <p className="text-2xl font-bold text-chart-2">
+                  <p className="text-sm font-semibold text-emerald-600 mb-1">Diárias</p>
+                  <p className="text-3xl font-bold text-emerald-900">
                     {(activities as any[])?.filter((a: any) => a.frequency === 'diaria').length || 0}
                   </p>
                 </div>
-                <div className="w-8 h-8 bg-chart-2/10 rounded-full flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-chart-2" />
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                  <Clock className="w-7 h-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-violet-50 via-violet-100/50 to-white border-violet-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Semanais</p>
-                  <p className="text-2xl font-bold text-chart-4">
+                  <p className="text-sm font-semibold text-violet-600 mb-1">Semanais</p>
+                  <p className="text-3xl font-bold text-violet-900">
                     {(activities as any[])?.filter((a: any) => a.frequency === 'semanal').length || 0}
                   </p>
                 </div>
-                <div className="w-8 h-8 bg-chart-4/10 rounded-full flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-chart-4" />
+                <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                  <Clock className="w-7 h-7 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-amber-50 via-amber-100/50 to-white border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Locais Cobertos</p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-sm font-semibold text-amber-600 mb-1">Locais Cobertos</p>
+                  <p className="text-3xl font-bold text-amber-900">
                     {new Set((activities as any[])?.map((a: any) => a.zoneId)).size || 0}
                   </p>
                 </div>
-                <MapPin className="w-8 h-8 text-chart-1" />
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                  <MapPin className="w-7 h-7 text-white" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -461,87 +465,87 @@ export default function CleaningSchedule() {
 
         {/* Calendar Views or Activities List */}
         {viewMode === "monthly" ? (
-          <Card className="bg-gradient-to-br from-white to-slate-50 border-0 shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-t-lg">
+          <Card className="bg-white border-0 shadow-2xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white p-8 shadow-inner">
               <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                    <Calendar className="w-5 h-5" />
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-white/30">
+                    <Calendar className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold">Calendário de Limpeza</h2>
-                    <p className="text-blue-100 text-sm">Atividades programadas por data</p>
+                    <h2 className="text-2xl font-bold mb-1">Calendário de Limpeza</h2>
+                    <p className="text-blue-100 text-sm font-medium">Atividades programadas por data</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => navigateMonth('prev')}
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/40 h-10 w-10 p-0 rounded-xl transition-all shadow-md"
                     data-testid="button-prev-month"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-5 h-5" />
                   </Button>
-                  <span className="font-bold text-lg min-w-40 text-center">
+                  <span className="font-bold text-xl min-w-52 text-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
                     {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())}
                   </span>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => navigateMonth('next')}
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/40 h-10 w-10 p-0 rounded-xl transition-all shadow-md"
                     data-testid="button-next-month"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-5 h-5" />
                   </Button>
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              {/* Legenda */}
-              <div className="flex flex-wrap gap-4 mb-6 p-4 bg-slate-50 rounded-lg border">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-500 rounded"></div>
-                  <span className="text-sm font-medium">Diárias</span>
+            <CardContent className="p-8">
+              {/* Legenda - Modernizada */}
+              <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-2xl border border-slate-200/50 shadow-sm">
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-blue-100">
+                  <div className="w-3 h-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full shadow-sm"></div>
+                  <span className="text-sm font-semibold text-slate-700">Diárias</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-500 rounded"></div>
-                  <span className="text-sm font-medium">Semanais</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-emerald-100">
+                  <div className="w-3 h-3 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full shadow-sm"></div>
+                  <span className="text-sm font-semibold text-slate-700">Semanais</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-purple-500 rounded"></div>
-                  <span className="text-sm font-medium">Mensais</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-purple-100">
+                  <div className="w-3 h-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full shadow-sm"></div>
+                  <span className="text-sm font-semibold text-slate-700">Mensais</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-indigo-500 rounded"></div>
-                  <span className="text-sm font-medium">Trimestrais</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-indigo-100">
+                  <div className="w-3 h-3 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full shadow-sm"></div>
+                  <span className="text-sm font-semibold text-slate-700">Trimestrais</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-violet-500 rounded"></div>
-                  <span className="text-sm font-medium">Semestrais</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-violet-100">
+                  <div className="w-3 h-3 bg-gradient-to-br from-violet-400 to-violet-600 rounded-full shadow-sm"></div>
+                  <span className="text-sm font-semibold text-slate-700">Semestrais</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-rose-500 rounded"></div>
-                  <span className="text-sm font-medium">Anuais</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-rose-100">
+                  <div className="w-3 h-3 bg-gradient-to-br from-rose-400 to-rose-600 rounded-full shadow-sm"></div>
+                  <span className="text-sm font-semibold text-slate-700">Anuais</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-orange-500 rounded"></div>
-                  <span className="text-sm font-medium">Por Turno</span>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-orange-100">
+                  <div className="w-3 h-3 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full shadow-sm"></div>
+                  <span className="text-sm font-semibold text-slate-700">Por Turno</span>
                 </div>
               </div>
 
-              {/* Cabeçalho da semana */}
-              <div className="grid grid-cols-7 gap-2 mb-3">
+              {/* Cabeçalho da semana - Modernizado */}
+              <div className="grid grid-cols-7 gap-3 mb-4">
                 {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(day => (
-                  <div key={day} className="p-3 text-center font-bold text-sm text-slate-700 bg-slate-100 rounded-lg">
+                  <div key={day} className="p-4 text-center font-bold text-sm text-slate-800 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl border border-slate-200 shadow-sm">
                     {day}
                   </div>
                 ))}
               </div>
 
-              {/* Calendário */}
-              <div className="grid grid-cols-7 gap-2">
+              {/* Calendário - Modernizado */}
+              <div className="grid grid-cols-7 gap-3">
                 {generateMonthCalendar().map((week, weekIndex) => 
                   week.map((day, dayIndex) => {
                     const dayActivities = day ? getActivitiesForDay(day) : [];
@@ -553,59 +557,61 @@ export default function CleaningSchedule() {
                     return (
                       <div 
                         key={`${weekIndex}-${dayIndex}`} 
-                        className={`border-2 rounded-xl p-3 min-h-32 transition-all duration-200 ${
+                        className={`rounded-2xl p-4 min-h-36 transition-all duration-300 ${
                           day 
-                            ? `bg-white hover:bg-slate-50 hover:shadow-md cursor-pointer ${
-                                isToday ? 'ring-4 ring-blue-500 ring-opacity-50 border-blue-500' : 'border-slate-200'
+                            ? `bg-gradient-to-br from-white to-slate-50/50 hover:from-blue-50/30 hover:to-slate-50 hover:shadow-xl cursor-pointer border-2 ${
+                                isToday 
+                                  ? 'shadow-lg ring-4 ring-blue-400 ring-opacity-30 border-blue-500 bg-gradient-to-br from-blue-50 to-white' 
+                                  : 'border-slate-200/60 shadow-sm hover:border-blue-300'
                               }` 
-                            : 'bg-slate-50 border-slate-100'
+                            : 'bg-gradient-to-br from-slate-100/50 to-slate-50 border border-slate-100'
                         }`}
                         onClick={() => day && openDayDetails(day)}
                         data-testid={`calendar-day-${day}`}
                       >
                         {day && (
                           <>
-                            <div className={`text-lg font-bold mb-2 ${
+                            <div className={`text-xl font-bold mb-3 flex items-center justify-between ${
                               isToday ? 'text-blue-600' : 'text-slate-800'
                             }`}>
-                              {day}
+                              <span>{day}</span>
                               {isToday && (
-                                <div className="text-xs text-blue-500 font-normal">Hoje</div>
+                                <span className="text-xs text-white bg-blue-500 px-2 py-1 rounded-full font-semibold shadow-sm">Hoje</span>
                               )}
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               {dayActivities.slice(0, 3).map((activity: any, index: number) => {
                                 const getActivityColor = (freq: string) => {
                                   switch (freq) {
-                                    case 'diaria': return 'bg-blue-100 border-blue-300 text-blue-800';
-                                    case 'semanal': return 'bg-green-100 border-green-300 text-green-800';
-                                    case 'mensal': return 'bg-purple-100 border-purple-300 text-purple-800';
-                                    case 'trimestral': return 'bg-indigo-100 border-indigo-300 text-indigo-800';
-                                    case 'semestral': return 'bg-violet-100 border-violet-300 text-violet-800';
-                                    case 'anual': return 'bg-rose-100 border-rose-300 text-rose-800';
-                                    case 'turno': return 'bg-orange-100 border-orange-300 text-orange-800';
-                                    default: return 'bg-gray-100 border-gray-300 text-gray-800';
+                                    case 'diaria': return 'bg-gradient-to-r from-blue-50 to-blue-100 border-l-blue-500 text-blue-800 hover:from-blue-100 hover:to-blue-150';
+                                    case 'semanal': return 'bg-gradient-to-r from-emerald-50 to-emerald-100 border-l-emerald-500 text-emerald-800 hover:from-emerald-100 hover:to-emerald-150';
+                                    case 'mensal': return 'bg-gradient-to-r from-purple-50 to-purple-100 border-l-purple-500 text-purple-800 hover:from-purple-100 hover:to-purple-150';
+                                    case 'trimestral': return 'bg-gradient-to-r from-indigo-50 to-indigo-100 border-l-indigo-500 text-indigo-800 hover:from-indigo-100 hover:to-indigo-150';
+                                    case 'semestral': return 'bg-gradient-to-r from-violet-50 to-violet-100 border-l-violet-500 text-violet-800 hover:from-violet-100 hover:to-violet-150';
+                                    case 'anual': return 'bg-gradient-to-r from-rose-50 to-rose-100 border-l-rose-500 text-rose-800 hover:from-rose-100 hover:to-rose-150';
+                                    case 'turno': return 'bg-gradient-to-r from-orange-50 to-orange-100 border-l-orange-500 text-orange-800 hover:from-orange-100 hover:to-orange-150';
+                                    default: return 'bg-gradient-to-r from-gray-50 to-gray-100 border-l-gray-500 text-gray-800 hover:from-gray-100 hover:to-gray-150';
                                   }
                                 };
 
                                 return (
                                   <div 
                                     key={activity.id + index} 
-                                    className={`text-xs p-2 rounded-lg border-l-4 ${getActivityColor(activity.frequency)} hover:shadow-sm transition-shadow cursor-pointer`}
+                                    className={`text-xs p-3 rounded-xl border-l-4 ${getActivityColor(activity.frequency)} shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       openDayDetails(day);
                                     }}
                                     data-testid={`activity-card-${activity.id}`}
                                   >
-                                    <div className="font-bold mb-1 leading-tight">
+                                    <div className="font-bold mb-1.5 leading-tight">
                                       {activity.name}
                                     </div>
-                                    <div className="flex items-center gap-1 text-xs opacity-75">
+                                    <div className="flex items-center gap-1.5 text-xs opacity-80">
                                       <MapPin className="w-3 h-3" />
-                                      {getZoneName(activity.zoneId)}
+                                      <span className="truncate">{getZoneName(activity.zoneId)}</span>
                                     </div>
-                                    <div className="flex items-center gap-1 text-xs opacity-75 mt-1">
+                                    <div className="flex items-center gap-1.5 text-xs opacity-80 mt-1">
                                       <Clock className="w-3 h-3" />
                                       {getSLAForActivity(activity)}
                                     </div>
@@ -614,7 +620,7 @@ export default function CleaningSchedule() {
                               })}
                               {dayActivities.length > 3 && (
                                 <div 
-                                  className="text-xs text-slate-600 text-center py-2 bg-slate-100 rounded-lg font-medium border-2 border-dashed border-slate-300 cursor-pointer hover:bg-slate-200 transition-colors"
+                                  className="text-xs text-slate-700 text-center py-2.5 bg-gradient-to-r from-slate-100 to-slate-50 rounded-xl font-semibold border-2 border-dashed border-slate-300 cursor-pointer hover:from-slate-200 hover:to-slate-100 hover:border-slate-400 transition-all shadow-sm hover:shadow-md"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     openDayDetails(day);
