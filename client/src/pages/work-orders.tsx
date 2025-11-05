@@ -339,12 +339,6 @@ export default function WorkOrders() {
         title="Ordens de Serviço"
         description={headerDescription}
         icon={ClipboardList}
-        stats={[
-          { label: "Abertas", value: totalAbertas, icon: Clock },
-          { label: "Vencidas", value: totalVencidas, icon: AlertTriangle },
-          { label: "Pausadas", value: totalPausadas, icon: PauseCircle },
-          { label: "Concluídas", value: totalConcluidas, icon: CheckCircle2 }
-        ]}
         actions={
           <>
             <Button 
