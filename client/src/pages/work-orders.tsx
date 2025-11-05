@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { useModuleTheme } from "@/hooks/use-module-theme";
+import { useAuth } from "@/hooks/useAuth";
 import { ModernCard, ModernCardHeader, ModernCardContent } from "@/components/ui/modern-card";
 import { ModernPageHeader } from "@/components/ui/modern-page-header";
 import { 
@@ -127,6 +128,7 @@ export default function WorkOrders() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
   const theme = useModuleTheme();
+  const { canDeleteWorkOrders } = useAuth();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -598,15 +600,18 @@ export default function WorkOrders() {
                                   <XCircle className="w-4 h-4" />
                                 </Button>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteWorkOrder(wo.id, wo.title)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:scale-110 transition-transform"
-                                data-testid={`button-delete-${wo.id}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              {canDeleteWorkOrders && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteWorkOrder(wo.id, wo.title)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:scale-110 transition-transform"
+                                  data-testid={`button-delete-${wo.id}`}
+                                  title="Excluir OS (apenas admin)"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>
