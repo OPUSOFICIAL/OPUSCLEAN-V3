@@ -108,9 +108,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
         console.log(`[MODULE] Cliente "${activeClient.name}" possui apenas módulo "${clientModule}", trocando automaticamente...`);
         setCurrentModule(clientModule);
         
-        // Redirecionar para o dashboard do novo módulo
-        console.log(`[MODULE] Redirecionando para dashboard do módulo "${clientModule}"...`);
-        setLocation('/dashboard');
+        // Redirecionar para a tela inicial
+        console.log(`[MODULE] Redirecionando para tela inicial do módulo "${clientModule}"...`);
+        setLocation('/');
       }
     }
     // Se o cliente tem múltiplos módulos mas o módulo atual não é suportado pelo cliente
@@ -121,9 +121,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
         console.log(`[MODULE] Módulo atual não suportado pelo cliente, trocando para "${validModule}"...`);
         setCurrentModule(validModule as ModuleType);
         
-        // Redirecionar para o dashboard do novo módulo
-        console.log(`[MODULE] Redirecionando para dashboard do módulo "${validModule}"...`);
-        setLocation('/dashboard');
+        // Redirecionar para a tela inicial
+        console.log(`[MODULE] Redirecionando para tela inicial do módulo "${validModule}"...`);
+        setLocation('/');
       }
     }
   }, [activeClient, currentModule, canAccessModule, setLocation]);
