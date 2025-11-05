@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import opusCleanLogo from "@assets/ChatGPT Image 8 de set. de 2025, 18_10_10_1757366528566.png";
-import opusMaintenanceLogo from "@assets/imagem_2025-11-04_222430878_1762305949679.png";
+import opusLogo from "@assets/bcb25ed4-ddb0-426e-8233-6a77e1d8df23_1762385779400.png";
 import { 
   Building, 
   Calendar, 
@@ -129,16 +128,14 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   return (
     <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-gradient-to-b from-slate-50 via-white to-slate-50/50 border-r border-slate-200 shadow-lg flex flex-col transition-all duration-300`} data-testid="sidebar">
       {/* Header */}
-      <div className={`${isCollapsed ? 'p-5' : 'py-8 px-6'} border-b border-slate-200 relative bg-gradient-to-br from-white to-slate-100`}>
+      <div className={`${isCollapsed ? 'p-4' : 'py-6 px-6'} border-b border-slate-200 relative bg-gradient-to-br from-white to-slate-100`}>
         <div className="flex items-center justify-between">
           <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-start'}`}>
             <img 
-              src={currentModule === 'maintenance' ? opusMaintenanceLogo : opusCleanLogo} 
-              alt={currentModule === 'maintenance' ? 'OPUS FACILITY' : 'OPUS CLEAN'} 
+              src={opusLogo} 
+              alt="OPUS FACILITIES" 
               className={`${
-                currentModule === 'maintenance' 
-                  ? (isCollapsed ? 'h-14 w-auto' : 'h-20 w-auto max-w-full')
-                  : (isCollapsed ? 'h-12 w-auto' : 'h-16 w-auto max-w-full')
+                isCollapsed ? 'h-10 w-auto' : 'h-16 w-auto max-w-[200px]'
               } object-contain transition-all duration-300`}
             />
           </div>
