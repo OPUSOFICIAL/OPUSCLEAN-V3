@@ -168,8 +168,8 @@ export default function Checklists() {
   const queryClient = useQueryClient();
 
   const { data: checklists = [], isLoading } = useQuery<ChecklistTemplate[]>({
-    queryKey: ["/api/customers", activeClientId, "checklist-templates"],
-    enabled: !!activeClientId,
+    queryKey: ["/api/customers", activeClientId, "checklist-templates", { module: currentModule }],
+    enabled: !!activeClientId && !!currentModule,
   });
 
   const { data: sites = [] } = useQuery({
@@ -178,8 +178,8 @@ export default function Checklists() {
   });
 
   const { data: services = [] } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "services"],
-    enabled: !!activeClientId,
+    queryKey: ["/api/customers", activeClientId, "services", { module: currentModule }],
+    enabled: !!activeClientId && !!currentModule,
   });
 
   // Buscar zonas quando um site é selecionado
@@ -442,8 +442,11 @@ export default function Checklists() {
   return (
     <div className={cn("min-h-screen", theme.gradients.page)}>
       <ModernPageHeader 
-        title="Checklists"
-        description="Gerencie checklists para padronizar ordens de serviço"
+        title={currentModule === 'maintenance' ? 'Checklists de Manutenção' : 'Checklists'}
+        description={currentModule === 'maintenance' 
+          ? 'Gerencie os templates de checklist de manutenção' 
+          : 'Gerencie checklists para padronizar ordens de serviço'
+        }
         icon={List}
         stats={[
           {
@@ -459,7 +462,7 @@ export default function Checklists() {
             data-testid="button-create-checklist"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Novo Checklist
+            Novo Template
           </Button>
         }
       />
@@ -975,17 +978,19 @@ export default function Checklists() {
             <ModernCardContent className="p-12 text-center">
               <List className={cn("w-16 h-16 mx-auto mb-4", theme.text.primary)} />
               <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                Nenhum checklist criado
+                Nenhum template cadastrado
               </h3>
               <p className="text-slate-600 mb-6">
-                Crie seu primeiro checklist para padronizar ordens de serviço.
+                {currentModule === 'maintenance' 
+                  ? 'Crie seu primeiro template de checklist de manutenção' 
+                  : 'Crie seu primeiro checklist para padronizar ordens de serviço'}
               </p>
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)}
                 className={cn(theme.buttons.primary)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Checklist
+                Criar Primeiro Template
               </Button>
             </ModernCardContent>
           </ModernCard>
