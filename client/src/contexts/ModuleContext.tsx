@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useUserModules } from '@/hooks/useUserModules';
+import { useClient } from './ClientContext';
 
 export type ModuleType = 'clean' | 'maintenance';
 
@@ -63,6 +64,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   const [currentModule, setCurrentModule] = useState<ModuleType | null>(null);
 
   const moduleConfig = currentModule ? MODULE_CONFIGS[currentModule] : MODULE_CONFIGS.clean;
+  
+  // Importar ClientContext para sincronizar módulo com cliente
+  const { activeClient } = useClient();
 
   // Inicializar o módulo apenas DEPOIS que os dados do usuário carregarem
   useEffect(() => {
@@ -84,6 +88,33 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [isLoading, allowedModules, currentModule, canAccessModule, defaultModule]);
+
+  // Sincronizar módulo quando o cliente mudar
+  useEffect(() => {
+    if (!activeClient || !currentModule) return;
+    
+    const clientModules = activeClient.modules || [];
+    
+    // Se o cliente só tem um módulo e é diferente do atual, trocar automaticamente
+    if (clientModules.length === 1) {
+      const clientModule = clientModules[0] as ModuleType;
+      
+      // Verificar se o usuário pode acessar esse módulo e se é diferente do atual
+      if (canAccessModule(clientModule) && clientModule !== currentModule) {
+        console.log(`[MODULE] Cliente "${activeClient.name}" possui apenas módulo "${clientModule}", trocando automaticamente...`);
+        setCurrentModule(clientModule);
+      }
+    }
+    // Se o cliente tem múltiplos módulos mas o módulo atual não é suportado pelo cliente
+    else if (clientModules.length > 1 && !clientModules.includes(currentModule)) {
+      // Trocar para o primeiro módulo do cliente que o usuário pode acessar
+      const validModule = clientModules.find(m => canAccessModule(m as ModuleType));
+      if (validModule) {
+        console.log(`[MODULE] Módulo atual não suportado pelo cliente, trocando para "${validModule}"...`);
+        setCurrentModule(validModule as ModuleType);
+      }
+    }
+  }, [activeClient, currentModule, canAccessModule]);
 
   useEffect(() => {
     if (currentModule) {
