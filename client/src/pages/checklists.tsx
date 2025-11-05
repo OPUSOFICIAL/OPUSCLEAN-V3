@@ -964,7 +964,8 @@ export default function Checklists() {
                         : editingChecklist ? "Atualizar" : "Criar"
                       }
                     </Button>
-            </div>
+                  </div>
+                </div>
           </DialogContent>
         </Dialog>
 
@@ -1035,7 +1036,7 @@ export default function Checklists() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </ModernCard>
             ))}
           </div>
         )}
