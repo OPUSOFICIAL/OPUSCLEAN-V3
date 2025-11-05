@@ -25,6 +25,7 @@ interface WorkOrder {
   zoneName: string;
   dueDate: string;
   createdAt: string;
+  startedAt?: string;
 }
 
 export default function MobileDashboard() {
@@ -277,27 +278,42 @@ export default function MobileDashboard() {
       />
 
       <div className="p-4 space-y-6">
-        {/* 🔥 Seção Destacada: Minhas O.S em Execução */}
-        {myInProgressOrders.length > 0 && (
-          <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-2xl animate-pulse-slow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white font-bold flex items-center gap-2">
-                  <Zap className="w-6 h-6" />
-                  Em Execução Agora
-                </CardTitle>
-                <Badge className="bg-white/30 text-white border-white/50 font-bold px-3 py-1">
-                  {myInProgressOrders.length}
-                </Badge>
+        {/* 🔥 CARD PERMANENTE: Minhas O.S em Execução - SEMPRE VISÍVEL */}
+        <Card className={`border-0 shadow-2xl ${
+          myInProgressOrders.length > 0 
+            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+            : 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
+        }`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white font-bold flex items-center gap-2">
+                <Zap className="w-6 h-6" />
+                {myInProgressOrders.length > 0 ? '🔥 Em Execução Agora' : 'Minhas Execuções'}
+              </CardTitle>
+              <Badge className="bg-white/30 text-white border-white/50 font-bold px-3 py-1 text-base">
+                {myInProgressOrders.length}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {myInProgressOrders.length === 0 ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Play className="w-8 h-8 text-white/80" />
+                </div>
+                <p className="text-white/90 font-medium mb-1">Nenhuma O.S em execução</p>
+                <p className="text-white/70 text-sm">Escaneie um QR Code para iniciar uma tarefa</p>
               </div>
-            </CardHeader>
-            <CardContent>
+            ) : (
               <div className="space-y-3">
+                <p className="text-white/90 text-sm font-medium mb-3">
+                  Você iniciou {myInProgressOrders.length} {myInProgressOrders.length === 1 ? 'tarefa' : 'tarefas'}:
+                </p>
                 {myInProgressOrders.map((wo) => (
                   <div
                     key={wo.id}
                     onClick={() => setLocation(`/mobile/work-order-details/${wo.id}`)}
-                    className="bg-white/20 backdrop-blur-md rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-all active:scale-95"
+                    className="bg-white/20 backdrop-blur-md rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-all active:scale-95 border border-white/30"
                     data-testid={`card-in-progress-${wo.id}`}
                   >
                     <div className="flex items-start justify-between gap-3 mb-2">
@@ -316,19 +332,25 @@ export default function MobileDashboard() {
                       </div>
                       <Play className="w-6 h-6 text-white/80 flex-shrink-0" />
                     </div>
-                    <div className="flex items-center justify-between text-xs text-white/90">
+                    <div className="flex items-center justify-between text-xs text-white/90 mt-2">
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         <span>Prazo: {formatDate(wo.dueDate)}</span>
                       </div>
-                      <span className="capitalize">{wo.type.replace('_', ' ')}</span>
+                      <span className="capitalize bg-white/20 px-2 py-0.5 rounded">{wo.type.replace('_', ' ')}</span>
                     </div>
+                    {wo.startedAt && (
+                      <div className="flex items-center gap-1 text-xs text-white/80 mt-2 pt-2 border-t border-white/20">
+                        <Clock className="w-3 h-3" />
+                        <span>Iniciado: {formatDateTime(wo.startedAt)}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
 
         {/* Filtros de Data */}
         <Card className="bg-white/80 backdrop-blur-sm border-white/20">
