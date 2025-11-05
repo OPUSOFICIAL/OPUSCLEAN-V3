@@ -4,6 +4,7 @@ import { useModuleTheme } from "@/hooks/use-module-theme";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { useClient } from "@/contexts/ClientContext";
@@ -412,7 +413,7 @@ export default function MaintenancePlans() {
         }
       />
       
-      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
+      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
         {/* Filters and Stats Combined */}
         <ModernCard variant="glass">
           <ModernCardContent>

@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModernCard, ModernCardContent, ModernCardHeader } from "@/components/ui/modern-card";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 import { Plus, Edit3, Trash2, FileText, List, Eye, ChevronDown } from "lucide-react";
 import type { ChecklistTemplate } from "@shared/schema";
 
@@ -433,49 +437,50 @@ export default function Checklists() {
     );
   }
 
+  const theme = useModuleTheme();
+
   return (
-    <div className="h-full overflow-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg shadow-blue-500/5 sticky top-0 z-50">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-600 via-green-700 to-emerald-800 rounded-2xl flex items-center justify-center shadow-lg">
-                <List className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-green-900 to-emerald-900 bg-clip-text text-transparent">
-                  Checklists
-                </h1>
-                <p className="text-sm text-slate-600">
-                  Gerencie os checklists para ordens de serviço
-                </p>
-              </div>
-            </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-              setIsCreateDialogOpen(open);
-              if (!open) {
-                setEditingChecklist(null);
-                resetForm();
-              }
-            }}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800"
-                  data-testid="button-create-checklist"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Checklist
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingChecklist ? "Editar Checklist" : "Criar Novo Checklist"}
-                  </DialogTitle>
-                </DialogHeader>
-                
-                <div className="space-y-6">
+    <div className={cn("min-h-screen", theme.gradients.page)}>
+      <ModernPageHeader 
+        title="Checklists"
+        description="Gerencie checklists para padronizar ordens de serviço"
+        icon={List}
+        stats={[
+          {
+            label: "Total de Checklists",
+            value: Array.isArray(checklists) ? checklists.length : 0,
+            icon: FileText
+          }
+        ]}
+        actions={
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className={cn(theme.buttons.primary)}
+            data-testid="button-create-checklist"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Checklist
+          </Button>
+        }
+      />
+      
+      {/* Dialog */}
+      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+          setIsCreateDialogOpen(open);
+          if (!open) {
+            setEditingChecklist(null);
+            resetForm();
+          }
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingChecklist ? "Editar Checklist" : "Criar Novo Checklist"}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
                   {/* Form básico */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -959,39 +964,34 @@ export default function Checklists() {
                         : editingChecklist ? "Atualizar" : "Criar"
                       }
                     </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-      {/* Content */}
-      <div className="p-8">
+        {/* Content */}
         {!Array.isArray(checklists) || checklists.length === 0 ? (
-          <Card className="bg-white/80 backdrop-blur-sm border-white/20">
-            <CardContent className="p-12 text-center">
-              <List className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <ModernCard variant="glass">
+            <ModernCardContent className="p-12 text-center">
+              <List className={cn("w-16 h-16 mx-auto mb-4", theme.text.primary)} />
               <h3 className="text-xl font-semibold text-slate-900 mb-2">
                 Nenhum checklist criado
               </h3>
               <p className="text-slate-600 mb-6">
-                Crie seu primeiro checklist para começar a padronizar as ordens de serviço.
+                Crie seu primeiro checklist para padronizar ordens de serviço.
               </p>
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)}
-                className="bg-gradient-to-r from-green-600 to-emerald-700"
+                className={cn(theme.buttons.primary)}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Primeiro Checklist
               </Button>
-            </CardContent>
-          </Card>
+            </ModernCardContent>
+          </ModernCard>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.isArray(checklists) && checklists.map((checklist: any) => (
-              <Card key={checklist.id} className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-shadow">
+              <ModernCard key={checklist.id} variant="gradient">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
