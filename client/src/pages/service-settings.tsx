@@ -34,6 +34,9 @@ import Services from "./services";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { useEffect } from "react";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
+import { ModernCard } from "@/components/ui/modern-card";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 
 // Schemas para validação
 const serviceTypeSchema = z.object({
@@ -67,6 +70,7 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const { activeClientId: customerId } = useClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
 
   // Invalidate cache when customer changes
   useEffect(() => {
@@ -327,55 +331,92 @@ export default function Settings() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen pb-20">
-      {/* Header Moderno Mobile */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-b-3xl p-4 shadow-lg mb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-white">Configurações do Sistema</h1>
-            <p className="text-xs text-purple-100 mt-0.5">Gerencie configurações gerais</p>
-          </div>
-          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-            <Cog className="w-5 h-5 text-white" />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
+      <Header />
       
-      <div className="px-3">
-        <Tabs defaultValue="types" className="space-y-3">
-          {/* Tabs Responsivas - Scroll horizontal em mobile */}
-          <div className="bg-white rounded-2xl p-2 shadow-sm overflow-x-auto">
+      {/* Container com padding adequado - não colar nas extremidades */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header Moderno */}
+        <ModernPageHeader
+          title="Configurações do Sistema"
+          description="Gerencie configurações gerais"
+          icon={Cog}
+        />
+        
+        <Tabs defaultValue="types" className="space-y-6 mt-6">
+          {/* Tabs Responsivas com cores dinâmicas do módulo */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-2 shadow-sm border border-gray-200/50 overflow-x-auto">
             <TabsList className="flex gap-1 bg-transparent w-max min-w-full">
-              <TabsTrigger value="types" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
-                <Bookmark className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="types" 
+                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
+                style={{
+                  // @ts-ignore
+                  '--active-bg': theme.colors.light,
+                  '--active-text': theme.colors.primary,
+                } as any}
+                data-testid="tab-types"
+              >
+                <Bookmark className="w-4 h-4" />
                 Tipos
               </TabsTrigger>
-              {/* CATEGORIAS - ABA COMENTADA */}
-              {/* <TabsTrigger value="categories" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
-                <Layers className="w-3.5 h-3.5" />
-                Categorias
-              </TabsTrigger> */}
-              <TabsTrigger value="services" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
-                <SettingsIcon className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="services" 
+                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
+                style={{
+                  // @ts-ignore
+                  '--active-bg': theme.colors.light,
+                  '--active-text': theme.colors.primary,
+                } as any}
+                data-testid="tab-services"
+              >
+                <SettingsIcon className="w-4 h-4" />
                 Serviços
               </TabsTrigger>
-              <TabsTrigger value="goals" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
-                <Target className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="goals" 
+                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
+                style={{
+                  // @ts-ignore
+                  '--active-bg': theme.colors.light,
+                  '--active-text': theme.colors.primary,
+                } as any}
+                data-testid="tab-goals"
+              >
+                <Target className="w-4 h-4" />
                 Metas
               </TabsTrigger>
-              <TabsTrigger value="sites" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
-                <Building className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="sites" 
+                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
+                style={{
+                  // @ts-ignore
+                  '--active-bg': theme.colors.light,
+                  '--active-text': theme.colors.primary,
+                } as any}
+                data-testid="tab-sites"
+              >
+                <Building className="w-4 h-4" />
                 Locais
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-1.5 text-xs rounded-xl px-3 py-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 whitespace-nowrap">
-                <UsersIcon className="w-3.5 h-3.5" />
+              <TabsTrigger 
+                value="users" 
+                className="flex items-center gap-1.5 text-sm rounded-xl px-4 py-2 transition-colors whitespace-nowrap"
+                style={{
+                  // @ts-ignore
+                  '--active-bg': theme.colors.light,
+                  '--active-text': theme.colors.primary,
+                } as any}
+                data-testid="tab-users"
+              >
+                <UsersIcon className="w-4 h-4" />
                 Usuários
               </TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="types" className="space-y-6">
-            <Card>
+            <ModernCard variant="gradient">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -389,6 +430,7 @@ export default function Settings() {
                           setEditingType(null);
                           typeForm.reset({ name: "", description: "", code: "" });
                         }}
+                        className={theme.buttons.primary}
                         data-testid="button-create-type"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -524,7 +566,7 @@ export default function Settings() {
                   </div>
                 )}
               </CardContent>
-            </Card>
+            </ModernCard>
           </TabsContent>
 
           {/* CATEGORIAS - TODO O CONTEÚDO DA ABA COMENTADO */}
@@ -709,7 +751,7 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="goals" className="space-y-6">
-            <Card>
+            <ModernCard variant="glass">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -727,6 +769,7 @@ export default function Settings() {
                             currentPeriod: new Date().toISOString().slice(0, 7) 
                           });
                         }}
+                        className={theme.buttons.primary}
                         data-testid="button-create-goal"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -932,9 +975,8 @@ export default function Settings() {
                   </div>
                 )}
               </CardContent>
-            </Card>
+            </ModernCard>
           </TabsContent>
-
 
           <TabsContent value="sites" className="space-y-6">
             <Sites customerId={customerId} />
