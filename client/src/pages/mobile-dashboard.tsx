@@ -133,11 +133,15 @@ export default function MobileDashboard() {
 
   // Separar as OS em categorias
   const availableOrders = filteredWorkOrders.filter(wo => 
-    !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada'
+    !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
   );
   
   const myPendingOrders = filteredWorkOrders.filter(wo => 
-    wo.assignedUserId === user.id && wo.status !== 'concluida' && wo.status !== 'cancelada'
+    wo.assignedUserId === user.id && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
+  );
+  
+  const myPausedOrders = filteredWorkOrders.filter(wo => 
+    wo.status === 'pausada'
   );
   
   const myCompletedOrders = filteredWorkOrders.filter(wo => 
@@ -347,7 +351,7 @@ export default function MobileDashboard() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Card 
             className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
             onClick={() => {
@@ -386,6 +390,27 @@ export default function MobileDashboard() {
                 </div>
                 <p className="text-xl font-bold text-slate-900">{myPendingOrders.length}</p>
                 <p className="text-xs text-slate-600 text-center">Pendentes</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+            onClick={() => {
+              document.getElementById('pausadas-section')?.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start' 
+              });
+            }}
+            data-testid="card-pausadas"
+          >
+            <CardContent className="p-3">
+              <div className="flex flex-col items-center justify-center space-y-1">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <p className="text-xl font-bold text-slate-900">{myPausedOrders.length}</p>
+                <p className="text-xs text-slate-600 text-center">Pausadas</p>
               </div>
             </CardContent>
           </Card>
@@ -553,6 +578,60 @@ export default function MobileDashboard() {
             ))
           )}
         </div>
+
+        {/* Work Orders List - Pausadas */}
+        {myPausedOrders.length > 0 && (
+          <div className="space-y-4" id="pausadas-section">
+            <h2 className="text-xl font-bold text-amber-900 flex items-center gap-2">
+              <Clock className="w-6 h-6" />
+              OSs Pausadas ({myPausedOrders.length})
+            </h2>
+
+            {myPausedOrders.map((workOrder) => (
+              <Card key={workOrder.id} className="bg-amber-50/80 backdrop-blur-sm border-amber-200 shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="bg-amber-600 text-white border-amber-700 font-bold">
+                          OS #{workOrder.number}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-lg text-amber-900 break-words">{workOrder.title}</CardTitle>
+                      <div className="flex items-center space-x-2 text-sm text-amber-700">
+                        <MapPin className="w-4 h-4" />
+                        <span>{workOrder.siteName} - {workOrder.zoneName}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end space-y-2">
+                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(workOrder.priority)}`}></div>
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+                        Pausada
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-amber-800 mb-3">{workOrder.description}</p>
+                  <div className="flex items-center justify-between text-sm text-amber-600 mb-3">
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-4 h-4" />
+                      <span>Prazo: {formatDate(workOrder.dueDate)}</span>
+                    </div>
+                    <span className="font-medium capitalize">{workOrder.type.replace('_', ' ')}</span>
+                  </div>
+                  <Button 
+                    className="w-full bg-amber-600 hover:bg-amber-700" 
+                    data-testid={`button-view-order-${workOrder.id}`}
+                    onClick={() => setLocation(`/mobile/work-order-details/${workOrder.id}`)}
+                  >
+                    Retomar OS
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Work Orders List - Minhas Concluídas */}
         {myCompletedOrders.length > 0 && (
