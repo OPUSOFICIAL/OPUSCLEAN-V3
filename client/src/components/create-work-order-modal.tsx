@@ -8,6 +8,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useModule } from "@/contexts/ModuleContext";
 import { X, Save, Calendar, Timer, MapPin, User, Settings, AlertCircle, CheckSquare } from "lucide-react";
 
 interface CreateWorkOrderModalProps {
@@ -17,6 +18,7 @@ interface CreateWorkOrderModalProps {
 }
 
 export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }: CreateWorkOrderModalProps) {
+  const { currentModule } = useModule();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -35,7 +37,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   const { toast } = useToast();
 
   const { data: sites } = useQuery({
-    queryKey: ["/api/customers", customerId, "sites"],
+    queryKey: ["/api/customers", customerId, "sites", { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -45,7 +47,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   });
 
   const { data: services } = useQuery({
-    queryKey: ["/api/customers", customerId, "services"],
+    queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -55,14 +57,14 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     enabled: !!customerId,
   });
 
-  // Carregar todas as zones de todos os sites
+  // Carregar todas as zones de todos os sites (filtrado por módulo)
   const { data: allZones } = useQuery({
-    queryKey: ["/api/customers", customerId, "all-zones"],
+    queryKey: ["/api/customers", customerId, "all-zones", { module: currentModule }],
     queryFn: async () => {
       if (!sites || !Array.isArray(sites)) return [];
       
       const zonePromises = sites.map(async (site: any) => {
-        const response = await apiRequest("GET", `/api/sites/${site.id}/zones`);
+        const response = await apiRequest("GET", `/api/sites/${site.id}/zones?module=${currentModule}`);
         const zones = await response.json() as any[];
         return zones.map(zone => ({
           ...zone,
@@ -94,6 +96,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
         dueDate: data.dueDate || null,
         scheduledStartAt: null,
         scheduledEndAt: null,
+        module: currentModule, // Incluir o módulo atual
       };
       
       // Calcular scheduledStartAt e scheduledEndAt se tiver horários
