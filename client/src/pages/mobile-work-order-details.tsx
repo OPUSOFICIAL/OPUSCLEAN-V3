@@ -226,7 +226,7 @@ export default function MobileWorkOrderDetails() {
               <div className="space-y-2">
                 <CardTitle className="text-xl">{workOrder.title}</CardTitle>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <span className="font-semibold">OS #{workOrder.workOrderNumber}</span>
+                  <span className="font-semibold">OS #{workOrder.number}</span>
                 </div>
               </div>
               <Badge className={`${getStatusColor(workOrder.status)} text-white`}>
