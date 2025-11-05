@@ -421,7 +421,7 @@ export default function QrCodes() {
       />
       
       <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
-        <ModernCard variant="featured">
+        <ModernCard variant="default">
           <ModernCardHeader icon={<Plus className="w-6 h-6" />}>
             Criar Novo QR Code
           </ModernCardHeader>
