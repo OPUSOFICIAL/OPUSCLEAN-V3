@@ -67,7 +67,7 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   const moduleConfig = currentModule ? MODULE_CONFIGS[currentModule] : MODULE_CONFIGS.clean;
   
   // Importar ClientContext para sincronizar módulo com cliente
-  const { activeClient } = useClient();
+  const { activeClient, customers, setActiveClientId } = useClient();
   
   // Hook de navegação para redirecionamento automático
   const [, setLocation] = useLocation();
@@ -144,6 +144,19 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     // Validar se o usuário pode acessar o módulo antes de trocar
     if (canAccessModule(module)) {
       setCurrentModule(module);
+      
+      // NOVO: Ao trocar de módulo, selecionar automaticamente o primeiro cliente ativo que possui esse módulo
+      if (customers && customers.length > 0) {
+        const firstClientWithModule = customers.find(
+          customer => customer.isActive && customer.modules?.includes(module)
+        );
+        
+        if (firstClientWithModule && firstClientWithModule.id !== activeClient?.id) {
+          console.log(`[MODULE] Trocando para primeiro cliente ativo com módulo "${module}": ${firstClientWithModule.name}`);
+          setActiveClientId(firstClientWithModule.id);
+          setLocation('/');
+        }
+      }
     } else {
       console.warn(`[MODULE] Tentativa de acesso negada ao módulo: ${module}`);
       // Se tentou acessar módulo não autorizado, forçar defaultModule
