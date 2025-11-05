@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
@@ -129,6 +130,8 @@ export default function WorkOrders() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [zoneFilter, setZoneFilter] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string>("todos");
+  const [stateFilter, setStateFilter] = useState<string>("ativas");
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -229,6 +232,16 @@ export default function WorkOrders() {
   const filteredWorkOrders = (workOrders as any[])?.filter((wo: any) => {
     const matchesStatus = statusFilter.length === 0 || statusFilter.includes(wo.status);
     const matchesZone = zoneFilter.length === 0 || zoneFilter.includes(wo.zoneId);
+    const matchesType = typeFilter === "todos" || wo.type === typeFilter;
+    
+    let matchesState = true;
+    if (stateFilter === "ativas") {
+      matchesState = wo.status !== "concluida" && wo.status !== "cancelada";
+    } else if (stateFilter === "concluidas") {
+      matchesState = wo.status === "concluida";
+    }
+    // Se stateFilter === "todas", não filtra
+    
     const matchesSearch = wo.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          wo.number?.toString().includes(searchTerm) ||
                          wo.id?.toString().includes(searchTerm);
@@ -252,7 +265,7 @@ export default function WorkOrders() {
       }
     }
     
-    return matchesStatus && matchesZone && matchesSearch && matchesDateRange;
+    return matchesStatus && matchesZone && matchesType && matchesState && matchesSearch && matchesDateRange;
   }).sort((a: any, b: any) => {
     if (a.scheduledDate && b.scheduledDate) {
       return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
@@ -285,7 +298,7 @@ export default function WorkOrders() {
 
   if (isLoading) {
     return (
-      <div className={cn("flex-1 flex items-center justify-center", theme.gradients.subtle)}>
+      <div className={cn("flex-1 flex items-center justify-center", theme.gradients.page)}>
         <div className="text-center">
           <div className={cn(
             "w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4",
@@ -356,119 +369,143 @@ export default function WorkOrders() {
         }
       />
       
-      <main className={cn("flex-1 overflow-auto p-6", theme.gradients.subtle)}>
+      <main className={cn("flex-1 overflow-auto p-6", theme.gradients.page)}>
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Info de última atualização */}
-          <div className={cn(
-            "backdrop-blur-xl bg-white/60 rounded-lg px-4 py-2 w-fit border",
-            theme.borders.light
-          )}>
-            <span className="text-sm text-slate-600 flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5" />
-              Última atualização: {lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-
-          {/* Busca e Filtros */}
+          {/* Estatísticas e Filtros Integrados */}
           <ModernCard variant="gradient">
-            <ModernCardHeader icon={<Search className={cn("w-5 h-5", theme.text.primary)} />}>
-              Buscar e Filtrar
-            </ModernCardHeader>
             <ModernCardContent>
-              {/* Busca */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className={cn("absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5", theme.text.light)} />
-                  <Input
-                    placeholder="Digite o número da OS, título ou descrição..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className={cn(
-                      "pl-12 h-12 bg-white/80 backdrop-blur-sm border-2 text-base shadow-sm transition-all duration-200",
-                      theme.borders.light,
-                      "focus:border-current focus:ring-2 focus:ring-opacity-20"
-                    )}
-                    style={{
-                      borderColor: searchTerm ? theme.primaryHex : undefined,
-                      outlineColor: theme.primaryHex + '33'
-                    }}
-                    data-testid="input-search-work-orders"
-                  />
+              {/* Cards de Estatísticas */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", 
+                    currentModule === 'maintenance' ? 'bg-orange-50' : 'bg-blue-50'
+                  )}>
+                    <Clock className={cn("w-5 h-5", 
+                      currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
+                    )} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Abertas</p>
+                    <p className={cn("text-xl font-bold", 
+                      currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
+                    )}>
+                      {totalAbertas}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vencidas</p>
+                    <p className="text-xl font-bold text-red-600">
+                      {totalVencidas}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center",
+                    currentModule === 'maintenance' ? 'bg-orange-50' : 'bg-blue-50'
+                  )}>
+                    <PauseCircle className={cn("w-5 h-5",
+                      currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
+                    )} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Pausadas</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {totalPausadas}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Concluídas</p>
+                    <p className="text-xl font-bold text-green-600">
+                      {totalConcluidas}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Filtros Rápidos */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className={cn("text-xs font-semibold uppercase tracking-wide mb-2 block flex items-center gap-2", theme.text.dark)}>
-                    <Filter className={cn("w-3.5 h-3.5", theme.text.primary)} />
-                    Status
-                  </label>
-                  <MultiSelect
-                    options={[
-                      { value: "aberta", label: "Abertas" },
-                      { value: "em_execucao", label: "Em Execução" },
-                      { value: "pausada", label: "Pausadas" },
-                      { value: "vencida", label: "Vencidas" },
-                      { value: "concluida", label: "Concluídas" },
-                      { value: "cancelada", label: "Canceladas" }
-                    ]}
-                    selected={statusFilter}
-                    onChange={setStatusFilter}
-                    placeholder="Todos os Status"
-                    testId="select-status-filter"
-                  />
-                </div>
-                
-                <div>
-                  <label className={cn("text-xs font-semibold uppercase tracking-wide mb-2 block flex items-center gap-2", theme.text.dark)}>
-                    <MapPin className={cn("w-3.5 h-3.5", theme.text.primary)} />
-                    Zonas
-                  </label>
-                  <MultiSelect
-                    options={(zones as any[] || []).map((zone: any) => ({
-                      value: zone.id,
-                      label: zone.name
-                    }))}
-                    selected={zoneFilter}
-                    onChange={setZoneFilter}
-                    placeholder="Todas as Zonas"
-                    testId="select-zone-filter"
-                  />
-                </div>
-              </div>
+              {/* Filters Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t">
+                <Select 
+                  value={statusFilter.length === 0 ? "todos" : statusFilter.length === 1 ? statusFilter[0] : "multiplos"}
+                  onValueChange={(value) => {
+                    if (value === "todos") {
+                      setStatusFilter([]);
+                    } else {
+                      setStatusFilter([value]);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full" data-testid="select-status-filter">
+                    <SelectValue placeholder="Todos os Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Status</SelectItem>
+                    <SelectItem value="aberta">Abertas</SelectItem>
+                    <SelectItem value="em_execucao">Em Execução</SelectItem>
+                    <SelectItem value="pausada">Pausadas</SelectItem>
+                    <SelectItem value="vencida">Vencidas</SelectItem>
+                    <SelectItem value="concluida">Concluídas</SelectItem>
+                    <SelectItem value="cancelada">Canceladas</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              {/* Filtro de Período */}
-              <div className={cn(
-                "backdrop-blur-sm bg-white/60 border rounded-lg p-4",
-                theme.borders.light
-              )}>
-                <label className={cn("text-xs font-semibold uppercase tracking-wide mb-3 block flex items-center gap-2", theme.text.dark)}>
-                  <Calendar className={cn("w-3.5 h-3.5", theme.text.primary)} />
-                  Filtrar por Período de Agendamento
-                </label>
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">De:</span>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="flex-1 border-slate-300 focus:ring-2 focus:ring-opacity-20 shadow-sm"
-                      data-testid="input-start-date"
-                    />
-                  </div>
-                  <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">Até:</span>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="flex-1 border-slate-300 focus:ring-2 focus:ring-opacity-20 shadow-sm"
-                      data-testid="input-end-date"
-                    />
-                  </div>
-                </div>
+                <Select
+                  value={zoneFilter.length === 0 ? "todas" : zoneFilter.length === 1 ? zoneFilter[0] : "multiplas"}
+                  onValueChange={(value) => {
+                    if (value === "todas") {
+                      setZoneFilter([]);
+                    } else {
+                      setZoneFilter([value]);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full" data-testid="select-zone-filter">
+                    <SelectValue placeholder="Todas as Zonas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as Zonas</SelectItem>
+                    {(zones as any[] || []).map((zone: any) => (
+                      <SelectItem key={zone.id} value={zone.id}>
+                        {zone.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Tipos</SelectItem>
+                    <SelectItem value="programada">Programada</SelectItem>
+                    <SelectItem value="corretiva_interna">Corretiva Interna</SelectItem>
+                    <SelectItem value="corretiva_publica">Corretiva Pública</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={stateFilter} onValueChange={setStateFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativas">Ativas</SelectItem>
+                    <SelectItem value="concluidas">Concluídas</SelectItem>
+                    <SelectItem value="todas">Todas</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </ModernCardContent>
           </ModernCard>
