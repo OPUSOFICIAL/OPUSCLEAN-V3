@@ -253,10 +253,57 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="p-3 md:p-5 lg:p-6 space-y-5 md:space-y-6">
+        {/* Ações Rápidas - Novo */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <Button 
+            onClick={() => navigate('/work-orders')}
+            className="h-24 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 border-0 group"
+            data-testid="quick-action-work-orders"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <ClipboardList className="w-7 h-7 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-semibold">Ordens de Serviço</span>
+            </div>
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/cleaning-schedule')}
+            className="h-24 bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-lg hover:shadow-xl transition-all duration-300 border-0 group"
+            data-testid="quick-action-schedule"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <Calendar className="w-7 h-7 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-semibold">Calendário</span>
+            </div>
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/zones')}
+            className="h-24 bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-300 border-0 group"
+            data-testid="quick-action-zones"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <MapPin className="w-7 h-7 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-semibold">Zonas</span>
+            </div>
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/reports')}
+            className="h-24 bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 shadow-lg hover:shadow-xl transition-all duration-300 border-0 group"
+            data-testid="quick-action-reports"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <BarChart3 className="w-7 h-7 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-semibold">Relatórios</span>
+            </div>
+          </Button>
+        </div>
+
         {/* KPI Grid - Enhanced with animations */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {/* Eficiência Operacional */}
-          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 border-0 shadow-xl shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all duration-500 hover:scale-105">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-emerald-100/80 to-white border-emerald-200/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -translate-y-16 translate-x-16"></div>
             <CardContent className="p-6 relative">
               <div className="flex items-start justify-between">
@@ -299,15 +346,15 @@ export default function Dashboard() {
                     })()}
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Gauge className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Gauge className="w-8 h-8 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* SLA Compliance */}
-          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 border-0 shadow-xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-500 hover:scale-105">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-blue-100/80 to-white border-blue-200/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -translate-y-16 translate-x-16"></div>
             <CardContent className="p-6 relative">
               <div className="flex items-start justify-between">
@@ -350,15 +397,15 @@ export default function Dashboard() {
                     })()}
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
-                  <CheckCircle className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <CheckCircle className="w-8 h-8 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Ordens de Serviço */}
-          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-violet-50 to-purple-100 border-0 shadow-xl shadow-purple-500/10 hover:shadow-purple-500/20 transition-all duration-500 hover:scale-105">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-purple-100/80 to-white border-purple-200/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full -translate-y-16 translate-x-16"></div>
             <CardContent className="p-6 relative">
               <div className="flex items-start justify-between">
@@ -403,15 +450,15 @@ export default function Dashboard() {
                     })()}
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Activity className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Activity className="w-8 h-8 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Qualidade */}
-          <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 border-0 shadow-xl shadow-orange-500/10 hover:shadow-orange-500/20 transition-all duration-500 hover:scale-105">
+          <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-orange-100/80 to-white border-orange-200/50 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full -translate-y-16 translate-x-16"></div>
             <CardContent className="p-6 relative">
               <div className="flex items-start justify-between">
@@ -474,8 +521,8 @@ export default function Dashboard() {
                     })()}
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Award className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Award className="w-8 h-8 text-white" />
                 </div>
               </div>
             </CardContent>
