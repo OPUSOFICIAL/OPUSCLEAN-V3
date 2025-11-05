@@ -1,4 +1,3 @@
-import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,9 +9,12 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
+import { useModuleTheme } from "@/hooks/use-module-theme";
+import { ModernCard, ModernCardHeader, ModernCardContent } from "@/components/ui/modern-card";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
 import QRCode from "qrcode";
 import { 
-  QrCode, 
+  QrCode as QrCodeIcon, 
   Download, 
   Plus, 
   Trash2,
@@ -25,6 +27,7 @@ import {
 import jsPDF from 'jspdf';
 import opusLogo from "@assets/ChatGPT Image 8 de set. de 2025, 18_10_10_1757366528566.png";
 import grupoOpusLogo from "@assets/logo-grupo-opus.png";
+import { cn } from "@/lib/utils";
 
 const QR_SIZES_CM = [3, 4, 5, 6, 7, 8, 10, 12, 15];
 const cmToPixels = (cm: number) => Math.round(cm * 28.35);
@@ -32,6 +35,7 @@ const cmToPixels = (cm: number) => Math.round(cm * 28.35);
 export default function QrCodes() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const [selectedSite, setSelectedSite] = useState("");
   const [selectedZone, setSelectedZone] = useState("");
   const [pointName, setPointName] = useState("");
@@ -43,34 +47,6 @@ export default function QrCodes() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Cores baseadas no módulo ativo
-  const moduleColors = {
-    clean: {
-      gradient: 'from-blue-500 to-blue-600',
-      gradientHover: 'from-blue-600 to-blue-700',
-      bg: 'bg-blue-500',
-      bgLight: 'bg-blue-100',
-      text: 'text-blue-600',
-      textLight: 'text-blue-100',
-      border: 'border-blue-200',
-      badge: 'bg-blue-600',
-      badgeLight: 'bg-blue-100 text-blue-700'
-    },
-    maintenance: {
-      gradient: 'from-orange-500 to-orange-600',
-      gradientHover: 'from-orange-600 to-orange-700',
-      bg: 'bg-orange-500',
-      bgLight: 'bg-orange-100',
-      text: 'text-orange-600',
-      textLight: 'text-orange-100',
-      border: 'border-orange-200',
-      badge: 'bg-orange-600',
-      badgeLight: 'bg-orange-100 text-orange-700'
-    }
-  };
-
-  const colors = moduleColors[currentModule as keyof typeof moduleColors] || moduleColors.clean;
 
   const { data: sites } = useQuery({
     queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
@@ -420,30 +396,43 @@ export default function QrCodes() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <Header title="QR Codes" />
+    <>
+      <ModernPageHeader 
+        title="QR Codes"
+        description="Gerencie códigos QR para execução e serviços públicos"
+        icon={QrCodeIcon}
+        stats={[
+          { 
+            label: "Total de QR Codes", 
+            value: (qrPoints as any[])?.length || 0,
+            icon: QrCodeIcon
+          }
+        ]}
+        actions={
+          <Button 
+            onClick={handleRefresh}
+            className={cn("flex items-center gap-2", theme.buttons.outline)}
+            size="sm"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Atualizar
+          </Button>
+        }
+      />
       
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-        <Card className="border-2 border-primary/20 shadow-lg">
-          <CardHeader className={`bg-gradient-to-r ${colors.gradient} text-white`}>
-            <CardTitle className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                <Plus className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">Criar Novo QR Code</h2>
-                <p className={`text-sm ${colors.textLight} font-normal mt-1`}>Preencha os campos abaixo para gerar um novo código QR</p>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
+      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
+        <ModernCard variant="featured">
+          <ModernCardHeader icon={<Plus className="w-6 h-6" />}>
+            Criar Novo QR Code
+          </ModernCardHeader>
+          <ModernCardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Coluna Esquerda - Informações Principais */}
               <div className="space-y-5">
                 <div>
                   <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
-                    <div className={`w-6 h-6 rounded-full ${colors.bgLight} flex items-center justify-center`}>
-                      <span className={`text-xs font-bold ${colors.text}`}>1</span>
+                    <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", theme.backgrounds.light)}>
+                      <span className={cn("text-xs font-bold", theme.text.primary)}>1</span>
                     </div>
                     Local <span className="text-red-500">*</span>
                   </label>
@@ -469,8 +458,8 @@ export default function QrCodes() {
 
                 <div>
                   <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
-                    <div className={`w-6 h-6 rounded-full ${colors.bgLight} flex items-center justify-center`}>
-                      <span className={`text-xs font-bold ${colors.text}`}>2</span>
+                    <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", theme.backgrounds.light)}>
+                      <span className={cn("text-xs font-bold", theme.text.primary)}>2</span>
                     </div>
                     Zona <span className="text-red-500">*</span>
                   </label>
@@ -499,8 +488,8 @@ export default function QrCodes() {
 
                 <div>
                   <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
-                    <div className={`w-6 h-6 rounded-full ${colors.bgLight} flex items-center justify-center`}>
-                      <span className={`text-xs font-bold ${colors.text}`}>3</span>
+                    <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", theme.backgrounds.light)}>
+                      <span className={cn("text-xs font-bold", theme.text.primary)}>3</span>
                     </div>
                     Nome do Ponto <span className="text-red-500">*</span>
                   </label>
@@ -536,7 +525,7 @@ export default function QrCodes() {
 
                 <div>
                   <label className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
-                    <QrCode className="w-4 h-4 text-gray-500" />
+                    <QrCodeIcon className="w-4 h-4 text-gray-500" />
                     Tamanho do QR Code
                   </label>
                   <Select value={String(qrSizeCm)} onValueChange={(v) => setQrSizeCm(Number(v))}>
@@ -557,7 +546,7 @@ export default function QrCodes() {
                 <div className="pt-4">
                   <Button 
                     onClick={handleCreateQrPoint} 
-                    className={`w-full h-14 text-base font-semibold bg-gradient-to-r ${colors.gradient} hover:${colors.gradientHover} shadow-lg hover:shadow-xl transition-all`}
+                    className={cn("w-full h-14 text-base font-semibold", theme.buttons.primary)}
                     disabled={createQrPointMutation.isPending}
                     data-testid="button-create-qr"
                   >
@@ -568,7 +557,7 @@ export default function QrCodes() {
                       </>
                     ) : (
                       <>
-                        <QrCode className="w-5 h-5 mr-3" />
+                        <QrCodeIcon className="w-5 h-5 mr-3" />
                         Criar QR Code
                       </>
                     )}
@@ -581,11 +570,11 @@ export default function QrCodes() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </ModernCardContent>
+        </ModernCard>
 
         {selectedQrCodes.length > 0 && (
-          <Card className={`${colors.bgLight} ${colors.border}`}>
+          <Card className={cn(theme.backgrounds.light, theme.borders.primary)}>
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">
@@ -677,22 +666,23 @@ export default function QrCodes() {
                         {/* Checkbox */}
                         <button
                           onClick={() => toggleSelection(point.id)}
-                          className={`absolute top-4 left-4 w-6 h-6 rounded border-2 flex items-center justify-center ${
-                            isSelected ? `${colors.bg} ${colors.bg.replace('bg-', 'border-')}` : 'border-gray-300'
-                          }`}
+                          className={cn(
+                            "absolute top-4 left-4 w-6 h-6 rounded border-2 flex items-center justify-center",
+                            isSelected ? cn(theme.backgrounds.primary, theme.borders.primary) : 'border-gray-300'
+                          )}
                         >
                           {isSelected && <Check className="w-4 h-4 text-white" />}
                         </button>
 
                         {/* Badge Tipo */}
-                        <Badge className={`absolute top-4 right-4 ${colors.badge}`}>
+                        <Badge className={cn("absolute top-4 right-4", theme.backgrounds.primary)}>
                           Execução
                         </Badge>
 
                         {/* QR Code com borda dinâmica */}
                         <div className="flex justify-center my-4">
                           <div className="relative">
-                            <div className={`p-4 ${colors.bg} rounded-2xl`}>
+                            <div className={cn("p-4 rounded-2xl", theme.backgrounds.primary)}>
                               {qrCodeImages[point.id] && (
                                 <div className="bg-white p-2">
                                   <img 
@@ -708,7 +698,7 @@ export default function QrCodes() {
 
                         {/* Badge Execução */}
                         <div className="flex justify-center mb-3">
-                          <Badge className={`${colors.badgeLight} hover:${colors.badgeLight} px-4 py-1`}>
+                          <Badge className={cn(theme.badges.light, "px-4 py-1")}>
                             ⚡ Execução
                           </Badge>
                         </div>
@@ -771,6 +761,6 @@ export default function QrCodes() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }
