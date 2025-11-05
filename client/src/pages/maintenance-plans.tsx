@@ -64,6 +64,9 @@ export default function MaintenancePlans() {
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
   const [showActiveActivitiesModal, setShowActiveActivitiesModal] = useState(false);
+  const [showPreventiveActivitiesModal, setShowPreventiveActivitiesModal] = useState(false);
+  const [showPredictiveActivitiesModal, setShowPredictiveActivitiesModal] = useState(false);
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false);
 
   const { data: activities, isLoading } = useQuery({
     queryKey: ["/api/customers", activeClientId, "maintenance-activities"],
@@ -468,38 +471,50 @@ export default function MaintenancePlans() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors group"
+                onClick={() => setShowPreventiveActivitiesModal(true)}
+                data-testid="card-preventive-activities"
+              >
+                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Clock className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Preventivas</p>
                   <p className="text-xl font-bold text-green-600">
-                    {(activities as any[])?.filter((a: any) => a.type === 'preventiva').length || 0}
+                    {(activities as any[])?.filter((a: any) => a.type === 'preventiva' && a.isActive).length || 0}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors group"
+                onClick={() => setShowPredictiveActivitiesModal(true)}
+                data-testid="card-predictive-activities"
+              >
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Timer className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Preditivas</p>
                   <p className="text-xl font-bold text-blue-600">
-                    {(activities as any[])?.filter((a: any) => a.type === 'preditiva').length || 0}
+                    {(activities as any[])?.filter((a: any) => a.type === 'preditiva' && a.isActive).length || 0}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-gray-600" />
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors group"
+                onClick={() => setShowEquipmentModal(true)}
+                data-testid="card-equipment"
+              >
+                <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Settings className="w-5 h-5 text-gray-600" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Equipamentos</p>
                   <p className="text-xl font-bold text-foreground">
-                    {new Set((activities as any[])?.flatMap((a: any) => a.equipmentIds || [])).size || 0}
+                    {(equipment as any[])?.filter((e: any) => e.status === 'operacional').length || 0}
                   </p>
                 </div>
               </div>
@@ -1216,6 +1231,262 @@ export default function MaintenancePlans() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Atividades Preventivas */}
+        <Dialog open={showPreventiveActivitiesModal} onOpenChange={setShowPreventiveActivitiesModal}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Clock className="w-5 h-5 text-green-600" />
+                Atividades Preventivas Ativas
+              </DialogTitle>
+              <DialogDescription>
+                Visualize todas as atividades de manutenção preventiva que estão ativas e gerando ordens de serviço.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-3">
+              {(activities as any[])?.filter((a: any) => a.type === 'preventiva' && a.isActive).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="w-12 h-12 mx-auto mb-3 opacity-20 text-green-600" />
+                  <p>Nenhuma atividade preventiva ativa encontrada</p>
+                </div>
+              ) : (
+                (activities as any[])?.filter((a: any) => a.type === 'preventiva' && a.isActive).map((activity: any) => (
+                  <Card key={activity.id} className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-base">{activity.name}</h3>
+                            {getFrequencyBadge(activity.frequency)}
+                          </div>
+                          
+                          {activity.description && (
+                            <p className="text-sm text-muted-foreground">{activity.description}</p>
+                          )}
+                          
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            {activity.equipmentIds && activity.equipmentIds.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Settings className="w-4 h-4" />
+                                <span>{activity.equipmentIds.length} equipamento(s)</span>
+                              </div>
+                            )}
+                            {activity.checklistTemplateId && (
+                              <div className="flex items-center gap-1">
+                                <ClipboardList className="w-4 h-4" />
+                                <span>Checklist vinculado</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Timer className="w-4 h-4" />
+                              <span>Próxima: {getNextExecutionDate(activity)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowPreventiveActivitiesModal(false);
+                              setShowActivityDetailsModal(true);
+                            }}
+                            title="Ver detalhes"
+                            data-testid={`button-view-preventive-${activity.id}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleActivityStatus(activity)}
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            title="Inativar atividade"
+                            disabled={toggleActivityStatusMutation.isPending}
+                            data-testid={`button-inactivate-preventive-${activity.id}`}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Atividades Preditivas */}
+        <Dialog open={showPredictiveActivitiesModal} onOpenChange={setShowPredictiveActivitiesModal}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Timer className="w-5 h-5 text-blue-600" />
+                Atividades Preditivas Ativas
+              </DialogTitle>
+              <DialogDescription>
+                Visualize todas as atividades de manutenção preditiva que estão ativas e gerando ordens de serviço.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-3">
+              {(activities as any[])?.filter((a: any) => a.type === 'preditiva' && a.isActive).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Timer className="w-12 h-12 mx-auto mb-3 opacity-20 text-blue-600" />
+                  <p>Nenhuma atividade preditiva ativa encontrada</p>
+                </div>
+              ) : (
+                (activities as any[])?.filter((a: any) => a.type === 'preditiva' && a.isActive).map((activity: any) => (
+                  <Card key={activity.id} className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-base">{activity.name}</h3>
+                            {getFrequencyBadge(activity.frequency)}
+                          </div>
+                          
+                          {activity.description && (
+                            <p className="text-sm text-muted-foreground">{activity.description}</p>
+                          )}
+                          
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            {activity.equipmentIds && activity.equipmentIds.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Settings className="w-4 h-4" />
+                                <span>{activity.equipmentIds.length} equipamento(s)</span>
+                              </div>
+                            )}
+                            {activity.checklistTemplateId && (
+                              <div className="flex items-center gap-1">
+                                <ClipboardList className="w-4 h-4" />
+                                <span>Checklist vinculado</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <Timer className="w-4 h-4" />
+                              <span>Próxima: {getNextExecutionDate(activity)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedActivity(activity);
+                              setShowPredictiveActivitiesModal(false);
+                              setShowActivityDetailsModal(true);
+                            }}
+                            title="Ver detalhes"
+                            data-testid={`button-view-predictive-${activity.id}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleActivityStatus(activity)}
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            title="Inativar atividade"
+                            disabled={toggleActivityStatusMutation.isPending}
+                            data-testid={`button-inactivate-predictive-${activity.id}`}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Equipamentos Operacionais */}
+        <Dialog open={showEquipmentModal} onOpenChange={setShowEquipmentModal}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Settings className="w-5 h-5 text-gray-600" />
+                Equipamentos Operacionais
+              </DialogTitle>
+              <DialogDescription>
+                Visualize todos os equipamentos que estão em status operacional.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-3">
+              {(equipment as any[])?.filter((e: any) => e.status === 'operacional').length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Settings className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>Nenhum equipamento operacional encontrado</p>
+                </div>
+              ) : (
+                (equipment as any[])?.filter((e: any) => e.status === 'operacional').map((equip: any) => (
+                  <Card key={equip.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-base">{equip.name}</h3>
+                            {equip.internalCode && (
+                              <Badge variant="outline" className="text-xs">
+                                {equip.internalCode}
+                              </Badge>
+                            )}
+                            <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                              Operacional
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                            {equip.manufacturer && (
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">Fabricante:</span>
+                                <span>{equip.manufacturer}</span>
+                              </div>
+                            )}
+                            {equip.model && (
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">Modelo:</span>
+                                <span>{equip.model}</span>
+                              </div>
+                            )}
+                            {equip.serialNumber && (
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">Série:</span>
+                                <span>{equip.serialNumber}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              <span>{getZoneName(equip.zoneId)}</span>
+                            </div>
+                          </div>
+
+                          {equip.maintenanceNotes && (
+                            <p className="text-sm text-muted-foreground pt-2 border-t">
+                              <span className="font-medium">Notas: </span>
+                              {equip.maintenanceNotes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </DialogContent>
         </Dialog>
 
