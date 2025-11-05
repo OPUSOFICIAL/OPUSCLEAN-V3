@@ -118,28 +118,42 @@ export default function MobileWorkOrderExecute() {
       
       setWorkOrder(woData);
 
-      // Buscar checklist do serviço
-      if (woData.serviceId) {
+      // Buscar checklist - rota diferente para Clean vs Maintenance
+      let checklistData = null;
+      
+      if (woData.module === 'maintenance' && woData.maintenanceChecklistTemplateId) {
+        // Para manutenção: buscar do maintenance_checklist_templates
+        const checklistResponse = await fetch(`/api/maintenance-checklist-templates/${woData.maintenanceChecklistTemplateId}`);
+        if (checklistResponse.ok) {
+          checklistData = await checklistResponse.json();
+        }
+      } else if (woData.module === 'clean' && woData.serviceId) {
+        // Para clean: buscar do service_types
         const checklistResponse = await fetch(`/api/services/${woData.serviceId}/checklist`);
         if (checklistResponse.ok) {
-          const checklistData = await checklistResponse.json();
-          setChecklist(checklistData);
-          
-          // Inicializar respostas
-          const initialAnswers: Record<string, any> = {};
-          if (checklistData?.items) {
-            checklistData.items.forEach((item: any) => {
-              if (item.type === 'boolean') {
-                initialAnswers[item.id] = undefined;
-              } else if (item.type === 'photo') {
-                initialAnswers[item.id] = [];
-              } else {
-                initialAnswers[item.id] = '';
-              }
-            });
-          }
-          setAnswers(initialAnswers);
+          checklistData = await checklistResponse.json();
         }
+      }
+      
+      if (checklistData) {
+        setChecklist(checklistData);
+        
+        // Inicializar respostas
+        const initialAnswers: Record<string, any> = {};
+        if (checklistData?.items) {
+          checklistData.items.forEach((item: any) => {
+            if (item.type === 'boolean') {
+              initialAnswers[item.id] = undefined;
+            } else if (item.type === 'photo') {
+              initialAnswers[item.id] = [];
+            } else if (item.type === 'checkbox') {
+              initialAnswers[item.id] = [];
+            } else {
+              initialAnswers[item.id] = '';
+            }
+          });
+        }
+        setAnswers(initialAnswers);
       }
     } catch (error) {
       console.error('Erro ao carregar work order:', error);
