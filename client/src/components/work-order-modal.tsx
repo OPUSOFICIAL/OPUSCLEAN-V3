@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { X, Check, TriangleAlert, Clock, Camera, MapPin, User, AlertCircle, Calendar, Timer, Eye, Star, Flag, PlayCircle, PauseCircle } from "lucide-react";
+import { X, Check, TriangleAlert, Clock, Camera, MapPin, User, AlertCircle, Calendar, Timer, Eye, Star, Flag, PlayCircle, PauseCircle, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -402,6 +402,45 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                 <div>{getPriorityBadge((workOrder as any)?.priority)}</div>
               </div>
             </div>
+
+            {/* Cancellation Info Section - Only shown if work order is cancelled */}
+            {(workOrder as any)?.status === 'cancelada' && (workOrder as any)?.cancellationReason && (
+              <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 font-semibold">
+                  <XCircle className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <span>Informações do Cancelamento</span>
+                </div>
+                
+                <div className="space-y-2 pl-7">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Motivo:</span>
+                    <p className="text-sm text-gray-800 dark:text-gray-200 mt-1 bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                      {(workOrder as any)?.cancellationReason}
+                    </p>
+                  </div>
+                  
+                  {(workOrder as any)?.cancelledAt && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                      <Clock className="w-4 h-4" />
+                      <span>Cancelada em:</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                        {format(new Date((workOrder as any).cancelledAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {(workOrder as any)?.cancelledBy && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                      <User className="w-4 h-4" />
+                      <span>Cancelada por:</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                        {((users as any[] || []).find((u: any) => u.id === (workOrder as any)?.cancelledBy)?.name || 'Usuário não encontrado')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
