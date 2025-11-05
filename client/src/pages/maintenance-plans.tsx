@@ -1739,6 +1739,12 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     return (zones as any[]).filter((zone: any) => formData.siteIds.includes(zone.siteId));
   }, [zones, formData.siteIds]);
 
+  // Filtrar apenas equipamentos operacionais
+  const operationalEquipment = useMemo(() => {
+    if (!equipment || !Array.isArray(equipment)) return [];
+    return (equipment as any[]).filter((equip: any) => equip.status === 'operacional');
+  }, [equipment]);
+
   // Filtrar checklists baseado nos equipamentos selecionados (interseção)
   // Só mostra checklists que estão vinculados a TODOS os equipamentos selecionados
   const availableChecklistTemplates = useMemo(() => {
@@ -2184,13 +2190,13 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
               <div className="md:col-span-2 space-y-2">
                 <MultiSelect
                   label="Equipamentos"
-                  options={(equipment as any[])?.map((equip: any) => ({
+                  options={operationalEquipment?.map((equip: any) => ({
                     value: equip.id,
                     label: equip.name
                   })) || []}
                   value={formData.equipmentIds}
                   onChange={(value) => handleChange("equipmentIds", value)}
-                  placeholder="Selecione um ou mais equipamentos"
+                  placeholder="Selecione um ou mais equipamentos operacionais"
                   required
                   data-testid="multiselect-equipment"
                 />
