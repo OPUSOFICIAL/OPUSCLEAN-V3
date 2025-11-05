@@ -1,5 +1,6 @@
-import Header from "@/components/layout/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModernCard, ModernCardContent, ModernCardHeader } from "@/components/ui/modern-card";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,17 +8,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 import { 
   Plus, 
   Edit, 
   Trash2,
-  Wrench
+  Wrench,
+  RefreshCw,
+  Settings,
+  Package
 } from "lucide-react";
 
 interface EquipmentProps {
@@ -26,6 +32,7 @@ interface EquipmentProps {
 
 export default function Equipment({ customerId }: EquipmentProps) {
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const [, setLocation] = useLocation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -229,23 +236,52 @@ export default function Equipment({ customerId }: EquipmentProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header title="Equipamentos" description="Gerencie equipamentos e ativos" />
-
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" />
-              <CardTitle>Lista de Equipamentos</CardTitle>
-            </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-create-equipment">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo Equipamento
-                </Button>
-              </DialogTrigger>
+    <>
+      <ModernPageHeader 
+        title="Equipamentos"
+        description="Gerencie equipamentos e ativos de manutenção"
+        icon={Wrench}
+        stats={[
+          { 
+            label: "Total de Equipamentos", 
+            value: Array.isArray(equipment) ? equipment.length : 0,
+            icon: Package
+          },
+          {
+            label: "Operacionais",
+            value: Array.isArray(equipment) ? equipment.filter((e: any) => e.status === 'operacional').length : 0,
+            icon: Settings
+          }
+        ]}
+        actions={
+          <Button 
+            onClick={() => window.location.reload()}
+            className={cn("flex items-center gap-2", theme.buttons.outline)}
+            size="sm"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Atualizar
+          </Button>
+        }
+      />
+      
+      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
+        <ModernCard variant="featured">
+          <ModernCardHeader icon={<Wrench className="w-6 h-6" />}>
+            Lista de Equipamentos
+          </ModernCardHeader>
+          <ModernCardContent>
+            <div className="mb-4 flex justify-end">
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className={theme.buttons.primary}
+                    data-testid="button-create-equipment"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Novo Equipamento
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Equipamento</DialogTitle>
@@ -426,14 +462,18 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 </div>
               </DialogContent>
             </Dialog>
-          </CardHeader>
+            </div>
 
-          <CardContent>
             {isLoading ? (
-              <div className="text-center py-8">Carregando equipamentos...</div>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 border-4 border-orange-100 border-t-orange-600 rounded-full animate-spin mx-auto"></div>
+                <p className="mt-4 text-gray-600">Carregando equipamentos...</p>
+              </div>
             ) : !Array.isArray(equipment) || equipment.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhum equipamento cadastrado
+              <div className="text-center py-12">
+                <Package className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 text-lg font-medium">Nenhum equipamento cadastrado</p>
+                <p className="text-gray-400 text-sm mt-1">Clique em "Novo Equipamento" para começar</p>
               </div>
             ) : (
               <Table>
@@ -498,8 +538,8 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </ModernCardContent>
+        </ModernCard>
 
         {/* Edit Dialog - Similar structure to create dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -667,6 +707,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </>
   );
 }
