@@ -16,6 +16,9 @@ import { apiRequest } from '@/lib/queryClient';
 import { Users, Shield, Plus, Edit, Trash2, Settings, LayoutDashboard, FileText, MapPin, BarChart3, ClipboardCheck, QrCode, Map, Thermometer, Building2, UserCog, Settings2, Eye, CheckCircle2, XCircle } from 'lucide-react';
 import usePermissions, { PermissionKey } from '@/hooks/usePermissions';
 import type { CustomRole } from '@/hooks/usePermissions';
+import { ModernPageHeader } from '@/components/ui/modern-page-header';
+import { ModernCard } from '@/components/ui/modern-card';
+import { useModuleTheme } from '@/hooks/use-module-theme';
 
 const createRoleSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -29,6 +32,7 @@ export default function Roles() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { availablePermissions, can } = usePermissions();
+  const theme = useModuleTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
@@ -195,31 +199,27 @@ export default function Roles() {
   }
 
   return (
-    <div className="flex-1 p-6 space-y-6 overflow-auto">
-      <div className="flex justify-between items-start shrink-0">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <Settings className="h-8 w-8" />
-              Gerenciamento de Funções
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Configure funções personalizadas e suas permissões no sistema
-            </p>
-          </div>
-
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                onClick={() => {
-                  setEditingRole(null);
-                  form.reset();
-                }}
-                data-testid="button-create-role"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Função
-              </Button>
-            </DialogTrigger>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <ModernPageHeader 
+          title="Funções" 
+          description="Gerencie funções e permissões personalizadas" 
+          icon={Shield}
+          actions={
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  onClick={() => {
+                    setEditingRole(null);
+                    form.reset();
+                  }}
+                  className={theme.buttons.primary}
+                  data-testid="button-create-role"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Função
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
@@ -335,9 +335,10 @@ export default function Roles() {
               </Form>
             </DialogContent>
           </Dialog>
-      </div>
+          }
+        />
 
-      <Card>
+        <ModernCard variant="gradient">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
@@ -367,7 +368,7 @@ export default function Roles() {
             ) : (
               <div className="grid gap-4">
                 {filteredRoles.map((role: CustomRole) => (
-                  <Card key={role.id} className="border-l-4 border-l-primary">
+                  <ModernCard key={role.id} variant="gradient">
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -454,12 +455,13 @@ export default function Roles() {
                         </div>
                       </div>
                     </CardHeader>
-                  </Card>
+                  </ModernCard>
                 ))}
               </div>
             )}
           </CardContent>
-        </Card>
+        </ModernCard>
+      </div>
     </div>
   );
 }

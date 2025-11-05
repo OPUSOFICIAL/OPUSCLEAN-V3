@@ -1,4 +1,5 @@
-import Header from "@/components/layout/header";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
+import { ModernCard } from "@/components/ui/modern-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -762,7 +763,7 @@ export default function Reports() {
   // COMPONENTES DE VISUALIZAÇÃO ESPECÍFICOS PARA CADA TIPO DE RELATÓRIO
 
   const GeneralReportView = ({ data }: { data: any }) => (
-    <Card className="border-0 shadow-lg">
+    <ModernCard variant="gradient">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <FileText className="w-5 h-5 text-blue-600" />
@@ -864,11 +865,11 @@ export default function Reports() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const SLAAnalysisView = ({ data }: { data: any }) => (
-    <Card className="border-0 shadow-lg">
+    <ModernCard variant="glass">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Target className="w-5 h-5 text-green-600" />
@@ -936,11 +937,11 @@ export default function Reports() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const ProductivityReportView = ({ data }: { data: any }) => (
-    <Card className="border-0 shadow-lg">
+    <ModernCard variant="gradient">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <TrendingUp className="w-5 h-5 text-purple-600" />
@@ -1014,11 +1015,11 @@ export default function Reports() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const OperatorPerformanceView = ({ data }: { data: any }) => (
-    <Card className="border-0 shadow-lg">
+    <ModernCard variant="glass">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Users className="w-5 h-5 text-orange-600" />
@@ -1108,11 +1109,11 @@ export default function Reports() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const LocationAnalysisView = ({ data }: { data: any }) => (
-    <Card className="border-0 shadow-lg">
+    <ModernCard variant="gradient">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <MapPin className="w-5 h-5 text-indigo-600" />
@@ -1196,11 +1197,11 @@ export default function Reports() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   const TemporalAnalysisView = ({ data }: { data: any }) => (
-    <Card className="border-0 shadow-lg">
+    <ModernCard variant="glass">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Clock className="w-5 h-5 text-red-600" />
@@ -1282,42 +1283,45 @@ export default function Reports() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </ModernCard>
   );
 
   return (
-    <>
-      <Header 
-        title="Relatórios e Analytics" 
-        description="Dashboard completo com análises e geração de relatórios personalizados"
-      >
-        <div className="flex items-center space-x-3">
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-40" data-testid="select-date-range">
-              <Calendar className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Últimos 7 dias</SelectItem>
-              <SelectItem value="30">Últimos 30 dias</SelectItem>
-              <SelectItem value="90">Últimos 90 dias</SelectItem>
-              <SelectItem value="365">Último ano</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button 
-            onClick={refreshData}
-            className={cn("flex items-center gap-2", theme.buttons.primary)}
-            size="sm"
-            disabled={isRefreshing}
-            data-testid="button-refresh-data"
-          >
-            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-            Atualizar
-          </Button>
-        </div>
-      </Header>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <ModernPageHeader 
+          title="Relatórios" 
+          description="Análise detalhada de desempenho e métricas" 
+          icon={BarChart3}
+          actions={
+            <>
+              <Select value={dateRange} onValueChange={setDateRange}>
+                <SelectTrigger className="w-40" data-testid="select-date-range">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Últimos 7 dias</SelectItem>
+                  <SelectItem value="30">Últimos 30 dias</SelectItem>
+                  <SelectItem value="90">Últimos 90 dias</SelectItem>
+                  <SelectItem value="365">Último ano</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={refreshData}
+                className={theme.buttons.primary}
+                size="sm"
+                disabled={isRefreshing}
+                data-testid="button-refresh-data"
+              >
+                <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                Atualizar
+              </Button>
+            </>
+          }
+        />
       
-      <main className="flex-1 overflow-auto p-6 bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="space-y-6">
         {/* KPI Dashboard */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -1330,7 +1334,7 @@ export default function Reports() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {isLoadingMetrics ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="border-0 shadow-lg">
+                <ModernCard key={i} variant={i % 2 === 0 ? "gradient" : "glass"}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -1341,7 +1345,7 @@ export default function Reports() {
                       <Skeleton className="w-12 h-12 rounded-full" />
                     </div>
                   </CardContent>
-                </Card>
+                </ModernCard>
               ))
             ) : errorMetrics ? (
               <div className="col-span-full">
@@ -1353,10 +1357,10 @@ export default function Reports() {
                 </Alert>
               </div>
             ) : (
-              kpiCards.map((kpi) => {
+              kpiCards.map((kpi, index) => {
                 const Icon = kpi.icon;
                 return (
-                  <Card key={kpi.title} className={`border-0 shadow-lg hover:shadow-xl transition-all duration-300 ${kpi.borderColor} border-l-4`}>
+                  <ModernCard key={kpi.title} variant={index % 2 === 0 ? "gradient" : "glass"} className={`${kpi.borderColor} border-l-4`}>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -1376,7 +1380,7 @@ export default function Reports() {
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </ModernCard>
                 );
               })
             )}
@@ -1395,18 +1399,22 @@ export default function Reports() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reportTypes.map((report) => {
+            {reportTypes.map((report, index) => {
               const Icon = report.icon;
               const isSelected = selectedReportType === report.id;
               
               return (
-                <Card 
-                  key={report.id} 
-                  className={`cursor-pointer transition-all duration-300 border-0 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
-                    isSelected ? "ring-2 ring-blue-500 shadow-2xl scale-105" : ""
-                  }`}
+                <div 
+                  key={report.id}
+                  className="cursor-pointer"
                   onClick={() => setSelectedReportType(isSelected ? null : report.id)}
                 >
+                  <ModernCard 
+                    variant={index % 2 === 0 ? "gradient" : "glass"}
+                    className={`transition-all duration-300 transform hover:-translate-y-1 ${
+                      isSelected ? "ring-2 ring-blue-500 shadow-2xl scale-105" : ""
+                    }`}
+                  >
                   <CardContent className="p-6">
                     <div className={`w-full h-32 rounded-lg bg-gradient-to-br ${report.gradient} mb-4 flex items-center justify-center`}>
                       <Icon className={`w-12 h-12 text-white p-2 ${report.color} rounded-lg`} />
@@ -1483,7 +1491,8 @@ export default function Reports() {
                       </div>
                     )}
                   </CardContent>
-                </Card>
+                </ModernCard>
+                </div>
               );
             })}
           </div>
@@ -1518,7 +1527,7 @@ export default function Reports() {
         {/* Analytics Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Work Orders Chart */}
-          <Card className="border-0 shadow-lg">
+          <ModernCard variant="gradient">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center space-x-2">
@@ -1526,7 +1535,7 @@ export default function Reports() {
                   <span>Ordens de Serviço por Status</span>
                 </CardTitle>
                 <Button 
-                  variant="outline" 
+                  className={theme.buttons.primary}
                   size="sm" 
                   onClick={() => generateReport('geral', 'csv')}
                   data-testid="button-export-work-orders-csv"
@@ -1577,10 +1586,10 @@ export default function Reports() {
                 )}
               </div>
             </CardContent>
-          </Card>
+          </ModernCard>
 
           {/* SLA Performance Chart */}
-          <Card className="border-0 shadow-lg">
+          <ModernCard variant="glass">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center space-x-2">
@@ -1588,7 +1597,7 @@ export default function Reports() {
                   <span>Performance de SLA</span>
                 </CardTitle>
                 <Button 
-                  variant="outline" 
+                  className={theme.buttons.primary}
                   size="sm" 
                   onClick={() => generateReport('sla', 'csv')}
                   data-testid="button-export-sla-csv"
@@ -1667,11 +1676,11 @@ export default function Reports() {
                 )}
               </div>
             </CardContent>
-          </Card>
+          </ModernCard>
         </div>
 
         {/* Quick Export Options */}
-        <Card className="border-0 shadow-lg">
+        <ModernCard variant="gradient">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Zap className="w-5 h-5 text-blue-600" />
@@ -1683,7 +1692,7 @@ export default function Reports() {
               {/* Relatório Completo PDF */}
               <div className="group">
                 <Button 
-                  className="w-full h-20 flex flex-col items-center justify-center space-y-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  className={cn("w-full h-20 flex flex-col items-center justify-center space-y-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1", theme.buttons.primary)}
                   onClick={() => generateReport('geral', 'pdf')}
                   disabled={isGenerating === 'geral-pdf'}
                   data-testid="button-quick-export-all-pdf"
@@ -1753,8 +1762,9 @@ export default function Reports() {
               </div>
             </div>
           </CardContent>
-        </Card>
-      </main>
-    </>
+        </ModernCard>
+        </div>
+      </div>
+    </div>
   );
 }

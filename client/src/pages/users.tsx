@@ -1,5 +1,4 @@
-import Header from "@/components/layout/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModernCard } from "@/components/ui/modern-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { 
   Plus, 
   Users as UsersIcon, 
@@ -55,6 +55,7 @@ export default function Users({ customerId }: UsersProps) {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const theme = useModuleTheme();
 
   // Resetar campos do formulário quando o diálogo fechar
   useEffect(() => {
@@ -414,7 +415,7 @@ export default function Users({ customerId }: UsersProps) {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-create-user">
+            <Button className={theme.buttons.primary} data-testid="button-create-user">
               <Plus className="w-4 h-4 mr-2" />
               Novo Usuário
             </Button>
@@ -580,8 +581,8 @@ export default function Users({ customerId }: UsersProps) {
       
       <div className="space-y-6">
         {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
+        <ModernCard variant="gradient" className="mb-6">
+          <div className="p-4">
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -617,13 +618,13 @@ export default function Users({ customerId }: UsersProps) {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </ModernCard>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-4">
+          <ModernCard variant="gradient">
+            <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Usuários</p>
@@ -633,11 +634,11 @@ export default function Users({ customerId }: UsersProps) {
                 </div>
                 <UsersIcon className="w-8 h-8 text-primary" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </ModernCard>
 
-          <Card>
-            <CardContent className="p-4">
+          <ModernCard variant="gradient">
+            <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Ativos</p>
@@ -649,11 +650,11 @@ export default function Users({ customerId }: UsersProps) {
                   <UserCheck className="w-4 h-4 text-chart-2" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </ModernCard>
 
-          <Card>
-            <CardContent className="p-4">
+          <ModernCard variant="gradient">
+            <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Com Perfis</p>
@@ -665,11 +666,11 @@ export default function Users({ customerId }: UsersProps) {
                   <UserCheck className="w-4 h-4 text-chart-4" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </ModernCard>
 
-          <Card>
-            <CardContent className="p-4">
+          <ModernCard variant="gradient">
+            <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Inativos</p>
@@ -679,16 +680,14 @@ export default function Users({ customerId }: UsersProps) {
                 </div>
                 <UserX className="w-8 h-8 text-muted-foreground" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </ModernCard>
         </div>
 
         {/* Users Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Usuários</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <ModernCard variant="gradient">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Lista de Usuários</h3>
             {filteredUsers.length === 0 ? (
               <div className="text-center py-8">
                 <UsersIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -786,8 +785,8 @@ export default function Users({ customerId }: UsersProps) {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </ModernCard>
       </div>
 
       {/* View User Dialog */}

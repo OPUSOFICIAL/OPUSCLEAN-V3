@@ -8,6 +8,8 @@ import { Plus, Edit, Trash2, Search, Users, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModernCard } from "@/components/ui/modern-card";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Customer, InsertCustomer } from "@shared/schema";
 
@@ -41,6 +44,7 @@ interface CustomersPageProps {
 export default function CustomersPage({ companyId }: CustomersPageProps) {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const theme = useModuleTheme();
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -191,56 +195,56 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-64 bg-muted rounded"></div>
+      <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-muted rounded w-1/3"></div>
+            <div className="h-64 bg-muted rounded"></div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Users className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Clientes</h1>
-            <p className="text-muted-foreground">Gerencie os clientes da sua empresa</p>
-          </div>
-        </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-primary hover:bg-primary/90"
-          data-testid="button-create-customer"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Cliente
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="space-y-6">
+          {/* Header */}
+          <ModernPageHeader 
+            title="Clientes" 
+            description="Gerencie seus clientes" 
+            icon={Building2}
+            actions={
+              <Button 
+                onClick={() => setIsCreateDialogOpen(true)}
+                className={theme.buttons.primary}
+                data-testid="button-create-customer"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Cliente
+              </Button>
+            }
+          />
 
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar clientes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              data-testid="input-search-customers"
-            />
-          </div>
-        </CardContent>
-      </Card>
+          {/* Search */}
+          <ModernCard variant="glass">
+            <CardContent className="pt-6">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar clientes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-customers"
+                />
+              </div>
+            </CardContent>
+          </ModernCard>
 
-      {/* Customers Table */}
-      <Card>
+          {/* Customers Table */}
+          <ModernCard variant="glass">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Building2 className="w-5 h-5" />
@@ -266,6 +270,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
               {!searchTerm && (
                 <Button 
                   onClick={() => setIsCreateDialogOpen(true)}
+                  className={theme.buttons.primary}
                   data-testid="button-create-first-customer"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -329,7 +334,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
             </Table>
           )}
         </CardContent>
-      </Card>
+      </ModernCard>
 
       {/* Create Customer Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -760,6 +765,8 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
           </Form>
         </DialogContent>
       </Dialog>
+        </div>
+      </div>
     </div>
   );
 }

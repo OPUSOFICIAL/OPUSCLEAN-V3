@@ -13,10 +13,14 @@ import { Building, Edit3, X, RotateCcw, MapPin, Palette, Plus, Minus, Save, Aler
 import { apiRequest } from '@/lib/queryClient';
 import { useClient } from '@/contexts/ClientContext';
 import { useModule } from '@/contexts/ModuleContext';
+import { ModernPageHeader } from '@/components/ui/modern-page-header';
+import { ModernCard } from '@/components/ui/modern-card';
+import { useModuleTheme } from '@/hooks/use-module-theme';
 
 export default function FloorPlanPage() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const [selectedSiteId, setSelectedSiteId] = React.useState<string>('');
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [isHeatmapMode, setIsHeatmapMode] = React.useState(false);
@@ -374,119 +378,114 @@ export default function FloorPlanPage() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b bg-card/50 shadow-sm">
-        <div className="flex items-center gap-3">
-          <Building className="w-5 h-5 text-primary" />
-          <h1 className="text-xl font-semibold">Planta dos Locais</h1>
-          {selectedSite && (
-            <Badge variant="outline" className="text-xs">
-              {selectedSite.name}
-            </Badge>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {/* Site selector inline */}
-          {sites && Array.isArray(sites) && sites.length > 0 && (
-            <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
-              <SelectTrigger className="w-64" data-testid="select-site">
-                <SelectValue placeholder="Selecione um local" />
-              </SelectTrigger>
-              <SelectContent>
-                {(sites as any[]).map((site) => (
-                  <SelectItem key={site.id} value={site.id}>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{site.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          
-          {/* Botão Mapa de Calor */}
-          <Button 
-            variant={isHeatmapMode ? "default" : "outline"} 
-            size="sm" 
-            onClick={() => {
-              setIsHeatmapMode(!isHeatmapMode);
-              if (!isHeatmapMode) {
-                setIsEditMode(false); // Sair do modo de edição ao entrar no heatmap
-              }
-            }}
-            data-testid="button-heatmap-mode"
-          >
-            <Thermometer className="w-4 h-4 mr-1" />
-            Mapa de Calor
-          </Button>
-          
-          <Button 
-            variant={isEditMode ? "destructive" : "outline"} 
-            size="sm" 
-            onClick={() => {
-              setIsEditMode(!isEditMode);
-              if (!isEditMode) {
-                setIsHeatmapMode(false); // Sair do modo heatmap ao entrar na edição
-              }
-            }}
-            data-testid="button-edit-mode"
-            disabled={isHeatmapMode}
-          >
-            {isEditMode ? (
-              <>
-                <X className="w-4 h-4 mr-1" />
-                Sair
-              </>
-            ) : (
-              <>
-                <Edit3 className="w-4 h-4 mr-1" />
-                Editar
-              </>
-            )}
-          </Button>
-          
-          {isEditMode && (
-            <>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <ModernPageHeader
+          title="Planta dos Locais"
+          description="Visualize e edite o layout das zonas"
+          icon={MapPin}
+          actions={
+            <div className="flex items-center gap-3">
+              {/* Site selector inline */}
+              {sites && Array.isArray(sites) && sites.length > 0 && (
+                <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
+                  <SelectTrigger className="w-64" data-testid="select-site">
+                    <SelectValue placeholder="Selecione um local" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(sites as any[]).map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          <span>{site.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {/* Botão Mapa de Calor */}
               <Button 
-                variant="outline" 
+                variant={isHeatmapMode ? "default" : "outline"} 
                 size="sm" 
-                onClick={resetPositions}
-                data-testid="button-reset-positions"
+                onClick={() => {
+                  setIsHeatmapMode(!isHeatmapMode);
+                  if (!isHeatmapMode) {
+                    setIsEditMode(false);
+                  }
+                }}
+                className={isHeatmapMode ? theme.buttons.primary : ''}
+                data-testid="button-heatmap-mode"
               >
-                <RotateCcw className="w-4 h-4 mr-1" />
-                Resetar
+                <Thermometer className="w-4 h-4 mr-1" />
+                Mapa de Calor
               </Button>
+              
+              <Button 
+                variant={isEditMode ? "destructive" : "outline"} 
+                size="sm" 
+                onClick={() => {
+                  setIsEditMode(!isEditMode);
+                  if (!isEditMode) {
+                    setIsHeatmapMode(false);
+                  }
+                }}
+                data-testid="button-edit-mode"
+                disabled={isHeatmapMode}
+              >
+                {isEditMode ? (
+                  <>
+                    <X className="w-4 h-4 mr-1" />
+                    Sair
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="w-4 h-4 mr-1" />
+                    Editar
+                  </>
+                )}
+              </Button>
+              
+              {isEditMode && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={resetPositions}
+                    data-testid="button-reset-positions"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" />
+                    Resetar
+                  </Button>
+
+                  {hasUnsavedChanges && (
+                    <Button 
+                      size="sm"
+                      onClick={() => saveFloorPlanMutation.mutate()}
+                      disabled={saveFloorPlanMutation.isPending}
+                      className={theme.buttons.primary}
+                      data-testid="button-save-floor-plan"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      {saveFloorPlanMutation.isPending ? "Salvando..." : "Salvar Planta"}
+                    </Button>
+                  )}
+                </>
+              )}
 
               {hasUnsavedChanges && (
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={() => saveFloorPlanMutation.mutate()}
-                  disabled={saveFloorPlanMutation.isPending}
-                  className="bg-green-600 hover:bg-green-700"
-                  data-testid="button-save-floor-plan"
-                >
-                  <Save className="w-4 h-4 mr-1" />
-                  {saveFloorPlanMutation.isPending ? "Salvando..." : "Salvar Planta"}
-                </Button>
+                <div className="flex items-center text-orange-600 ml-2">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  <span className="text-sm">Mudanças não salvas</span>
+                </div>
               )}
-            </>
-          )}
-
-          {hasUnsavedChanges && (
-            <div className="flex items-center text-orange-600 ml-2">
-              <AlertCircle className="w-4 h-4 mr-1" />
-              <span className="text-sm">Mudanças não salvas</span>
             </div>
-          )}
-        </div>
-      </div>
+          }
+        />
 
-      {/* Main Content Area - Full Height */}
-      <div className="flex-1 overflow-hidden">
+        {/* Main Content Area - Full Height */}
+        <div className="mt-6">
         {!zones || (zones as any[]).length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -811,6 +810,7 @@ export default function FloorPlanPage() {
             )}
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </div>
   );
