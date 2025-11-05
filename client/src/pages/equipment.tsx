@@ -50,6 +50,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const [warrantyExpiry, setWarrantyExpiry] = useState("");
   const [status, setStatus] = useState("operacional");
   const [description, setDescription] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { toast } = useToast();
 
@@ -223,6 +224,15 @@ export default function Equipment({ customerId }: EquipmentProps) {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    toast({ title: "🔄 Atualizando lista..." });
+    await queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/equipment`] });
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
+  };
+
   // Get site and zone names for display
   const getSiteName = (siteId: string) => {
     if (!Array.isArray(sites)) return "N/A";
@@ -255,11 +265,13 @@ export default function Equipment({ customerId }: EquipmentProps) {
         ]}
         actions={
           <Button 
-            onClick={() => window.location.reload()}
+            onClick={handleRefresh}
             className={cn("flex items-center gap-2", theme.buttons.outline)}
             size="sm"
+            disabled={isRefreshing}
+            data-testid="button-refresh-equipment"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
             Atualizar
           </Button>
         }
