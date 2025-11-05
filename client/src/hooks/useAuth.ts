@@ -37,6 +37,10 @@ export function canManageWorkOrders(user: User | null): boolean {
          user?.role === 'supervisor_site';
 }
 
+export function canDeleteWorkOrders(user: User | null): boolean {
+  return user?.role === 'admin'; // Apenas admin pode excluir OS
+}
+
 export function canViewReports(user: User | null): boolean {
   return user?.role === 'admin' || 
          user?.role === 'gestor_cliente' || 
@@ -85,6 +89,7 @@ export function useAuth() {
     canManageUsers: canManageUsers(authState.user),
     canOnlyViewOwnWorkOrders: canOnlyViewOwnWorkOrders(authState.user),
     canManageWorkOrders: canManageWorkOrders(authState.user),
+    canDeleteWorkOrders: canDeleteWorkOrders(authState.user),
     canViewReports: canViewReports(authState.user),
   };
 }
