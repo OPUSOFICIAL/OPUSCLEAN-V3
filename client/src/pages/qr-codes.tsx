@@ -629,9 +629,10 @@ export default function QrCodes() {
                   variant="outline"
                   size="sm"
                   onClick={handleRefresh}
+                  disabled={isRefreshing}
                   data-testid="button-refresh-qr"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
                   Atualizar
                 </Button>
                 {(qrPoints as any[])?.length > 0 && (

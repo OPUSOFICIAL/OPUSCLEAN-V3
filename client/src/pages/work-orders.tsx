@@ -362,9 +362,10 @@ export default function WorkOrders() {
               size="sm" 
               onClick={handleRefresh}
               className={cn("flex items-center gap-2", theme.buttons.outline)}
+              disabled={isRefreshing}
               data-testid="button-refresh"
             >
-              <RefreshCw className={`w-4 h-4 transition-transform duration-1000 ${isRefreshing ? 'rotate-360' : ''}`} />
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
               Atualizar
             </Button>
             <Button 
