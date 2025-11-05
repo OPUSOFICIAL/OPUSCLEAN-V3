@@ -168,14 +168,14 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ModuleProvider>
-          <ClientProvider>
+        <ClientProvider>
+          <ModuleProvider>
             <TooltipProvider>
               <Toaster />
               <Router />
             </TooltipProvider>
-          </ClientProvider>
-        </ModuleProvider>
+          </ModuleProvider>
+        </ClientProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

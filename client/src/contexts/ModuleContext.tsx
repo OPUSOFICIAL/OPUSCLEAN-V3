@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { useUserModules } from '@/hooks/useUserModules';
 import { useClient } from './ClientContext';
 
@@ -67,6 +68,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   
   // Importar ClientContext para sincronizar módulo com cliente
   const { activeClient } = useClient();
+  
+  // Hook de navegação para redirecionamento automático
+  const [, setLocation] = useLocation();
 
   // Inicializar o módulo apenas DEPOIS que os dados do usuário carregarem
   useEffect(() => {
@@ -103,6 +107,10 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
       if (canAccessModule(clientModule) && clientModule !== currentModule) {
         console.log(`[MODULE] Cliente "${activeClient.name}" possui apenas módulo "${clientModule}", trocando automaticamente...`);
         setCurrentModule(clientModule);
+        
+        // Redirecionar para o dashboard do novo módulo
+        console.log(`[MODULE] Redirecionando para dashboard do módulo "${clientModule}"...`);
+        setLocation('/dashboard');
       }
     }
     // Se o cliente tem múltiplos módulos mas o módulo atual não é suportado pelo cliente
@@ -112,9 +120,13 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
       if (validModule) {
         console.log(`[MODULE] Módulo atual não suportado pelo cliente, trocando para "${validModule}"...`);
         setCurrentModule(validModule as ModuleType);
+        
+        // Redirecionar para o dashboard do novo módulo
+        console.log(`[MODULE] Redirecionando para dashboard do módulo "${validModule}"...`);
+        setLocation('/dashboard');
       }
     }
-  }, [activeClient, currentModule, canAccessModule]);
+  }, [activeClient, currentModule, canAccessModule, setLocation]);
 
   useEffect(() => {
     if (currentModule) {
