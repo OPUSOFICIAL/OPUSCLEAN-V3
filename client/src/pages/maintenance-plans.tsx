@@ -381,9 +381,9 @@ export default function MaintenancePlans() {
         description="Gerenciamento de atividades de manutenção programadas"
         icon={CalendarRange}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
-              <SelectTrigger className="w-32" data-testid="select-view-mode">
+              <SelectTrigger className="w-28 sm:w-32" data-testid="select-view-mode">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -399,15 +399,16 @@ export default function MaintenancePlans() {
               className={cn("flex items-center gap-2", theme.buttons.outline)}
             >
               <Settings className="w-4 h-4" />
-              {generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs'}
+              <span className="hidden sm:inline">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs'}</span>
+              <span className="sm:hidden">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar'}</span>
             </Button>
             <Button 
               onClick={() => setShowCreateModal(true)}
               className={theme.buttons.primary}
               data-testid="button-create-activity"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Atividade
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Nova Atividade</span>
             </Button>
           </div>
         }
@@ -469,9 +470,9 @@ export default function MaintenancePlans() {
             </div>
 
             {/* Filters Row */}
-            <div className="flex flex-wrap gap-3 pt-4 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t">
               <Select value={siteFilter} onValueChange={setSiteFilter}>
-                <SelectTrigger className="w-44" data-testid="select-site-filter">
+                <SelectTrigger className="w-full" data-testid="select-site-filter">
                   <SelectValue placeholder="Filtrar por local" />
                 </SelectTrigger>
                 <SelectContent>
@@ -485,7 +486,7 @@ export default function MaintenancePlans() {
               </Select>
               
               <Select defaultValue="todas">
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -501,7 +502,7 @@ export default function MaintenancePlans() {
               </Select>
 
               <Select defaultValue="todos">
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -513,7 +514,7 @@ export default function MaintenancePlans() {
               </Select>
 
               <Select defaultValue="ativas">
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -562,7 +563,7 @@ export default function MaintenancePlans() {
 
             <ModernCardContent>
               {/* Legenda compacta e moderna */}
-              <div className="flex flex-wrap gap-2 mb-6 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-wrap gap-2 mb-6 p-3 bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
                   <span className="text-xs font-medium text-slate-600">Diária</span>
@@ -593,17 +594,18 @@ export default function MaintenancePlans() {
                 </div>
               </div>
 
-              {/* Cabeçalho da semana moderno */}
-              <div className="grid grid-cols-7 gap-3 mb-3">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-                  <div key={day} className="py-2 text-center font-semibold text-xs uppercase tracking-wider text-slate-500">
-                    {day}
+              {/* Cabeçalho da semana e Calendário moderno */}
+              <div className="overflow-x-auto">
+                <div className="min-w-[600px]">
+                  <div className="grid grid-cols-7 gap-3 mb-3">
+                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+                      <div key={day} className="py-2 text-center font-semibold text-xs uppercase tracking-wider text-slate-500">
+                        {day}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* Calendário moderno */}
-              <div className="grid grid-cols-7 gap-3">
+                  <div className="grid grid-cols-7 gap-3">
                 {generateMonthCalendar().map((week, weekIndex) => 
                   week.map((day, dayIndex) => {
                     const dayActivities = day ? getActivitiesForDay(day) : [];
@@ -682,6 +684,8 @@ export default function MaintenancePlans() {
                     );
                   })
                 )}
+                  </div>
+                </div>
               </div>
             </ModernCardContent>
           </ModernCard>
