@@ -4,13 +4,14 @@ import { getAuthState, canOnlyViewOwnWorkOrders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, RefreshCw, Play, Zap } from "lucide-react";
+import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, Play, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
 import { MobileHeader } from "@/components/mobile-header";
+import PullToRefresh from "react-simple-pull-to-refresh";
 
 interface WorkOrder {
   id: string;
@@ -255,29 +256,19 @@ export default function MobileDashboard() {
         title={user.name}
         subtitle="Colaborador"
         actions={
-          <>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleRefresh}
-              className="text-white hover:bg-white/20"
-              data-testid="button-refresh-mobile"
-            >
-              <RefreshCw className={`w-5 h-5 transition-transform duration-1000 ${isRefreshing ? 'rotate-360' : ''}`} />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={handleLogout}
-              className="text-white hover:bg-white/20"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleLogout}
+            className="text-white hover:bg-white/20"
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
         }
       />
 
-      <div className="p-4 space-y-6">
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="p-4 space-y-6">
         {/* 🔥 CARD PERMANENTE: Minhas O.S em Execução - SEMPRE VISÍVEL */}
         <Card className={`border-0 shadow-2xl ${
           myInProgressOrders.length > 0 
@@ -800,6 +791,7 @@ export default function MobileDashboard() {
           </div>
         )}
       </div>
+      </PullToRefresh>
     </div>
   );
 }
