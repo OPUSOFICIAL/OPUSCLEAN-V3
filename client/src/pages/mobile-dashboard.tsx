@@ -4,7 +4,7 @@ import { getAuthState, canOnlyViewOwnWorkOrders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, RefreshCw } from "lucide-react";
+import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, RefreshCw, Play, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
@@ -136,8 +136,17 @@ export default function MobileDashboard() {
     !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
   );
   
+  // 🔥 NOVO: Minhas em Execução - O.S que o colaborador iniciou
+  const myInProgressOrders = filteredWorkOrders.filter(wo => 
+    wo.assignedUserId === user.id && wo.status === 'em_execucao'
+  );
+  
   const myPendingOrders = filteredWorkOrders.filter(wo => 
-    wo.assignedUserId === user.id && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
+    wo.assignedUserId === user.id && 
+    wo.status !== 'concluida' && 
+    wo.status !== 'cancelada' && 
+    wo.status !== 'pausada' && 
+    wo.status !== 'em_execucao' // Excluir as que já estão em execução
   );
   
   const myPausedOrders = filteredWorkOrders.filter(wo => 
@@ -268,6 +277,59 @@ export default function MobileDashboard() {
       />
 
       <div className="p-4 space-y-6">
+        {/* 🔥 Seção Destacada: Minhas O.S em Execução */}
+        {myInProgressOrders.length > 0 && (
+          <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-2xl animate-pulse-slow">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white font-bold flex items-center gap-2">
+                  <Zap className="w-6 h-6" />
+                  Em Execução Agora
+                </CardTitle>
+                <Badge className="bg-white/30 text-white border-white/50 font-bold px-3 py-1">
+                  {myInProgressOrders.length}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {myInProgressOrders.map((wo) => (
+                  <div
+                    key={wo.id}
+                    onClick={() => setLocation(`/mobile/work-order-details/${wo.id}`)}
+                    className="bg-white/20 backdrop-blur-md rounded-lg p-4 cursor-pointer hover:bg-white/30 transition-all active:scale-95"
+                    data-testid={`card-in-progress-${wo.id}`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="bg-white/40 text-white border-white/60 font-bold text-xs">
+                            OS #{wo.number}
+                          </Badge>
+                          <div className={`w-2 h-2 rounded-full ${getPriorityColor(wo.priority)} animate-pulse`}></div>
+                        </div>
+                        <h3 className="text-white font-bold text-base break-words">{wo.title}</h3>
+                        <div className="flex items-center space-x-2 text-sm text-white/90 mt-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>{wo.siteName} - {wo.zoneName}</span>
+                        </div>
+                      </div>
+                      <Play className="w-6 h-6 text-white/80 flex-shrink-0" />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-white/90">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>Prazo: {formatDate(wo.dueDate)}</span>
+                      </div>
+                      <span className="capitalize">{wo.type.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Filtros de Data */}
         <Card className="bg-white/80 backdrop-blur-sm border-white/20">
           <CardHeader className="pb-3">
@@ -364,90 +426,117 @@ export default function MobileDashboard() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card 
-            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
-            onClick={() => {
-              document.getElementById('disponiveis-section')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-              });
-            }}
-            data-testid="card-disponiveis"
-          >
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center justify-center space-y-1">
-                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-orange-600" />
+        <div className="space-y-3">
+          {/* Card Especial: Em Execução */}
+          {myInProgressOrders.length > 0 && (
+            <Card 
+              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-xl cursor-pointer hover:shadow-2xl transition-all active:scale-95"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              data-testid="card-em-execucao"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 bg-white/30 rounded-full flex items-center justify-center">
+                      <Zap className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold">{myInProgressOrders.length}</p>
+                      <p className="text-sm font-medium opacity-90">🔥 Em Execução</p>
+                    </div>
+                  </div>
+                  <Play className="w-8 h-8 text-white/70" />
                 </div>
-                <p className="text-xl font-bold text-slate-900">{availableOrders.length}</p>
-                <p className="text-xs text-slate-600 text-center">Disponíveis</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
-            onClick={() => {
-              document.getElementById('pendentes-section')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-              });
-            }}
-            data-testid="card-pendentes"
-          >
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center justify-center space-y-1">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <ClipboardList className="w-5 h-5 text-blue-600" />
-                </div>
-                <p className="text-xl font-bold text-slate-900">{myPendingOrders.length}</p>
-                <p className="text-xs text-slate-600 text-center">Pendentes</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
-            onClick={() => {
-              document.getElementById('pausadas-section')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-              });
-            }}
-            data-testid="card-pausadas"
-          >
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center justify-center space-y-1">
-                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                </div>
-                <p className="text-xl font-bold text-slate-900">{myPausedOrders.length}</p>
-                <p className="text-xs text-slate-600 text-center">Pausadas</p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
           
-          <Card 
-            className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
-            onClick={() => {
-              document.getElementById('concluidas-section')?.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start' 
-              });
-            }}
-            data-testid="card-concluidas"
-          >
-            <CardContent className="p-3">
-              <div className="flex flex-col items-center justify-center space-y-1">
-                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-emerald-600" />
+          {/* Grid de Cards Normais */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+              onClick={() => {
+                document.getElementById('disponiveis-section')?.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'start' 
+                });
+              }}
+              data-testid="card-disponiveis"
+            >
+              <CardContent className="p-3">
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <AlertCircle className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <p className="text-xl font-bold text-slate-900">{availableOrders.length}</p>
+                  <p className="text-xs text-slate-600 text-center">Disponíveis</p>
                 </div>
-                <p className="text-xl font-bold text-slate-900">{myCompletedOrders.length}</p>
-                <p className="text-xs text-slate-600 text-center">Concluídas</p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+              onClick={() => {
+                document.getElementById('pendentes-section')?.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'start' 
+                });
+              }}
+              data-testid="card-pendentes"
+            >
+              <CardContent className="p-3">
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <ClipboardList className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="text-xl font-bold text-slate-900">{myPendingOrders.length}</p>
+                  <p className="text-xs text-slate-600 text-center">Pendentes</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+              onClick={() => {
+                document.getElementById('pausadas-section')?.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'start' 
+                });
+              }}
+              data-testid="card-pausadas"
+            >
+              <CardContent className="p-3">
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <p className="text-xl font-bold text-slate-900">{myPausedOrders.length}</p>
+                  <p className="text-xs text-slate-600 text-center">Pausadas</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card 
+              className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
+              onClick={() => {
+                document.getElementById('concluidas-section')?.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'start' 
+                });
+              }}
+              data-testid="card-concluidas"
+            >
+              <CardContent className="p-3">
+                <div className="flex flex-col items-center justify-center space-y-1">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <p className="text-xl font-bold text-slate-900">{myCompletedOrders.length}</p>
+                  <p className="text-xs text-slate-600 text-center">Concluídas</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* QR Scanner Button */}
