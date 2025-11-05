@@ -135,9 +135,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
             <img 
               src={currentModule === 'maintenance' ? opusMaintenanceLogo : opusFacilitiesLogo} 
               alt={currentModule === 'maintenance' ? 'OPUS FACILITIES - Manutenção' : 'OPUS FACILITIES'} 
-              className={`${
-                isCollapsed ? 'h-24 w-auto' : 'h-48 w-auto max-w-full'
-              } object-contain transition-all duration-300`}
+              className="h-48 w-auto max-w-full object-contain transition-all duration-300 mt-[-40px] mb-[-40px]"
             />
           </div>
           {!isCollapsed && (
@@ -166,7 +164,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           )}
         </div>
       </div>
-
       {/* Company Selector - apenas para admin/opus users */}
       {!isCollapsed && !isCustomerUser && customers.length > 0 && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
@@ -185,7 +182,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           </Select>
         </div>
       )}
-      
       {/* Nome do Cliente fixo para customer_user */}
       {!isCollapsed && isCustomerUser && activeClient && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
@@ -195,7 +191,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           </div>
         </div>
       )}
-
       {/* Module/Platform Selector - mostrar se o USUÁRIO tem múltiplos módulos */}
       {!isCollapsed && hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
@@ -221,7 +216,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           </Select>
         </div>
       )}
-      
       {/* Module Indicator - para usuários com módulo único */}
       {!isCollapsed && !hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
@@ -244,7 +238,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           </div>
         </div>
       )}
-
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
@@ -275,7 +268,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           );
         })}
       </nav>
-
       {/* User Profile */}
       <div className="p-4 border-t border-slate-200 bg-gradient-to-br from-slate-50 to-white">
         {isCollapsed ? (
