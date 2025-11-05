@@ -92,8 +92,21 @@ export default function MobileWorkOrderDetails() {
     }
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
+  // Formata DATE (scheduledDate, dueDate) - apenas data, sem hora
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+    return dateString;
+  };
+
+  // Formata TIMESTAMP (createdAt, completedAt, startedAt) - data e hora
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -193,7 +206,7 @@ export default function MobileWorkOrderDetails() {
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4 text-gray-500" />
                 <span className="text-gray-700">Criada em:</span>
-                <span className="text-gray-600">{formatDate(workOrder.createdAt)}</span>
+                <span className="text-gray-600">{formatDateTime(workOrder.createdAt)}</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm">
@@ -206,7 +219,7 @@ export default function MobileWorkOrderDetails() {
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   <span className="text-gray-700">Concluída em:</span>
-                  <span className="text-gray-600">{formatDate(workOrder.completedAt)}</span>
+                  <span className="text-gray-600">{formatDateTime(workOrder.completedAt)}</span>
                 </div>
               )}
             </div>
@@ -248,7 +261,7 @@ export default function MobileWorkOrderDetails() {
               <div className={`flex-1 ${comments.length > 0 ? 'pb-4' : ''}`}>
                 <p className="font-semibold text-slate-900">OS Criada</p>
                 <p className="text-sm text-slate-600">
-                  {formatDate(workOrder.createdAt)}
+                  {formatDateTime(workOrder.createdAt)}
                 </p>
               </div>
             </div>
@@ -281,7 +294,7 @@ export default function MobileWorkOrderDetails() {
                   <div className={`flex-1 ${!isLastItem ? 'pb-4' : ''}`}>
                     <p className="font-semibold text-slate-900">{comment.comment.split('\n')[0]}</p>
                     <p className="text-sm text-slate-600">
-                      {formatDate(comment.createdAt)}
+                      {formatDateTime(comment.createdAt)}
                     </p>
                     {comment.user?.name && (
                       <p className="text-xs text-slate-500 mt-1">Por: {comment.user.name}</p>

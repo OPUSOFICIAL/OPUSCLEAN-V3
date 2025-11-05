@@ -203,8 +203,21 @@ export default function MobileDashboard() {
     }
   };
 
+  // Formata DATE (scheduledDate, dueDate) - apenas data, sem hora
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
+    if (!dateString) return '-';
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+    return dateString;
+  };
+
+  // Formata TIMESTAMP (createdAt, completedAt, startedAt) - data e hora
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -667,7 +680,7 @@ export default function MobileDashboard() {
                   <div className="flex items-center justify-between text-sm text-emerald-600">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>Concluída em: {formatDate(workOrder.createdAt)}</span>
+                      <span>Concluída em: {formatDateTime(workOrder.createdAt)}</span>
                     </div>
                   </div>
                 </CardContent>
