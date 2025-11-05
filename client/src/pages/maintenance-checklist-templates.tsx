@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModernCard, ModernCardContent } from "@/components/ui/modern-card";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 import { Plus, Edit3, Trash2, List, FileText, Eye, Hash, ChevronDown } from "lucide-react";
 import { nanoid } from "nanoid";
 
@@ -474,41 +478,43 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     );
   }
 
+  const theme = useModuleTheme();
+
   return (
-    <div className="h-full overflow-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg shadow-blue-500/5 sticky top-0 z-50">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 rounded-2xl flex items-center justify-center shadow-lg">
-                <List className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-purple-900 to-indigo-900 bg-clip-text text-transparent">
-                  Checklists
-                </h1>
-                <p className="text-sm text-slate-600">
-                  Gerencie os templates de checklist de manutenção
-                </p>
-              </div>
-            </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-              setIsCreateDialogOpen(open);
-              if (!open) {
-                setEditingTemplate(null);
-                resetForm();
-              }
-            }}>
-              <Button 
-                className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800"
-                onClick={() => setIsCreateDialogOpen(true)}
-                data-testid="button-create-template"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Template
-              </Button>
-              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+    <div className={cn("min-h-screen", theme.gradients.page)}>
+      <ModernPageHeader 
+        title="Checklists de Manutenção"
+        description="Gerencie os templates de checklist de manutenção"
+        icon={List}
+        stats={[
+          {
+            label: "Total de Templates",
+            value: (templates as any[]).length || 0,
+            icon: FileText
+          }
+        ]}
+        actions={
+          <Button 
+            className={cn(theme.buttons.primary)}
+            onClick={() => setIsCreateDialogOpen(true)}
+            data-testid="button-create-template"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Template
+          </Button>
+        }
+      />
+
+      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
+        <>
+          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setEditingTemplate(null);
+              resetForm();
+            }
+          }}>
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingTemplate ? "Editar Template" : "Criar Novo Template"}
@@ -970,25 +976,32 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     </Button>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </div>
+            </DialogContent>
+          </Dialog>
 
-      {/* Content */}
-      <div className="p-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Checklists de Manutenção</CardTitle>
-          </CardHeader>
+          {/* Content */}
+        {!templates || (templates as any[]).length === 0 ? (
+          <ModernCard variant="glass">
+            <ModernCardContent className="p-12 text-center">
+              <List className={cn("w-16 h-16 mx-auto mb-4", theme.text.primary)} />
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                Nenhum template cadastrado
+              </h3>
+              <p className="text-slate-600 mb-6">
+                Crie seu primeiro template de checklist de manutenção
+              </p>
+              <Button 
+                onClick={() => setIsCreateDialogOpen(true)}
+                className={cn(theme.buttons.primary)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeiro Template
+              </Button>
+            </ModernCardContent>
+          </ModernCard>
+        ) : (
+          <Card>
           <CardContent>
-            {!templates || (templates as any[]).length === 0 ? (
-              <div className="text-center py-12">
-                <List className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-                <p className="text-slate-500">Nenhum template cadastrado</p>
-              </div>
-            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1072,9 +1085,10 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                   ))}
                 </TableBody>
               </Table>
-            )}
           </CardContent>
         </Card>
+        )}
+        </>
       </div>
     </div>
   );
