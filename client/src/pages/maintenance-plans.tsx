@@ -1,5 +1,6 @@
-import Header from "@/components/layout/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModernCard, ModernCardContent, ModernCardHeader } from "@/components/ui/modern-card";
+import { ModernPageHeader } from "@/components/ui/modern-page-header";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { useState, useMemo } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 import { 
   Plus, 
   Calendar, 
@@ -23,7 +25,9 @@ import {
   Timer,
   Save,
   Settings,
-  Wrench
+  Wrench,
+  RefreshCw,
+  CalendarRange
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -40,6 +44,7 @@ import { ChevronDown } from "lucide-react";
 export default function MaintenancePlans() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -353,9 +358,16 @@ export default function MaintenancePlans() {
   if (isLoading) {
     return (
       <>
-        <Header title="Plano de Manutenção" description="Gerenciamento de atividades programadas" />
+        <ModernPageHeader 
+          title="Plano de Manutenção" 
+          description="Gerenciamento de atividades programadas"
+          icon={CalendarRange}
+        />
         <div className="flex-1 flex items-center justify-center">
-          <div>Carregando plano de manutenção...</div>
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 border-4 border-orange-100 border-t-orange-600 rounded-full animate-spin mx-auto"></div>
+            <p className="text-gray-600">Carregando plano de manutenção...</p>
+          </div>
         </div>
       </>
     );
@@ -363,44 +375,54 @@ export default function MaintenancePlans() {
 
   return (
     <>
-      <Header 
+      <ModernPageHeader 
         title="Plano de Manutenção" 
         description="Gerenciamento de atividades de manutenção programadas"
-      >
-        <div className="flex items-center gap-2">
-          <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
-            <SelectTrigger className="w-32" data-testid="select-view-mode">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">📆 Mensal</SelectItem>
-              <SelectItem value="list">📋 Lista</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button 
-            onClick={() => generateWorkOrdersMutation.mutate()}
-            variant="outline"
-            disabled={generateWorkOrdersMutation.isPending}
-            data-testid="button-generate-work-orders"
-            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            {generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs (Teste)'}
-          </Button>
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            data-testid="button-create-activity"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Atividade
-          </Button>
-        </div>
-      </Header>
+        icon={CalendarRange}
+        stats={[
+          { 
+            label: "Atividades Ativas", 
+            value: Array.isArray(activities) ? activities.length : 0,
+            icon: Wrench
+          }
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
+              <SelectTrigger className="w-32" data-testid="select-view-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">📆 Mensal</SelectItem>
+                <SelectItem value="list">📋 Lista</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button 
+              onClick={() => generateWorkOrdersMutation.mutate()}
+              variant="outline"
+              disabled={generateWorkOrdersMutation.isPending}
+              data-testid="button-generate-work-orders"
+              className={cn("flex items-center gap-2", theme.buttons.outline)}
+            >
+              <Settings className="w-4 h-4" />
+              {generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs'}
+            </Button>
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className={theme.buttons.primary}
+              data-testid="button-create-activity"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Atividade
+            </Button>
+          </div>
+        }
+      />
       
-      <main className="flex-1 overflow-auto p-3 md:p-6 bg-muted/30">
+      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.subtle)}>
         {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
+        <ModernCard variant="default">
+          <ModernCardContent>
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <Select value={siteFilter} onValueChange={setSiteFilter}>
                 <SelectTrigger className="w-48" data-testid="select-site-filter">
