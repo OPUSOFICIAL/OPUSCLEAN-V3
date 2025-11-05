@@ -391,7 +391,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let workOrders = await storage.getWorkOrdersByCustomer(req.params.customerId, module);
       
       // Apply filters from query params
-      const { zoneId, assignedTo, status, serviceId } = req.query;
+      const { zoneId, assignedTo, status, serviceId, includeAll } = req.query;
+      
+      // Automatically filter out canceled work orders for mobile/collaborators
+      // unless explicitly requesting all statuses or a specific status
+      if (!status && includeAll !== 'true') {
+        workOrders = workOrders.filter(wo => wo.status !== 'cancelada');
+      }
       
       // Filter by zone if provided
       if (zoneId) {

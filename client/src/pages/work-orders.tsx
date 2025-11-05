@@ -142,7 +142,7 @@ export default function WorkOrders() {
   const queryClient = useQueryClient();
 
   const { data: workOrders, isLoading, refetch } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule }],
+    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule, includeAll: 'true' }],
     enabled: !!activeClientId,
   });
 
