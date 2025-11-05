@@ -1607,6 +1607,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Work Order Execution Time - Calcula tempo real de execução (pausas descontadas)
+  app.get("/api/work-orders/:workOrderId/execution-time", async (req, res) => {
+    try {
+      const workOrder = await storage.getWorkOrder(req.params.workOrderId);
+      if (!workOrder) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
+
+      if (!workOrder.startedAt) {
+        return res.json({ 
+          milliseconds: 0, 
+          formatted: "Não iniciada",
+          periods: []
+        });
+      }
+
+      const comments = await storage.getWorkOrderComments(req.params.workOrderId);
+      const executionPeriods: { start: Date; end: Date | null }[] = [];
+      let currentPeriodStart: Date | null = new Date(workOrder.startedAt);
+
+      // Processar comentários em ordem cronológica
+      for (const comment of comments) {
+        const text = comment.comment || "";
+        const timestamp = new Date(comment.createdAt as Date);
+
+        // Detectar PAUSA - finaliza período atual
+        if ((text.includes("pausou a OS") || text.includes("pausou o OS")) && currentPeriodStart) {
+          executionPeriods.push({
+            start: currentPeriodStart,
+            end: timestamp
+          });
+          currentPeriodStart = null;
+        }
+
+        // Detectar RETOMADA ou INÍCIO - inicia novo período
+        if ((text.includes("iniciou a execução") || text.includes("retomou a execução")) && !currentPeriodStart) {
+          currentPeriodStart = timestamp;
+        }
+      }
+
+      // Se ainda está em execução
+      if (currentPeriodStart && workOrder.status === 'em_execucao') {
+        executionPeriods.push({
+          start: currentPeriodStart,
+          end: null // null indica "em execução agora"
+        });
+      }
+
+      // Se foi concluída, finaliza o último período
+      if (currentPeriodStart && workOrder.status === 'concluida' && workOrder.completedAt) {
+        executionPeriods.push({
+          start: currentPeriodStart,
+          end: new Date(workOrder.completedAt)
+        });
+      }
+
+      // Calcular tempo total
+      let totalMs = 0;
+      const now = new Date();
+      
+      for (const period of executionPeriods) {
+        const endTime = period.end || now;
+        const duration = endTime.getTime() - period.start.getTime();
+        totalMs += duration;
+      }
+
+      // Formatar tempo
+      const hours = Math.floor(totalMs / (1000 * 60 * 60));
+      const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((totalMs % (1000 * 60)) / 1000);
+
+      let formatted = "";
+      if (hours > 0) {
+        formatted = `${hours}h ${minutes}min`;
+      } else if (minutes > 0) {
+        formatted = `${minutes}min ${seconds}s`;
+      } else {
+        formatted = `${seconds}s`;
+      }
+
+      res.json({
+        milliseconds: totalMs,
+        formatted,
+        periods: executionPeriods.map(p => ({
+          start: p.start.toISOString(),
+          end: p.end ? p.end.toISOString() : null,
+          durationMs: p.end ? p.end.getTime() - p.start.getTime() : now.getTime() - p.start.getTime()
+        }))
+      });
+    } catch (error) {
+      console.error("Error calculating execution time:", error);
+      res.status(500).json({ message: "Failed to calculate execution time" });
+    }
+  });
+
   app.post("/api/work-orders/:workOrderId/comments", async (req, res) => {
     try {
       const comment = {

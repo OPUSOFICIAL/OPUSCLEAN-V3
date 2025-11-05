@@ -38,81 +38,6 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Função para calcular tempo real de execução (APENAS tempo em execução)
-  const calculateExecutionTime = () => {
-    if (!(workOrder as any)?.startedAt) {
-      return "Não iniciada";
-    }
-
-    // Somar APENAS os períodos em que a OS esteve "Em Execução"
-    let totalExecutionTime = 0;
-    
-    if (comments && Array.isArray(comments)) {
-      let lastExecutionStart: Date | null = new Date((workOrder as any).startedAt);
-      
-      console.log('[CALC TIME] Iniciando cálculo - startedAt:', (workOrder as any).startedAt);
-      
-      for (const comment of comments as any[]) {
-        const commentText = comment.comment || "";
-        const commentTime = new Date(comment.createdAt);
-        
-        // Quando pausa: finaliza o período de execução atual
-        if (commentText.includes("⏸️") && commentText.includes("pausou a OS") && lastExecutionStart) {
-          const executionDuration = commentTime.getTime() - lastExecutionStart.getTime();
-          console.log('[CALC TIME] Pausou - Período:', executionDuration / 1000, 's');
-          totalExecutionTime += executionDuration;
-          lastExecutionStart = null; // Reseta para indicar que não está em execução
-        }
-        
-        // Quando retoma OU inicia: inicia novo período de execução
-        if ((commentText.includes("⏯️") || commentText.includes("▶️")) && 
-            (commentText.includes("retomou a execução") || commentText.includes("iniciou a execução"))) {
-          console.log('[CALC TIME] Retomou/Iniciou -', comment.createdAt);
-          lastExecutionStart = commentTime;
-        }
-      }
-      
-      console.log('[CALC TIME] Total antes final:', totalExecutionTime / 1000, 's');
-      console.log('[CALC TIME] lastExecutionStart:', lastExecutionStart);
-      console.log('[CALC TIME] status:', (workOrder as any)?.status);
-      
-      // Se ainda está em execução, adicionar o tempo desde o último início até agora
-      if (lastExecutionStart && (workOrder as any)?.status === 'em_execucao') {
-        const currentExecutionDuration = new Date().getTime() - lastExecutionStart.getTime();
-        console.log('[CALC TIME] Em execução - adiciona:', currentExecutionDuration / 1000, 's');
-        totalExecutionTime += currentExecutionDuration;
-      }
-      
-      // Se foi concluída, adicionar o tempo desde o último início até a conclusão
-      if (lastExecutionStart && (workOrder as any)?.status === 'concluida' && (workOrder as any)?.completedAt) {
-        const finalExecutionDuration = new Date((workOrder as any).completedAt).getTime() - lastExecutionStart.getTime();
-        console.log('[CALC TIME] Concluída - adiciona:', finalExecutionDuration / 1000, 's');
-        totalExecutionTime += finalExecutionDuration;
-      }
-      
-      console.log('[CALC TIME] Total FINAL:', totalExecutionTime / 1000, 's');
-    } else {
-      // Caso não tenha comentários (sem pausas), calcular direto
-      const endTime = (workOrder as any)?.completedAt 
-        ? new Date((workOrder as any).completedAt) 
-        : ((workOrder as any)?.status === 'em_execucao' ? new Date() : new Date((workOrder as any).startedAt));
-      totalExecutionTime = endTime.getTime() - new Date((workOrder as any).startedAt).getTime();
-    }
-    
-    // Converter para horas, minutos e segundos
-    const hours = Math.floor(totalExecutionTime / (1000 * 60 * 60));
-    const minutes = Math.floor((totalExecutionTime % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((totalExecutionTime % (1000 * 60)) / 1000);
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}min`;
-    } else if (minutes > 0) {
-      return `${minutes}min ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  };
   
   // Get current user
   const authStr = localStorage.getItem('opus_clean_auth');
@@ -122,6 +47,13 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
   const { data: workOrder, isLoading } = useQuery({
     queryKey: ["/api/work-orders", workOrderId],
     enabled: !!workOrderId,
+  });
+
+  // Get execution time from backend (calcula baseado nos registros de status)
+  const { data: executionTime } = useQuery({
+    queryKey: ["/api/work-orders", workOrderId, "execution-time"],
+    enabled: !!workOrderId,
+    refetchInterval: (workOrder as any)?.status === 'em_execucao' ? 1000 : false, // Atualiza a cada 1s se estiver em execução
   });
 
   // Get company users for assignment
@@ -140,8 +72,6 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
   const customerId = (workOrder as any)?.companyId;
   const workOrderModule = (workOrder as any)?.module;
 
-  console.log('[MODAL] customerId:', customerId, 'module:', workOrderModule);
-
   // Get checklist template for this work order (cleaning module)
   const { data: checklistTemplate } = useQuery({
     queryKey: ["/api/companies", customerId, "checklist-templates"],
@@ -153,8 +83,6 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
     queryKey: ["/api/customers", customerId, "maintenance-checklist-templates"],
     enabled: !!customerId && workOrderModule === 'maintenance',
   });
-
-  console.log('[MODAL] maintenanceChecklistTemplate:', maintenanceChecklistTemplate);
 
   // Get SLA config for work order type
   const { data: slaConfigs } = useQuery({
@@ -591,7 +519,7 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                     Tempo Real de Execução
                   </label>
                   <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm font-medium text-slate-900">
-                    {calculateExecutionTime()}
+                    {(executionTime as any)?.formatted || "Carregando..."}
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
                     Tempo que a OS ficou em execução (pausas descontadas)
@@ -716,25 +644,15 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                       ? (maintenanceChecklistTemplate as any[])
                       : (checklistTemplate as any[]);
                     
-                    console.log('[DEBUG] templateIdField:', templateIdField);
-                    console.log('[DEBUG] templatesArray:', templatesArray);
-                    console.log('[DEBUG] itemId buscado:', itemId);
-                    
                     const currentTemplate = templatesArray?.find(
                       (t: any) => t.id === templateIdField
                     );
                     
-                    console.log('[DEBUG] currentTemplate encontrado:', currentTemplate);
-                    
                     // Encontrar o item do template para pegar o rótulo
                     const templateItem = currentTemplate?.items?.find((item: any) => item.id === itemId);
                     
-                    console.log('[DEBUG] templateItem encontrado:', templateItem);
-                    
                     // Tentar diferentes campos para o rótulo
                     const itemTitle = templateItem?.label || templateItem?.title || templateItem?.name || templateItem?.text || itemId;
-                    
-                    console.log('[DEBUG] itemTitle final:', itemTitle);
                     
                     return (
                       <div key={itemId} className="space-y-2">
