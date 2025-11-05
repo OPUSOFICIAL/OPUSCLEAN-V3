@@ -25,7 +25,8 @@ import {
   Edit,
   ChevronDown,
   X,
-  MapPin
+  MapPin,
+  PauseCircle
 } from "lucide-react";
 import WorkOrderModal from "@/components/work-order-modal";
 import CreateWorkOrderModal from "@/components/create-work-order-modal";
@@ -264,6 +265,10 @@ export default function WorkOrders() {
     wo.status === 'vencida'
   ).length || 0;
   
+  const totalPausadas = (workOrders as any[])?.filter((wo: any) => 
+    wo.status === 'pausada'
+  ).length || 0;
+  
   const totalConcluidas = (workOrders as any[])?.filter((wo: any) => 
     wo.status === 'concluida'
   ).length || 0;
@@ -441,7 +446,7 @@ export default function WorkOrders() {
           </Card>
 
           {/* Cards de Estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Total Abertas */}
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200" data-testid="card-stat-abertas">
               <CardContent className="p-6">
@@ -469,6 +474,22 @@ export default function WorkOrders() {
                   </div>
                   <div className="w-16 h-16 bg-red-500 rounded-2xl flex items-center justify-center">
                     <AlertTriangle className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pausadas */}
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200" data-testid="card-stat-pausadas">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-orange-700 mb-1 uppercase">Pausadas</p>
+                    <p className="text-4xl font-bold text-orange-900" data-testid="text-total-pausadas">{totalPausadas}</p>
+                    <p className="text-sm text-orange-600 mt-1">Em espera</p>
+                  </div>
+                  <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center">
+                    <PauseCircle className="w-8 h-8 text-white" />
                   </div>
                 </div>
               </CardContent>
