@@ -44,6 +44,7 @@ export default function QrCodes() {
   const [qrCodeImages, setQrCodeImages] = useState<{[key: string]: string}>({});
   const [selectedQrCodes, setSelectedQrCodes] = useState<string[]>([]);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -110,9 +111,14 @@ export default function QrCodes() {
     });
   };
 
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "qr-points"] });
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
     toast({ title: "🔄 Atualizando lista..." });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "qr-points"] });
+    // Pequeno delay para garantir que a animação seja visível
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
   };
 
   const generateQrCodeUrl = (type: string, code: string) => {
@@ -413,9 +419,10 @@ export default function QrCodes() {
             onClick={handleRefresh}
             className={cn("flex items-center gap-2", theme.buttons.primary)}
             size="sm"
+            disabled={isRefreshing}
             data-testid="button-refresh-header"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
             Atualizar
           </Button>
         }
