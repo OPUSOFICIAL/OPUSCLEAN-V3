@@ -698,15 +698,25 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                       ? (maintenanceChecklistTemplate as any[])
                       : (checklistTemplate as any[]);
                     
+                    console.log('[DEBUG] templateIdField:', templateIdField);
+                    console.log('[DEBUG] templatesArray:', templatesArray);
+                    console.log('[DEBUG] itemId buscado:', itemId);
+                    
                     const currentTemplate = templatesArray?.find(
                       (t: any) => t.id === templateIdField
                     );
                     
+                    console.log('[DEBUG] currentTemplate encontrado:', currentTemplate);
+                    
                     // Encontrar o item do template para pegar o rótulo
                     const templateItem = currentTemplate?.items?.find((item: any) => item.id === itemId);
                     
+                    console.log('[DEBUG] templateItem encontrado:', templateItem);
+                    
                     // Tentar diferentes campos para o rótulo
                     const itemTitle = templateItem?.label || templateItem?.title || templateItem?.name || templateItem?.text || itemId;
+                    
+                    console.log('[DEBUG] itemTitle final:', itemTitle);
                     
                     return (
                       <div key={itemId} className="space-y-2">
