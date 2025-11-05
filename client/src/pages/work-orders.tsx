@@ -358,10 +358,9 @@ export default function WorkOrders() {
         actions={
           <>
             <Button 
-              variant="outline" 
-              size="sm" 
               onClick={handleRefresh}
-              className={cn("flex items-center gap-2", theme.buttons.outline)}
+              className={cn("flex items-center gap-2", theme.buttons.primary)}
+              size="sm"
               disabled={isRefreshing}
               data-testid="button-refresh"
             >

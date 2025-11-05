@@ -626,13 +626,13 @@ export default function QrCodes() {
               <CardTitle>QR Codes Cadastrados</CardTitle>
               <div className="flex gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={handleRefresh}
+                  className={cn("flex items-center gap-2", theme.buttons.primary)}
+                  size="sm"
                   disabled={isRefreshing}
                   data-testid="button-refresh-qr"
                 >
-                  <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+                  <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
                   Atualizar
                 </Button>
                 {(qrPoints as any[])?.length > 0 && (

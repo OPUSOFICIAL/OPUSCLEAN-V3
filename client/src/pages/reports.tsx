@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -68,6 +70,7 @@ interface SLAPerformanceData {
 export default function Reports() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const [dateRange, setDateRange] = useState("30");
   const [selectedReportType, setSelectedReportType] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
@@ -1302,13 +1305,14 @@ export default function Reports() {
             </SelectContent>
           </Select>
           <Button 
-            variant="outline" 
             onClick={refreshData}
+            className={cn("flex items-center gap-2", theme.buttons.primary)}
+            size="sm"
             disabled={isRefreshing}
             data-testid="button-refresh-data"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+            Atualizar
           </Button>
         </div>
       </Header>
