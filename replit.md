@@ -90,6 +90,14 @@ Manages programmed, internal corrective, and public corrective work orders. It t
 
 This approach balances operational planning needs (users can see future schedules) with database efficiency (only current/next month orders exist in the database).
 
+**Interactive Activity Management (Maintenance Module - Updated 05/11/2025)**: The Maintenance Plans page includes interactive activity management:
+
+1. **Active Activities Modal**: The "Ativas" summary card is clickable and opens a comprehensive modal displaying all active maintenance activities with their details (name, type, frequency, equipment count, linked checklist).
+
+2. **Activity Status Toggle**: Each activity in the modal includes action buttons to view details or inactivate/activate the activity. Inactive activities are excluded from automated monthly work order generation.
+
+3. **Smart Filtering**: The automated scheduler (`generateMaintenanceWorkOrders` function) filters activities by `isActive: true` before generating monthly work orders, ensuring only active maintenance activities produce scheduled work.
+
 ### Authentication and Authorization
 
 Supports Microsoft SSO (Entra ID) and email/password authentication. Security measures include JWT, Bcrypt for password hashing, rate limiting, data sanitization, CORS, Helmet.js, and SQL injection prevention. A custom role system provides granular, permission-based access for predefined roles with differentiated routing for web and mobile users.
