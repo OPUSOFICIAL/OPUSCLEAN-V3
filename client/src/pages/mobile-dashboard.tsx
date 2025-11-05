@@ -27,6 +27,7 @@ interface WorkOrder {
   dueDate: string;
   createdAt: string;
   startedAt?: string;
+  completedAt?: string;
 }
 
 export default function MobileDashboard() {
@@ -782,7 +783,7 @@ export default function MobileDashboard() {
                   <div className="flex items-center justify-between text-sm text-emerald-600">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>Concluída em: {formatDateTime(workOrder.createdAt)}</span>
+                      <span>Concluída em: {formatDateTime(workOrder.completedAt || workOrder.createdAt)}</span>
                     </div>
                   </div>
                 </CardContent>
