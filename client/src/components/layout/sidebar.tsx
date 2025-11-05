@@ -128,14 +128,14 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   return (
     <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-gradient-to-b from-slate-50 via-white to-slate-50/50 border-r border-slate-200 shadow-lg flex flex-col transition-all duration-300`} data-testid="sidebar">
       {/* Header */}
-      <div className={`${isCollapsed ? 'p-4' : 'py-8 px-6'} border-b border-slate-200 relative bg-gradient-to-br from-white to-slate-100`}>
+      <div className={`${isCollapsed ? 'p-4' : 'py-10 px-6'} border-b border-slate-200 relative bg-gradient-to-br from-white to-slate-100`}>
         <div className="flex items-center justify-between">
           <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-start'}`}>
             <img 
               src={opusLogo} 
               alt="OPUS FACILITIES" 
               className={`${
-                isCollapsed ? 'h-12 w-auto' : 'h-24 w-auto max-w-full'
+                isCollapsed ? 'h-24 w-auto' : 'h-48 w-auto max-w-full'
               } object-contain transition-all duration-300`}
             />
           </div>
