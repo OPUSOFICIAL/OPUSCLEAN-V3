@@ -316,6 +316,17 @@ export default function FloorPlanPage() {
       const savedSizes: {[key: string]: number} = {};
       const savedPositions: {[key: string]: {left: number, top: number}} = {};
       
+      // Default positions for zones without saved positions
+      const defaultPositions = [
+        { left: 20, top: 30 },
+        { left: 70, top: 20 },
+        { left: 50, top: 70 },
+        { left: 15, top: 75 },
+        { left: 80, top: 75 }
+      ];
+      
+      let defaultIndex = 0;
+      
       allZones.forEach((zone: any) => {
         // Load saved sizes
         if (zone.sizeScale) {
@@ -323,22 +334,25 @@ export default function FloorPlanPage() {
           savedSizes[zone.id] = savedSize;
         }
         
-        // Load saved positions
+        // Load saved positions or assign default
         if (zone.positionX !== null && zone.positionY !== null) {
           savedPositions[zone.id] = {
             left: parseFloat(zone.positionX),
             top: parseFloat(zone.positionY)
           };
+        } else {
+          // Assign default position if not saved
+          const defaultPos = defaultPositions[defaultIndex % defaultPositions.length];
+          savedPositions[zone.id] = defaultPos;
+          defaultIndex++;
         }
       });
       
-      // Apply saved data
+      // Apply saved data (always apply positions now)
       if (Object.keys(savedSizes).length > 0) {
         setZoneSizes(prev => ({ ...prev, ...savedSizes }));
       }
-      if (Object.keys(savedPositions).length > 0) {
-        setZonePositions(prev => ({ ...prev, ...savedPositions }));
-      }
+      setZonePositions(savedPositions);
       
     }
   }, [allZones]);
