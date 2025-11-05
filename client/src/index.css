@@ -115,6 +115,8 @@
     height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
+    /* Desabilita pull-to-refresh nativo do browser para usar implementação customizada */
+    overscroll-behavior-y: contain;
   }
   
   #root {
