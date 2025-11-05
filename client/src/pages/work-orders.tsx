@@ -30,7 +30,8 @@ import {
   X,
   MapPin,
   PauseCircle,
-  ClipboardList
+  ClipboardList,
+  XCircle
 } from "lucide-react";
 import WorkOrderModal from "@/components/work-order-modal";
 import CreateWorkOrderModal from "@/components/create-work-order-modal";
@@ -171,9 +172,33 @@ export default function WorkOrders() {
     },
   });
 
+  const cancelWorkOrderMutation = useMutation({
+    mutationFn: async (workOrderId: string) => {
+      return await apiRequest("PUT", `/api/work-orders/${workOrderId}`, {
+        status: 'cancelada'
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Ordem de serviço cancelada com sucesso" });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
+    },
+    onError: () => {
+      toast({ 
+        title: "Erro ao cancelar ordem de serviço", 
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleDeleteWorkOrder = (workOrderId: string, workOrderTitle: string) => {
     if (window.confirm(`Tem certeza que deseja deletar a OS "${workOrderTitle}"? Esta ação não pode ser desfeita.`)) {
       deleteWorkOrderMutation.mutate(workOrderId);
+    }
+  };
+
+  const handleCancelWorkOrder = (workOrderId: string, workOrderTitle: string) => {
+    if (window.confirm(`Tem certeza que deseja cancelar a OS "${workOrderTitle}"?`)) {
+      cancelWorkOrderMutation.mutate(workOrderId);
     }
   };
 
@@ -581,6 +606,18 @@ export default function WorkOrders() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
+                              {wo.status !== 'cancelada' && wo.status !== 'concluida' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCancelWorkOrder(wo.id, wo.title)}
+                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 hover:scale-110 transition-transform"
+                                  data-testid={`button-cancel-${wo.id}`}
+                                  title="Cancelar OS"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
