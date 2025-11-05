@@ -24,7 +24,8 @@ import {
   Filter,
   Edit,
   ChevronDown,
-  X
+  X,
+  MapPin
 } from "lucide-react";
 import WorkOrderModal from "@/components/work-order-modal";
 import CreateWorkOrderModal from "@/components/create-work-order-modal";
@@ -346,68 +347,94 @@ export default function WorkOrders() {
           </div>
 
           {/* Busca e Filtros */}
-          <Card className="bg-white shadow-sm">
+          <Card className="bg-gradient-to-br from-slate-50 to-blue-50/30 border-slate-200 shadow-md">
             <CardContent className="pt-6">
-              <div className="flex gap-4 items-center mb-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              {/* Busca */}
+              <div className="mb-6">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-blue-600" />
+                  Buscar Ordem de Serviço
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <Input
-                    placeholder="Buscar por ID ou descrição..."
+                    placeholder="Digite o número da OS, título ou descrição..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-12 h-12 bg-white border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-base shadow-sm"
                     data-testid="input-search-work-orders"
                   />
                 </div>
-                <MultiSelect
-                  options={[
-                    { value: "aberta", label: "Abertas" },
-                    { value: "em_execucao", label: "Em Execução" },
-                    { value: "pausada", label: "Pausadas" },
-                    { value: "vencida", label: "Vencidas" },
-                    { value: "concluida", label: "Concluídas" },
-                    { value: "cancelada", label: "Canceladas" }
-                  ]}
-                  selected={statusFilter}
-                  onChange={setStatusFilter}
-                  placeholder="Todos os Status"
-                  testId="select-status-filter"
-                />
-                <MultiSelect
-                  options={(zones as any[] || []).map((zone: any) => ({
-                    value: zone.id,
-                    label: zone.name
-                  }))}
-                  selected={zoneFilter}
-                  onChange={setZoneFilter}
-                  placeholder="Todas as Zonas"
-                  testId="select-zone-filter"
-                />
               </div>
 
-              {/* Filtro de Data */}
-              <div className="flex items-center gap-4">
-                <Filter className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-600">Data Agendada:</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">De:</span>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-[160px]"
-                    data-testid="input-start-date"
+              {/* Filtros Rápidos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block flex items-center gap-2">
+                    <Filter className="w-3.5 h-3.5 text-indigo-600" />
+                    Status
+                  </label>
+                  <MultiSelect
+                    options={[
+                      { value: "aberta", label: "Abertas" },
+                      { value: "em_execucao", label: "Em Execução" },
+                      { value: "pausada", label: "Pausadas" },
+                      { value: "vencida", label: "Vencidas" },
+                      { value: "concluida", label: "Concluídas" },
+                      { value: "cancelada", label: "Canceladas" }
+                    ]}
+                    selected={statusFilter}
+                    onChange={setStatusFilter}
+                    placeholder="Todos os Status"
+                    testId="select-status-filter"
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Até:</span>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-[160px]"
-                    data-testid="input-end-date"
+                
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2 block flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    Zonas
+                  </label>
+                  <MultiSelect
+                    options={(zones as any[] || []).map((zone: any) => ({
+                      value: zone.id,
+                      label: zone.name
+                    }))}
+                    selected={zoneFilter}
+                    onChange={setZoneFilter}
+                    placeholder="Todas as Zonas"
+                    testId="select-zone-filter"
                   />
+                </div>
+              </div>
+
+              {/* Filtro de Período */}
+              <div className="bg-white/60 backdrop-blur-sm border border-slate-200 rounded-lg p-4">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-3 block flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-violet-600" />
+                  Filtrar por Período de Agendamento
+                </label>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">De:</span>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="flex-1 border-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
+                      data-testid="input-start-date"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                    <span className="text-sm font-medium text-slate-600 whitespace-nowrap">Até:</span>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="flex-1 border-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
+                      data-testid="input-end-date"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
