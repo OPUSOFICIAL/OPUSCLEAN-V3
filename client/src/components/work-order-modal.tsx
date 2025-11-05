@@ -125,18 +125,23 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
 
   // Get customer ID from work order
   const customerId = (workOrder as any)?.companyId;
+  const workOrderModule = (workOrder as any)?.module;
+
+  console.log('[MODAL] customerId:', customerId, 'module:', workOrderModule);
 
   // Get checklist template for this work order (cleaning module)
   const { data: checklistTemplate } = useQuery({
     queryKey: ["/api/companies", customerId, "checklist-templates"],
-    enabled: !!customerId && (workOrder as any)?.module === 'clean',
+    enabled: !!customerId && workOrderModule === 'clean',
   });
 
   // Get maintenance checklist template for this work order (maintenance module)
   const { data: maintenanceChecklistTemplate } = useQuery({
     queryKey: ["/api/customers", customerId, "maintenance-checklist-templates"],
-    enabled: !!customerId && (workOrder as any)?.module === 'maintenance',
+    enabled: !!customerId && workOrderModule === 'maintenance',
   });
+
+  console.log('[MODAL] maintenanceChecklistTemplate:', maintenanceChecklistTemplate);
 
   // Get SLA config for work order type
   const { data: slaConfigs } = useQuery({
