@@ -189,9 +189,16 @@ export default function QrCodes() {
     const pageWidth = 210;
     const pageHeight = 297;
     
-    // Header azul com logo
+    // Cores baseadas no módulo
+    const moduleColor = currentModule === 'maintenance' 
+      ? { r: 249, g: 115, b: 22 }  // orange-500
+      : { r: 59, g: 130, b: 246 };  // blue-500
+    
+    const moduleName = currentModule === 'maintenance' ? 'OPUS Manutenção' : 'OPUS Clean';
+    
+    // Header com cor do módulo
     const headerHeight = 40;
-    pdf.setFillColor(59, 130, 246);
+    pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
     pdf.rect(0, 0, pageWidth, headerHeight, 'F');
     
     try {
@@ -213,10 +220,10 @@ export default function QrCodes() {
       pdf.setFontSize(24);
       pdf.setTextColor(255, 255, 255);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('OPUS CLEAN', pageWidth / 2, headerHeight / 2 + 4, { align: 'center' });
+      pdf.text(moduleName, pageWidth / 2, headerHeight / 2 + 4, { align: 'center' });
     }
     
-    // QR Code com borda azul arredondada e logo
+    // QR Code com borda colorida arredondada e logo
     const qrSizeMM = sizeCm * 10;
     const borderMM = 7;
     const logoHeightMM = 20; // Espaço para a logo no topo
@@ -225,8 +232,8 @@ export default function QrCodes() {
     const qrX = (pageWidth - qrWithBorderMM) / 2;
     const qrY = headerHeight + 30;
     
-    // Borda azul expandida (inclui espaço para logo)
-    pdf.setFillColor(59, 130, 246);
+    // Borda com cor do módulo expandida (inclui espaço para logo)
+    pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
     pdf.roundedRect(qrX, qrY, qrWithBorderMM, totalBoxHeight, 5, 5, 'F');
     
     // Logo Grupo OPUS no topo
@@ -244,13 +251,13 @@ export default function QrCodes() {
     // QR Code
     pdf.addImage(qrCodeDataUrl, 'PNG', qrX + borderMM, qrStartY + borderMM, qrSizeMM, qrSizeMM);
     
-    // Badge EXECUÇÃO
+    // Badge EXECUÇÃO com cor do módulo
     const badgeY = qrY + totalBoxHeight + 10;
     const badgeWidth = 60;
     const badgeHeight = 12;
     const badgeX = (pageWidth - badgeWidth) / 2;
     
-    pdf.setFillColor(59, 130, 246);
+    pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
     pdf.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'F');
     
     pdf.setFontSize(12);
@@ -287,6 +294,11 @@ export default function QrCodes() {
     setIsGeneratingPDF(true);
     const selectedPoints = (qrPoints as any[]).filter(point => selectedQrCodes.includes(point.id));
     const pdf = new jsPDF();
+    
+    // Cores baseadas no módulo
+    const moduleColor = currentModule === 'maintenance' 
+      ? { r: 249, g: 115, b: 22 }  // orange-500
+      : { r: 59, g: 130, b: 246 };  // blue-500
     
     const pageWidth = 210; // mm A4
     const pageHeight = 297; // mm A4
@@ -327,8 +339,8 @@ export default function QrCodes() {
       const url = generateQrCodeUrl(point.type, point.code);
       const qrCodeDataUrl = await generateQrCodeImage(url, sizeCm);
       
-      // Borda azul expandida (inclui logo)
-      pdf.setFillColor(59, 130, 246);
+      // Borda com cor do módulo expandida (inclui logo)
+      pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
       pdf.roundedRect(currentX, currentY, qrWithBorderMM, totalBoxHeight, 5, 5, 'F');
       
       // Logo Grupo OPUS no topo (menor para múltiplos)
@@ -346,13 +358,13 @@ export default function QrCodes() {
       // QR Code
       pdf.addImage(qrCodeDataUrl, 'PNG', currentX + borderMM, qrStartY + borderMM, qrSizeMM, qrSizeMM);
       
-      // Badge
+      // Badge com cor do módulo
       const badgeY = currentY + totalBoxHeight + 3;
       const badgeWidth = Math.min(40, qrWithBorderMM - 4);
       const badgeHeight = 6;
       const badgeX = currentX + (qrWithBorderMM - badgeWidth) / 2;
       
-      pdf.setFillColor(59, 130, 246);
+      pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
       pdf.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 2, 2, 'F');
       
       pdf.setFontSize(6);
