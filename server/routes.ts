@@ -503,8 +503,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Work Orders by Customer - Delete (filtrado por cliente)
-  app.delete("/api/customers/:customerId/work-orders/:id", async (req, res) => {
+  // Work Orders by Customer - Delete (filtrado por cliente) - APENAS ADMIN
+  app.delete("/api/customers/:customerId/work-orders/:id", requireAdmin, async (req, res) => {
     try {
       // Validate that the customer exists
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);
@@ -1594,7 +1594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/work-orders/:id", async (req, res) => {
+  app.delete("/api/work-orders/:id", requireAdmin, async (req, res) => {
     try {
       await storage.deleteWorkOrder(req.params.id);
       res.json({ message: "Work order deleted successfully" });
