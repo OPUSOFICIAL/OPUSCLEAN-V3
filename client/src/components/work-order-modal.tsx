@@ -87,14 +87,17 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
       totalExecutionTime = endTime.getTime() - new Date((workOrder as any).startedAt).getTime();
     }
     
-    // Converter para horas e minutos
+    // Converter para horas, minutos e segundos
     const hours = Math.floor(totalExecutionTime / (1000 * 60 * 60));
     const minutes = Math.floor((totalExecutionTime % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((totalExecutionTime % (1000 * 60)) / 1000);
     
     if (hours > 0) {
       return `${hours}h ${minutes}min`;
+    } else if (minutes > 0) {
+      return `${minutes}min ${seconds}s`;
     } else {
-      return `${minutes}min`;
+      return `${seconds}s`;
     }
   };
   
@@ -120,10 +123,19 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
     enabled: !!(workOrder as any)?.companyId,
   });
 
-  // Get checklist template for this work order
+  // Get customer ID from work order
+  const customerId = (workOrder as any)?.companyId;
+
+  // Get checklist template for this work order (cleaning module)
   const { data: checklistTemplate } = useQuery({
-    queryKey: ["/api/companies", (workOrder as any)?.companyId, "checklist-templates"],
-    enabled: !!(workOrder as any)?.companyId,
+    queryKey: ["/api/companies", customerId, "checklist-templates"],
+    enabled: !!customerId && (workOrder as any)?.module === 'clean',
+  });
+
+  // Get maintenance checklist template for this work order (maintenance module)
+  const { data: maintenanceChecklistTemplate } = useQuery({
+    queryKey: ["/api/customers", customerId, "maintenance-checklist-templates"],
+    enabled: !!customerId && (workOrder as any)?.module === 'maintenance',
   });
 
   // Get SLA config for work order type
@@ -681,7 +693,12 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                       ? (workOrder as any).maintenanceChecklistTemplateId 
                       : (workOrder as any).checklistTemplateId;
                     
-                    const currentTemplate = (checklistTemplate as any[])?.find(
+                    // Selecionar o array de templates correto baseado no módulo
+                    const templatesArray = (workOrder as any).module === 'maintenance' 
+                      ? (maintenanceChecklistTemplate as any[])
+                      : (checklistTemplate as any[]);
+                    
+                    const currentTemplate = templatesArray?.find(
                       (t: any) => t.id === templateIdField
                     );
                     
