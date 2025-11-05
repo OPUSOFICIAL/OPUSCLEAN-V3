@@ -71,6 +71,8 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
   // Get customer ID from work order
   const customerId = (workOrder as any)?.companyId;
   const workOrderModule = (workOrder as any)?.module;
+  const maintenanceTemplateId = (workOrder as any)?.maintenanceChecklistTemplateId;
+  const cleanTemplateId = (workOrder as any)?.checklistTemplateId;
 
   // Get checklist template for this work order (cleaning module)
   const { data: checklistTemplate } = useQuery({
@@ -78,10 +80,10 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
     enabled: !!customerId && workOrderModule === 'clean',
   });
 
-  // Get maintenance checklist template for this work order (maintenance module)
+  // Get maintenance checklist template for this work order (maintenance module) - Busca direta por ID
   const { data: maintenanceChecklistTemplate } = useQuery({
-    queryKey: ["/api/customers", customerId, "maintenance-checklist-templates"],
-    enabled: !!customerId && workOrderModule === 'maintenance',
+    queryKey: ["/api/maintenance-checklist-templates", maintenanceTemplateId],
+    enabled: !!maintenanceTemplateId && workOrderModule === 'maintenance',
   });
 
   // Get SLA config for work order type
@@ -634,19 +636,10 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
                   {Object.entries((workOrder as any).checklistData).map(([itemId, answer]: [string, any]) => {
-                    // Buscar o template correto da OS baseado no módulo
-                    const templateIdField = (workOrder as any).module === 'maintenance' 
-                      ? (workOrder as any).maintenanceChecklistTemplateId 
-                      : (workOrder as any).checklistTemplateId;
-                    
-                    // Selecionar o array de templates correto baseado no módulo
-                    const templatesArray = (workOrder as any).module === 'maintenance' 
-                      ? (maintenanceChecklistTemplate as any[])
-                      : (checklistTemplate as any[]);
-                    
-                    const currentTemplate = templatesArray?.find(
-                      (t: any) => t.id === templateIdField
-                    );
+                    // Buscar o template correto baseado no módulo
+                    const currentTemplate = (workOrder as any).module === 'maintenance' 
+                      ? maintenanceChecklistTemplate  // Agora é um objeto único, não array
+                      : (checklistTemplate as any[])?.[0]; // Cleaning ainda retorna array
                     
                     // Encontrar o item do template para pegar o rótulo
                     const templateItem = currentTemplate?.items?.find((item: any) => item.id === itemId);
