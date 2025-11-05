@@ -39,52 +39,57 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Função para calcular tempo real de execução
+  // Função para calcular tempo real de execução (APENAS tempo em execução)
   const calculateExecutionTime = () => {
     if (!(workOrder as any)?.startedAt) {
       return "Não iniciada";
     }
 
-    const startedAt = new Date((workOrder as any).startedAt);
-    const endTime = (workOrder as any)?.completedAt 
-      ? new Date((workOrder as any).completedAt) 
-      : new Date();
-
-    // Calcular períodos de pausa a partir dos comentários
-    let totalPauseTime = 0;
+    // Somar APENAS os períodos em que a OS esteve "Em Execução"
+    let totalExecutionTime = 0;
+    
     if (comments && Array.isArray(comments)) {
-      let lastPauseTime: Date | null = null;
+      let lastExecutionStart: Date | null = new Date((workOrder as any).startedAt);
       
       for (const comment of comments as any[]) {
         const commentText = comment.comment || "";
+        const commentTime = new Date(comment.createdAt);
         
-        // Detectar quando foi pausada
-        if (commentText.includes("⏸️") && commentText.includes("pausou a OS")) {
-          lastPauseTime = new Date(comment.createdAt);
+        // Quando pausa: finaliza o período de execução atual
+        if (commentText.includes("⏸️") && commentText.includes("pausou a OS") && lastExecutionStart) {
+          const executionDuration = commentTime.getTime() - lastExecutionStart.getTime();
+          totalExecutionTime += executionDuration;
+          lastExecutionStart = null; // Reseta para indicar que não está em execução
         }
         
-        // Detectar quando foi retomada
-        if (commentText.includes("▶️") && commentText.includes("retomou a execução") && lastPauseTime) {
-          const resumeTime = new Date(comment.createdAt);
-          const pauseDuration = resumeTime.getTime() - lastPauseTime.getTime();
-          totalPauseTime += pauseDuration;
-          lastPauseTime = null;
+        // Quando retoma: inicia novo período de execução
+        if (commentText.includes("▶️") && commentText.includes("retomou a execução")) {
+          lastExecutionStart = commentTime;
         }
       }
       
-      // Se ainda está pausada, calcular até agora
-      if (lastPauseTime && (workOrder as any)?.status === 'pausada') {
-        const pauseDuration = new Date().getTime() - lastPauseTime.getTime();
-        totalPauseTime += pauseDuration;
+      // Se ainda está em execução, adicionar o tempo desde o último início até agora
+      if (lastExecutionStart && (workOrder as any)?.status === 'em_execucao') {
+        const currentExecutionDuration = new Date().getTime() - lastExecutionStart.getTime();
+        totalExecutionTime += currentExecutionDuration;
       }
+      
+      // Se foi concluída, adicionar o tempo desde o último início até a conclusão
+      if (lastExecutionStart && (workOrder as any)?.status === 'concluida' && (workOrder as any)?.completedAt) {
+        const finalExecutionDuration = new Date((workOrder as any).completedAt).getTime() - lastExecutionStart.getTime();
+        totalExecutionTime += finalExecutionDuration;
+      }
+    } else {
+      // Caso não tenha comentários (sem pausas), calcular direto
+      const endTime = (workOrder as any)?.completedAt 
+        ? new Date((workOrder as any).completedAt) 
+        : ((workOrder as any)?.status === 'em_execucao' ? new Date() : new Date((workOrder as any).startedAt));
+      totalExecutionTime = endTime.getTime() - new Date((workOrder as any).startedAt).getTime();
     }
-
-    // Tempo total menos pausas
-    const totalTime = endTime.getTime() - startedAt.getTime() - totalPauseTime;
     
     // Converter para horas e minutos
-    const hours = Math.floor(totalTime / (1000 * 60 * 60));
-    const minutes = Math.floor((totalTime % (1000 * 60 * 60)) / (1000 * 60));
+    const hours = Math.floor(totalExecutionTime / (1000 * 60 * 60));
+    const minutes = Math.floor((totalExecutionTime % (1000 * 60 * 60)) / (1000 * 60));
     
     if (hours > 0) {
       return `${hours}h ${minutes}min`;
@@ -671,9 +676,13 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
                   {Object.entries((workOrder as any).checklistData).map(([itemId, answer]: [string, any]) => {
-                    // Buscar o template correto da OS
+                    // Buscar o template correto da OS baseado no módulo
+                    const templateIdField = (workOrder as any).module === 'maintenance' 
+                      ? (workOrder as any).maintenanceChecklistTemplateId 
+                      : (workOrder as any).checklistTemplateId;
+                    
                     const currentTemplate = (checklistTemplate as any[])?.find(
-                      (t: any) => t.id === (workOrder as any).checklistTemplateId
+                      (t: any) => t.id === templateIdField
                     );
                     
                     // Encontrar o item do template para pegar o rótulo
@@ -685,6 +694,17 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                     return (
                       <div key={itemId} className="space-y-2">
                         <p className="font-medium text-sm text-gray-700">{itemTitle}</p>
+                        
+                        {/* Se for array (múltiplas respostas de texto) */}
+                        {Array.isArray(answer) && (
+                          <div className="space-y-1">
+                            {answer.map((item: string, idx: number) => (
+                              <p key={idx} className="text-sm text-gray-600 bg-white p-2 rounded border border-green-200">
+                                {item}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                         
                         {/* Se for foto */}
                         {answer?.type === 'photo' && answer?.photos && (
@@ -710,7 +730,7 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                           </span>
                         )}
                         
-                        {/* Se for texto */}
+                        {/* Se for texto simples */}
                         {typeof answer === 'string' && (
                           <p className="text-sm text-gray-600 bg-white p-2 rounded border border-green-200">
                             {answer}
