@@ -690,16 +690,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get zones by multiple sites
   app.get("/api/zones", async (req, res) => {
     try {
-      const { siteIds } = req.query;
+      const { siteIds, module } = req.query;
       if (!siteIds) {
         return res.status(400).json({ message: "siteIds parameter is required" });
       }
       
       const siteIdArray = typeof siteIds === 'string' ? siteIds.split(',') : [];
+      const moduleParam = module as 'clean' | 'maintenance' | undefined;
       const allZones = [];
       
       for (const siteId of siteIdArray) {
-        const zones = await storage.getZonesBySite(siteId.trim());
+        const zones = await storage.getZonesBySite(siteId.trim(), moduleParam);
         allZones.push(...zones);
       }
       
