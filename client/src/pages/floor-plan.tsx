@@ -609,8 +609,8 @@ export default function FloorPlanPage() {
                   const minArea = Math.min(...allAreas.filter(a => a > 0));
                   
                   // Calculate proportional size
-                  const minSize = 120;
-                  const maxSize = 200;
+                  const minSize = 200;
+                  const maxSize = 350;
                   const sizeRatio = area > 0 ? (area - minArea) / (maxArea - minArea) : 0;
                   const calculatedSize = minSize + (sizeRatio * (maxSize - minSize));
                   const size = Math.max(minSize, calculatedSize);
@@ -666,11 +666,11 @@ export default function FloorPlanPage() {
                       data-testid={`zone-${zone.id}`}
                     >
                       {/* Zone content */}
-                      <div className={`w-3 h-3 ${colors.dot} rounded-full mb-1`}></div>
-                      <div className={`text-xs font-medium ${colors.text} text-center px-2`}>
+                      <div className={`w-5 h-5 ${colors.dot} rounded-full mb-2`}></div>
+                      <div className={`text-base font-semibold ${colors.text} text-center px-3`}>
                         {zone.name}
                       </div>
-                      <div className="text-xs text-gray-500 text-center">
+                      <div className="text-sm text-gray-600 text-center mt-1">
                         {isHeatmapMode ? (
                           <>
                             {(() => {
