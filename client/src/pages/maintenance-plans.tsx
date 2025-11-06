@@ -1711,10 +1711,21 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     isActive: true
   });
 
-  const { data: equipment } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "equipment"],
-    enabled: !!activeClientId,
+  // Fetch equipment for selected zones
+  const { data: equipment = [] } = useQuery({
+    queryKey: ["/api/equipment", (formData.zoneIds || []).join(","), { module: currentModule }],
+    enabled: Array.isArray(formData.zoneIds) && formData.zoneIds.length > 0,
     refetchOnMount: true,
+    queryFn: async () => {
+      const ids = formData.zoneIds;
+      if (!ids || ids.length === 0) return [];
+      const qs = new URLSearchParams();
+      qs.set("zoneIds", ids.join(","));
+      qs.set("module", currentModule);
+      const res = await fetch(`/api/equipment?${qs.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch equipment');
+      return res.json();
+    },
   });
 
   const { data: sites } = useQuery({
@@ -1752,18 +1763,12 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     return (zones as any[]).filter((zone: any) => formData.siteIds.includes(zone.siteId));
   }, [zones, formData.siteIds]);
 
-  // Filtrar apenas equipamentos operacionais das zonas selecionadas
+  // Filtrar apenas equipamentos operacionais (a query já filtra por zona)
   const operationalEquipment = useMemo(() => {
     if (!equipment || !Array.isArray(equipment)) return [];
-    
-    // Se não há zonas selecionadas, não mostrar equipamentos
-    if (!formData.zoneIds || formData.zoneIds.length === 0) return [];
-    
-    // Filtrar por status operacional E por zona selecionada
-    return (equipment as any[]).filter((equip: any) => 
-      equip.status === 'operacional' && formData.zoneIds.includes(equip.zoneId)
-    );
-  }, [equipment, formData.zoneIds]);
+    // A query já filtra por zonas selecionadas, só precisamos filtrar por status
+    return (equipment as any[]).filter((equip: any) => equip.status === 'operacional');
+  }, [equipment]);
 
   // Filtrar checklists baseado nos equipamentos selecionados (interseção)
   // Só mostra checklists que estão vinculados a TODOS os equipamentos selecionados
