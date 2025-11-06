@@ -1720,8 +1720,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                       {(checklistTemplates as any[])
                         ?.filter((ct: any) => 
                           ct.module === 'clean' && 
-                          ct.zoneIds && 
-                          ct.zoneIds.includes(formData.zoneId)
+                          (!ct.zoneId || ct.zoneId === formData.zoneId)
                         )
                         .map((template: any) => (
                           <SelectItem key={template.id} value={template.id}>
