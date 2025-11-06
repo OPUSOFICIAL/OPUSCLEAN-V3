@@ -28,6 +28,7 @@ import { apiRequest } from "@/lib/queryClient";
 import Sites from "@/pages/sites";
 import Users from "@/pages/users";
 import Services from "@/pages/services";
+import { useModule } from "@/contexts/ModuleContext";
 
 interface ServiceSettingsMobileProps {
   customerId: string;
@@ -64,6 +65,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { currentModule } = useModule();
 
   // Invalidate cache when customer changes
   useEffect(() => {
@@ -85,7 +87,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
   }); */
 
   const { data: dashboardGoals = [], isLoading: loadingGoals } = useQuery({
-    queryKey: ["/api/customers", customerId, "dashboard-goals"],
+    queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -203,7 +205,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
   const createGoalMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/dashboard-goals`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }] });
       setIsGoalDialogOpen(false);
       goalForm.reset();
       toast({ title: "Meta criada com sucesso!" });
@@ -217,7 +219,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/customers/${customerId}/dashboard-goals/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }] });
       setIsGoalDialogOpen(false);
       setEditingGoal(null);
       goalForm.reset();
@@ -231,7 +233,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
   const deleteGoalMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/customers/${customerId}/dashboard-goals/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }] });
       toast({ title: "Meta excluída com sucesso!" });
     },
     onError: () => {
@@ -261,7 +263,8 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     if (editingGoal) {
       updateGoalMutation.mutate({ id: editingGoal.id, data });
     } else {
-      createGoalMutation.mutate(data);
+      // Incluir o módulo atual ao criar meta
+      createGoalMutation.mutate({ ...data, module: currentModule });
     }
   };
 

@@ -78,7 +78,7 @@ export default function Dashboard() {
   });
 
   const { data: goals } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "dashboard-goals"],
+    queryKey: ["/api/customers", activeClientId, "dashboard-goals", { module: currentModule }],
     enabled: !!activeClientId,
   });
 

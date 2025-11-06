@@ -91,7 +91,7 @@ export default function Settings() {
   }); */
 
   const { data: dashboardGoals = [], isLoading: loadingGoals } = useQuery({
-    queryKey: ["/api/customers", customerId, "dashboard-goals"],
+    queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -213,7 +213,7 @@ export default function Settings() {
   const createGoalMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/dashboard-goals`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }] });
       setIsGoalDialogOpen(false);
       goalForm.reset();
       toast({ title: "Meta criada com sucesso!" });
@@ -227,7 +227,7 @@ export default function Settings() {
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/customers/${customerId}/dashboard-goals/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }] });
       setIsGoalDialogOpen(false);
       setEditingGoal(null);
       goalForm.reset();
@@ -241,7 +241,7 @@ export default function Settings() {
   const deleteGoalMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/customers/${customerId}/dashboard-goals/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "dashboard-goals", { module: currentModule }] });
       toast({ title: "Meta excluída com sucesso!" });
     },
     onError: () => {
@@ -273,7 +273,8 @@ export default function Settings() {
     if (editingGoal) {
       updateGoalMutation.mutate({ id: editingGoal.id, data });
     } else {
-      createGoalMutation.mutate(data);
+      // Incluir o módulo atual ao criar meta
+      createGoalMutation.mutate({ ...data, module: currentModule });
     }
   };
 
