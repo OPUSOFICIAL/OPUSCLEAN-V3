@@ -1,6 +1,10 @@
 # OPUS - Project Summary
 
 > **📚 Documentação Completa**: Para documentação técnica detalhada, arquitetura, fluxos e changelog, consulte [DOCUMENTATION.md](./DOCUMENTATION.md)
+> 
+> **🔄 Fluxo do Sistema**: Para entender os fluxos completos de checklists, atividades, work orders e QR codes, consulte [SYSTEM_FLOW.md](./SYSTEM_FLOW.md)
+> 
+> **🗄️ Backup do Banco**: Informações sobre backup e restauração do banco de dados em [DATABASE_BACKUP_INFO.md](./DATABASE_BACKUP_INFO.md)
 
 # Overview
 
