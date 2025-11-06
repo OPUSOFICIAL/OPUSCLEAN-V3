@@ -88,15 +88,16 @@ export default function ServiceSelectionModal({
       if (response.ok) {
         const allWorkOrders = await response.json();
         
-        // Filtrar work orders do serviço selecionado, zona atual e módulo correto que estão pendentes ou pausadas
+        // Filtrar work orders da zona atual e módulo correto que estão pendentes ou pausadas
+        // NOTA: Removida filtragem por serviceId para permitir que colaborador veja todas as OS pendentes
+        // independente do service (resolve problema de OS clean linkadas a services maintenance)
         const filtered = allWorkOrders.filter((wo: any) => 
-          wo.serviceId === serviceId && 
           wo.zoneId === resolvedContext.zone.id &&
           wo.module === module &&
           (wo.status === 'aberta' || wo.status === 'em_execucao' || wo.status === 'pausada')
         );
         
-        console.log('[SERVICE MODAL] Work orders filtradas por módulo:', module, filtered);
+        console.log('[SERVICE MODAL] Work orders filtradas - Zona:', resolvedContext.zone.name, 'Módulo:', module, 'Total:', filtered.length);
         setAvailableWorkOrders(filtered);
       }
     } catch (error) {
@@ -225,10 +226,10 @@ export default function ServiceSelectionModal({
                       Nenhuma OS Disponível
                     </h4>
                     <p className="text-sm text-slate-600">
-                      Não há ordens de serviço pendentes de <strong>{selectedServiceData?.name}</strong> neste local.
+                      Não há ordens de serviço pendentes neste local ({resolvedContext?.zone?.name}).
                     </p>
                     <p className="text-sm text-slate-600 mt-2">
-                      Você pode criar uma nova ordem de serviço corretiva agora.
+                      Você pode criar uma nova ordem de serviço corretiva de <strong>{selectedServiceData?.name}</strong> agora.
                     </p>
                   </div>
                   <Button
@@ -250,7 +251,7 @@ export default function ServiceSelectionModal({
                   </div>
                   
                   <p className="text-sm text-slate-600">
-                    Encontramos {availableWorkOrders.length} ordem(ns) pendente(s) de <strong>{selectedServiceData?.name}</strong> neste local
+                    Encontramos {availableWorkOrders.length} ordem(ns) pendente(s) em <strong>{resolvedContext?.zone?.name}</strong>
                   </p>
                   
                   {/* Filtros por data */}
