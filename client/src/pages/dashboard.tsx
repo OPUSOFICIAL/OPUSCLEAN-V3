@@ -624,23 +624,25 @@ export default function Dashboard() {
         </div>
 
         {/* Sites Overview with Modern Design */}
-        <Card className="border-0 shadow-lg backdrop-blur-sm bg-white/90 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500"></div>
-          <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-transparent">
+        <Card className="border-0 shadow-xl backdrop-blur-xl bg-gradient-to-br from-white via-white to-slate-50/30 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600"></div>
+          <CardHeader className="border-b border-slate-100/50 bg-gradient-to-br from-white/80 via-slate-50/40 to-transparent backdrop-blur-sm pb-5">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
-                  <Building className="w-4 h-4 text-white" />
+              <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 ring-4 ring-blue-50">
+                  <Building className="w-5 h-5 text-white" />
                 </div>
-                Performance por Local
+                <span className="bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                  Performance por Local
+                </span>
               </CardTitle>
-              <Badge className="bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 border-0 shadow-sm backdrop-blur-sm">
+              <Badge className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 hover:from-blue-500/20 hover:to-indigo-500/20 border-0 shadow-md backdrop-blur-sm px-3 py-1.5 font-semibold">
                 {(sites as any[] || []).length} {(sites as any[] || []).length === 1 ? 'Local' : 'Locais'}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <CardContent className="p-6 bg-gradient-to-br from-transparent to-slate-50/20">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {(sites as any[] || []).map((site: any) => {
                 const siteWorkOrders = (workOrders as any[] || []).filter((wo: any) => wo.siteId === site.id);
                 const totalOS = siteWorkOrders.length;
@@ -652,7 +654,7 @@ export default function Dashboard() {
                 return (
                   <div 
                     key={site.id}
-                    className="group relative p-5 rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 cursor-pointer bg-white/80 backdrop-blur-sm overflow-hidden"
+                    className="group relative p-6 rounded-2xl border-2 border-slate-200/60 hover:border-blue-400/60 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer bg-white/90 backdrop-blur-md overflow-hidden hover:-translate-y-1"
                     onClick={() => {
                       setSelectedSite(site.id);
                       queryClient.invalidateQueries({ 
@@ -661,49 +663,63 @@ export default function Dashboard() {
                     }}
                     data-testid={`site-card-${site.id}`}
                   >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/5 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="flex items-start justify-between mb-3 relative">
-                      <div className="flex-1">
-                        <h4 className="font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{site.name}</h4>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {(zones as any[] || []).filter((z: any) => z.siteId === site.id).length} zonas
-                        </p>
+                    {/* Decorative gradient blob */}
+                    <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-400/20 via-indigo-400/20 to-purple-400/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    {/* Header with title and percentage */}
+                    <div className="flex items-start justify-between mb-4 relative z-10">
+                      <div className="flex-1 pr-2">
+                        <h4 className="font-bold text-base text-slate-900 mb-2 group-hover:text-blue-600 transition-colors leading-tight">{site.name}</h4>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="font-medium">{(zones as any[] || []).filter((z: any) => z.siteId === site.id).length} zonas</span>
+                        </div>
                       </div>
-                      <Badge className={`shadow-sm backdrop-blur-sm ${
-                        taxaConclusao >= 80 ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200/50' :
-                        taxaConclusao >= 60 ? 'bg-blue-500/10 text-blue-700 border-blue-200/50' :
-                        taxaConclusao >= 40 ? 'bg-amber-500/10 text-amber-700 border-amber-200/50' : 
-                        'bg-red-500/10 text-red-700 border-red-200/50'
-                      } border`}>
-                        {taxaConclusao}%
-                      </Badge>
+                      <div className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl shadow-lg backdrop-blur-md ${
+                        taxaConclusao >= 80 ? 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 ring-2 ring-emerald-200/50' :
+                        taxaConclusao >= 60 ? 'bg-gradient-to-br from-blue-500/15 to-blue-600/10 ring-2 ring-blue-200/50' :
+                        taxaConclusao >= 40 ? 'bg-gradient-to-br from-amber-500/15 to-amber-600/10 ring-2 ring-amber-200/50' : 
+                        'bg-gradient-to-br from-red-500/15 to-red-600/10 ring-2 ring-red-200/50'
+                      }`}>
+                        <span className={`text-2xl font-black leading-none ${
+                          taxaConclusao >= 80 ? 'text-emerald-600' :
+                          taxaConclusao >= 60 ? 'text-blue-600' :
+                          taxaConclusao >= 40 ? 'text-amber-600' : 'text-red-600'
+                        }`}>
+                          {taxaConclusao}%
+                        </span>
+                        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wide">Taxa</span>
+                      </div>
                     </div>
                     
-                    <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden mb-4 shadow-inner">
+                    {/* Animated progress bar */}
+                    <div className="relative h-3 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full overflow-hidden mb-5 shadow-inner ring-1 ring-slate-200/50">
                       <div 
-                        className={`absolute h-full rounded-full transition-all duration-500 ${
-                          taxaConclusao >= 80 ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' :
-                          taxaConclusao >= 60 ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
-                          taxaConclusao >= 40 ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 
-                          'bg-gradient-to-r from-red-500 to-red-600'
+                        className={`absolute h-full rounded-full transition-all duration-700 ease-out shadow-md ${
+                          taxaConclusao >= 80 ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600' :
+                          taxaConclusao >= 60 ? 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600' :
+                          taxaConclusao >= 40 ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600' : 
+                          'bg-gradient-to-r from-red-400 via-red-500 to-red-600'
                         }`}
                         style={{ width: `${taxaConclusao}%` }}
-                      ></div>
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
+                      </div>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-2 relative">
-                      <div className="text-center bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-2.5 border border-emerald-200/50 shadow-sm">
-                        <div className="text-lg font-bold text-emerald-600">{concluidas}</div>
-                        <div className="text-xs text-emerald-700 font-medium">OK</div>
+                    {/* Stats grid with enhanced styling */}
+                    <div className="grid grid-cols-3 gap-3 relative z-10">
+                      <div className="group/stat text-center bg-gradient-to-br from-emerald-50 via-emerald-50/80 to-white rounded-xl p-3 border-2 border-emerald-200/60 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200">
+                        <div className="text-2xl font-black bg-gradient-to-br from-emerald-600 to-emerald-700 bg-clip-text text-transparent mb-0.5">{concluidas}</div>
+                        <div className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">OK</div>
                       </div>
-                      <div className="text-center bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-2.5 border border-amber-200/50 shadow-sm">
-                        <div className="text-lg font-bold text-amber-600">{abertas}</div>
-                        <div className="text-xs text-amber-700 font-medium">Abertas</div>
+                      <div className="group/stat text-center bg-gradient-to-br from-amber-50 via-amber-50/80 to-white rounded-xl p-3 border-2 border-amber-200/60 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200">
+                        <div className="text-2xl font-black bg-gradient-to-br from-amber-600 to-amber-700 bg-clip-text text-transparent mb-0.5">{abertas}</div>
+                        <div className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Abertas</div>
                       </div>
-                      <div className="text-center bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl p-2.5 border border-red-200/50 shadow-sm">
-                        <div className="text-lg font-bold text-red-600">{vencidas}</div>
-                        <div className="text-xs text-red-700 font-medium">Venc.</div>
+                      <div className="group/stat text-center bg-gradient-to-br from-red-50 via-red-50/80 to-white rounded-xl p-3 border-2 border-red-200/60 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200">
+                        <div className="text-2xl font-black bg-gradient-to-br from-red-600 to-red-700 bg-clip-text text-transparent mb-0.5">{vencidas}</div>
+                        <div className="text-[10px] text-red-700 font-bold uppercase tracking-wider">Venc.</div>
                       </div>
                     </div>
                   </div>
@@ -711,10 +727,10 @@ export default function Dashboard() {
               })}
               
               {(sites as any[] || []).length === 0 && (
-                <div className="col-span-full text-center py-16 bg-slate-50/50 rounded-2xl backdrop-blur-sm">
-                  <Building className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500 text-sm font-medium">Nenhum local cadastrado</p>
-                  <p className="text-slate-400 text-xs mt-1">Adicione locais para visualizar métricas</p>
+                <div className="col-span-full text-center py-20 bg-gradient-to-br from-slate-50/80 to-white rounded-2xl backdrop-blur-sm border-2 border-dashed border-slate-200">
+                  <Building className="w-20 h-20 text-slate-300 mx-auto mb-4 opacity-50" />
+                  <p className="text-slate-600 text-base font-semibold">Nenhum local cadastrado</p>
+                  <p className="text-slate-400 text-sm mt-2">Adicione locais para visualizar métricas de performance</p>
                 </div>
               )}
             </div>
