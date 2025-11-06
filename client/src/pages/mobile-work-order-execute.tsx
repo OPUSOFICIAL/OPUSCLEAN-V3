@@ -10,6 +10,23 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+// Helper function to add JWT token to fetch requests
+const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
+  const token = localStorage.getItem("opus_clean_token");
+  const headers: Record<string, string> = {
+    ...options.headers as Record<string, string>,
+  };
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  return fetch(url, {
+    ...options,
+    headers,
+  });
+};
+
 export default function MobileWorkOrderExecute() {
   const [, params] = useRoute("/mobile/work-order/:id");
   const [, setLocation] = useLocation();
@@ -44,7 +61,7 @@ export default function MobileWorkOrderExecute() {
     try {
       // Buscar work order
       console.log('[MOBILE] Loading work order:', id);
-      const woResponse = await fetch(`/api/work-orders/${id}`);
+      const woResponse = await authenticatedFetch(`/api/work-orders/${id}`);
       console.log('[MOBILE] Work order response status:', woResponse.status);
       if (!woResponse.ok) throw new Error('Work order não encontrada');
       const woData = await woResponse.json();
@@ -64,7 +81,7 @@ export default function MobileWorkOrderExecute() {
             
             if (user?.id) {
               // Mudar status para em_execucao e registrar início
-              const updateResponse = await fetch(`/api/work-orders/${id}`, {
+              const updateResponse = await authenticatedFetch(`/api/work-orders/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -81,7 +98,7 @@ export default function MobileWorkOrderExecute() {
                 woData.startedAt = updatedWo.startedAt;
                 
                 // Criar comentário de início
-                await fetch(`/api/work-orders/${id}/comments`, {
+                await authenticatedFetch(`/api/work-orders/${id}/comments`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -104,13 +121,13 @@ export default function MobileWorkOrderExecute() {
       
       if (woData.module === 'maintenance' && woData.maintenanceChecklistTemplateId) {
         // Para manutenção: buscar do maintenance_checklist_templates
-        const checklistResponse = await fetch(`/api/maintenance-checklist-templates/${woData.maintenanceChecklistTemplateId}`);
+        const checklistResponse = await authenticatedFetch(`/api/maintenance-checklist-templates/${woData.maintenanceChecklistTemplateId}`);
         if (checklistResponse.ok) {
           checklistData = await checklistResponse.json();
         }
       } else if (woData.module === 'clean' && woData.serviceId) {
         // Para clean: buscar do service_types
-        const checklistResponse = await fetch(`/api/services/${woData.serviceId}/checklist`);
+        const checklistResponse = await authenticatedFetch(`/api/services/${woData.serviceId}/checklist`);
         if (checklistResponse.ok) {
           checklistData = await checklistResponse.json();
         }
@@ -270,7 +287,7 @@ export default function MobileWorkOrderExecute() {
       }
 
       // Atualizar status da OS para pausada
-      const response = await fetch(`/api/work-orders/${workOrder.id}`, {
+      const response = await authenticatedFetch(`/api/work-orders/${workOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -283,7 +300,7 @@ export default function MobileWorkOrderExecute() {
       }
 
       // Criar comentário com motivo e foto
-      await fetch(`/api/work-orders/${workOrder.id}/comments`, {
+      await authenticatedFetch(`/api/work-orders/${workOrder.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -353,7 +370,7 @@ export default function MobileWorkOrderExecute() {
       console.log('[FINISH] Enviando PATCH para finalizar OS:', workOrder.id);
       console.log('[FINISH] Dados do checklist:', checklistAnswers);
       
-      const response = await fetch(`/api/work-orders/${workOrder.id}`, {
+      const response = await authenticatedFetch(`/api/work-orders/${workOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -401,7 +418,7 @@ export default function MobileWorkOrderExecute() {
         }
 
         // Criar comentário com o resumo e fotos
-        await fetch(`/api/work-orders/${workOrder.id}/comments`, {
+        await authenticatedFetch(`/api/work-orders/${workOrder.id}/comments`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
