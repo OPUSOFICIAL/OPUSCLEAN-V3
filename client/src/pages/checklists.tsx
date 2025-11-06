@@ -462,7 +462,7 @@ export default function Checklists() {
             data-testid="button-create-checklist"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Novo Template
+            Nova Checklist
           </Button>
         }
       />
@@ -990,7 +990,7 @@ export default function Checklists() {
                 className={cn(theme.buttons.primary)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Template
+                Criar Primeira Checklist
               </Button>
             </ModernCardContent>
           </ModernCard>
