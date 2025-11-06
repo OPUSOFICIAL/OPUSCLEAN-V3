@@ -308,7 +308,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use the first site's company for the checklist template
       const companyId = customerSites[0].companyId;
-      const checklistData = { ...req.body, companyId };
+      
+      // Convert zoneIds array to zoneId (single value) for database compatibility
+      const { zoneIds, siteIds, ...restBody } = req.body;
+      const checklistData = { 
+        ...restBody, 
+        companyId,
+        zoneId: zoneIds && zoneIds.length > 0 ? zoneIds[0] : null,
+        siteId: siteIds && siteIds.length > 0 ? siteIds[0] : null
+      };
       
       console.log("[CHECKLIST CREATE] Data:", JSON.stringify(checklistData, null, 2));
       
@@ -337,7 +345,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Checklist template not found or access denied" });
       }
 
-      const checklistData = { ...req.body, companyId };
+      // Convert zoneIds array to zoneId (single value) for database compatibility
+      const { zoneIds, siteIds, ...restBody } = req.body;
+      const checklistData = { 
+        ...restBody, 
+        companyId,
+        zoneId: zoneIds && zoneIds.length > 0 ? zoneIds[0] : null,
+        siteId: siteIds && siteIds.length > 0 ? siteIds[0] : null
+      };
+      
       const template = await storage.updateChecklistTemplate(req.params.id, checklistData);
       res.json(template);
     } catch (error) {
