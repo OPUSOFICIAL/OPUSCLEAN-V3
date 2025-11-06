@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Users, Plus, Edit, Trash2, Shield, Building2, KeyRound } from 'lucide-react';
 import usePermissions from '@/hooks/usePermissions';
+import { useModule, MODULE_CONFIGS } from '@/contexts/ModuleContext';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username é obrigatório'),
@@ -41,6 +42,7 @@ export default function SystemUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { can } = usePermissions();
+  const { currentModule } = useModule();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -300,7 +302,7 @@ export default function SystemUsers() {
             Usuários do Sistema OPUS
           </h1>
           <p className="text-muted-foreground mt-2">
-            Gerenciar funcionários da empresa OPUS CLEAN
+            Gerenciar funcionários da empresa {MODULE_CONFIGS[currentModule].displayName}
           </p>
         </div>
 
@@ -323,7 +325,7 @@ export default function SystemUsers() {
                 {editingUser ? 'Editar Usuário OPUS' : 'Novo Usuário OPUS'}
               </DialogTitle>
               <DialogDescription>
-                {editingUser ? 'Edite os dados do usuário' : 'Crie um novo funcionário da OPUS CLEAN'}
+                {editingUser ? 'Edite os dados do usuário' : `Crie um novo funcionário da ${MODULE_CONFIGS[currentModule].displayName}`}
               </DialogDescription>
             </DialogHeader>
 
