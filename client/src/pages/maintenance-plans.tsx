@@ -251,10 +251,19 @@ export default function MaintenancePlans() {
     return calendar;
   };
 
+  // Função para obter nomes dos locais (sites) por array de IDs
+  const getSiteNames = (siteIds: string[] | null | undefined) => {
+    if (!siteIds || siteIds.length === 0) return 'Local não encontrado';
+    const names = (sites as any[] || [])
+      .filter((s: any) => siteIds.includes(s.id))
+      .map((s: any) => s.name);
+    return names.length > 0 ? names.join(', ') : 'Local não encontrado';
+  };
+
   // Função para obter zona por ID
   const getZoneName = (zoneId: string) => {
     const zone = (zones as any[] || []).find((z: any) => z.id === zoneId);
-    return zone?.name || 'Local não encontrado';
+    return zone?.name || 'Zona não encontrada';
   };
 
   // Função para obter responsável por ID
@@ -775,7 +784,7 @@ export default function MaintenancePlans() {
                               <div className="flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-gray-400" />
                                 <span className="text-gray-600">
-                                  {getZoneName(activity.zoneId)}
+                                  {getSiteNames(activity.siteIds)}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
@@ -898,7 +907,7 @@ export default function MaintenancePlans() {
                             <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 mb-2">
                               <div className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
-                                <span>{getZoneName(activity.zoneId)}</span>
+                                <span>{getSiteNames(activity.siteIds)}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <User className="w-3 h-3" />
@@ -1131,7 +1140,7 @@ export default function MaintenancePlans() {
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Local:</span>
-                    <p className="text-gray-600">{getZoneName(selectedActivity.zoneId)}</p>
+                    <p className="text-gray-600">{getSiteNames(selectedActivity.siteIds)}</p>
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">SLA:</span>
