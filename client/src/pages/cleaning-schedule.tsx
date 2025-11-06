@@ -1670,28 +1670,6 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="checklistTemplateId">Checklist (Opcional)</Label>
-                <Select value={formData.checklistTemplateId} onValueChange={(value) => handleChange("checklistTemplateId", value)}>
-                  <SelectTrigger data-testid="select-checklist">
-                    <SelectValue placeholder="Selecione um checklist" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {(checklistTemplates as any[])?.filter((ct: any) => ct.module === 'clean').map((template: any) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formData.checklistTemplateId && formData.checklistTemplateId !== "none" && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✅ Checklist será vinculado a todas as ordens de serviço desta atividade
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="siteId">Local *</Label>
                 <Select value={formData.siteId} onValueChange={(value) => handleChange("siteId", value)}>
                   <SelectTrigger data-testid="select-site">
@@ -1727,6 +1705,38 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                 </Select>
               </div>
 
+              {formData.zoneId && (
+                <div className="space-y-2">
+                  <Label htmlFor="checklistTemplateId">Checklist (Opcional)</Label>
+                  <Select 
+                    value={formData.checklistTemplateId} 
+                    onValueChange={(value) => handleChange("checklistTemplateId", value)}
+                  >
+                    <SelectTrigger data-testid="select-checklist">
+                      <SelectValue placeholder="Selecione um checklist" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {(checklistTemplates as any[])
+                        ?.filter((ct: any) => 
+                          ct.module === 'clean' && 
+                          ct.zoneIds && 
+                          ct.zoneIds.includes(formData.zoneId)
+                        )
+                        .map((template: any) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.checklistTemplateId && formData.checklistTemplateId !== "none" && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✅ Checklist será vinculado a todas as ordens de serviço desta atividade
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="isActive">Status</Label>
