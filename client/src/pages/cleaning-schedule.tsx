@@ -1279,14 +1279,6 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
-      // Auto-preenchimento de checklist baseado no serviço selecionado
-      if (field === 'serviceId' && value && services) {
-        const selectedService = (services as any[]).find(s => s.id === value);
-        if (selectedService?.checklistTemplateId) {
-          newData.checklistTemplateId = selectedService.checklistTemplateId;
-        }
-      }
-      
       // Limpar zona quando site muda
       if (field === 'siteId') {
         newData.zoneId = "";
@@ -1675,9 +1667,26 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                     ))}
                   </SelectContent>
                 </Select>
-                {formData.serviceId && (services as any[])?.find(s => s.id === formData.serviceId)?.checklistTemplateId && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    ✨ Checklist será vinculado automaticamente
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="checklistTemplateId">Checklist (Opcional)</Label>
+                <Select value={formData.checklistTemplateId} onValueChange={(value) => handleChange("checklistTemplateId", value)}>
+                  <SelectTrigger data-testid="select-checklist">
+                    <SelectValue placeholder="Selecione um checklist" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {(checklistTemplates as any[])?.filter((ct: any) => ct.module === 'clean').map((template: any) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.checklistTemplateId && formData.checklistTemplateId !== "none" && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✅ Checklist será vinculado a todas as ordens de serviço desta atividade
                   </p>
                 )}
               </div>
