@@ -458,10 +458,26 @@ export class DatabaseStorage implements IStorage {
       ? and(zoneWhereCondition, eq(workOrders.module, module))
       : zoneWhereCondition;
     
-    return await db.select()
+    // Get work orders with zone and site names via JOIN
+    const results = await db.select({
+      workOrder: workOrders,
+      zoneName: zones.name,
+      siteName: sites.name,
+      siteId: sites.id
+    })
       .from(workOrders)
+      .leftJoin(zones, eq(workOrders.zoneId, zones.id))
+      .leftJoin(sites, eq(zones.siteId, sites.id))
       .where(whereConditions)
       .orderBy(desc(workOrders.createdAt));
+    
+    // Transform results to include zone and site names in the work order object
+    return results.map(r => ({
+      ...r.workOrder,
+      zoneName: r.zoneName || '-',
+      siteName: r.siteName || '-',
+      siteId: r.siteId
+    })) as any;
   }
 
   async getDashboardStatsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any> {
