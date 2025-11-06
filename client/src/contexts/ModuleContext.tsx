@@ -145,17 +145,22 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     if (canAccessModule(module)) {
       setCurrentModule(module);
       
-      // NOVO: Ao trocar de módulo, selecionar automaticamente o primeiro cliente ativo que possui esse módulo
-      if (customers && customers.length > 0) {
+      // Verificar se o cliente atual possui o módulo selecionado
+      const currentClientHasModule = activeClient?.modules?.includes(module);
+      
+      // Só trocar de cliente se o cliente atual NÃO possuir o módulo
+      if (!currentClientHasModule && customers && customers.length > 0) {
         const firstClientWithModule = customers.find(
           customer => customer.isActive && customer.modules?.includes(module)
         );
         
-        if (firstClientWithModule && firstClientWithModule.id !== activeClient?.id) {
-          console.log(`[MODULE] Trocando para primeiro cliente ativo com módulo "${module}": ${firstClientWithModule.name}`);
+        if (firstClientWithModule) {
+          console.log(`[MODULE] Cliente atual não possui módulo "${module}", trocando para: ${firstClientWithModule.name}`);
           setActiveClientId(firstClientWithModule.id);
           setLocation('/');
         }
+      } else if (currentClientHasModule) {
+        console.log(`[MODULE] Cliente atual "${activeClient?.name}" possui módulo "${module}", mantendo cliente ativo`);
       }
     } else {
       console.warn(`[MODULE] Tentativa de acesso negada ao módulo: ${module}`);
