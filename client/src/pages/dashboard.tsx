@@ -644,7 +644,16 @@ export default function Dashboard() {
           <CardContent className="p-6 bg-gradient-to-br from-transparent to-slate-50/20">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {(sites as any[] || []).map((site: any) => {
-                const siteWorkOrders = (workOrders as any[] || []).filter((wo: any) => wo.siteId === site.id);
+                // Get all zone IDs for this site
+                const siteZoneIds = (zones as any[] || [])
+                  .filter((z: any) => z.siteId === site.id)
+                  .map((z: any) => z.id);
+                
+                // Filter work orders by zones that belong to this site
+                const siteWorkOrders = (workOrders as any[] || []).filter((wo: any) => 
+                  siteZoneIds.includes(wo.zoneId)
+                );
+                
                 const totalOS = siteWorkOrders.length;
                 const concluidas = siteWorkOrders.filter((wo: any) => wo.status === 'concluida').length;
                 const abertas = siteWorkOrders.filter((wo: any) => wo.status === 'aberta').length;
