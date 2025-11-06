@@ -717,16 +717,16 @@ export default function Dashboard() {
                     </div>
                     
                     {/* Stats grid with enhanced styling */}
-                    <div className="grid grid-cols-3 gap-3 relative z-10">
-                      <div className="group/stat text-center bg-gradient-to-br from-emerald-50 via-emerald-50/80 to-white rounded-xl p-3 border-2 border-emerald-200/60 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200">
+                    <div className="grid grid-cols-3 gap-3 relative z-10 pointer-events-none">
+                      <div className="text-center bg-gradient-to-br from-emerald-50 via-emerald-50/80 to-white rounded-xl p-3 border-2 border-emerald-200/60 shadow-md">
                         <div className="text-2xl font-black bg-gradient-to-br from-emerald-600 to-emerald-700 bg-clip-text text-transparent mb-0.5">{concluidas}</div>
                         <div className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">OK</div>
                       </div>
-                      <div className="group/stat text-center bg-gradient-to-br from-amber-50 via-amber-50/80 to-white rounded-xl p-3 border-2 border-amber-200/60 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200">
+                      <div className="text-center bg-gradient-to-br from-amber-50 via-amber-50/80 to-white rounded-xl p-3 border-2 border-amber-200/60 shadow-md">
                         <div className="text-2xl font-black bg-gradient-to-br from-amber-600 to-amber-700 bg-clip-text text-transparent mb-0.5">{abertas}</div>
                         <div className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Abertas</div>
                       </div>
-                      <div className="group/stat text-center bg-gradient-to-br from-red-50 via-red-50/80 to-white rounded-xl p-3 border-2 border-red-200/60 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200">
+                      <div className="text-center bg-gradient-to-br from-red-50 via-red-50/80 to-white rounded-xl p-3 border-2 border-red-200/60 shadow-md">
                         <div className="text-2xl font-black bg-gradient-to-br from-red-600 to-red-700 bg-clip-text text-transparent mb-0.5">{vencidas}</div>
                         <div className="text-[10px] text-red-700 font-bold uppercase tracking-wider">Venc.</div>
                       </div>
