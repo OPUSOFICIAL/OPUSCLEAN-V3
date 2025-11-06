@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useModule, MODULE_CONFIGS } from "@/contexts/ModuleContext";
-import { ArrowLeft, Wrench, Building } from "lucide-react";
+import { useUserModules } from "@/hooks/useUserModules";
+import { ArrowLeft, Wrench, Building, RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface MobileHeaderProps {
@@ -14,7 +15,8 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ title, subtitle, showBack = false, backUrl = "/mobile", actions }: MobileHeaderProps) {
   const [, setLocation] = useLocation();
-  const { currentModule, moduleConfig, hasMultipleModules, canAccessModule } = useModule();
+  const { currentModule, moduleConfig, hasMultipleModules, canAccessModule, setModule, allowedModules } = useModule();
+  const { hasMultipleModules: userHasMultipleModules } = useUserModules();
 
   // Se o usuário não tem acesso ao módulo atual, não renderizar nada (proteção extra)
   if (!canAccessModule(currentModule)) {
@@ -23,6 +25,16 @@ export function MobileHeader({ title, subtitle, showBack = false, backUrl = "/mo
 
   const handleBack = () => {
     setLocation(backUrl);
+  };
+
+  const handleToggleModule = () => {
+    // Alternar entre os módulos disponíveis
+    const nextModule = currentModule === 'clean' ? 'maintenance' : 'clean';
+    if (canAccessModule(nextModule)) {
+      setModule(nextModule);
+      // Redirecionar para o dashboard mobile
+      setLocation('/mobile');
+    }
   };
 
   return (
@@ -65,25 +77,49 @@ export function MobileHeader({ title, subtitle, showBack = false, backUrl = "/mo
             )}
           </div>
 
-          {/* Indicador de Módulo Ativo */}
-          <Badge 
-            variant="secondary"
-            className={`flex items-center gap-1.5 px-3 py-1.5 shrink-0 ${
-              currentModule === 'maintenance'
-                ? 'bg-white text-orange-600 border-orange-300'
-                : 'bg-white text-blue-600 border-blue-300'
-            }`}
-            data-testid="badge-current-module"
-          >
-            {currentModule === 'maintenance' ? (
-              <Wrench className="w-3.5 h-3.5" />
-            ) : (
-              <Building className="w-3.5 h-3.5" />
-            )}
-            <span className="text-xs font-semibold">
-              {currentModule === 'maintenance' ? 'Manutenção' : 'Clean'}
-            </span>
-          </Badge>
+          {/* Indicador/Seletor de Módulo Ativo */}
+          {userHasMultipleModules ? (
+            <Button
+              onClick={handleToggleModule}
+              variant="secondary"
+              size="sm"
+              className={`flex items-center gap-1.5 px-3 py-1.5 shrink-0 transition-all hover:scale-105 active:scale-95 ${
+                currentModule === 'maintenance'
+                  ? 'bg-white text-orange-600 border-orange-300 hover:bg-orange-50 hover:border-orange-400'
+                  : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50 hover:border-blue-400'
+              }`}
+              data-testid="button-toggle-module"
+            >
+              {currentModule === 'maintenance' ? (
+                <Wrench className="w-3.5 h-3.5" />
+              ) : (
+                <Building className="w-3.5 h-3.5" />
+              )}
+              <span className="text-xs font-semibold">
+                {currentModule === 'maintenance' ? 'Manutenção' : 'Clean'}
+              </span>
+              <RefreshCw className="w-3 h-3 ml-0.5 opacity-60" />
+            </Button>
+          ) : (
+            <Badge 
+              variant="secondary"
+              className={`flex items-center gap-1.5 px-3 py-1.5 shrink-0 ${
+                currentModule === 'maintenance'
+                  ? 'bg-white text-orange-600 border-orange-300'
+                  : 'bg-white text-blue-600 border-blue-300'
+              }`}
+              data-testid="badge-current-module"
+            >
+              {currentModule === 'maintenance' ? (
+                <Wrench className="w-3.5 h-3.5" />
+              ) : (
+                <Building className="w-3.5 h-3.5" />
+              )}
+              <span className="text-xs font-semibold">
+                {currentModule === 'maintenance' ? 'Manutenção' : 'Clean'}
+              </span>
+            </Badge>
+          )}
         </div>
       </div>
     </div>
