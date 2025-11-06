@@ -505,7 +505,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
             data-testid="button-create-template"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Novo Template
+            Nova Checklist
           </Button>
         }
       />
@@ -1000,7 +1000,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                 className={cn(theme.buttons.primary)}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Template
+                Criar Primeiro Checklist
               </Button>
             </ModernCardContent>
           </ModernCard>
