@@ -1660,7 +1660,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                     <SelectValue placeholder="Selecione o serviço" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(services as any[])?.map((service: any) => (
+                    {(services as any[])?.filter((s: any) => s.module === 'clean').map((service: any) => (
                       <SelectItem key={service.id} value={service.id}>
                         {service.name}
                       </SelectItem>
@@ -1676,7 +1676,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                     <SelectValue placeholder="Selecione o local" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(sites as any[])?.map((site: any) => (
+                    {(sites as any[])?.filter((s: any) => s.module === 'clean').map((site: any) => (
                       <SelectItem key={site.id} value={site.id}>
                         {site.name}
                       </SelectItem>
@@ -1705,7 +1705,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                 </Select>
               </div>
 
-              {formData.zoneId && (
+              {formData.serviceId && formData.siteId && formData.zoneId && (
                 <div className="space-y-2">
                   <Label htmlFor="checklistTemplateId">Checklist (Opcional)</Label>
                   <Select 
@@ -1718,10 +1718,13 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                     <SelectContent>
                       <SelectItem value="none">Nenhum</SelectItem>
                       {(checklistTemplates as any[])
-                        ?.filter((ct: any) => 
-                          ct.module === 'clean' && 
-                          (!ct.zoneId || ct.zoneId === formData.zoneId)
-                        )
+                        ?.filter((ct: any) => {
+                          const matchModule = ct.module === 'clean';
+                          const matchService = !ct.serviceId || ct.serviceId === formData.serviceId;
+                          const matchSite = !ct.siteId || ct.siteId === formData.siteId;
+                          const matchZone = !ct.zoneId || ct.zoneId === formData.zoneId;
+                          return matchModule && matchService && matchSite && matchZone;
+                        })
                         .map((template: any) => (
                           <SelectItem key={template.id} value={template.id}>
                             {template.name}
