@@ -21,6 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useModule } from "@/contexts/ModuleContext";
 
 interface ServicesProps {
   customerId: string;
@@ -53,10 +54,11 @@ export default function Services({ customerId }: ServicesProps) {
   const [editingService, setEditingService] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { currentModule } = useModule();
 
   const { data: services = [], isLoading } = useQuery<any[]>({
-    queryKey: ["/api/customers", customerId, "services"],
-    enabled: !!customerId,
+    queryKey: ["/api/customers", customerId, "services", { module: currentModule }],
+    enabled: !!customerId && !!currentModule,
   });
 
   // Get service types from database
@@ -77,7 +79,7 @@ export default function Services({ customerId }: ServicesProps) {
 
   const createMutation = useMutation({
     mutationFn: async (data: ServiceFormData) => {
-      return apiRequest("POST", `/api/services`, { ...data, customerId, module: 'maintenance' });
+      return apiRequest("POST", `/api/services`, { ...data, customerId, module: currentModule });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "services"] });
@@ -99,7 +101,7 @@ export default function Services({ customerId }: ServicesProps) {
 
   const updateMutation = useMutation({
     mutationFn: async (data: ServiceFormData) => {
-      return apiRequest("PUT", `/api/services/${editingService.id}`, { ...data, module: 'maintenance' });
+      return apiRequest("PUT", `/api/services/${editingService.id}`, { ...data, module: currentModule });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "services"] });
