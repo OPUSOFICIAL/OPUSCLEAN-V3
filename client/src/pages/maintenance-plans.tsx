@@ -1714,17 +1714,20 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
   const { data: equipment } = useQuery({
     queryKey: ["/api/customers", activeClientId, "equipment"],
     enabled: !!activeClientId,
+    refetchOnMount: true,
   });
 
   const { data: sites } = useQuery({
     queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
     enabled: !!activeClientId,
+    refetchOnMount: true,
   });
 
   // Fetch zones based on selected sites
   const { data: zones = [] } = useQuery({
     queryKey: ["/api/zones", (formData.siteIds || []).join(","), { module: currentModule }],
     enabled: Array.isArray(formData.siteIds) && formData.siteIds.length > 0,
+    refetchOnMount: true,
     queryFn: async () => {
       const ids = formData.siteIds;
       if (!ids || ids.length === 0) return [];
@@ -1740,6 +1743,7 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
   const { data: checklistTemplates } = useQuery({
     queryKey: ["/api/customers", activeClientId, "maintenance-checklist-templates"],
     enabled: !!activeClientId,
+    refetchOnMount: true,
   });
 
   // Filtrar zonas baseado nos sites selecionados

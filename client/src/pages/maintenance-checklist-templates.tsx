@@ -177,18 +177,21 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const { data: sites = [] } = useQuery({
     queryKey: [`/api/customers/${customerId}/sites`, { module: currentModule }],
     enabled: !!customerId,
+    refetchOnMount: true,
   });
 
   // Fetch services (filtrado por módulo de manutenção)
   const { data: services = [] } = useQuery({
     queryKey: [`/api/customers/${customerId}/services`, { module: currentModule }],
     enabled: !!customerId,
+    refetchOnMount: true,
   });
 
   // Fetch zones based on selected sites
   const { data: zones = [] } = useQuery({
     queryKey: ["/api/zones", (templateForm.siteIds || []).join(","), { module: currentModule }],
     enabled: Array.isArray(templateForm.siteIds) && templateForm.siteIds.length > 0,
+    refetchOnMount: true,
     queryFn: async () => {
       const ids = templateForm.siteIds;
       if (!ids || ids.length === 0) return [];
@@ -205,12 +208,14 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
   const { data: allEquipment = [] } = useQuery({
     queryKey: [`/api/customers/${customerId}/equipment`],
     enabled: !!customerId,
+    refetchOnMount: true,
   });
 
   // Fetch equipment for selected zones (for the form)
   const { data: equipment = [] } = useQuery({
     queryKey: ["/api/equipment", (templateForm.zoneIds || []).join(","), { module: currentModule }],
     enabled: Array.isArray(templateForm.zoneIds) && templateForm.zoneIds.length > 0,
+    refetchOnMount: true,
     queryFn: async () => {
       const ids = templateForm.zoneIds;
       if (!ids || ids.length === 0) return [];
