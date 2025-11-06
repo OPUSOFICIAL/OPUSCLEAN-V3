@@ -196,7 +196,9 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
       {/* Module/Platform Selector - mostrar se o USUÁRIO tem múltiplos módulos */}
       {!isCollapsed && hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Plataforma</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Plataforma {MODULE_CONFIGS[currentModule].displayName}
+          </label>
           <Select value={currentModule} onValueChange={(value) => setModule(value as 'clean' | 'maintenance')}>
             <SelectTrigger data-testid="module-selector" className="bg-white shadow-sm border-slate-300 hover:border-slate-400 transition-colors">
               <SelectValue />
@@ -221,7 +223,9 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
       {/* Module Indicator - para usuários com módulo único */}
       {!isCollapsed && !hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
-          <label className="block text-sm font-semibold text-slate-500 mb-2">Plataforma</label>
+          <label className="block text-sm font-semibold text-slate-500 mb-2">
+            Plataforma {MODULE_CONFIGS[currentModule].displayName}
+          </label>
           <div className={`px-3 py-2 border rounded-md shadow-sm ${
             currentModule === 'maintenance'
               ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'
