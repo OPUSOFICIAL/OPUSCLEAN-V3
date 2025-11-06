@@ -1739,11 +1739,18 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
     return (zones as any[]).filter((zone: any) => formData.siteIds.includes(zone.siteId));
   }, [zones, formData.siteIds]);
 
-  // Filtrar apenas equipamentos operacionais
+  // Filtrar apenas equipamentos operacionais das zonas selecionadas
   const operationalEquipment = useMemo(() => {
     if (!equipment || !Array.isArray(equipment)) return [];
-    return (equipment as any[]).filter((equip: any) => equip.status === 'operacional');
-  }, [equipment]);
+    
+    // Se não há zonas selecionadas, não mostrar equipamentos
+    if (!formData.zoneIds || formData.zoneIds.length === 0) return [];
+    
+    // Filtrar por status operacional E por zona selecionada
+    return (equipment as any[]).filter((equip: any) => 
+      equip.status === 'operacional' && formData.zoneIds.includes(equip.zoneId)
+    );
+  }, [equipment, formData.zoneIds]);
 
   // Filtrar checklists baseado nos equipamentos selecionados (interseção)
   // Só mostra checklists que estão vinculados a TODOS os equipamentos selecionados
