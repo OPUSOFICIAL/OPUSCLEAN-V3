@@ -514,7 +514,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                   <TableRow>
                     <TableHead>Código</TableHead>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Tipo</TableHead>
+                    <TableHead>Valor</TableHead>
                     <TableHead>Local</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Fabricante</TableHead>
@@ -526,10 +526,17 @@ export default function Equipment({ customerId }: EquipmentProps) {
                   {Array.isArray(equipment) && equipment.map((equip: any) => (
                     <TableRow key={equip.id} data-testid={`row-equipment-${equip.id}`}>
                       <TableCell className="font-mono text-sm">
-                        {equip.internalCode || "-"}
+                        {equip.serialNumber || "-"}
                       </TableCell>
                       <TableCell className="font-medium">{equip.name}</TableCell>
-                      <TableCell className="capitalize">{equip.equipmentType}</TableCell>
+                      <TableCell className="font-semibold text-green-700">
+                        {equip.value 
+                          ? new Intl.NumberFormat('pt-BR', { 
+                              style: 'currency', 
+                              currency: 'BRL' 
+                            }).format(parseFloat(equip.value)) 
+                          : "-"}
+                      </TableCell>
                       <TableCell>{getSiteName(equip.siteId)}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
