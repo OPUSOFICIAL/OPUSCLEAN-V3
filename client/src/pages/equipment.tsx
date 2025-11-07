@@ -48,6 +48,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const [serialNumber, setSerialNumber] = useState("");
   const [installationDate, setInstallationDate] = useState("");
   const [warrantyExpiry, setWarrantyExpiry] = useState("");
+  const [value, setValue] = useState("");
   const [status, setStatus] = useState("operacional");
   const [description, setDescription] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -148,6 +149,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSerialNumber("");
     setInstallationDate("");
     setWarrantyExpiry("");
+    setValue("");
     setStatus("operacional");
     setDescription("");
   };
@@ -174,6 +176,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       serialNumber: serialNumber || null,
       installationDate: installationDate || null,
       warrantyExpiry: warrantyExpiry || null,
+      value: value ? parseFloat(value) : null,
       status,
       description: description || null,
       module: currentModule,
@@ -191,6 +194,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSerialNumber(equip.serialNumber || "");
     setInstallationDate(equip.installationDate || "");
     setWarrantyExpiry(equip.warrantyExpiry || "");
+    setValue(equip.value || "");
     setStatus(equip.status);
     setDescription(equip.description || "");
     setIsEditDialogOpen(true);
@@ -213,6 +217,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       serialNumber: serialNumber || null,
       installationDate: installationDate || null,
       warrantyExpiry: warrantyExpiry || null,
+      value: value ? parseFloat(value) : null,
       status,
       description: description || null,
     });
@@ -439,6 +444,22 @@ export default function Equipment({ customerId }: EquipmentProps) {
                         data-testid="input-warranty-expiry"
                         value={warrantyExpiry}
                         onChange={(e) => setWarrantyExpiry(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="value">Valor do Equipamento (R$)</Label>
+                      <Input
+                        id="value"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        data-testid="input-value"
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        placeholder="0.00"
                       />
                     </div>
                   </div>
@@ -684,6 +705,20 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     type="date"
                     value={warrantyExpiry}
                     onChange={(e) => setWarrantyExpiry(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Valor do Equipamento (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder="0.00"
                   />
                 </div>
               </div>

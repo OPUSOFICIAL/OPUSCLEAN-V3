@@ -505,6 +505,7 @@ export const equipment = pgTable("equipment", {
   purchaseDate: date("purchase_date"),
   warrantyExpiry: date("warranty_expiry"),
   installationDate: date("installation_date"),
+  value: decimal("value", { precision: 10, scale: 2 }),
   status: equipmentStatusEnum("status").notNull().default('operacional'),
   technicalSpecs: jsonb("technical_specs"),
   maintenanceNotes: text("maintenance_notes"),

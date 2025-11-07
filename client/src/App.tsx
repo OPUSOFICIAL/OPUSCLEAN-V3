@@ -24,6 +24,7 @@ import Roles from "@/pages/roles";
 import Equipment from "@/pages/equipment";
 import MaintenancePlans from "@/pages/maintenance-plans";
 import MaintenanceChecklistTemplates from "@/pages/maintenance-checklist-templates";
+import AssetReport from "@/pages/asset-report";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QrExecution from "@/pages/qr-execution";
 import QrPublic from "@/pages/qr-public";
@@ -90,6 +91,7 @@ function AuthenticatedAdminRouter() {
           <Route path="/equipment" component={() => <Equipment customerId={activeClientId} />} />
           <Route path="/maintenance-plans" component={() => <MaintenancePlans />} />
           <Route path="/maintenance-checklist-templates" component={() => <MaintenanceChecklistTemplates customerId={activeClientId} />} />
+          <Route path="/asset-report" component={() => <AssetReport customerId={activeClientId} />} />
           
           {/* Redirecionar rotas de login para dashboard se já autenticado */}
           <Route path="/login">
