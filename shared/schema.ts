@@ -16,6 +16,8 @@ export const frequencyEnum = pgEnum('frequency', ['diaria', 'semanal', 'mensal',
 export const bathroomCounterActionEnum = pgEnum('bathroom_counter_action', ['increment', 'decrement', 'reset']);
 export const moduleEnum = pgEnum('module', ['clean', 'maintenance']);
 export const equipmentStatusEnum = pgEnum('equipment_status', ['operacional', 'em_manutencao', 'inoperante', 'aposentado']);
+export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'anthropic', 'google', 'custom']);
+export const aiIntegrationStatusEnum = pgEnum('ai_integration_status', ['ativa', 'inativa', 'erro']);
 
 // Sistema de permissões granulares
 export const permissionKeyEnum = pgEnum('permission_key', [
@@ -618,6 +620,34 @@ export const maintenanceActivities = pgTable("maintenance_activities", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
   startTime: time("start_time"),
   endTime: time("end_time"),
+});
+
+// AI Integrations (apenas para usuários OPUS)
+export const aiIntegrations = pgTable("ai_integrations", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  
+  name: varchar("name").notNull(), // Nome descritivo da integração
+  provider: aiProviderEnum("provider").notNull(), // openai, anthropic, google, custom
+  model: varchar("model").notNull(), // gpt-4, claude-3, gemini-1.5, etc
+  apiKey: text("api_key").notNull(), // Armazenado criptografado
+  endpoint: varchar("endpoint"), // Endpoint personalizado (opcional)
+  
+  status: aiIntegrationStatusEnum("status").notNull().default('ativa'),
+  isDefault: boolean("is_default").default(false), // Se é a IA padrão do sistema
+  
+  // Configurações avançadas
+  maxTokens: integer("max_tokens").default(4096),
+  temperature: decimal("temperature", { precision: 3, scale: 2 }).default('0.7'),
+  enableLogs: boolean("enable_logs").default(false),
+  
+  // Metadata
+  lastTestedAt: timestamp("last_tested_at"),
+  lastErrorMessage: text("last_error_message"),
+  
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
 // Relations
@@ -1251,3 +1281,13 @@ export type InsertMaintenancePlanEquipment = z.infer<typeof insertMaintenancePla
 
 export type MaintenanceActivity = typeof maintenanceActivities.$inferSelect;
 export type InsertMaintenanceActivity = z.infer<typeof insertMaintenanceActivitySchema>;
+
+// AI Integration schemas
+export const insertAiIntegrationSchema = createInsertSchema(aiIntegrations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AiIntegration = typeof aiIntegrations.$inferSelect;
+export type InsertAiIntegration = z.infer<typeof insertAiIntegrationSchema>;

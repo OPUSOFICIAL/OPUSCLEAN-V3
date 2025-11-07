@@ -306,6 +306,33 @@ export async function requireOwnWorkOrders(req: Request, res: Response, next: Ne
 }
 
 /**
+ * Middleware para verificar se o usuário é do tipo OPUS (opus_user)
+ * Apenas usuários OPUS podem acessar funcionalidades administrativas avançadas
+ */
+export async function requireOpusUser(req: Request, res: Response, next: NextFunction) {
+  const user = await getUserFromToken(req);
+  
+  if (!user) {
+    return res.status(401).json({ 
+      error: 'Não autenticado',
+      message: 'Você precisa estar logado para acessar este recurso.' 
+    });
+  }
+  
+  if (user.userType !== 'opus_user') {
+    console.warn(`[ACCESS DENIED] User ${user.id} (${user.userType}) tentou acessar recurso restrito a OPUS users`);
+    return res.status(403).json({ 
+      error: 'Acesso negado',
+      message: 'Este recurso está disponível apenas para usuários OPUS.',
+      userType: user.userType
+    });
+  }
+  
+  req.user = user;
+  next();
+}
+
+/**
  * Função helper para logar tentativas de acesso negado
  * (pode ser expandida para salvar em audit_logs)
  */

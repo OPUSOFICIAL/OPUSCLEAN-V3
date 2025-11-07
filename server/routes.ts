@@ -16,6 +16,7 @@ import {
   insertEquipmentSchema, insertMaintenanceChecklistTemplateSchema,
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
   insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
+  insertAiIntegrationSchema,
   type User
 } from "@shared/schema";
 import { z } from "zod";
@@ -27,7 +28,8 @@ import {
   requireManageUsers,
   requireManageWorkOrders,
   requireViewReports,
-  requireOwnCustomer
+  requireOwnCustomer,
+  requireOpusUser
 } from "./middleware/auth";
 import { sanitizeUser, sanitizeUsers } from "./utils/security";
 
@@ -3745,6 +3747,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting maintenance plan equipment:", error);
       res.status(500).json({ message: "Failed to delete maintenance plan equipment" });
+    }
+  });
+
+  // ============================================================================
+  // AI INTEGRATIONS (OPUS Users Only)
+  // ============================================================================
+
+  // Get all AI integrations for a company
+  app.get("/api/ai-integrations", requireAuth, requireOpusUser, async (req, res) => {
+    try {
+      if (!req.user?.companyId) {
+        return res.status(400).json({ message: "Company ID not found" });
+      }
+      const integrations = await storage.getAiIntegrations(req.user.companyId);
+      res.json(integrations);
+    } catch (error) {
+      console.error("Error fetching AI integrations:", error);
+      res.status(500).json({ message: "Failed to fetch AI integrations" });
+    }
+  });
+
+  // Get single AI integration
+  app.get("/api/ai-integrations/:id", requireAuth, requireOpusUser, async (req, res) => {
+    try {
+      const integration = await storage.getAiIntegration(req.params.id);
+      if (!integration) {
+        return res.status(404).json({ message: "AI integration not found" });
+      }
+      res.json(integration);
+    } catch (error) {
+      console.error("Error fetching AI integration:", error);
+      res.status(500).json({ message: "Failed to fetch AI integration" });
+    }
+  });
+
+  // Get default AI integration
+  app.get("/api/ai-integrations/default/:companyId", requireAuth, requireOpusUser, async (req, res) => {
+    try {
+      const integration = await storage.getDefaultAiIntegration(req.params.companyId);
+      if (!integration) {
+        return res.status(404).json({ message: "No default AI integration found" });
+      }
+      res.json(integration);
+    } catch (error) {
+      console.error("Error fetching default AI integration:", error);
+      res.status(500).json({ message: "Failed to fetch default AI integration" });
+    }
+  });
+
+  // Create AI integration
+  app.post("/api/ai-integrations", requireAuth, requireOpusUser, async (req, res) => {
+    try {
+      if (!req.user?.companyId) {
+        return res.status(400).json({ message: "Company ID not found" });
+      }
+      const integration = insertAiIntegrationSchema.parse({
+        ...req.body,
+        companyId: req.user.companyId
+      });
+      const newIntegration = await storage.createAiIntegration(integration);
+      res.status(201).json(newIntegration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating AI integration:", error);
+      res.status(500).json({ message: "Failed to create AI integration" });
+    }
+  });
+
+  // Update AI integration
+  app.put("/api/ai-integrations/:id", requireAuth, requireOpusUser, async (req, res) => {
+    try {
+      const integration = insertAiIntegrationSchema.partial().parse(req.body);
+      const updatedIntegration = await storage.updateAiIntegration(req.params.id, integration);
+      res.json(updatedIntegration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating AI integration:", error);
+      res.status(500).json({ message: "Failed to update AI integration" });
+    }
+  });
+
+  // Delete AI integration
+  app.delete("/api/ai-integrations/:id", requireAuth, requireOpusUser, async (req, res) => {
+    try {
+      await storage.deleteAiIntegration(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting AI integration:", error);
+      res.status(500).json({ message: "Failed to delete AI integration" });
+    }
+  });
+
+  // Test AI integration connection
+  app.post("/api/ai-integrations/:id/test", requireAuth, requireOpusUser, async (req, res) => {
+    try {
+      const result = await storage.testAiIntegration(req.params.id);
+      res.json(result);
+    } catch (error) {
+      console.error("Error testing AI integration:", error);
+      res.status(500).json({ message: "Failed to test AI integration" });
     }
   });
 

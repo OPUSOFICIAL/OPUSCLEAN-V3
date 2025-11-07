@@ -25,6 +25,7 @@ import Equipment from "@/pages/equipment";
 import MaintenancePlans from "@/pages/maintenance-plans";
 import MaintenanceChecklistTemplates from "@/pages/maintenance-checklist-templates";
 import AssetReport from "@/pages/asset-report";
+import AiIntegrations from "@/pages/ai-integrations";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QrExecution from "@/pages/qr-execution";
 import QrPublic from "@/pages/qr-public";
@@ -86,6 +87,7 @@ function AuthenticatedAdminRouter() {
           <Route path="/roles" component={() => <Roles />} />
           <Route path="/reports" component={() => <Reports />} />
           <Route path="/audit-logs" component={() => <AuditLogs companyId={companyId} />} />
+          <Route path="/ai-integrations" component={() => <AiIntegrations />} />
           
           {/* Maintenance Module Routes */}
           <Route path="/equipment" component={() => <Equipment customerId={activeClientId} />} />

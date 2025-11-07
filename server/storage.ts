@@ -6,6 +6,7 @@ import {
   workOrderComments,
   equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
+  aiIntegrations,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
   type User, type InsertUser, type ChecklistTemplate, type InsertChecklistTemplate,
@@ -29,13 +30,52 @@ import {
   type MaintenanceChecklistExecution, type InsertMaintenanceChecklistExecution,
   type MaintenancePlan, type InsertMaintenancePlan,
   type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment,
-  type MaintenanceActivity, type InsertMaintenanceActivity
+  type MaintenanceActivity, type InsertMaintenanceActivity,
+  type AiIntegration, type InsertAiIntegration
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
+
+// ============================================================================
+// Encryption helpers for AI Integration API keys
+// ============================================================================
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+
+function encryptApiKey(apiKey: string): string {
+  const iv = crypto.randomBytes(16);
+  const key = Buffer.from(ENCRYPTION_KEY.slice(0, 64), 'hex');
+  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
+  
+  let encrypted = cipher.update(apiKey, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  
+  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+}
+
+function decryptApiKey(encryptedData: string): string {
+  const [ivHex, authTagHex, encryptedHex] = encryptedData.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
+  const authTag = Buffer.from(authTagHex, 'hex');
+  const key = Buffer.from(ENCRYPTION_KEY.slice(0, 64), 'hex');
+  
+  const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
+  decipher.setAuthTag(authTag);
+  
+  let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  
+  return decrypted;
+}
+
+function maskApiKey(apiKey: string): string {
+  if (apiKey.length <= 8) return '****';
+  return `****${apiKey.slice(-4)}`;
+}
 
 export interface IStorage {
   // Companies
@@ -370,6 +410,17 @@ export interface IStorage {
   createMaintenancePlanEquipment(planEquipment: InsertMaintenancePlanEquipment): Promise<MaintenancePlanEquipment>;
   updateMaintenancePlanEquipment(id: string, planEquipment: Partial<InsertMaintenancePlanEquipment>): Promise<MaintenancePlanEquipment>;
   deleteMaintenancePlanEquipment(id: string): Promise<void>;
+
+  // ============================================================================
+  // AI INTEGRATIONS (OPUS Users Only)
+  // ============================================================================
+  getAiIntegrations(companyId: string): Promise<AiIntegration[]>;
+  getAiIntegration(id: string): Promise<AiIntegration | undefined>;
+  getDefaultAiIntegration(companyId: string): Promise<AiIntegration | undefined>;
+  createAiIntegration(integration: InsertAiIntegration): Promise<AiIntegration>;
+  updateAiIntegration(id: string, integration: Partial<InsertAiIntegration>): Promise<AiIntegration>;
+  deleteAiIntegration(id: string): Promise<void>;
+  testAiIntegration(id: string): Promise<{ success: boolean; message: string }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4756,6 +4807,216 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEquipmentType(id: string): Promise<void> {
     await db.delete(equipmentTypes).where(eq(equipmentTypes.id, id));
+  }
+
+  // ============================================================================
+  // AI INTEGRATIONS Implementation
+  // ============================================================================
+  
+  async getAiIntegrations(companyId: string): Promise<AiIntegration[]> {
+    const integrations = await db.select()
+      .from(aiIntegrations)
+      .where(eq(aiIntegrations.companyId, companyId))
+      .orderBy(desc(aiIntegrations.createdAt));
+    
+    return integrations.map(integration => ({
+      ...integration,
+      apiKey: maskApiKey(integration.apiKey)
+    }));
+  }
+
+  async getAiIntegration(id: string): Promise<AiIntegration | undefined> {
+    const [integration] = await db.select()
+      .from(aiIntegrations)
+      .where(eq(aiIntegrations.id, id));
+    
+    if (!integration) return undefined;
+    
+    return {
+      ...integration,
+      apiKey: maskApiKey(integration.apiKey)
+    };
+  }
+
+  async getDefaultAiIntegration(companyId: string): Promise<AiIntegration | undefined> {
+    const [integration] = await db.select()
+      .from(aiIntegrations)
+      .where(and(
+        eq(aiIntegrations.companyId, companyId),
+        eq(aiIntegrations.isDefault, true),
+        eq(aiIntegrations.status, 'ativa')
+      ));
+    
+    if (!integration) return undefined;
+    
+    return {
+      ...integration,
+      apiKey: maskApiKey(integration.apiKey)
+    };
+  }
+
+  async createAiIntegration(integration: InsertAiIntegration): Promise<AiIntegration> {
+    const id = nanoid();
+    const encryptedApiKey = encryptApiKey(integration.apiKey);
+    
+    if (integration.isDefault) {
+      await db.update(aiIntegrations)
+        .set({ isDefault: false })
+        .where(and(
+          eq(aiIntegrations.companyId, integration.companyId),
+          eq(aiIntegrations.isDefault, true)
+        ));
+    }
+    
+    const [newIntegration] = await db.insert(aiIntegrations).values({
+      ...integration,
+      id,
+      apiKey: encryptedApiKey
+    }).returning();
+    
+    return {
+      ...newIntegration,
+      apiKey: maskApiKey(integration.apiKey)
+    };
+  }
+
+  async updateAiIntegration(id: string, integration: Partial<InsertAiIntegration>): Promise<AiIntegration> {
+    const updateData: any = { ...integration, updatedAt: sql`now()` };
+    
+    if (integration.apiKey) {
+      updateData.apiKey = encryptApiKey(integration.apiKey);
+    }
+    
+    if (integration.isDefault) {
+      const [current] = await db.select().from(aiIntegrations).where(eq(aiIntegrations.id, id));
+      if (current) {
+        await db.update(aiIntegrations)
+          .set({ isDefault: false })
+          .where(and(
+            eq(aiIntegrations.companyId, current.companyId),
+            eq(aiIntegrations.isDefault, true),
+            ne(aiIntegrations.id, id)
+          ));
+      }
+    }
+    
+    const [updated] = await db.update(aiIntegrations)
+      .set(updateData)
+      .where(eq(aiIntegrations.id, id))
+      .returning();
+    
+    return {
+      ...updated,
+      apiKey: maskApiKey(updated.apiKey)
+    };
+  }
+
+  async deleteAiIntegration(id: string): Promise<void> {
+    await db.delete(aiIntegrations).where(eq(aiIntegrations.id, id));
+  }
+
+  async testAiIntegration(id: string): Promise<{ success: boolean; message: string }> {
+    const [integration] = await db.select()
+      .from(aiIntegrations)
+      .where(eq(aiIntegrations.id, id));
+    
+    if (!integration) {
+      return { success: false, message: 'Integração não encontrada' };
+    }
+    
+    try {
+      const apiKey = decryptApiKey(integration.apiKey);
+      let testSuccess = false;
+      let errorMessage = '';
+      
+      switch (integration.provider) {
+        case 'openai':
+          const openaiResponse = await fetch('https://api.openai.com/v1/models', {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          testSuccess = openaiResponse.ok;
+          if (!testSuccess) {
+            errorMessage = `OpenAI API retornou erro ${openaiResponse.status}`;
+          }
+          break;
+          
+        case 'anthropic':
+          const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: integration.model || 'claude-3-opus-20240229',
+              max_tokens: 10,
+              messages: [{ role: 'user', content: 'test' }]
+            })
+          });
+          testSuccess = anthropicResponse.ok;
+          if (!testSuccess) {
+            errorMessage = `Anthropic API retornou erro ${anthropicResponse.status}`;
+          }
+          break;
+          
+        case 'google':
+          const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+          testSuccess = googleResponse.ok;
+          if (!testSuccess) {
+            errorMessage = `Google AI API retornou erro ${googleResponse.status}`;
+          }
+          break;
+          
+        case 'custom':
+          if (!integration.endpoint) {
+            return { success: false, message: 'Endpoint personalizado não configurado' };
+          }
+          const customResponse = await fetch(integration.endpoint, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          testSuccess = customResponse.ok;
+          if (!testSuccess) {
+            errorMessage = `Endpoint personalizado retornou erro ${customResponse.status}`;
+          }
+          break;
+          
+        default:
+          return { success: false, message: 'Provedor não suportado' };
+      }
+      
+      await db.update(aiIntegrations)
+        .set({
+          lastTestedAt: sql`now()`,
+          status: testSuccess ? 'ativa' : 'erro',
+          lastErrorMessage: testSuccess ? null : errorMessage
+        })
+        .where(eq(aiIntegrations.id, id));
+      
+      return {
+        success: testSuccess,
+        message: testSuccess ? 'Conexão estabelecida com sucesso!' : errorMessage
+      };
+      
+    } catch (error: any) {
+      const errorMsg = error.message || 'Erro ao testar conexão';
+      
+      await db.update(aiIntegrations)
+        .set({
+          lastTestedAt: sql`now()`,
+          status: 'erro',
+          lastErrorMessage: errorMsg
+        })
+        .where(eq(aiIntegrations.id, id));
+      
+      return { success: false, message: errorMsg };
+    }
   }
 }
 

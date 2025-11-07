@@ -26,7 +26,8 @@ import {
   List,
   CalendarCheck,
   Tag,
-  FileBarChart
+  FileBarChart,
+  Brain
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -126,6 +127,9 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     
     // Funções (apenas super admin)
     ...(can.manageRoles() ? [{ path: "/roles", label: "Funções", icon: Shield }] : []),
+    
+    // Integrações AI (apenas usuários OPUS)
+    ...((user?.userType === 'opus_user' as any) ? [{ path: "/ai-integrations", label: "Integrações AI", icon: Brain }] : []),
   ];
 
   return (
