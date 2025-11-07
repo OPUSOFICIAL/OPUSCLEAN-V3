@@ -1074,30 +1074,22 @@ export default function Checklists() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {checklist.siteIds && checklist.siteIds.length > 0 ? (
-                            getSiteNames(checklist.siteIds).map((name: string, idx: number) => (
-                              <Badge key={checklist.siteIds[idx]} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                {name}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </div>
+                        {checklist.siteId ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {(sites as any[])?.find(s => s.id === checklist.siteId)?.name || checklist.siteId}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-400 text-xs">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {checklist.zoneIds && checklist.zoneIds.length > 0 ? (
-                            getZoneNames(checklist.zoneIds).map((name: string, idx: number) => (
-                              <Badge key={checklist.zoneIds[idx]} variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
-                                {name}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </div>
+                        {checklist.zoneId ? (
+                          <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
+                            {(allZones as any[])?.find(z => z.id === checklist.zoneId)?.name || checklist.zoneId}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-400 text-xs">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge className={cn("font-semibold", theme.backgrounds.primary, "text-white")}>

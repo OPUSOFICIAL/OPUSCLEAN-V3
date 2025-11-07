@@ -180,3 +180,10 @@
 [x] 169. Fixed TypeScript errors (background -> backgrounds)
 [x] 170. Fixed React Hooks violation by moving useModuleTheme before loading check
 [x] 171. Application restarted - Clean checklist now visually matches Maintenance with blue colors
+
+## FIX - Local e Zona não apareciam nos Checklists (07/11/2025 11:26 AM)
+[x] 172. BUG IDENTIFIED - Schema checklistTemplates usa siteId/zoneId (singular), não arrays
+[x] 173. Verified database structure - checklists use single site_id and zone_id columns
+[x] 174. Fixed table display - changed from array mapping to direct badge display
+[x] 175. Updated code to use checklist.siteId and checklist.zoneId instead of siteIds/zoneIds
+[x] 176. Application restarted - Local and Zona now displaying correctly in Clean checklists table
