@@ -4982,10 +4982,25 @@ export class DatabaseStorage implements IStorage {
           break;
           
         case 'google':
-          const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
-          testSuccess = googleResponse.ok;
-          if (!testSuccess) {
-            errorMessage = `Google AI API retornou erro ${googleResponse.status}`;
+          try {
+            const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+            testSuccess = googleResponse.ok;
+            if (!testSuccess) {
+              const errorBody = await googleResponse.text();
+              console.error(`[AI Integration Test] Google API error ${googleResponse.status}:`, errorBody);
+              
+              // Parse error message if it's JSON
+              try {
+                const errorJson = JSON.parse(errorBody);
+                errorMessage = errorJson.error?.message || `Google AI API retornou erro ${googleResponse.status}`;
+              } catch {
+                errorMessage = `Google AI API retornou erro ${googleResponse.status}: ${errorBody.substring(0, 100)}`;
+              }
+            }
+          } catch (error: any) {
+            testSuccess = false;
+            errorMessage = `Erro ao conectar com Google AI: ${error.message}`;
+            console.error('[AI Integration Test] Google fetch error:', error);
           }
           break;
           
