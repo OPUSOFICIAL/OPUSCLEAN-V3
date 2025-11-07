@@ -41,6 +41,7 @@ import { useAuth, getAuthState } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 function AuthenticatedAdminRouter() {
   const { activeClientId, isLoading } = useClient();
@@ -171,6 +172,7 @@ function App() {
         <ClientProvider>
           <ModuleProvider>
             <TooltipProvider>
+              <ScrollToTop />
               <Toaster />
               <Router />
             </TooltipProvider>

@@ -150,3 +150,7 @@
 [x] 141. Added filtering logic to show only services that have pending/in-progress/paused work orders
 [x] 142. Operators now see only relevant services when scanning QR codes
 [x] 143. Application restarted - Service selection improved for better UX
+[x] 144. UX IMPROVEMENT - Implemented scroll to top on page navigation
+[x] 145. Created ScrollToTop component using wouter's useLocation hook
+[x] 146. Added ScrollToTop to App.tsx to enable scroll behavior on all route changes
+[x] 147. Application restarted - Scroll to top working on all page navigations
