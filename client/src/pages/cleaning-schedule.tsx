@@ -1263,7 +1263,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
   });
 
   const { data: checklistTemplates } = useQuery({
-    queryKey: ["/api/companies", activeClientId, "checklist-templates"],
+    queryKey: ["/api/customers", activeClientId, "checklist-templates"],
     enabled: !!activeClientId,
   });
 
