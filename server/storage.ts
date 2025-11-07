@@ -6,7 +6,7 @@ import {
   workOrderComments,
   equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
-  aiIntegrations,
+  aiIntegrations, chatConversations, chatMessages,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
   type User, type InsertUser, type ChecklistTemplate, type InsertChecklistTemplate,
@@ -31,7 +31,9 @@ import {
   type MaintenancePlan, type InsertMaintenancePlan,
   type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment,
   type MaintenanceActivity, type InsertMaintenanceActivity,
-  type AiIntegration, type InsertAiIntegration
+  type AiIntegration, type InsertAiIntegration,
+  type ChatConversation, type InsertChatConversation,
+  type ChatMessage, type InsertChatMessage
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne } from "drizzle-orm";
@@ -42,8 +44,15 @@ import crypto from "crypto";
 // ============================================================================
 // Encryption helpers for AI Integration API keys
 // ============================================================================
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || process.env.AI_INTEGRATION_KEY;
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+
+if (!ENCRYPTION_KEY) {
+  console.error('FATAL ERROR: ENCRYPTION_KEY or AI_INTEGRATION_KEY environment variable is required for AI integrations');
+  console.error('Please set one of these variables to a 64-character hex string (32 bytes)');
+  console.error('Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  throw new Error('Missing encryption key for AI integrations. Server cannot start.');
+}
 
 function encryptApiKey(apiKey: string): string {
   const iv = crypto.randomBytes(16);
@@ -421,6 +430,15 @@ export interface IStorage {
   updateAiIntegration(id: string, integration: Partial<InsertAiIntegration>): Promise<AiIntegration>;
   deleteAiIntegration(id: string): Promise<void>;
   testAiIntegration(id: string): Promise<{ success: boolean; message: string }>;
+
+  // ============================================================================
+  // CHAT (AI Assistant)
+  // ============================================================================
+  getActiveConversation(userId: string): Promise<ChatConversation | undefined>;
+  createConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
+  getConversationMessages(conversationId: string): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  processUserMessage(userId: string, companyId: string, customerId: string | null, module: 'clean' | 'maintenance', userMessage: string): Promise<{ conversationId: string; messages: ChatMessage[] }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -5016,6 +5034,267 @@ export class DatabaseStorage implements IStorage {
         .where(eq(aiIntegrations.id, id));
       
       return { success: false, message: errorMsg };
+    }
+  }
+
+  // ============================================================================
+  // CHAT METHODS
+  // ============================================================================
+
+  async getActiveConversation(userId: string): Promise<ChatConversation | undefined> {
+    const [conversation] = await db.select()
+      .from(chatConversations)
+      .where(and(
+        eq(chatConversations.userId, userId),
+        eq(chatConversations.isActive, true)
+      ))
+      .orderBy(desc(chatConversations.updatedAt))
+      .limit(1);
+    
+    return conversation;
+  }
+
+  async createConversation(conversation: InsertChatConversation): Promise<ChatConversation> {
+    const [newConversation] = await db.insert(chatConversations)
+      .values({
+        id: nanoid(),
+        ...conversation
+      })
+      .returning();
+    
+    return newConversation;
+  }
+
+  async getConversationMessages(conversationId: string): Promise<ChatMessage[]> {
+    return await db.select()
+      .from(chatMessages)
+      .where(eq(chatMessages.conversationId, conversationId))
+      .orderBy(chatMessages.createdAt);
+  }
+
+  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+    const [newMessage] = await db.insert(chatMessages)
+      .values({
+        id: nanoid(),
+        ...message
+      })
+      .returning();
+    
+    return newMessage;
+  }
+
+  async processUserMessage(
+    userId: string, 
+    companyId: string, 
+    customerId: string | null, 
+    module: 'clean' | 'maintenance', 
+    userMessage: string
+  ): Promise<{ conversationId: string; messages: ChatMessage[] }> {
+    // Get or create conversation
+    let conversation = await this.getActiveConversation(userId);
+    
+    if (!conversation) {
+      conversation = await this.createConversation({
+        userId,
+        companyId,
+        customerId,
+        module,
+        title: userMessage.slice(0, 50) + (userMessage.length > 50 ? '...' : ''),
+        isActive: true
+      });
+    }
+
+    // Create user message
+    const userMsg = await this.createChatMessage({
+      conversationId: conversation.id,
+      role: 'user',
+      content: userMessage,
+      context: null,
+      aiIntegrationId: null,
+      tokensUsed: null,
+      error: null
+    });
+
+    // Get AI integration
+    const aiIntegration = await this.getDefaultAiIntegration(companyId);
+    
+    if (!aiIntegration || aiIntegration.status !== 'ativa') {
+      const errorMsg = await this.createChatMessage({
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: 'Desculpe, não há nenhuma integração AI ativa configurada no momento.',
+        context: null,
+        aiIntegrationId: null,
+        tokensUsed: null,
+        error: 'No active AI integration'
+      });
+      
+      return { conversationId: conversation.id, messages: [userMsg, errorMsg] };
+    }
+
+    try {
+      // Fetch context
+      const context = await this.getContextForAI(userId, customerId, module);
+      
+      // Call AI
+      const aiResponse = await this.callAI(aiIntegration, userMessage, context);
+      
+      // Create assistant message
+      const assistantMsg = await this.createChatMessage({
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: aiResponse.content,
+        context: context as any,
+        aiIntegrationId: aiIntegration.id,
+        tokensUsed: aiResponse.tokensUsed || null,
+        error: null
+      });
+
+      // Update conversation timestamp
+      await db.update(chatConversations)
+        .set({ updatedAt: sql`now()` })
+        .where(eq(chatConversations.id, conversation.id));
+
+      return { conversationId: conversation.id, messages: [userMsg, assistantMsg] };
+    } catch (error: any) {
+      const errorMsg = await this.createChatMessage({
+        conversationId: conversation.id,
+        role: 'assistant',
+        content: 'Desculpe, ocorreu um erro ao processar sua mensagem.',
+        context: null,
+        aiIntegrationId: aiIntegration.id,
+        tokensUsed: null,
+        error: error.message
+      });
+      
+      return { conversationId: conversation.id, messages: [userMsg, errorMsg] };
+    }
+  }
+
+  private async getContextForAI(userId: string, customerId: string | null, module: 'clean' | 'maintenance'): Promise<any> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get today's work orders
+    const workOrdersQuery = customerId
+      ? and(eq(workOrders.assignedUserId, userId), eq(workOrders.scheduledDate, today))
+      : and(eq(workOrders.assignedUserId, userId), eq(workOrders.scheduledDate, today));
+    
+    const todayWorkOrders = await db.select({
+      id: workOrders.id,
+      number: workOrders.number,
+      type: workOrders.type,
+      status: workOrders.status,
+      priority: workOrders.priority,
+      title: workOrders.title
+    })
+    .from(workOrders)
+    .where(workOrdersQuery)
+    .limit(50);
+
+    return {
+      date: today,
+      module,
+      workOrders: todayWorkOrders,
+      totalWorkOrders: todayWorkOrders.length
+    };
+  }
+
+  private async callAI(integration: AiIntegration, userMessage: string, context: any): Promise<{ content: string; tokensUsed?: number }> {
+    const apiKey = decryptApiKey(integration.apiKey);
+    
+    const systemPrompt = `Você é um assistente AI para o sistema OPUS de gestão de facilities. 
+O usuário está no módulo ${context.module === 'clean' ? 'OPUS Clean (limpeza)' : 'OPUS Manutenção'}.
+Hoje é ${context.date}.
+O usuário tem ${context.totalWorkOrders} ordem(ns) de serviço para hoje.
+Responda de forma concisa e útil em português.`;
+
+    const contextInfo = context.totalWorkOrders > 0 
+      ? `Ordens de serviço de hoje:\n${context.workOrders.map((wo: any) => `- OS #${wo.number}: ${wo.title} (${wo.status})`).join('\n')}`
+      : 'Nenhuma ordem de serviço para hoje.';
+
+    switch (integration.provider) {
+      case 'openai':
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: integration.model || 'gpt-4o',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'system', content: contextInfo },
+              { role: 'user', content: userMessage }
+            ],
+            max_tokens: integration.maxTokens || 500,
+            temperature: parseFloat(integration.temperature || '0.7')
+          })
+        });
+
+        if (!openaiResponse.ok) {
+          throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+        }
+
+        const openaiData = await openaiResponse.json();
+        return {
+          content: openaiData.choices[0].message.content,
+          tokensUsed: openaiData.usage?.total_tokens
+        };
+
+      case 'google':
+        const googleResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${integration.model || 'gemini-2.0-flash-exp'}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `${systemPrompt}\n\n${contextInfo}\n\nUsuário: ${userMessage}`
+                }]
+              }]
+            })
+          }
+        );
+
+        if (!googleResponse.ok) {
+          throw new Error(`Google AI API error: ${googleResponse.statusText}`);
+        }
+
+        const googleData = await googleResponse.json();
+        return {
+          content: googleData.candidates[0].content.parts[0].text
+        };
+
+      case 'anthropic':
+        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: integration.model || 'claude-3-5-sonnet-20241022',
+            max_tokens: integration.maxTokens || 500,
+            system: `${systemPrompt}\n\n${contextInfo}`,
+            messages: [{ role: 'user', content: userMessage }]
+          })
+        });
+
+        if (!anthropicResponse.ok) {
+          throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
+        }
+
+        const anthropicData = await anthropicResponse.json();
+        return {
+          content: anthropicData.content[0].text,
+          tokensUsed: anthropicData.usage?.input_tokens + anthropicData.usage?.output_tokens
+        };
+
+      default:
+        throw new Error('Provedor não suportado');
     }
   }
 }

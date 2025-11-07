@@ -3858,6 +3858,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== CHAT ENDPOINTS =====
+
+  // Get active conversation and messages
+  app.get("/api/chat/conversation", requireAuth, async (req, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const conversation = await storage.getActiveConversation(req.user.id);
+      
+      if (!conversation) {
+        return res.json({ conversation: null, messages: [] });
+      }
+
+      const messages = await storage.getConversationMessages(conversation.id);
+      res.json({ conversation, messages });
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ message: "Failed to fetch conversation" });
+    }
+  });
+
+  // Send message
+  app.post("/api/chat/message", requireAuth, async (req, res) => {
+    try {
+      if (!req.user?.id || !req.user?.companyId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const { message, module } = req.body;
+
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      if (!module || !['clean', 'maintenance'].includes(module)) {
+        return res.status(400).json({ message: "Valid module is required" });
+      }
+
+      const result = await storage.processUserMessage(
+        req.user.id,
+        req.user.companyId,
+        req.user.customerId || null,
+        module,
+        message
+      );
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error processing message:", error);
+      res.status(500).json({ message: "Failed to process message" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
