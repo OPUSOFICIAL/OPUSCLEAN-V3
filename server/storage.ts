@@ -1077,6 +1077,9 @@ export class DatabaseStorage implements IStorage {
 
   // 7. RELATÓRIO DE PATRIMÔNIO - Valor de equipamentos por local e zona
   async getAssetReport(customerId: string, module?: 'clean' | 'maintenance'): Promise<any> {
+    // Buscar informações do cliente
+    const customer = await db.select().from(customers).where(eq(customers.id, customerId)).then(rows => rows[0]);
+    
     // Filtrar equipamentos por cliente e módulo (somente maintenance)
     const equipmentWhereCondition = module
       ? and(eq(equipment.customerId, customerId), sql`EXISTS (SELECT 1 FROM ${sites} WHERE ${sites.id} = ${equipment.siteId} AND ${sites.module} = ${module})`)
@@ -1102,7 +1105,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(zones, eq(equipment.zoneId, zones.id))
       .where(equipmentWhereCondition);
 
-    // Agrupar por local
+    // Agrupar por local e zona (estrutura hierárquica)
     const bySite = customerEquipment.reduce((acc, item) => {
       const siteId = item.siteId;
       const siteName = item.siteName || 'Sem Local';
@@ -1117,8 +1120,14 @@ export class DatabaseStorage implements IStorage {
         };
       }
       
-      const equipmentValue = parseFloat(item.value || '0');
-      acc[siteId].totalValue += equipmentValue;
+      // Valor unitário do equipamento
+      const unitValue = parseFloat(item.value || '0');
+      // Quantidade (preparado para futuro campo quantity - por enquanto sempre 1)
+      const quantity = 1; // TODO: Usar item.quantity quando campo for adicionado
+      // Valor total = unitário × quantidade
+      const totalValue = unitValue * quantity;
+      
+      acc[siteId].totalValue += totalValue;
       acc[siteId].equipmentCount++;
       
       // Agrupar por zona dentro do local
@@ -1135,7 +1144,7 @@ export class DatabaseStorage implements IStorage {
         };
       }
       
-      acc[siteId].zones[zoneId].totalValue += equipmentValue;
+      acc[siteId].zones[zoneId].totalValue += totalValue;
       acc[siteId].zones[zoneId].equipmentCount++;
       acc[siteId].zones[zoneId].equipment.push({
         id: item.id,
@@ -1143,27 +1152,47 @@ export class DatabaseStorage implements IStorage {
         model: item.model,
         manufacturer: item.manufacturer,
         serialNumber: item.serialNumber,
-        value: equipmentValue,
+        unitValue: unitValue,
+        quantity: quantity,
+        totalValue: totalValue,
         status: item.status
       });
       
       return acc;
     }, {} as Record<string, any>);
 
-    // Converter para array e calcular totais
+    // Converter para array e formatar valores
     const sitesData = Object.values(bySite).map(site => ({
       ...site,
       zones: Object.values(site.zones)
     }));
 
+    // Calcular totais gerais
     const totalValue = sitesData.reduce((sum, site) => sum + site.totalValue, 0);
     const totalEquipment = sitesData.reduce((sum, site) => sum + site.equipmentCount, 0);
+    
+    // Verificação de integridade dos totais
+    const calculatedTotal = sitesData.reduce((siteSum, site) => {
+      const siteTotal = site.zones.reduce((zoneSum: number, zone: any) => {
+        const zoneTotal = zone.equipment.reduce((eqSum: number, eq: any) => eqSum + eq.totalValue, 0);
+        return zoneSum + zoneTotal;
+      }, 0);
+      return siteSum + siteTotal;
+    }, 0);
+    
+    const totalsMatch = Math.abs(totalValue - calculatedTotal) < 0.01; // Tolerância para arredondamento
 
     return {
+      customer: {
+        id: customer.id,
+        name: customer.name
+      },
       summary: {
         totalValue,
         totalEquipment,
-        siteCount: sitesData.length
+        siteCount: sitesData.length,
+        zoneCount: sitesData.reduce((sum, site) => sum + site.zones.length, 0),
+        totalsVerified: totalsMatch
       },
       sites: sitesData
     };
