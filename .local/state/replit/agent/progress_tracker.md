@@ -125,3 +125,5 @@
 [x] 116. Added allZones query to fetch all zones for display in table
 [x] 117. Updated table cells to show all sites and zones with colored badges
 [x] 118. Restarted application - All changes applied successfully
+[x] 119. Fixed OPUS Clean goals update - Added missing PUT route for /api/customers/:customerId/dashboard-goals/:id
+[x] 120. Application restarted - Goals update now working correctly

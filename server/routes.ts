@@ -2116,6 +2116,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/customers/:customerId/dashboard-goals/:id", async (req, res) => {
+    try {
+      const goal = insertDashboardGoalSchema.partial().parse(req.body);
+      const updatedGoal = await storage.updateDashboardGoal(req.params.id, goal);
+      res.json(updatedGoal);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("Validation error updating dashboard goal:", error.errors);
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error updating dashboard goal:", error);
+      res.status(500).json({ message: "Erro ao atualizar meta" });
+    }
+  });
+
   app.delete("/api/customers/:customerId/dashboard-goals/:id", async (req, res) => {
     try {
       await storage.deleteDashboardGoal(req.params.id);
