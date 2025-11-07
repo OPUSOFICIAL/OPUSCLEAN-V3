@@ -6,12 +6,14 @@ import { ArrowLeft, Camera, Flashlight, FlashlightOff, RotateCcw } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import QrScanner from "qr-scanner";
 import ServiceSelectionModal from "@/components/ServiceSelectionModal";
+import { useModule } from "@/contexts/ModuleContext";
 
 const COMPANY_ID = "company-opus-default";
 
 export default function MobileQrScanner() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { currentModule, setModule, canAccessModule } = useModule();
   
   // QR Scanner States
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -146,6 +148,32 @@ export default function MobileQrScanner() {
         // Verificar se tem customer
         if (!resolved.customer) {
           throw new Error('QR code sem cliente associado');
+        }
+        
+        // Verificar e trocar módulo automaticamente se necessário
+        const qrModule = resolved.qrPoint?.module || 'clean';
+        if (qrModule !== currentModule) {
+          // Verificar se o usuário tem acesso ao módulo do QR code
+          if (canAccessModule(qrModule)) {
+            console.log(`[QR SCANNER] Trocando módulo automaticamente de "${currentModule}" para "${qrModule}"`);
+            setModule(qrModule);
+            toast({
+              title: "🔄 Módulo alterado",
+              description: `Trocado para ${qrModule === 'clean' ? 'OPUS Clean' : 'OPUS Manutenção'} automaticamente.`,
+            });
+            // Aguardar um momento para o módulo ser trocado
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } else {
+            // Usuário não tem acesso ao módulo do QR code
+            toast({
+              title: "Acesso negado",
+              description: `Este QR code é do módulo ${qrModule === 'clean' ? 'OPUS Clean' : 'OPUS Manutenção'}, mas você não tem acesso a ele.`,
+              variant: "destructive",
+            });
+            setIsProcessing(false);
+            setTimeout(() => startScanner(), 2000);
+            return;
+          }
         }
         
         setResolvedContext(resolved);
