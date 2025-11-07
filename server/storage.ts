@@ -1151,21 +1151,21 @@ export class DatabaseStorage implements IStorage {
     }, {} as Record<string, any>);
 
     // Converter para array e calcular totais
-    const sites = Object.values(bySite).map(site => ({
+    const sitesData = Object.values(bySite).map(site => ({
       ...site,
       zones: Object.values(site.zones)
     }));
 
-    const totalValue = sites.reduce((sum, site) => sum + site.totalValue, 0);
-    const totalEquipment = sites.reduce((sum, site) => sum + site.equipmentCount, 0);
+    const totalValue = sitesData.reduce((sum, site) => sum + site.totalValue, 0);
+    const totalEquipment = sitesData.reduce((sum, site) => sum + site.equipmentCount, 0);
 
     return {
       summary: {
         totalValue,
         totalEquipment,
-        siteCount: sites.length
+        siteCount: sitesData.length
       },
-      sites
+      sites: sitesData
     };
   }
 
