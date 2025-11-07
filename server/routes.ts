@@ -3802,9 +3802,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.user?.companyId) {
         return res.status(400).json({ message: "Company ID not found" });
       }
+      if (!req.user?.id) {
+        return res.status(400).json({ message: "User ID not found" });
+      }
       const integration = insertAiIntegrationSchema.parse({
         ...req.body,
-        companyId: req.user.companyId
+        companyId: req.user.companyId,
+        createdBy: req.user.id
       });
       const newIntegration = await storage.createAiIntegration(integration);
       res.status(201).json(newIntegration);
