@@ -1238,8 +1238,8 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       timesPerDay: 1 // para diaria: quantas vezes por dia
     },
     serviceId: "",
-    siteId: "",
-    zoneId: "",
+    siteIds: [] as string[], // MULTI-SELEÇÃO de locais
+    zoneIds: [] as string[], // MULTI-SELEÇÃO de zonas
     checklistTemplateId: "none",
     // Campos opcionais de horário
     startTime: "",
@@ -1269,19 +1269,23 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
 
 
 
-  // Filtrar zonas baseado no site selecionado
+  // Filtrar zonas baseado nos locais selecionados
   const filteredZones = useMemo(() => {
-    if (!formData.siteId || !zones) return [];
-    return (zones as any[]).filter((zone: any) => zone.siteId === formData.siteId);
-  }, [zones, formData.siteId]);
+    if (formData.siteIds.length === 0 || !zones) return [];
+    return (zones as any[]).filter((zone: any) => formData.siteIds.includes(zone.siteId));
+  }, [zones, formData.siteIds]);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       
-      // Limpar zona quando site muda
-      if (field === 'siteId') {
-        newData.zoneId = "";
+      // Limpar zonas quando locais mudam
+      if (field === 'siteIds') {
+        // Remover zonas que não pertencem mais aos locais selecionados
+        const validZoneIds = (zones as any[])
+          ?.filter((zone: any) => value.includes(zone.siteId))
+          .map((zone: any) => zone.id) || [];
+        newData.zoneIds = newData.zoneIds.filter((zoneId: string) => validZoneIds.includes(zoneId));
       }
       
       // Reset frequency config quando muda frequência
@@ -1310,20 +1314,56 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
 
   const createActivityMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Get the site to obtain companyId
-      const site = (sites as any[])?.find(s => s.id === data.siteId);
-      const companyId = site?.companyId || "company-opus-default";
-      const submitData = {
-        ...data,
-        companyId,
-        activeClientId,
-        checklistTemplateId: data.checklistTemplateId === "none" ? null : data.checklistTemplateId,
+      // Criar uma atividade para cada combinação de local+zona
+      const activitiesToCreate = [];
+      
+      for (const siteId of data.siteIds) {
+        for (const zoneId of data.zoneIds) {
+          // Get the site to obtain companyId
+          const site = (sites as any[])?.find(s => s.id === siteId);
+          const companyId = site?.companyId || "company-opus-default";
+          
+          const submitData = {
+            name: data.name,
+            description: data.description,
+            frequency: data.frequency,
+            frequencyConfig: data.frequencyConfig,
+            serviceId: data.serviceId,
+            siteId: siteId,  // Single siteId
+            zoneId: zoneId,  // Single zoneId
+            checklistTemplateId: data.checklistTemplateId === "none" ? null : data.checklistTemplateId,
+            startDate: data.startDate,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            isActive: data.isActive,
+            companyId,
+            module: currentModule,
+          };
+          
+          activitiesToCreate.push({ data: submitData, companyId });
+        }
+      }
+      
+      // Criar todas as atividades
+      const createdActivities = [];
+      for (const { data: activityData, companyId } of activitiesToCreate) {
+        const created = await apiRequest("POST", "/api/cleaning-activities", activityData);
+        createdActivities.push({ activity: created, companyId });
+      }
+      
+      // Retornar primeira companyId para usar no onSuccess
+      return { 
+        activities: createdActivities, 
+        companyId: activitiesToCreate[0]?.companyId || "company-opus-default",
+        count: createdActivities.length
       };
-      // Retornar companyId também para usar no onSuccess
-      return { activity: await apiRequest("POST", "/api/cleaning-activities", submitData), companyId };
     },
     onSuccess: async (result: any) => {
-      toast({ title: "Atividade de limpeza criada com sucesso!" });
+      toast({ 
+        title: result.count > 1 
+          ? `${result.count} atividades de limpeza criadas com sucesso!`
+          : "Atividade de limpeza criada com sucesso!" 
+      });
       
       // Invalidar cache para mostrar a nova atividade na lista
       queryClient.invalidateQueries({ 
@@ -1373,10 +1413,10 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.serviceId || !formData.siteId || !formData.zoneId || !formData.startDate) {
+    if (!formData.name || !formData.serviceId || formData.siteIds.length === 0 || formData.zoneIds.length === 0 || !formData.startDate) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios: nome, serviço, pelo menos um local, pelo menos uma zona e data de início",
         variant: "destructive"
       });
       return;
@@ -1669,44 +1709,85 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="siteId">Local *</Label>
-                <Select value={formData.siteId} onValueChange={(value) => handleChange("siteId", value)}>
-                  <SelectTrigger data-testid="select-site">
-                    <SelectValue placeholder="Selecione o local" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(sites as any[])?.filter((s: any) => s.module === 'clean').map((site: any) => (
-                      <SelectItem key={site.id} value={site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Multi-select de Locais */}
+              <div className="md:col-span-2 space-y-3">
+                <Label>Locais * (selecione um ou mais)</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-white rounded-lg border max-h-60 overflow-y-auto">
+                  {(sites as any[])?.filter((s: any) => s.module === 'clean').map((site: any) => (
+                    <label key={site.id} className="flex items-start space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData.siteIds.includes(site.id)}
+                        onChange={(e) => {
+                          const newSiteIds = e.target.checked
+                            ? [...formData.siteIds, site.id]
+                            : formData.siteIds.filter(id => id !== site.id);
+                          handleChange("siteIds", newSiteIds);
+                        }}
+                        className="mt-0.5 rounded border-gray-300"
+                        data-testid={`checkbox-site-${site.id}`}
+                      />
+                      <span className="text-sm">{site.name}</span>
+                    </label>
+                  ))}
+                  {(!sites || (sites as any[]).filter((s: any) => s.module === 'clean').length === 0) && (
+                    <p className="col-span-full text-sm text-gray-500 text-center py-4">
+                      Nenhum local disponível
+                    </p>
+                  )}
+                </div>
+                {formData.siteIds.length > 0 && (
+                  <p className="text-xs text-green-600">
+                    ✓ {formData.siteIds.length} local(is) selecionado(s)
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="zoneId">Zona *</Label>
-                <Select 
-                  value={formData.zoneId} 
-                  onValueChange={(value) => handleChange("zoneId", value)}
-                  disabled={!formData.siteId}
-                >
-                  <SelectTrigger data-testid="select-zone">
-                    <SelectValue placeholder={!formData.siteId ? "Selecione um local primeiro" : "Selecione a zona"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredZones?.map((zone: any) => (
-                      <SelectItem key={zone.id} value={zone.id}>
-                        {zone.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Multi-select de Zonas */}
+              <div className="md:col-span-2 space-y-3">
+                <Label>Zonas * (selecione uma ou mais)</Label>
+                {formData.siteIds.length === 0 ? (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                    <p className="text-sm text-gray-500">Selecione pelo menos um local primeiro</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-white rounded-lg border max-h-60 overflow-y-auto">
+                      {filteredZones?.map((zone: any) => (
+                        <label key={zone.id} className="flex items-start space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded">
+                          <input
+                            type="checkbox"
+                            checked={formData.zoneIds.includes(zone.id)}
+                            onChange={(e) => {
+                              const newZoneIds = e.target.checked
+                                ? [...formData.zoneIds, zone.id]
+                                : formData.zoneIds.filter(id => id !== zone.id);
+                              handleChange("zoneIds", newZoneIds);
+                            }}
+                            className="mt-0.5 rounded border-gray-300"
+                            data-testid={`checkbox-zone-${zone.id}`}
+                          />
+                          <span className="text-sm">{zone.name}</span>
+                        </label>
+                      ))}
+                      {filteredZones?.length === 0 && (
+                        <p className="col-span-full text-sm text-gray-500 text-center py-4">
+                          Nenhuma zona disponível para os locais selecionados
+                        </p>
+                      )}
+                    </div>
+                    {formData.zoneIds.length > 0 && (
+                      <p className="text-xs text-green-600">
+                        ✓ {formData.zoneIds.length} zona(s) selecionada(s)
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
 
-              {formData.serviceId && formData.siteId && formData.zoneId && (
-                <div className="space-y-2">
+              {/* Checklist - mostrar quando houver serviço e zonas selecionadas */}
+              {formData.serviceId && formData.zoneIds.length > 0 && (
+                <div className="md:col-span-2 space-y-2">
                   <Label htmlFor="checklistTemplateId">Checklist (Opcional)</Label>
                   <Select 
                     value={formData.checklistTemplateId} 
@@ -1721,20 +1802,32 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                         ?.filter((ct: any) => {
                           const matchModule = ct.module === 'clean';
                           const matchService = !ct.serviceId || ct.serviceId === formData.serviceId;
-                          const matchSite = !ct.siteId || ct.siteId === formData.siteId;
-                          const matchZone = !ct.zoneId || ct.zoneId === formData.zoneId;
+                          // Checklist compatível se não tem zona específica OU se a zona está nas selecionadas
+                          const matchZone = !ct.zoneId || formData.zoneIds.includes(ct.zoneId);
+                          // Checklist compatível se não tem site específico OU se o site está nos selecionados
+                          const matchSite = !ct.siteId || formData.siteIds.includes(ct.siteId);
                           return matchModule && matchService && matchSite && matchZone;
                         })
                         .map((template: any) => (
                           <SelectItem key={template.id} value={template.id}>
                             {template.name}
+                            {template.zoneId && (
+                              <span className="text-xs text-gray-500 ml-2">
+                                (Zona específica)
+                              </span>
+                            )}
                           </SelectItem>
                         ))}
                     </SelectContent>
                   </Select>
                   {formData.checklistTemplateId && formData.checklistTemplateId !== "none" && (
                     <p className="text-xs text-green-600 mt-1">
-                      ✅ Checklist será vinculado a todas as ordens de serviço desta atividade
+                      ✅ Checklist será vinculado a TODAS as {formData.siteIds.length * formData.zoneIds.length} atividades criadas
+                    </p>
+                  )}
+                  {formData.zoneIds.length > 1 && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      💡 Dica: Checklists genéricos (sem zona específica) são recomendados ao selecionar múltiplas zonas
                     </p>
                   )}
                 </div>
