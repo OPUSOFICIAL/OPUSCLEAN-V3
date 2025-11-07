@@ -145,3 +145,8 @@
 [x] 136. Added 401 error handler - Shows "Não autenticado"
 [x] 137. Updated generic error - Now shows "Erro de conexão" for network errors
 [x] 138. Application restarted - Better UX with specific error messages
+[x] 139. UX IMPROVEMENT - Filter services to show only those with available work orders
+[x] 140. Modified loadServices() in ServiceSelectionModal to load work orders in parallel
+[x] 141. Added filtering logic to show only services that have pending/in-progress/paused work orders
+[x] 142. Operators now see only relevant services when scanning QR codes
+[x] 143. Application restarted - Service selection improved for better UX

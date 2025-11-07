@@ -65,12 +65,36 @@ export default function ServiceSelectionModal({
     setIsLoadingServices(true);
     try {
       const module = resolvedContext?.qrPoint?.module || 'clean';
-      const response = await fetch(`/api/customers/${resolvedContext.customer.id}/services?module=${module}`);
-      if (response.ok) {
-        const data = await response.json();
-        // Additional filter by module on client side to ensure consistency
-        const filteredData = data.filter((s: any) => s.module === module);
-        setServices(filteredData || []);
+      
+      // Carregar serviços e work orders em paralelo
+      const [servicesResponse, workOrdersResponse] = await Promise.all([
+        fetch(`/api/customers/${resolvedContext.customer.id}/services?module=${module}`),
+        fetch(`/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}`)
+      ]);
+      
+      if (servicesResponse.ok && workOrdersResponse.ok) {
+        const allServices = await servicesResponse.json();
+        const allWorkOrders = await workOrdersResponse.json();
+        
+        // Filtrar work orders da zona atual que estão pendentes, em execução ou pausadas
+        const availableWorkOrders = allWorkOrders.filter((wo: any) => 
+          wo.zoneId === resolvedContext.zone.id &&
+          wo.module === module &&
+          (wo.status === 'aberta' || wo.status === 'em_execucao' || wo.status === 'pausada')
+        );
+        
+        // Pegar IDs únicos de serviços que têm work orders
+        const serviceIdsWithWorkOrders = new Set(
+          availableWorkOrders.map((wo: any) => wo.serviceId).filter(Boolean)
+        );
+        
+        // Filtrar serviços: mostrar apenas os que têm work orders disponíveis
+        const servicesWithWorkOrders = allServices.filter((s: any) => 
+          s.module === module && serviceIdsWithWorkOrders.has(s.id)
+        );
+        
+        console.log('[SERVICE MODAL] Serviços com WO disponíveis:', servicesWithWorkOrders.length, 'de', allServices.length);
+        setServices(servicesWithWorkOrders || []);
       }
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
