@@ -37,7 +37,8 @@ import {
   CheckCircle2,
   Building2,
   Zap,
-  Wrench
+  Wrench,
+  Package
 } from "lucide-react";
 
 // Types for report data
@@ -136,6 +137,12 @@ export default function Reports() {
     enabled: !!activeClientId,
   });
 
+  const { data: assetReport, isLoading: isLoadingAssets, refetch: refetchAssets } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "reports", "assets", { module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/assets?module=${currentModule}`).then(res => res.json()),
+    enabled: !!activeClientId && currentModule === 'maintenance', // Only for maintenance module
+  });
+
   // Helper function to safely access nested properties
   const safeGet = (obj: any, key: string, defaultValue: any = 0) => {
     return obj && typeof obj === 'object' && key in obj ? obj[key] : defaultValue;
@@ -145,7 +152,7 @@ export default function Reports() {
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([
+      const refetchPromises = [
         refetchMetrics(),
         refetchStatus(),
         refetchSLA(),
@@ -155,7 +162,14 @@ export default function Reports() {
         refetchOperators(),
         refetchLocations(),
         refetchTemporal()
-      ]);
+      ];
+      
+      // Only refetch assets for maintenance module
+      if (currentModule === 'maintenance') {
+        refetchPromises.push(refetchAssets());
+      }
+      
+      await Promise.all(refetchPromises);
       toast({
         title: "✅ Dados atualizados!",
         description: "Todas as informações foram atualizadas com sucesso.",
@@ -239,6 +253,15 @@ export default function Reports() {
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
             reportType: `Relatório Temporal - ${moduleSuffix}`,
+            module: currentModule
+          };
+          break;
+        case 'patrimonio':
+          reportData = {
+            ...(assetReport || {}),
+            period: 'Atual',
+            generatedAt: new Date().toISOString(),
+            reportType: `Relatório de Patrimônio - ${moduleSuffix}`,
             module: currentModule
           };
           break;
@@ -349,6 +372,49 @@ export default function Reports() {
         csv += "Período,OS Concluídas,SLA (%),Eficiência (%)\n";
         data.temporal.historicalTrends.forEach((trend: any) => {
           csv += `${trend.period},${trend.workOrders},${trend.sla},${trend.efficiency}\n`;
+        });
+      }
+    }
+
+    // Relatório de Patrimônio
+    if (data.summary && data.sites) {
+      csv += "RESUMO EXECUTIVO\n";
+      csv += `Métrica,Valor\n`;
+      csv += `Valor Total do Patrimônio,R$ ${data.summary.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}\n`;
+      csv += `Total de Equipamentos,${data.summary.totalEquipment || 0}\n`;
+      csv += `Locais com Equipamentos,${data.summary.siteCount || 0}\n\n`;
+
+      if (Array.isArray(data.sites)) {
+        csv += "PATRIMÔNIO POR LOCAL\n";
+        csv += "Local,Equipamentos,Valor Total (R$)\n";
+        data.sites.forEach((site: any) => {
+          csv += `${site.siteName},${site.equipmentCount},${site.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}\n`;
+        });
+        csv += "\n";
+
+        csv += "PATRIMÔNIO DETALHADO POR ZONA\n";
+        csv += "Local,Zona,Equipamentos,Valor Total (R$)\n";
+        data.sites.forEach((site: any) => {
+          if (Array.isArray(site.zones)) {
+            site.zones.forEach((zone: any) => {
+              csv += `${site.siteName},${zone.zoneName},${zone.equipmentCount},${zone.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}\n`;
+            });
+          }
+        });
+        csv += "\n";
+
+        csv += "EQUIPAMENTOS INDIVIDUAIS\n";
+        csv += "Nome,Fabricante,Modelo,Série,Valor (R$),Status,Local,Zona\n";
+        data.sites.forEach((site: any) => {
+          if (Array.isArray(site.zones)) {
+            site.zones.forEach((zone: any) => {
+              if (Array.isArray(zone.equipment)) {
+                zone.equipment.forEach((equip: any) => {
+                  csv += `${equip.name || 'N/A'},${equip.manufacturer || 'N/A'},${equip.model || 'N/A'},${equip.serialNumber || 'N/A'},${equip.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'},${equip.status || 'N/A'},${site.siteName},${zone.zoneName}\n`;
+                });
+              }
+            });
+          }
         });
       }
     }
@@ -676,7 +742,7 @@ export default function Reports() {
   };
 
   // Report type definitions
-  const reportTypes = [
+  const baseReportTypes = [
     {
       id: "geral",
       title: "Relatório Geral",
@@ -726,6 +792,21 @@ export default function Reports() {
       gradient: "from-red-50 to-red-100"
     }
   ];
+
+  // Add patrimonio report only for maintenance module
+  const reportTypes = currentModule === 'maintenance' 
+    ? [
+        ...baseReportTypes,
+        {
+          id: "patrimonio",
+          title: "Relatório de Patrimônio",
+          description: "Valor de equipamentos por local e zona",
+          icon: Package,
+          color: "bg-emerald-500",
+          gradient: "from-emerald-50 to-emerald-100"
+        }
+      ]
+    : baseReportTypes;
 
   // KPI Cards
   const kpiCards = [
