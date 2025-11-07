@@ -836,10 +836,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // QR Code Resolution - Returns all context in one call
-  app.get("/api/qr-scan/resolve", async (req, res) => {
+  // QR Code Resolution - Returns all context in one call - REQUIRES AUTH
+  app.get("/api/qr-scan/resolve", requireAuth, async (req, res) => {
     try {
       const code = req.query.code as string;
+      const user = req.user!;
       
       if (!code) {
         return res.status(400).json({ message: "QR code parameter is required" });
@@ -849,6 +850,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!resolved) {
         return res.status(404).json({ message: "QR code not found or inactive" });
+      }
+
+      // Verificar se o usuário tem acesso ao módulo do QR code
+      const qrModule = resolved.qrPoint.module;
+      const userModules = user.modules || [];
+      
+      if (!userModules.includes(qrModule)) {
+        console.warn(`[QR ACCESS DENIED] User ${user.id} tentou acessar QR code do módulo ${qrModule} mas só tem acesso a: ${userModules.join(', ')}`);
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          message: `Você não tem acesso ao módulo ${qrModule === 'clean' ? 'OPUS Clean' : 'OPUS Manutenção'}.`
+        });
+      }
+
+      // Verificar se o usuário tem acesso ao cliente do QR code
+      // Admin pode acessar qualquer cliente
+      if (user.role !== 'admin' && user.customerId !== resolved.customer.id) {
+        console.warn(`[QR ACCESS DENIED] User ${user.id} tentou acessar QR code do cliente ${resolved.customer.id} mas pertence ao cliente ${user.customerId}`);
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          message: 'Você não tem permissão para acessar QR codes deste cliente.'
+        });
       }
 
       // Disable caching for dynamic QR resolution
@@ -865,10 +888,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // QR Code Resolution - NEW correct endpoint format
-  app.get("/api/qrs/:code/resolve", async (req, res) => {
+  // QR Code Resolution - NEW correct endpoint format - REQUIRES AUTH
+  app.get("/api/qrs/:code/resolve", requireAuth, async (req, res) => {
     try {
       const code = req.params.code;
+      const user = req.user!;
       
       if (!code) {
         return res.status(400).json({ message: "QR code parameter is required" });
@@ -878,6 +902,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!resolved) {
         return res.status(404).json({ message: "QR code not found or inactive" });
+      }
+
+      // Verificar se o usuário tem acesso ao módulo do QR code
+      const qrModule = resolved.qrPoint.module;
+      const userModules = user.modules || [];
+      
+      if (!userModules.includes(qrModule)) {
+        console.warn(`[QR ACCESS DENIED] User ${user.id} tentou acessar QR code do módulo ${qrModule} mas só tem acesso a: ${userModules.join(', ')}`);
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          message: `Você não tem acesso ao módulo ${qrModule === 'clean' ? 'OPUS Clean' : 'OPUS Manutenção'}.`
+        });
+      }
+
+      // Verificar se o usuário tem acesso ao cliente do QR code
+      // Admin pode acessar qualquer cliente
+      if (user.role !== 'admin' && user.customerId !== resolved.customer.id) {
+        console.warn(`[QR ACCESS DENIED] User ${user.id} tentou acessar QR code do cliente ${resolved.customer.id} mas pertence ao cliente ${user.customerId}`);
+        return res.status(403).json({ 
+          error: 'Acesso negado',
+          message: 'Você não tem permissão para acessar QR codes deste cliente.'
+        });
       }
 
       res.json(resolved);

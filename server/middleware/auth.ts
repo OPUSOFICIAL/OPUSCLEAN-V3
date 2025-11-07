@@ -16,6 +16,7 @@ export interface SessionUser {
   role: UserRole;
   userType?: string;
   isActive: boolean;
+  modules?: string[];
 }
 
 declare global {
@@ -97,7 +98,8 @@ async function getUserFromToken(req: Request): Promise<SessionUser | null> {
         name: user.name,
         role: effectiveRole,
         userType: user.userType || 'opus_user',
-        isActive: user.isActive
+        isActive: user.isActive,
+        modules: user.modules || []
       };
     } catch (jwtError) {
       // Fallback to old token format for backwards compatibility
@@ -130,7 +132,8 @@ async function getUserFromToken(req: Request): Promise<SessionUser | null> {
           name: user.name,
           role: effectiveRole,
           userType: user.userType || 'opus_user',
-          isActive: user.isActive
+          isActive: user.isActive,
+          modules: user.modules || []
         };
       }
       return null;

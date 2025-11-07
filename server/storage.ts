@@ -1785,6 +1785,7 @@ export class DatabaseStorage implements IStorage {
     zone: Zone;
     site: Site;
     company: Company;
+    customer: Customer;
     services: Service[];
     defaultService?: Service;
     checklist?: ChecklistTemplate;

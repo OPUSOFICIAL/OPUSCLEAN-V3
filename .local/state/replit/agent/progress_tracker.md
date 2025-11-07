@@ -127,3 +127,11 @@
 [x] 118. Restarted application - All changes applied successfully
 [x] 119. Fixed OPUS Clean goals update - Added missing PUT route for /api/customers/:customerId/dashboard-goals/:id
 [x] 120. Application restarted - Goals update now working correctly
+[x] 121. SECURITY FIX - Added authentication and permission validation to QR code routes
+[x] 122. Added requireAuth middleware to /api/qr-scan/resolve and /api/qrs/:code/resolve
+[x] 123. Added module access validation - users can only scan QR codes from their assigned modules
+[x] 124. Added customer access validation - users can only scan QR codes from their assigned customer
+[x] 125. Added 'modules' field to SessionUser interface in server/middleware/auth.ts
+[x] 126. Added 'customer' field to resolveQrCode return type in server/storage.ts
+[x] 127. Updated getUserFromToken to include user modules in SessionUser object
+[x] 128. Application restarted - QR code access control now properly enforced
