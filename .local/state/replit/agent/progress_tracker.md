@@ -135,3 +135,7 @@
 [x] 126. Added 'customer' field to resolveQrCode return type in server/storage.ts
 [x] 127. Updated getUserFromToken to include user modules in SessionUser object
 [x] 128. Application restarted - QR code access control now properly enforced
+[x] 129. HOTFIX - Fixed QR scanner authentication issue
+[x] 130. Added Authorization header with JWT token to QR resolve request in mobile-qr-scanner.tsx
+[x] 131. Scanner now properly authenticates before accessing QR code data
+[x] 132. Application restarted - QR code scanning working with security validations
