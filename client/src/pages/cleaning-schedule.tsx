@@ -1240,7 +1240,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
     serviceId: "",
     siteIds: [] as string[], // MULTI-SELEÇÃO de locais
     zoneIds: [] as string[], // MULTI-SELEÇÃO de zonas
-    checklistTemplateId: "none",
+    checklistTemplateId: "",
     // Campos opcionais de horário
     startTime: "",
     endTime: "",
@@ -1331,7 +1331,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
             serviceId: data.serviceId,
             siteId: siteId,  // Single siteId
             zoneId: zoneId,  // Single zoneId
-            checklistTemplateId: data.checklistTemplateId === "none" ? null : data.checklistTemplateId,
+            checklistTemplateId: data.checklistTemplateId, // Checklist é obrigatório
             startDate: data.startDate,
             startTime: data.startTime,
             endTime: data.endTime,
@@ -1413,10 +1413,10 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.serviceId || formData.siteIds.length === 0 || formData.zoneIds.length === 0 || !formData.startDate) {
+    if (!formData.name || !formData.serviceId || formData.siteIds.length === 0 || formData.zoneIds.length === 0 || !formData.startDate || !formData.checklistTemplateId) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios: nome, serviço, pelo menos um local, pelo menos uma zona e data de início",
+        description: "Preencha todos os campos obrigatórios: nome, serviço, pelo menos um local, pelo menos uma zona, checklist e data de início",
         variant: "destructive"
       });
       return;
@@ -1785,10 +1785,10 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                 )}
               </div>
 
-              {/* Checklist - mostrar quando houver serviço e zonas selecionadas */}
+              {/* Checklist - OBRIGATÓRIO quando houver serviço e zonas selecionadas */}
               {formData.serviceId && formData.zoneIds.length > 0 && (
                 <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="checklistTemplateId">Checklist (Opcional)</Label>
+                  <Label htmlFor="checklistTemplateId">Checklist *</Label>
                   <Select 
                     value={formData.checklistTemplateId} 
                     onValueChange={(value) => handleChange("checklistTemplateId", value)}
@@ -1797,7 +1797,6 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                       <SelectValue placeholder="Selecione um checklist" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
                       {(checklistTemplates as any[])
                         ?.filter((ct: any) => {
                           const matchModule = ct.module === 'clean';
@@ -1820,9 +1819,14 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                         ))}
                     </SelectContent>
                   </Select>
-                  {formData.checklistTemplateId && formData.checklistTemplateId !== "none" && (
+                  {formData.checklistTemplateId && (
                     <p className="text-xs text-green-600 mt-1">
                       ✅ Checklist será vinculado a TODAS as {formData.siteIds.length * formData.zoneIds.length} atividades criadas
+                    </p>
+                  )}
+                  {!formData.checklistTemplateId && (
+                    <p className="text-xs text-red-600 mt-1">
+                      ⚠️ Selecione um checklist para garantir a qualidade da execução
                     </p>
                   )}
                   {formData.zoneIds.length > 1 && (
