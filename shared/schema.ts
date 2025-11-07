@@ -159,14 +159,15 @@ export const users = pgTable("users", {
 // 6. TABELA: service_types (Tipos de Serviço)
 export const serviceTypes = pgTable("service_types", {
   id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").notNull().references(() => customers.id),
   name: varchar("name").notNull(),
   description: text("description"),
-  code: varchar("code").notNull().unique(),
+  code: varchar("code").notNull(),
   module: moduleEnum("module").notNull().default('clean'),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
-  customerId: varchar("customer_id").references(() => customers.id),
 });
 
 // 7. TABELA: service_categories (Categorias de Serviço)
@@ -694,6 +695,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 }));
 
 export const serviceTypesRelations = relations(serviceTypes, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [serviceTypes.companyId],
+    references: [companies.id],
+  }),
   customer: one(customers, {
     fields: [serviceTypes.customerId],
     references: [customers.id],
