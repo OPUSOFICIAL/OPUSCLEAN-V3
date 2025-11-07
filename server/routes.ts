@@ -625,7 +625,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const period = req.query.period as string || '30';
-      const generalReport = await storage.getGeneralReport(customerId, period);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const generalReport = await storage.getGeneralReport(customerId, period, module);
       res.json(generalReport);
     } catch (error) {
       res.status(500).json({ message: "Failed to get general report" });
@@ -637,7 +638,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const period = req.query.period as string || '30';
-      const slaAnalysis = await storage.getSLAAnalysis(customerId, period);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const slaAnalysis = await storage.getSLAAnalysis(customerId, period, module);
       res.json(slaAnalysis);
     } catch (error) {
       res.status(500).json({ message: "Failed to get SLA analysis" });
@@ -662,7 +664,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const period = req.query.period as string || '30';
-      const operatorPerformance = await storage.getOperatorPerformance(customerId, period);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const operatorPerformance = await storage.getOperatorPerformance(customerId, period, module);
       res.json(operatorPerformance);
     } catch (error) {
       res.status(500).json({ message: "Failed to get operator performance" });
@@ -674,7 +677,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const period = req.query.period as string || '30';
-      const locationAnalysis = await storage.getLocationAnalysis(customerId, period);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const locationAnalysis = await storage.getLocationAnalysis(customerId, period, module);
       res.json(locationAnalysis);
     } catch (error) {
       res.status(500).json({ message: "Failed to get location analysis" });
@@ -686,7 +690,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId } = req.params;
       const period = req.query.period as string || '30';
-      const temporalAnalysis = await storage.getTemporalAnalysis(customerId, period);
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const temporalAnalysis = await storage.getTemporalAnalysis(customerId, period, module);
       res.json(temporalAnalysis);
     } catch (error) {
       res.status(500).json({ message: "Failed to get temporal analysis" });
