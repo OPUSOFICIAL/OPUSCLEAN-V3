@@ -16,7 +16,6 @@ export function useUserModules() {
   const { data, isLoading, error } = useQuery<UserModulesResponse>({
     queryKey: ['/api/auth/user-modules'],
     enabled: !!user && isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
   // Normalizar: garantir que sempre tenha pelo menos um módulo
