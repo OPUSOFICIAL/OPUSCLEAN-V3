@@ -407,13 +407,6 @@ export default function Reports() {
           }
           csv += "\n";
         });
-        
-        // Verificação
-        if (data.summary.totalsVerified) {
-          csv += "✅ Conferido: todos os totais batem corretamente.\n";
-        } else {
-          csv += "⚠️ Aviso: divergência detectada nos totais. Verificar cálculos.\n";
-        }
       }
     }
 
@@ -604,14 +597,6 @@ export default function Reports() {
           }
           hierarchyData.push(['', '', '', '', '']); // Linha em branco entre locais
         });
-        
-        // Adicionar verificação de totais
-        hierarchyData.push(['']);
-        if (data.summary.totalsVerified) {
-          hierarchyData.push(['✅ Conferido: todos os totais batem corretamente.']);
-        } else {
-          hierarchyData.push(['⚠️ Aviso: divergência detectada nos totais. Verificar cálculos.']);
-        }
         
         const hierarchySheet = XLSX.utils.aoa_to_sheet(hierarchyData);
         XLSX.utils.book_append_sheet(workbook, hierarchySheet, "Patrimônio Completo");
@@ -844,22 +829,6 @@ export default function Reports() {
           }
           yPosition += 5; // Espaço entre locais
         });
-        
-        // Verificação de totais
-        yPosition += 10;
-        if (yPosition > 270) {
-          doc.addPage();
-          yPosition = 20;
-        }
-        
-        doc.setFontSize(10);
-        if (data.summary.totalsVerified) {
-          doc.setTextColor(0, 128, 0);
-          doc.text('✅ Conferido: todos os totais batem corretamente.', 20, yPosition);
-        } else {
-          doc.setTextColor(255, 140, 0);
-          doc.text('⚠️  Aviso: divergência detectada nos totais. Verificar cálculos.', 20, yPosition);
-        }
       }
     }
 
