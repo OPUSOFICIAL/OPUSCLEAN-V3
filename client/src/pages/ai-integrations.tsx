@@ -16,7 +16,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Bot, Plus, Edit, Trash2, TestTube, Loader2, 
   Check, X, Brain, Sparkles, Shield, Key,
-  AlertCircle, CheckCircle2, XCircle, Clock, Cloud
+  AlertCircle, CheckCircle2, XCircle, Clock, Cloud, ExternalLink, Info
 } from "lucide-react";
 import { SiOpenai, SiGoogle } from "react-icons/si";
 
@@ -48,6 +48,107 @@ const providerOptions = [
   { value: 'huggingface', label: 'HuggingFace', icon: Bot, color: 'text-yellow-600' },
   { value: 'custom', label: 'Custom Endpoint', icon: Shield, color: 'text-gray-600' }
 ];
+
+interface ProviderConfig {
+  keyLabel: string;
+  keyPlaceholder: string;
+  keyHelp: string;
+  keyLink: string;
+  requiresEndpoint: boolean;
+  endpointLabel?: string;
+  endpointPlaceholder?: string;
+  endpointHelp?: string;
+  modelLabel: string;
+  modelPlaceholder: string;
+  modelHelp?: string;
+  modelRequired: boolean;
+}
+
+const providerConfigs: Record<AiProvider, ProviderConfig> = {
+  openai: {
+    keyLabel: 'OpenAI API Key',
+    keyPlaceholder: 'sk-...',
+    keyHelp: 'Sua chave de API do OpenAI',
+    keyLink: 'https://platform.openai.com/api-keys',
+    requiresEndpoint: false,
+    modelLabel: 'Modelo',
+    modelPlaceholder: 'gpt-4o, gpt-4-turbo, gpt-3.5-turbo',
+    modelHelp: 'Deixe vazio para usar o modelo padrão (gpt-4o)',
+    modelRequired: false
+  },
+  anthropic: {
+    keyLabel: 'Anthropic API Key',
+    keyPlaceholder: 'sk-ant-api03-...',
+    keyHelp: 'Sua chave de API do Anthropic (Claude)',
+    keyLink: 'https://console.anthropic.com/',
+    requiresEndpoint: false,
+    modelLabel: 'Modelo',
+    modelPlaceholder: 'claude-3-5-sonnet-20241022, claude-3-opus',
+    modelHelp: 'Deixe vazio para usar o modelo padrão (claude-3-5-sonnet)',
+    modelRequired: false
+  },
+  google: {
+    keyLabel: 'Google AI API Key',
+    keyPlaceholder: 'AIza...',
+    keyHelp: 'Sua chave de API do Google AI Studio',
+    keyLink: 'https://aistudio.google.com/app/apikey',
+    requiresEndpoint: false,
+    modelLabel: 'Modelo',
+    modelPlaceholder: 'gemini-2.0-flash-exp, gemini-1.5-pro',
+    modelHelp: 'Deixe vazio para usar o modelo padrão (gemini-2.0-flash)',
+    modelRequired: false
+  },
+  azure_openai: {
+    keyLabel: 'Azure OpenAI API Key',
+    keyPlaceholder: 'xxx...',
+    keyHelp: 'Chave de API do seu recurso Azure OpenAI',
+    keyLink: 'https://portal.azure.com',
+    requiresEndpoint: true,
+    endpointLabel: 'Endpoint Azure',
+    endpointPlaceholder: 'https://seu-recurso.openai.azure.com',
+    endpointHelp: 'URL do endpoint do seu recurso Azure OpenAI',
+    modelLabel: 'Nome do Deployment',
+    modelPlaceholder: 'gpt-4-deployment',
+    modelHelp: 'Nome do deployment configurado no Azure (não o nome do modelo)',
+    modelRequired: true
+  },
+  cohere: {
+    keyLabel: 'Cohere API Key',
+    keyPlaceholder: 'xxx...',
+    keyHelp: 'Sua chave de API do Cohere',
+    keyLink: 'https://dashboard.cohere.com/api-keys',
+    requiresEndpoint: false,
+    modelLabel: 'Modelo',
+    modelPlaceholder: 'command-r-plus, command-r',
+    modelHelp: 'Deixe vazio para usar o modelo padrão (command-r-plus)',
+    modelRequired: false
+  },
+  huggingface: {
+    keyLabel: 'HuggingFace API Token',
+    keyPlaceholder: 'hf_...',
+    keyHelp: 'Seu token de acesso do HuggingFace',
+    keyLink: 'https://huggingface.co/settings/tokens',
+    requiresEndpoint: false,
+    modelLabel: 'Modelo',
+    modelPlaceholder: 'meta-llama/Llama-3.3-70B-Instruct',
+    modelHelp: 'Nome completo do modelo no formato autor/modelo',
+    modelRequired: false
+  },
+  custom: {
+    keyLabel: 'API Key',
+    keyPlaceholder: 'xxx...',
+    keyHelp: 'Chave de autenticação da API personalizada',
+    keyLink: '',
+    requiresEndpoint: true,
+    endpointLabel: 'Endpoint URL',
+    endpointPlaceholder: 'https://api.exemplo.com/v1',
+    endpointHelp: 'URL base da sua API personalizada',
+    modelLabel: 'Modelo',
+    modelPlaceholder: 'modelo-personalizado',
+    modelHelp: 'Identificador do modelo na sua API',
+    modelRequired: true
+  }
+};
 
 export default function AiIntegrationsPage() {
   const { user } = getAuthState();
@@ -468,49 +569,80 @@ export default function AiIntegrationsPage() {
               </div>
             </div>
 
+            {/* API Key Field - Dinâmico baseado no provedor */}
             <div className="space-y-2">
               <Label htmlFor="apiKey" className="flex items-center gap-2">
                 <Key className="h-4 w-4" />
-                API Key {editingIntegration ? '(deixe em branco para manter)' : '*'}
+                {providerConfigs[formData.provider].keyLabel} {editingIntegration ? '(deixe em branco para manter)' : '*'}
               </Label>
               <Input
                 id="apiKey"
                 type="password"
-                placeholder="sk-..."
+                placeholder={providerConfigs[formData.provider].keyPlaceholder}
                 value={formData.apiKey}
                 onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
                 required={!editingIntegration}
                 data-testid="input-apikey"
               />
-              <p className="text-xs text-gray-500">
-                A chave API será criptografada e armazenada com segurança
-              </p>
+              <div className="flex items-start gap-2 text-xs text-gray-600">
+                <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p>{providerConfigs[formData.provider].keyHelp}</p>
+                  {providerConfigs[formData.provider].keyLink && (
+                    <a 
+                      href={providerConfigs[formData.provider].keyLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline inline-flex items-center gap-1 mt-1"
+                    >
+                      Obter chave <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="model">Modelo (opcional)</Label>
-              <Input
-                id="model"
-                placeholder="Ex: gpt-4, claude-3-opus, gemini-pro"
-                value={formData.model}
-                onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
-                data-testid="input-model"
-              />
-            </div>
-
-            {formData.provider === 'custom' && (
+            {/* Endpoint Field - Condicional (Azure e Custom) */}
+            {providerConfigs[formData.provider].requiresEndpoint && (
               <div className="space-y-2">
-                <Label htmlFor="endpoint">Endpoint Personalizado *</Label>
+                <Label htmlFor="endpoint">{providerConfigs[formData.provider].endpointLabel} *</Label>
                 <Input
                   id="endpoint"
-                  placeholder="https://api.exemplo.com/v1"
+                  placeholder={providerConfigs[formData.provider].endpointPlaceholder}
                   value={formData.endpoint}
                   onChange={(e) => setFormData(prev => ({ ...prev, endpoint: e.target.value }))}
                   required
                   data-testid="input-endpoint"
                 />
+                {providerConfigs[formData.provider].endpointHelp && (
+                  <div className="flex items-start gap-2 text-xs text-gray-600">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <p>{providerConfigs[formData.provider].endpointHelp}</p>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Model Field - Dinâmico baseado no provedor */}
+            <div className="space-y-2">
+              <Label htmlFor="model">
+                {providerConfigs[formData.provider].modelLabel} {providerConfigs[formData.provider].modelRequired ? '*' : '(opcional)'}
+              </Label>
+              <Input
+                id="model"
+                placeholder={providerConfigs[formData.provider].modelPlaceholder}
+                value={formData.model}
+                onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
+                required={providerConfigs[formData.provider].modelRequired}
+                data-testid="input-model"
+              />
+              {providerConfigs[formData.provider].modelHelp && (
+                <div className="flex items-start gap-2 text-xs text-gray-600">
+                  <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <p>{providerConfigs[formData.provider].modelHelp}</p>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="space-y-0.5">
