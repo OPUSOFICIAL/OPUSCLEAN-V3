@@ -31,6 +31,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown } from "lucide-react";
 
 export default function CleaningSchedule() {
   const { activeClientId } = useClient();
@@ -1214,6 +1217,95 @@ export default function CleaningSchedule() {
   );
 }
 
+// Componente MultiSelect reutilizável
+function MultiSelect({
+  label,
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  required,
+  "data-testid": dataTestId
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string[];
+  onChange: (vals: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  "data-testid"?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  
+  const toggleOption = (optionValue: string) => {
+    if (value.includes(optionValue)) {
+      onChange(value.filter(v => v !== optionValue));
+    } else {
+      onChange([...value, optionValue]);
+    }
+  };
+
+  const selectedLabels = options
+    .filter(opt => value.includes(opt.value))
+    .map(opt => opt.label)
+    .join(", ");
+
+  return (
+    <div className="space-y-2">
+      <Label>{label} {required && "*"}</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+            disabled={disabled}
+            data-testid={dataTestId}
+          >
+            <span className="truncate">
+              {selectedLabels || placeholder || "Selecione..."}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <div className="max-h-64 overflow-auto p-2">
+            {options.length === 0 ? (
+              <div className="p-2 text-sm text-muted-foreground">
+                {placeholder || "Sem opções"}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {options.map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                    onClick={() => toggleOption(option.value)}
+                  >
+                    <Checkbox
+                      checked={value.includes(option.value)}
+                      onCheckedChange={() => toggleOption(option.value)}
+                    />
+                    <label className="flex-1 cursor-pointer text-sm">
+                      {option.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <div className="text-xs text-slate-500">
+        {value?.length ? `${value.length} selecionado(s)` : "Nenhum selecionado"}
+      </div>
+    </div>
+  );
+}
+
 // Componente de Modal para Criação de Atividade de Limpeza
 interface CreateCleaningActivityModalProps {
   activeClientId: string;
@@ -1686,8 +1778,8 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
           </div>
 
           {/* Local e Configurações */}
-          <div className="space-y-4 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h4 className="font-semibold text-green-900 flex items-center gap-2">
+          <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 flex items-center gap-2">
               <MapPin className="w-4 h-4" />
               Local e Configurações
             </h4>
@@ -1709,167 +1801,71 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
                 </Select>
               </div>
 
-              {/* Multi-select de Locais */}
-              <div className="md:col-span-2 space-y-3">
-                <Label className="text-sm font-medium text-gray-700">Locais * (selecione um ou mais)</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200/60 shadow-sm max-h-60 overflow-y-auto">
-                  {(sites as any[])?.filter((s: any) => s.module === 'clean').map((site: any) => (
-                    <label 
-                      key={site.id} 
-                      className={`
-                        relative flex items-center gap-3 p-3 rounded-lg cursor-pointer
-                        transition-all duration-200 ease-in-out
-                        ${formData.siteIds.includes(site.id)
-                          ? 'bg-blue-50 border-2 border-blue-400 shadow-md'
-                          : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
-                        }
-                      `}
-                    >
-                      <div className="relative flex items-center justify-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.siteIds.includes(site.id)}
-                          onChange={(e) => {
-                            const newSiteIds = e.target.checked
-                              ? [...formData.siteIds, site.id]
-                              : formData.siteIds.filter(id => id !== site.id);
-                            handleChange("siteIds", newSiteIds);
-                          }}
-                          className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer transition-all"
-                          data-testid={`checkbox-site-${site.id}`}
-                        />
-                      </div>
-                      <span className={`text-sm font-medium transition-colors ${formData.siteIds.includes(site.id) ? 'text-blue-900' : 'text-gray-700'}`}>
-                        {site.name}
-                      </span>
-                    </label>
-                  ))}
-                  {(!sites || (sites as any[]).filter((s: any) => s.module === 'clean').length === 0) && (
-                    <div className="col-span-full text-center py-8">
-                      <p className="text-sm text-gray-500">Nenhum local disponível</p>
-                    </div>
-                  )}
-                </div>
-                {formData.siteIds.length > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    <p className="text-xs font-medium text-blue-700">
-                      {formData.siteIds.length} local(is) selecionado(s)
-                    </p>
-                  </div>
-                )}
+              <div className="space-y-2">
+                <MultiSelect
+                  label="Local"
+                  options={(sites as any[])?.filter((s: any) => s.module === 'clean').map((site: any) => ({
+                    value: site.id,
+                    label: site.name
+                  })) || []}
+                  value={formData.siteIds}
+                  onChange={(value) => handleChange("siteIds", value)}
+                  placeholder="Selecione um ou mais locais"
+                  required
+                  data-testid="multiselect-sites"
+                />
               </div>
 
-              {/* Multi-select de Zonas */}
-              <div className="md:col-span-2 space-y-3">
-                <Label className="text-sm font-medium text-gray-700">Zonas * (selecione uma ou mais)</Label>
-                {formData.siteIds.length === 0 ? (
-                  <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300 text-center">
-                    <p className="text-sm text-gray-500 font-medium">Selecione pelo menos um local primeiro</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200/60 shadow-sm max-h-60 overflow-y-auto">
-                      {filteredZones?.map((zone: any) => (
-                        <label 
-                          key={zone.id} 
-                          className={`
-                            relative flex items-center gap-3 p-3 rounded-lg cursor-pointer
-                            transition-all duration-200 ease-in-out
-                            ${formData.zoneIds.includes(zone.id)
-                              ? 'bg-blue-50 border-2 border-blue-400 shadow-md'
-                              : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
-                            }
-                          `}
-                        >
-                          <div className="relative flex items-center justify-center">
-                            <input
-                              type="checkbox"
-                              checked={formData.zoneIds.includes(zone.id)}
-                              onChange={(e) => {
-                                const newZoneIds = e.target.checked
-                                  ? [...formData.zoneIds, zone.id]
-                                  : formData.zoneIds.filter(id => id !== zone.id);
-                                handleChange("zoneIds", newZoneIds);
-                              }}
-                              className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer transition-all"
-                              data-testid={`checkbox-zone-${zone.id}`}
-                            />
-                          </div>
-                          <span className={`text-sm font-medium transition-colors ${formData.zoneIds.includes(zone.id) ? 'text-blue-900' : 'text-gray-700'}`}>
-                            {zone.name}
-                          </span>
-                        </label>
-                      ))}
-                      {filteredZones?.length === 0 && (
-                        <div className="col-span-full text-center py-8">
-                          <p className="text-sm text-gray-500">Nenhuma zona disponível para os locais selecionados</p>
-                        </div>
-                      )}
-                    </div>
-                    {formData.zoneIds.length > 0 && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        <p className="text-xs font-medium text-blue-700">
-                          {formData.zoneIds.length} zona(s) selecionada(s)
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
+              <div className="md:col-span-2 space-y-2">
+                <MultiSelect
+                  label="Zona"
+                  options={filteredZones?.map((zone: any) => ({
+                    value: zone.id,
+                    label: zone.name
+                  })) || []}
+                  value={formData.zoneIds}
+                  onChange={(value) => handleChange("zoneIds", value)}
+                  placeholder={formData.siteIds.length > 0 ? "Selecione uma ou mais zonas" : "Selecione ao menos um local"}
+                  disabled={!formData.siteIds || formData.siteIds.length === 0}
+                  required
+                  data-testid="multiselect-zones"
+                />
               </div>
 
               {/* Checklist - OBRIGATÓRIO quando houver serviço e zonas selecionadas */}
-              {formData.serviceId && formData.zoneIds.length > 0 && (
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="checklistTemplateId">Checklist *</Label>
-                  <Select 
-                    value={formData.checklistTemplateId} 
-                    onValueChange={(value) => handleChange("checklistTemplateId", value)}
-                  >
-                    <SelectTrigger data-testid="select-checklist">
-                      <SelectValue placeholder="Selecione um checklist" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(checklistTemplates as any[])
-                        ?.filter((ct: any) => {
-                          const matchModule = ct.module === 'clean';
-                          const matchService = !ct.serviceId || ct.serviceId === formData.serviceId;
-                          // Checklist compatível se não tem zona específica OU se a zona está nas selecionadas
-                          const matchZone = !ct.zoneId || formData.zoneIds.includes(ct.zoneId);
-                          // Checklist compatível se não tem site específico OU se o site está nos selecionados
-                          const matchSite = !ct.siteId || formData.siteIds.includes(ct.siteId);
-                          return matchModule && matchService && matchSite && matchZone;
-                        })
-                        .map((template: any) => (
-                          <SelectItem key={template.id} value={template.id}>
-                            {template.name}
-                            {template.zoneId && (
-                              <span className="text-xs text-gray-500 ml-2">
-                                (Zona específica)
-                              </span>
-                            )}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  {formData.checklistTemplateId && (
-                    <p className="text-xs text-green-600 mt-1">
-                      ✅ Checklist será vinculado a TODAS as {formData.siteIds.length * formData.zoneIds.length} atividades criadas
-                    </p>
-                  )}
-                  {!formData.checklistTemplateId && (
-                    <p className="text-xs text-red-600 mt-1">
-                      ⚠️ Selecione um checklist para garantir a qualidade da execução
-                    </p>
-                  )}
-                  {formData.zoneIds.length > 1 && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      💡 Dica: Checklists genéricos (sem zona específica) são recomendados ao selecionar múltiplas zonas
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="md:col-span-2 space-y-2">
+                <Label htmlFor="checklistTemplateId">Checklist (obrigatório)</Label>
+                <Select 
+                  value={formData.checklistTemplateId} 
+                  onValueChange={(value) => handleChange("checklistTemplateId", value)}
+                  disabled={!formData.serviceId || formData.zoneIds.length === 0}
+                >
+                  <SelectTrigger data-testid="select-checklist">
+                    <SelectValue 
+                      placeholder={
+                        !formData.serviceId || formData.zoneIds.length === 0
+                          ? "Selecione serviço e zonas primeiro"
+                          : "Selecione um checklist"
+                      } 
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(checklistTemplates as any[])
+                      ?.filter((ct: any) => {
+                        const matchModule = ct.module === 'clean';
+                        const matchService = !ct.serviceId || ct.serviceId === formData.serviceId;
+                        const matchZone = !ct.zoneId || formData.zoneIds.includes(ct.zoneId);
+                        const matchSite = !ct.siteId || formData.siteIds.includes(ct.siteId);
+                        return matchModule && matchService && matchSite && matchZone;
+                      })
+                      .map((template: any) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="isActive">Status</Label>
@@ -1890,7 +1886,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <Button 
               type="button" 
               variant="outline" 
@@ -1902,10 +1898,19 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
             <Button 
               type="submit" 
               disabled={createActivityMutation.isPending}
-              data-testid="button-create"
+              data-testid="button-submit"
             >
-              <Save className="w-4 h-4 mr-2" />
-              {createActivityMutation.isPending ? "Criando..." : "Criar Atividade"}
+              {createActivityMutation.isPending ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Criar Atividade
+                </>
+              )}
             </Button>
           </div>
         </form>
