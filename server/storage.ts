@@ -4873,6 +4873,19 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Internal method for getting default AI integration with full API key (for actual API calls)
+  private async getDefaultAiIntegrationFull(companyId: string): Promise<AiIntegration | undefined> {
+    const [integration] = await db.select()
+      .from(aiIntegrations)
+      .where(and(
+        eq(aiIntegrations.companyId, companyId),
+        eq(aiIntegrations.isDefault, true),
+        eq(aiIntegrations.status, 'ativa')
+      ));
+    
+    return integration || undefined;
+  }
+
   async createAiIntegration(integration: InsertAiIntegration): Promise<AiIntegration> {
     const id = nanoid();
     const encryptedApiKey = encryptApiKey(integration.apiKey);
@@ -5130,8 +5143,8 @@ export class DatabaseStorage implements IStorage {
       error: null
     });
 
-    // Get AI integration
-    const aiIntegration = await this.getDefaultAiIntegration(companyId);
+    // Get AI integration (with full API key for calling the API)
+    const aiIntegration = await this.getDefaultAiIntegrationFull(companyId);
     
     if (!aiIntegration || aiIntegration.status !== 'ativa') {
       const errorMsg = await this.createChatMessage({
