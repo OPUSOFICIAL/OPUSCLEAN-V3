@@ -154,3 +154,11 @@
 [x] 145. Created ScrollToTop component using wouter's useLocation hook
 [x] 146. Added ScrollToTop to App.tsx to enable scroll behavior on all route changes
 [x] 147. Application restarted - Scroll to top working on all page navigations
+[x] 148. MODULE & CUSTOMER SEPARATION - Implemented service types separation by module and customer
+[x] 149. Updated schema: added companyId and made customerId required in serviceTypes table
+[x] 150. Updated POST route to automatically include companyId from authenticated user
+[x] 151. Added company_id column to existing service_types and populated from customers
+[x] 152. Executed npm run db:push --force to apply schema changes successfully
+[x] 153. Verified all 14 existing service types have companyId and customerId populated
+[x] 154. Confirmed filtering works correctly - 6 clean types and 8 maintenance types across customers
+[x] 155. Application restarted - Service types now properly isolated by module and customer
