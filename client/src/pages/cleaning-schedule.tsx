@@ -1711,75 +1711,109 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
 
               {/* Multi-select de Locais */}
               <div className="md:col-span-2 space-y-3">
-                <Label>Locais * (selecione um ou mais)</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-white rounded-lg border max-h-60 overflow-y-auto">
+                <Label className="text-sm font-medium text-gray-700">Locais * (selecione um ou mais)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200/60 shadow-sm max-h-60 overflow-y-auto">
                   {(sites as any[])?.filter((s: any) => s.module === 'clean').map((site: any) => (
-                    <label key={site.id} className="flex items-start space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded">
-                      <input
-                        type="checkbox"
-                        checked={formData.siteIds.includes(site.id)}
-                        onChange={(e) => {
-                          const newSiteIds = e.target.checked
-                            ? [...formData.siteIds, site.id]
-                            : formData.siteIds.filter(id => id !== site.id);
-                          handleChange("siteIds", newSiteIds);
-                        }}
-                        className="mt-0.5 rounded border-gray-300"
-                        data-testid={`checkbox-site-${site.id}`}
-                      />
-                      <span className="text-sm">{site.name}</span>
+                    <label 
+                      key={site.id} 
+                      className={`
+                        relative flex items-center gap-3 p-3 rounded-lg cursor-pointer
+                        transition-all duration-200 ease-in-out
+                        ${formData.siteIds.includes(site.id)
+                          ? 'bg-blue-50 border-2 border-blue-400 shadow-md'
+                          : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                        }
+                      `}
+                    >
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.siteIds.includes(site.id)}
+                          onChange={(e) => {
+                            const newSiteIds = e.target.checked
+                              ? [...formData.siteIds, site.id]
+                              : formData.siteIds.filter(id => id !== site.id);
+                            handleChange("siteIds", newSiteIds);
+                          }}
+                          className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer transition-all"
+                          data-testid={`checkbox-site-${site.id}`}
+                        />
+                      </div>
+                      <span className={`text-sm font-medium transition-colors ${formData.siteIds.includes(site.id) ? 'text-blue-900' : 'text-gray-700'}`}>
+                        {site.name}
+                      </span>
                     </label>
                   ))}
                   {(!sites || (sites as any[]).filter((s: any) => s.module === 'clean').length === 0) && (
-                    <p className="col-span-full text-sm text-gray-500 text-center py-4">
-                      Nenhum local disponível
-                    </p>
+                    <div className="col-span-full text-center py-8">
+                      <p className="text-sm text-gray-500">Nenhum local disponível</p>
+                    </div>
                   )}
                 </div>
                 {formData.siteIds.length > 0 && (
-                  <p className="text-xs text-green-600">
-                    ✓ {formData.siteIds.length} local(is) selecionado(s)
-                  </p>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <p className="text-xs font-medium text-blue-700">
+                      {formData.siteIds.length} local(is) selecionado(s)
+                    </p>
+                  </div>
                 )}
               </div>
 
               {/* Multi-select de Zonas */}
               <div className="md:col-span-2 space-y-3">
-                <Label>Zonas * (selecione uma ou mais)</Label>
+                <Label className="text-sm font-medium text-gray-700">Zonas * (selecione uma ou mais)</Label>
                 {formData.siteIds.length === 0 ? (
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                    <p className="text-sm text-gray-500">Selecione pelo menos um local primeiro</p>
+                  <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300 text-center">
+                    <p className="text-sm text-gray-500 font-medium">Selecione pelo menos um local primeiro</p>
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-white rounded-lg border max-h-60 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200/60 shadow-sm max-h-60 overflow-y-auto">
                       {filteredZones?.map((zone: any) => (
-                        <label key={zone.id} className="flex items-start space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded">
-                          <input
-                            type="checkbox"
-                            checked={formData.zoneIds.includes(zone.id)}
-                            onChange={(e) => {
-                              const newZoneIds = e.target.checked
-                                ? [...formData.zoneIds, zone.id]
-                                : formData.zoneIds.filter(id => id !== zone.id);
-                              handleChange("zoneIds", newZoneIds);
-                            }}
-                            className="mt-0.5 rounded border-gray-300"
-                            data-testid={`checkbox-zone-${zone.id}`}
-                          />
-                          <span className="text-sm">{zone.name}</span>
+                        <label 
+                          key={zone.id} 
+                          className={`
+                            relative flex items-center gap-3 p-3 rounded-lg cursor-pointer
+                            transition-all duration-200 ease-in-out
+                            ${formData.zoneIds.includes(zone.id)
+                              ? 'bg-blue-50 border-2 border-blue-400 shadow-md'
+                              : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                            }
+                          `}
+                        >
+                          <div className="relative flex items-center justify-center">
+                            <input
+                              type="checkbox"
+                              checked={formData.zoneIds.includes(zone.id)}
+                              onChange={(e) => {
+                                const newZoneIds = e.target.checked
+                                  ? [...formData.zoneIds, zone.id]
+                                  : formData.zoneIds.filter(id => id !== zone.id);
+                                handleChange("zoneIds", newZoneIds);
+                              }}
+                              className="w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer transition-all"
+                              data-testid={`checkbox-zone-${zone.id}`}
+                            />
+                          </div>
+                          <span className={`text-sm font-medium transition-colors ${formData.zoneIds.includes(zone.id) ? 'text-blue-900' : 'text-gray-700'}`}>
+                            {zone.name}
+                          </span>
                         </label>
                       ))}
                       {filteredZones?.length === 0 && (
-                        <p className="col-span-full text-sm text-gray-500 text-center py-4">
-                          Nenhuma zona disponível para os locais selecionados
-                        </p>
+                        <div className="col-span-full text-center py-8">
+                          <p className="text-sm text-gray-500">Nenhuma zona disponível para os locais selecionados</p>
+                        </div>
                       )}
                     </div>
                     {formData.zoneIds.length > 0 && (
-                      <p className="text-xs text-green-600">
-                        ✓ {formData.zoneIds.length} zona(s) selecionada(s)
-                      </p>
+                      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <p className="text-xs font-medium text-blue-700">
+                          {formData.zoneIds.length} zona(s) selecionada(s)
+                        </p>
+                      </div>
                     )}
                   </>
                 )}
