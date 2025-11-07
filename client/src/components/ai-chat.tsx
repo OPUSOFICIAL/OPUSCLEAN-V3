@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useModuleContext } from "@/contexts/ModuleContext";
+import { useModule } from "@/contexts/ModuleContext";
 import type { ChatMessage } from "@shared/schema";
 
 export function AIChat() {
   const { toast } = useToast();
-  const { activeModule } = useModuleContext();
+  const { activeModule } = useModule();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState("");
