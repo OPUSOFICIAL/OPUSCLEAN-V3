@@ -376,46 +376,44 @@ export default function Reports() {
       }
     }
 
-    // Relatório de Patrimônio
+    // Relatório de Patrimônio - Formato Hierárquico
     if (data.summary && data.sites) {
-      csv += "RESUMO EXECUTIVO\n";
-      csv += `Métrica,Valor\n`;
-      csv += `Valor Total do Patrimônio,R$ ${data.summary.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}\n`;
-      csv += `Total de Equipamentos,${data.summary.totalEquipment || 0}\n`;
-      csv += `Locais com Equipamentos,${data.summary.siteCount || 0}\n\n`;
+      csv += `Cliente: ${data.customer?.name || 'Não identificado'}\n`;
+      csv += `Total Geral: R$ ${data.summary.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}\n`;
+      csv += `${data.summary.totalEquipment || 0} equipamentos | ${data.summary.siteCount || 0} locais | ${data.summary.zoneCount || 0} zonas\n\n`;
 
+      // Hierarquia: Locais → Zonas → Equipamentos
       if (Array.isArray(data.sites)) {
-        csv += "PATRIMÔNIO POR LOCAL\n";
-        csv += "Local,Equipamentos,Valor Total (R$)\n";
-        data.sites.forEach((site: any) => {
-          csv += `${site.siteName},${site.equipmentCount},${site.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}\n`;
-        });
-        csv += "\n";
-
-        csv += "PATRIMÔNIO DETALHADO POR ZONA\n";
-        csv += "Local,Zona,Equipamentos,Valor Total (R$)\n";
-        data.sites.forEach((site: any) => {
+        csv += "PATRIMÔNIO HIERÁRQUICO\n\n";
+        
+        data.sites.forEach((site: any, siteIndex: number) => {
+          const siteTotalFormatted = `R$ ${site.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+          csv += `${siteIndex + 1}. Local: ${site.siteName} — Total: ${siteTotalFormatted}\n`;
+          
           if (Array.isArray(site.zones)) {
             site.zones.forEach((zone: any) => {
-              csv += `${site.siteName},${zone.zoneName},${zone.equipmentCount},${zone.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}\n`;
-            });
-          }
-        });
-        csv += "\n";
-
-        csv += "EQUIPAMENTOS INDIVIDUAIS\n";
-        csv += "Nome,Fabricante,Modelo,Série,Valor (R$),Status,Local,Zona\n";
-        data.sites.forEach((site: any) => {
-          if (Array.isArray(site.zones)) {
-            site.zones.forEach((zone: any) => {
+              const zoneTotalFormatted = `R$ ${zone.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+              csv += `  • Zona: ${zone.zoneName} — Total: ${zoneTotalFormatted}\n`;
+              
               if (Array.isArray(zone.equipment)) {
                 zone.equipment.forEach((equip: any) => {
-                  csv += `${equip.name || 'N/A'},${equip.manufacturer || 'N/A'},${equip.model || 'N/A'},${equip.serialNumber || 'N/A'},${equip.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'},${equip.status || 'N/A'},${site.siteName},${zone.zoneName}\n`;
+                  const unitValueFormatted = `R$ ${equip.unitValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+                  const totalValueFormatted = `R$ ${equip.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+                  const quantity = equip.quantity || '—';
+                  csv += `    ◦ ${equip.name} — Valor Unit.: ${unitValueFormatted} — Qtde: ${quantity} — Total: ${totalValueFormatted}\n`;
                 });
               }
             });
           }
+          csv += "\n";
         });
+        
+        // Verificação
+        if (data.summary.totalsVerified) {
+          csv += "✅ Conferido: todos os totais batem corretamente.\n";
+        } else {
+          csv += "⚠️ Aviso: divergência detectada nos totais. Verificar cálculos.\n";
+        }
       }
     }
 
@@ -563,82 +561,60 @@ export default function Reports() {
       const summarySheet = XLSX.utils.aoa_to_sheet([['Relatório por Locais']]);
       XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
     }
-    // Relatório de Patrimônio
+    // Relatório de Patrimônio - Formato Hierárquico
     else if (data.summary && data.sites) {
       const patrimonioSummaryData: any[][] = [
         [`GRUPO OPUS - RELATÓRIO DE ${moduleTitle}`],
         [''],
-        ['Tipo', data.reportType],
-        ['Período', data.period],
-        ['Gerado em', new Date(data.generatedAt).toLocaleString('pt-BR')],
+        ['Cliente', data.customer?.name || 'Não identificado'],
+        ['Total Geral', `R$ ${data.summary.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`],
         [''],
-        ['RESUMO EXECUTIVO'],
-        [''],
-        ['Métrica', 'Valor'],
-        ['Valor Total do Patrimônio', `R$ ${data.summary.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`],
-        ['Total de Equipamentos', data.summary.totalEquipment || 0],
-        ['Locais com Equipamentos', data.summary.siteCount || 0]
+        ['RESUMO'],
+        [`${data.summary.totalEquipment || 0} equipamentos | ${data.summary.siteCount || 0} locais | ${data.summary.zoneCount || 0} zonas`]
       ];
       const summarySheet = XLSX.utils.aoa_to_sheet(patrimonioSummaryData);
       XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
 
       if (Array.isArray(data.sites)) {
-        // Sheet de patrimônio por local
-        const sitePatrimonioData: any[][] = [
-          ['PATRIMÔNIO POR LOCAL'],
+        // Sheet hierárquico completo
+        const hierarchyData: any[][] = [
+          ['PATRIMÔNIO HIERÁRQUICO'],
           [''],
-          ['Local', 'Equipamentos', 'Valor Total (R$)']
+          ['Hierarquia', 'Nome', 'Valor Unitário', 'Quantidade', 'Valor Total']
         ];
-        data.sites.forEach((site: any) => {
-          sitePatrimonioData.push([site.siteName, site.equipmentCount, site.totalValue || 0]);
-        });
-        const sitesSheet = XLSX.utils.aoa_to_sheet(sitePatrimonioData);
-        XLSX.utils.book_append_sheet(workbook, sitesSheet, "Patrimônio por Local");
-
-        // Sheet de patrimônio detalhado por zona
-        const zonePatrimonioData: any[][] = [
-          ['PATRIMÔNIO DETALHADO POR ZONA'],
-          [''],
-          ['Local', 'Zona', 'Equipamentos', 'Valor Total (R$)']
-        ];
-        data.sites.forEach((site: any) => {
+        
+        data.sites.forEach((site: any, siteIndex: number) => {
+          const siteTotalFormatted = `R$ ${site.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+          hierarchyData.push([`${siteIndex + 1}. Local`, site.siteName, '', '', siteTotalFormatted]);
+          
           if (Array.isArray(site.zones)) {
             site.zones.forEach((zone: any) => {
-              zonePatrimonioData.push([site.siteName, zone.zoneName, zone.equipmentCount, zone.totalValue || 0]);
-            });
-          }
-        });
-        const zonesSheet = XLSX.utils.aoa_to_sheet(zonePatrimonioData);
-        XLSX.utils.book_append_sheet(workbook, zonesSheet, "Patrimônio por Zona");
-
-        // Sheet de equipamentos individuais
-        const equipmentData: any[][] = [
-          ['EQUIPAMENTOS INDIVIDUAIS'],
-          [''],
-          ['Nome', 'Fabricante', 'Modelo', 'Série', 'Valor (R$)', 'Status', 'Local', 'Zona']
-        ];
-        data.sites.forEach((site: any) => {
-          if (Array.isArray(site.zones)) {
-            site.zones.forEach((zone: any) => {
+              const zoneTotalFormatted = `R$ ${zone.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+              hierarchyData.push(['  • Zona', zone.zoneName, '', '', zoneTotalFormatted]);
+              
               if (Array.isArray(zone.equipment)) {
                 zone.equipment.forEach((equip: any) => {
-                  equipmentData.push([
-                    equip.name || 'N/A',
-                    equip.manufacturer || 'N/A',
-                    equip.model || 'N/A',
-                    equip.serialNumber || 'N/A',
-                    equip.value || 0,
-                    equip.status || 'N/A',
-                    site.siteName,
-                    zone.zoneName
-                  ]);
+                  const unitValueFormatted = `R$ ${equip.unitValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+                  const totalValueFormatted = `R$ ${equip.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+                  const quantity = equip.quantity || '—';
+                  hierarchyData.push(['    ◦ Equipamento', equip.name, unitValueFormatted, quantity, totalValueFormatted]);
                 });
               }
             });
           }
+          hierarchyData.push(['', '', '', '', '']); // Linha em branco entre locais
         });
-        const equipmentSheet = XLSX.utils.aoa_to_sheet(equipmentData);
-        XLSX.utils.book_append_sheet(workbook, equipmentSheet, "Equipamentos");
+        
+        // Adicionar verificação de totais
+        hierarchyData.push(['']);
+        if (data.summary.totalsVerified) {
+          hierarchyData.push(['✅ Conferido: todos os totais batem corretamente.']);
+        } else {
+          hierarchyData.push(['⚠️ Aviso: divergência detectada nos totais. Verificar cálculos.']);
+        }
+        
+        const hierarchySheet = XLSX.utils.aoa_to_sheet(hierarchyData);
+        XLSX.utils.book_append_sheet(workbook, hierarchySheet, "Patrimônio Completo");
       }
     }
     // Dados gerais (para relatórios que ainda usam o formato antigo)
