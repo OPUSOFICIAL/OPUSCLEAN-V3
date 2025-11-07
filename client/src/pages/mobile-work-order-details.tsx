@@ -72,6 +72,18 @@ export default function MobileWorkOrderDetails() {
       const user = authData.user;
       const token = authData.token;
 
+      if (!token) {
+        console.error('Token não encontrado no localStorage');
+        toast({
+          title: "Erro",
+          description: "Token de autenticação não encontrado. Faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Tentando retomar OS com token:', token ? 'Token presente' : 'Token ausente');
+
       // Retomar execução - mudar status para em_execucao
       const response = await fetch(`/api/work-orders/${workOrder.id}`, {
         method: 'PATCH',
@@ -85,7 +97,9 @@ export default function MobileWorkOrderDetails() {
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao retomar ordem de serviço');
+        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+        console.error('Erro na resposta:', response.status, errorData);
+        throw new Error(errorData.message || `Erro ${response.status}: ${response.statusText}`);
       }
 
       // Criar comentário de retomada
