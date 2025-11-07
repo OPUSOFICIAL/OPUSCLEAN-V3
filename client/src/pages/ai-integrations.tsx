@@ -176,7 +176,7 @@ export default function AiIntegrationsPage() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return apiRequest('/api/ai-integrations', 'POST', data);
+      return apiRequest('POST', '/api/ai-integrations', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ai-integrations'] });
@@ -198,7 +198,7 @@ export default function AiIntegrationsPage() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<typeof formData> }) => {
-      return apiRequest(`/api/ai-integrations/${id}`, 'PUT', data);
+      return apiRequest('PUT', `/api/ai-integrations/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ai-integrations'] });
@@ -220,7 +220,7 @@ export default function AiIntegrationsPage() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/ai-integrations/${id}`, 'DELETE');
+      return apiRequest('DELETE', `/api/ai-integrations/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ai-integrations'] });
@@ -242,7 +242,7 @@ export default function AiIntegrationsPage() {
   const testMutation = useMutation({
     mutationFn: async (id: string) => {
       setTestingId(id);
-      const response = await apiRequest(`/api/ai-integrations/${id}/test`, 'POST', {});
+      const response = await apiRequest('POST', `/api/ai-integrations/${id}/test`, {});
       return response as unknown as { success: boolean; message: string };
     },
     onSuccess: (data) => {
