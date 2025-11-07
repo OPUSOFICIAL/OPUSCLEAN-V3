@@ -36,7 +36,8 @@ import {
   Timer,
   CheckCircle2,
   Building2,
-  Zap
+  Zap,
+  Wrench
 } from "lucide-react";
 
 // Types for report data
@@ -739,11 +740,17 @@ export default function Reports() {
       borderColor: "border-blue-200"
     },
     {
-      title: "Área Limpa (m²)",
-      value: safeGet(reportsMetrics, 'totalAreaCleaned', 0).toLocaleString(),
-      change: safeGet(reportsMetrics, 'totalAreaCleanedChange', '0%'),
-      trend: safeGet(reportsMetrics, 'totalAreaCleanedChange', '0%').startsWith('+') ? "up" : "down",
-      icon: Building2,
+      title: currentModule === 'maintenance' ? "Equipamentos Ativos" : "Área Limpa (m²)",
+      value: currentModule === 'maintenance' 
+        ? safeGet(reportsMetrics, 'activeEquipment', 0).toLocaleString()
+        : safeGet(reportsMetrics, 'totalAreaCleaned', 0).toLocaleString(),
+      change: currentModule === 'maintenance'
+        ? safeGet(reportsMetrics, 'activeEquipmentChange', '0%')
+        : safeGet(reportsMetrics, 'totalAreaCleanedChange', '0%'),
+      trend: currentModule === 'maintenance'
+        ? safeGet(reportsMetrics, 'activeEquipmentChange', '0%').startsWith('+') ? "up" : "down"
+        : safeGet(reportsMetrics, 'totalAreaCleanedChange', '0%').startsWith('+') ? "up" : "down",
+      icon: currentModule === 'maintenance' ? Wrench : Building2,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       borderColor: "border-purple-200"

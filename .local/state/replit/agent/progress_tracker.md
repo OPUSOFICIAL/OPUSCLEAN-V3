@@ -200,3 +200,15 @@
 [x] 185. Show SLA details: X of Y completed on time, "Sem histórico" if no work orders
 [x] 186. Added imports for Wrench, CheckCircle2, XCircle icons
 [x] 187. Application restarted - Click on zone in maintenance module shows equipment + SLA popup
+
+## FEATURE - Replace "Área Limpa" KPI with "Equipamentos Ativos" (OPUS Manutenção) (07/11/2025 11:40 AM)
+[x] 188. USER REQUEST - Replace "Área Limpa (m²)" KPI in Dashboard de KPIs with equipment-related metric
+[x] 189. BACKEND - Added equipment count query in getAnalyticsByCustomer (storage.ts)
+[x] 190. BACKEND - Query counts equipment with status='operacional' for customer
+[x] 191. BACKEND - Added activeEquipment and activeEquipmentChange to analytics return
+[x] 192. FRONTEND - Added Wrench icon import to reports.tsx
+[x] 193. FRONTEND - Modified kpiCards to conditionally show metric based on module
+[x] 194. FRONTEND - Maintenance module shows "Equipamentos Ativos" with Wrench icon
+[x] 195. FRONTEND - Clean module continues showing "Área Limpa (m²)" with Building2 icon
+[x] 196. FRONTEND - Dynamic value/change fetch based on module (activeEquipment vs totalAreaCleaned)
+[x] 197. Application restarted - KPI now shows equipment count in maintenance, area in clean

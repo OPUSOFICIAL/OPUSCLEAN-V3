@@ -1336,6 +1336,29 @@ export class DatabaseStorage implements IStorage {
     const averageExecutionTime = Math.round(avgTimeData[0]?.avgMinutes || 0);
     const previousAvgTime = Math.round(previousAvgTimeData[0]?.avgMinutes || 0);
 
+    // Calculate equipment metrics (for maintenance module)
+    let activeEquipmentCount = 0;
+    let previousActiveEquipmentCount = 0;
+    
+    if (module === 'maintenance') {
+      // Get current active equipment count for customer
+      const activeEquipmentData = await db
+        .select({
+          count: sql<number>`COUNT(*)`.as('count')
+        })
+        .from(equipment)
+        .where(and(
+          eq(equipment.customerId, customerId),
+          eq(equipment.status, 'operacional')
+        ));
+      
+      activeEquipmentCount = Number(activeEquipmentData[0]?.count || 0);
+      
+      // For simplicity, use the same count for previous period (equipment count changes slowly)
+      // In a more sophisticated implementation, we could track historical equipment status
+      previousActiveEquipmentCount = activeEquipmentCount;
+    }
+
     // Calculate percentage changes
     const calculateChange = (current: number, previous: number): string => {
       if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -1350,6 +1373,7 @@ export class DatabaseStorage implements IStorage {
     );
     const totalAreaCleanedChange = calculateChange(totalAreaCleaned, previousAreaCleaned);
     const averageExecutionTimeChange = calculateChange(averageExecutionTime, previousAvgTime);
+    const activeEquipmentChange = calculateChange(activeEquipmentCount, previousActiveEquipmentCount);
 
     return {
       // Dados compatíveis com o frontend - TODOS REAIS DO BANCO
@@ -1359,6 +1383,8 @@ export class DatabaseStorage implements IStorage {
       averageSLAChange,
       totalAreaCleaned,
       totalAreaCleanedChange,
+      activeEquipment: activeEquipmentCount,
+      activeEquipmentChange,
       averageExecutionTime,
       averageExecutionTimeChange,
       
