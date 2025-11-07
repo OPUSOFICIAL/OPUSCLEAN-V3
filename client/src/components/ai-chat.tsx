@@ -57,6 +57,9 @@ export function AIChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversationData?.messages]);
 
+  // Safe access to messages array
+  const messages = conversationData?.messages ?? [];
+
   if (!isOpen) {
     return (
       <button
@@ -128,7 +131,7 @@ export function AIChat() {
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
-        ) : conversationData?.messages.length === 0 ? (
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <MessageCircle className="h-12 w-12 text-gray-300 mb-3" />
             <p className="text-gray-600 font-medium mb-1">Olá! Como posso ajudar?</p>
@@ -138,7 +141,7 @@ export function AIChat() {
           </div>
         ) : (
           <>
-            {conversationData?.messages.map((msg) => (
+            {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
