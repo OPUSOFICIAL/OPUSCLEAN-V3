@@ -169,8 +169,36 @@ export default function MobileWorkOrderExecute() {
   const handlePhotoUpload = (itemId: string, files: FileList | null) => {
     if (!files || files.length === 0) return;
     
+    // Buscar o item do checklist para verificar o limite máximo
+    const checklistItem = checklist?.items?.find((item: any) => item.id === itemId);
+    const maxPhotos = checklistItem?.validation?.photoMaxCount;
+    
     const currentPhotos = answers[itemId] || [];
-    const newPhotos = Array.from(files).map(file => ({
+    const currentCount = currentPhotos.length;
+    
+    // Calcular quantas fotos ainda podem ser adicionadas
+    let photosToAdd = Array.from(files);
+    let remainingSlots = maxPhotos ? maxPhotos - currentCount : Infinity;
+    
+    if (remainingSlots <= 0) {
+      toast({
+        title: "Limite atingido",
+        description: `Você já atingiu o limite máximo de ${maxPhotos} foto(s).`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Se tentar adicionar mais fotos que o permitido, limitar
+    if (photosToAdd.length > remainingSlots) {
+      photosToAdd = photosToAdd.slice(0, remainingSlots);
+      toast({
+        title: "Limite máximo",
+        description: `Apenas ${remainingSlots} foto(s) foram adicionadas para respeitar o limite de ${maxPhotos} foto(s).`,
+      });
+    }
+    
+    const newPhotos = photosToAdd.map(file => ({
       file,
       preview: URL.createObjectURL(file),
       name: file.name
