@@ -180,6 +180,9 @@ export default function Reports() {
       let reportData: any = {};
       let filename = `relatorio-${reportType}-${dateRange}dias`;
 
+      // Module-specific suffix for report titles
+      const moduleSuffix = currentModule === 'clean' ? 'Limpeza' : 'Manutenção';
+
       switch (reportType) {
         case 'geral':
           reportData = {
@@ -189,7 +192,8 @@ export default function Reports() {
             generalData: generalReport || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
-            reportType: 'Relatório Geral'
+            reportType: `Relatório Geral - ${moduleSuffix}`,
+            module: currentModule
           };
           break;
         case 'sla':
@@ -198,7 +202,8 @@ export default function Reports() {
             slaAnalysisData: slaAnalysis || {},
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
-            reportType: 'Relatório de SLA'
+            reportType: `Relatório de SLA - ${moduleSuffix}`,
+            module: currentModule
           };
           break;
         case 'produtividade':
@@ -206,7 +211,8 @@ export default function Reports() {
             ...(productivityReport || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
-            reportType: 'Relatório de Produtividade'
+            reportType: `Relatório de Produtividade - ${moduleSuffix}`,
+            module: currentModule
           };
           break;
         case 'operadores':
@@ -214,7 +220,8 @@ export default function Reports() {
             ...(operatorPerformance || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
-            reportType: 'Relatório de Operadores'
+            reportType: `Relatório de Operadores - ${moduleSuffix}`,
+            module: currentModule
           };
           break;
         case 'locais':
@@ -222,7 +229,8 @@ export default function Reports() {
             ...(locationAnalysis || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
-            reportType: 'Relatório por Locais'
+            reportType: `Relatório por Locais - ${moduleSuffix}`,
+            module: currentModule
           };
           break;
         case 'temporal':
@@ -230,7 +238,8 @@ export default function Reports() {
             ...(temporalAnalysis || {}),
             period: `${dateRange} dias`,
             generatedAt: new Date().toISOString(),
-            reportType: 'Relatório Temporal'
+            reportType: `Relatório Temporal - ${moduleSuffix}`,
+            module: currentModule
           };
           break;
       }
@@ -378,9 +387,10 @@ export default function Reports() {
   const generateExcel = (data: any, filename: string) => {
     const workbook = XLSX.utils.book_new();
 
-    // Create summary sheet
+    // Create summary sheet with module-specific title
+    const moduleTitle = currentModule === 'clean' ? 'LIMPEZA' : 'MANUTENÇÃO';
     const summaryData: any[][] = [
-      ['GRUPO OPUS - RELATÓRIO DE LIMPEZA'],
+      [`GRUPO OPUS - RELATÓRIO DE ${moduleTitle}`],
       [''],
       ['Tipo', data.reportType],
       ['Período', data.period],
