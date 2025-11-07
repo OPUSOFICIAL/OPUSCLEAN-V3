@@ -591,7 +591,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/:customerId/reports/metrics", async (req, res) => {
     try {
       const period = req.query.period as string || "30";
-      const analytics = await storage.getAnalyticsByCustomer(req.params.customerId, period, "todos");
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const analytics = await storage.getAnalyticsByCustomer(req.params.customerId, period, "todos", module);
       res.json(analytics);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer metrics" });
@@ -601,7 +602,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/:customerId/reports/work-orders-status", async (req, res) => {
     try {
       const period = req.query.period as string || "30";
-      const analytics = await storage.getAnalyticsByCustomer(req.params.customerId, period, "todos");
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const analytics = await storage.getAnalyticsByCustomer(req.params.customerId, period, "todos", module);
       res.json(analytics?.workOrdersStatus || []);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer work orders status" });
@@ -611,7 +613,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/:customerId/reports/sla-performance", async (req, res) => {
     try {
       const period = req.query.period as string || "30";
-      const analytics = await storage.getAnalyticsByCustomer(req.params.customerId, period, "todos");
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const analytics = await storage.getAnalyticsByCustomer(req.params.customerId, period, "todos", module);
       res.json(analytics?.slaPerformance || {});
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer SLA performance" });

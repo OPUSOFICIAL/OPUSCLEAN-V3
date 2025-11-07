@@ -94,45 +94,45 @@ export default function Reports() {
   });
 
   const { data: slaPerformance, isLoading: isLoadingSLA, error: errorSLA, refetch: refetchSLA } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "sla-performance", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/sla-performance?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "sla-performance", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/sla-performance?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
   // NOVAS QUERIES ESPECÍFICAS PARA CADA TIPO DE RELATÓRIO
   const { data: generalReport, isLoading: isLoadingGeneral, refetch: refetchGeneral } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "general", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/general?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "general", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/general?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
   const { data: slaAnalysis, isLoading: isLoadingSLAAnalysis, refetch: refetchSLAAnalysis } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "sla-analysis", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/sla-analysis?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "sla-analysis", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/sla-analysis?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
   const { data: productivityReport, isLoading: isLoadingProductivity, refetch: refetchProductivity } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "productivity", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/productivity?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "productivity", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/productivity?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
   const { data: operatorPerformance, isLoading: isLoadingOperators, refetch: refetchOperators } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "operators", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/operators?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "operators", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/operators?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
   const { data: locationAnalysis, isLoading: isLoadingLocations, refetch: refetchLocations } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "locations", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/locations?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "locations", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/locations?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
   const { data: temporalAnalysis, isLoading: isLoadingTemporal, refetch: refetchTemporal } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "reports", "temporal", { period: dateRange }],
-    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/temporal?period=${dateRange}`).then(res => res.json()),
+    queryKey: ["/api/customers", activeClientId, "reports", "temporal", { period: dateRange, module: currentModule }],
+    queryFn: () => fetch(`/api/customers/${activeClientId}/reports/temporal?period=${dateRange}&module=${currentModule}`).then(res => res.json()),
     enabled: !!activeClientId,
   });
 
