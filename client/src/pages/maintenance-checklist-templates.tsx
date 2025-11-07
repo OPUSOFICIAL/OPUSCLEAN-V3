@@ -211,6 +211,13 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     refetchOnMount: true,
   });
 
+  // Fetch all zones for displaying names in the table
+  const { data: allZones = [] } = useQuery({
+    queryKey: [`/api/customers/${customerId}/zones`, { module: currentModule }],
+    enabled: !!customerId,
+    refetchOnMount: true,
+  });
+
   // Fetch equipment for selected zones (for the form)
   const { data: equipment = [] } = useQuery({
     queryKey: ["/api/equipment", (templateForm.zoneIds || []).join(","), { module: currentModule }],
@@ -454,9 +461,25 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     return (sites as any[])?.find(s => s.id === siteId)?.name || null;
   };
 
+  const getSiteNames = (siteIds: string[]) => {
+    if (!siteIds || siteIds.length === 0) return [];
+    return siteIds.map(id => {
+      const site = (sites as any[])?.find(s => s.id === id);
+      return site ? site.name : id;
+    });
+  };
+
   const getZoneName = (zoneId: string | null) => {
     if (!zoneId) return null;
     return (zones as any[])?.find(z => z.id === zoneId)?.name || null;
+  };
+
+  const getZoneNames = (zoneIds: string[]) => {
+    if (!zoneIds || zoneIds.length === 0) return [];
+    return zoneIds.map(id => {
+      const zone = (allZones as any[])?.find(z => z.id === id);
+      return zone ? zone.name : id;
+    });
   };
 
   const getEquipmentNames = (equipmentIds: string[]) => {
@@ -1034,18 +1057,30 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                         )}
                       </TableCell>
                       <TableCell>
-                        {template.siteId ? (
-                          <Badge variant="outline">{getSiteName(template.siteId)}</Badge>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {template.siteIds && template.siteIds.length > 0 ? (
+                            getSiteNames(template.siteIds).map((name: string, idx: number) => (
+                              <Badge key={template.siteIds[idx]} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                {name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {template.zoneId ? (
-                          <Badge variant="outline">{getZoneName(template.zoneId)}</Badge>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {template.zoneIds && template.zoneIds.length > 0 ? (
+                            getZoneNames(template.zoneIds).map((name: string, idx: number) => (
+                              <Badge key={template.zoneIds[idx]} variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                                {name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">

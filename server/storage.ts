@@ -2674,12 +2674,18 @@ export class DatabaseStorage implements IStorage {
     let service = null;
     let assignedOperator = null;
     
-    if (workOrder.siteId) {
-      [site] = await db.select().from(sites).where(eq(sites.id, workOrder.siteId));
-    }
-    
     if (workOrder.zoneId) {
       [zone] = await db.select().from(zones).where(eq(zones.id, workOrder.zoneId));
+      
+      // Se a zona foi encontrada e tem siteId, buscar o site pela zona
+      if (zone && zone.siteId) {
+        [site] = await db.select().from(sites).where(eq(sites.id, zone.siteId));
+      }
+    }
+    
+    // Se não encontrou site pela zona, tentar pelo siteId direto da work order
+    if (!site && workOrder.siteId) {
+      [site] = await db.select().from(sites).where(eq(sites.id, workOrder.siteId));
     }
     
     if (workOrder.serviceId) {

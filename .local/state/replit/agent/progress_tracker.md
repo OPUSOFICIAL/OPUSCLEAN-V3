@@ -119,3 +119,9 @@
 [x] 110. Restarted application - Express server running successfully on port 5000
 [x] 111. Verified login screen displaying correctly with OPUS Clean branding
 [x] 112. Database import and admin password setup COMPLETED - System fully operational
+[x] 113. Fixed work order details - site now loads from zone.siteId (server/storage.ts)
+[x] 114. Fixed maintenance checklist templates table - Local and Zona now display correctly
+[x] 115. Added getSiteNames and getZoneNames functions to handle arrays
+[x] 116. Added allZones query to fetch all zones for display in table
+[x] 117. Updated table cells to show all sites and zones with colored badges
+[x] 118. Restarted application - All changes applied successfully
