@@ -10,7 +10,7 @@ import type { ChatMessage } from "@shared/schema";
 
 export function AIChat() {
   const { toast } = useToast();
-  const { activeModule } = useModule();
+  const { currentModule } = useModule();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState("");
@@ -28,10 +28,12 @@ export function AIChat() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      return apiRequest('POST', '/api/chat/message', {
+      const payload = {
         message: userMessage,
-        module: activeModule
-      });
+        module: currentModule
+      };
+      console.log('[AI Chat] Sending payload:', payload);
+      return apiRequest('POST', '/api/chat/message', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chat/conversation"] });
@@ -49,6 +51,19 @@ export function AIChat() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || sendMessageMutation.isPending) return;
+    
+    // Validate module before sending
+    if (!currentModule) {
+      console.error('[AI Chat] currentModule is undefined:', currentModule);
+      toast({
+        title: "Erro de configuração",
+        description: "Módulo não identificado. Por favor, recarregue a página.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log('[AI Chat] Sending message with module:', currentModule);
     sendMessageMutation.mutate(message.trim());
   };
 
@@ -101,7 +116,7 @@ export function AIChat() {
           <div>
             <h3 className="font-semibold text-sm">Assistente IA</h3>
             <p className="text-xs opacity-90">
-              {activeModule === 'clean' ? 'OPUS Clean' : 'OPUS Manutenção'}
+              {currentModule === 'clean' ? 'OPUS Clean' : 'OPUS Manutenção'}
             </p>
           </div>
         </div>
