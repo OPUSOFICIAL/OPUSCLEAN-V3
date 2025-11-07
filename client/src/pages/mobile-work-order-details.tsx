@@ -70,11 +70,15 @@ export default function MobileWorkOrderDetails() {
 
       const authData = JSON.parse(authStr);
       const user = authData.user;
+      const token = authData.token;
 
       // Retomar execução - mudar status para em_execucao
       const response = await fetch(`/api/work-orders/${workOrder.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           status: 'em_execucao',
         }),
@@ -87,7 +91,10 @@ export default function MobileWorkOrderDetails() {
       // Criar comentário de retomada
       await fetch(`/api/work-orders/${workOrder.id}/comments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           userId: user?.id,
           comment: `▶️ ${user?.name || 'Operador'} retomou a execução da OS`,
