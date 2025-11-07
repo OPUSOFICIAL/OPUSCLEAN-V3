@@ -1376,7 +1376,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/customers/:customerId/service-types", async (req, res) => {
     try {
-      console.log("Creating service type with data:", req.body, "customerId:", req.params.customerId);
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const companyId = req.user.companyId;
+      console.log("Creating service type with data:", req.body, "customerId:", req.params.customerId, "companyId:", companyId);
       
       // Generate code from name if not provided
       const code = req.body.code || req.body.name.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
@@ -1384,6 +1389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dataToValidate = {
         ...req.body,
         code,
+        companyId,
         customerId: req.params.customerId,
         module: req.body.module || 'clean'
       };
