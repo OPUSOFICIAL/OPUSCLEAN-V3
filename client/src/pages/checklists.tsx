@@ -20,7 +20,8 @@ import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Plus, Edit3, Trash2, FileText, List, Eye, ChevronDown } from "lucide-react";
+import { Plus, Edit3, Trash2, FileText, List, Eye, ChevronDown, Hash } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ChecklistTemplate } from "@shared/schema";
 
 function MultiSelect({
@@ -203,6 +204,13 @@ export default function Checklists() {
       if (!r.ok) throw new Error("Falha ao carregar zonas");
       return r.json();
     }
+  });
+
+  // Fetch all zones for displaying names in the table
+  const { data: allZones = [] } = useQuery({
+    queryKey: [`/api/customers/${activeClientId}/zones`, { module: currentModule }],
+    enabled: !!activeClientId,
+    refetchOnMount: true,
   });
 
   // Redirect if not in clean module
@@ -426,6 +434,30 @@ export default function Checklists() {
     }
   };
 
+  // Helper functions to get names for table display
+  const getSiteNames = (siteIds: string[]) => {
+    if (!siteIds || siteIds.length === 0) return [];
+    return siteIds.map(id => {
+      const site = (sites as any[])?.find(s => s.id === id);
+      return site ? site.name : id;
+    });
+  };
+
+  const getZoneNames = (zoneIds: string[]) => {
+    if (!zoneIds || zoneIds.length === 0) return [];
+    return zoneIds.map(id => {
+      const zone = (allZones as any[])?.find(z => z.id === id);
+      return zone ? zone.name : id;
+    });
+  };
+
+  const getServiceName = (serviceId: string | null) => {
+    if (!serviceId) return null;
+    return (services as any[])?.find(s => s.id === serviceId)?.name || null;
+  };
+
+  const theme = useModuleTheme();
+
   if (isLoading) {
     return (
       <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -436,8 +468,6 @@ export default function Checklists() {
       </div>
     );
   }
-
-  const theme = useModuleTheme();
 
   return (
     <div className={cn("min-h-screen", theme.gradients.page)}>
@@ -972,6 +1002,23 @@ export default function Checklists() {
           </DialogContent>
         </Dialog>
 
+        {/* Statistics Card */}
+        <ModernCard variant="gradient" className="mb-6">
+          <ModernCardContent className="flex items-center justify-between p-6">
+            <div className="flex items-center space-x-4">
+              <div className={cn("p-3 rounded-lg", theme.backgrounds.light)}>
+                <FileText className={cn("w-6 h-6", theme.text.primary)} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total de Templates</p>
+                <p className={cn("text-3xl font-bold", theme.text.primary)}>
+                  {Array.isArray(checklists) ? checklists.length : 0}
+                </p>
+              </div>
+            </div>
+          </ModernCardContent>
+        </ModernCard>
+
         {/* Content */}
         {!Array.isArray(checklists) || checklists.length === 0 ? (
           <ModernCard variant="glass">
@@ -981,9 +1028,7 @@ export default function Checklists() {
                 Nenhum template cadastrado
               </h3>
               <p className="text-slate-600 mb-6">
-                {currentModule === 'maintenance' 
-                  ? 'Crie seu primeiro template de checklist de manutenção' 
-                  : 'Crie seu primeiro checklist para padronizar ordens de serviço'}
+                Crie seu primeiro checklist para padronizar ordens de serviço
               </p>
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)}
@@ -995,55 +1040,96 @@ export default function Checklists() {
             </ModernCardContent>
           </ModernCard>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.isArray(checklists) && checklists.map((checklist: any) => (
-              <ModernCard key={checklist.id} variant="gradient">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{checklist.name}</CardTitle>
-                      <p className="text-sm text-slate-600 mt-1">{checklist.description}</p>
-                    </div>
-                    <div className="flex space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(checklist)}
-                        data-testid={`button-edit-checklist-${checklist.id}`}
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteChecklistMutation.mutate(checklist.id)}
-                        data-testid={`button-delete-checklist-${checklist.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600">Total de itens:</span>
-                      <Badge variant="outline">{Array.isArray(checklist.items) ? checklist.items.length : 0}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600">Obrigatórios:</span>
-                      <Badge variant="outline" className="bg-red-50 text-red-700">
-                        {Array.isArray(checklist.items) ? checklist.items.filter((item: any) => item.required).length : 0}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      Criado em: {checklist.createdAt ? new Date(checklist.createdAt).toLocaleDateString('pt-BR') : 'N/A'}
-                    </div>
-                  </div>
-                </CardContent>
-              </ModernCard>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="p-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Serviço</TableHead>
+                    <TableHead>Local</TableHead>
+                    <TableHead>Zona</TableHead>
+                    <TableHead>Itens</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.isArray(checklists) && checklists.map((checklist: any) => (
+                    <TableRow key={checklist.id} data-testid={`row-checklist-${checklist.id}`}>
+                      <TableCell className="font-medium">
+                        <div>
+                          <p className="font-semibold">{checklist.name}</p>
+                          {checklist.description && (
+                            <p className="text-xs text-slate-500 mt-1">{checklist.description}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {checklist.serviceId ? (
+                          <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200">
+                            {getServiceName(checklist.serviceId) || 'N/A'}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-400 text-xs">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {checklist.siteIds && checklist.siteIds.length > 0 ? (
+                            getSiteNames(checklist.siteIds).map((name: string, idx: number) => (
+                              <Badge key={checklist.siteIds[idx]} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                {name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {checklist.zoneIds && checklist.zoneIds.length > 0 ? (
+                            getZoneNames(checklist.zoneIds).map((name: string, idx: number) => (
+                              <Badge key={checklist.zoneIds[idx]} variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
+                                {name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn("font-semibold", theme.backgrounds.primary, "text-white")}>
+                          {Array.isArray(checklist.items) ? checklist.items.length : 0}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(checklist)}
+                            data-testid={`button-edit-checklist-${checklist.id}`}
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteChecklistMutation.mutate(checklist.id)}
+                            data-testid={`button-delete-checklist-${checklist.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -169,3 +169,14 @@
 [x] 160. Added module filter parameter to useQuery for service types
 [x] 161. Updated all cache invalidations to include module filter
 [x] 162. Application restarted - Service types now properly filtered by module
+
+## REDESIGN - Checklist OPUS Clean (07/11/2025 11:04 AM)
+[x] 163. Added Table component import and Hash icon
+[x] 164. Added query to fetch all zones for table display
+[x] 165. Created helper functions (getSiteNames, getZoneNames, getServiceName)
+[x] 166. Added statistics card "Total de Templates" matching Maintenance style
+[x] 167. Replaced grid of cards with modern table layout (Nome, Serviço, Local, Zona, Itens, Ações)
+[x] 168. Applied blue color scheme for Clean module (cyan, blue, sky badges)
+[x] 169. Fixed TypeScript errors (background -> backgrounds)
+[x] 170. Fixed React Hooks violation by moving useModuleTheme before loading check
+[x] 171. Application restarted - Clean checklist now visually matches Maintenance with blue colors

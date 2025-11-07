@@ -40,7 +40,8 @@ O frontend utiliza:
 - Dashboard (ambos módulos) - gradientes de página e section, cards glass
 - Equipment (Manutenção) - gradientes modernos, cards gradient
 - Maintenance Plans (Manutenção) - gradientes de página, cards glass com calendário integrado
-- Checklists (Clean) - gradientes modernos, ModernCard com variantes gradient e glass
+- Checklists (Clean) - **redesenhado em 07/11/2025** - tabela moderna com estatística, badges coloridos azuis, visualmente alinhado ao checklist de Manutenção
+- Checklists (Manutenção) - tabela moderna com estatística, badges coloridos laranja/verde/azul/roxo
 
 Mobile interfaces são otimizadas para elementos touch-friendly, incluindo sticky headers e funcionalidade pull-to-refresh.
 
