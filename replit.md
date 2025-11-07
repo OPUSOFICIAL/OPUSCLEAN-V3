@@ -42,6 +42,7 @@ O frontend utiliza:
 - Maintenance Plans (Manutenção) - gradientes de página, cards glass com calendário integrado
 - Checklists (Clean) - **redesenhado em 07/11/2025** - tabela moderna com estatística, badges coloridos azuis, visualmente alinhado ao checklist de Manutenção
 - Checklists (Manutenção) - tabela moderna com estatística, badges coloridos laranja/verde/azul/roxo
+- Cleaning Schedule (Clean) - **padronizado em 07/11/2025** - formulário de criação alinhado visualmente com Maintenance Plans usando componente MultiSelect reutilizável para seleção de Locais e Zonas, mantendo cores azuis do OPUS Clean
 
 Mobile interfaces são otimizadas para elementos touch-friendly, incluindo sticky headers e funcionalidade pull-to-refresh.
 
