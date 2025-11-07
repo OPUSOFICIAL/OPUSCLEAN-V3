@@ -65,6 +65,7 @@ export interface IStorage {
   getOperatorPerformance(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
   getLocationAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
   getTemporalAnalysis(customerId: string, period: string, module?: 'clean' | 'maintenance'): Promise<any>;
+  getAssetReport(customerId: string, module?: 'clean' | 'maintenance'): Promise<any>;
 
   // Zones
   getZonesByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]>;
@@ -1072,6 +1073,100 @@ export class DatabaseStorage implements IStorage {
     ];
 
     return { trends, patterns, forecasts };
+  }
+
+  // 7. RELATÓRIO DE PATRIMÔNIO - Valor de equipamentos por local e zona
+  async getAssetReport(customerId: string, module?: 'clean' | 'maintenance'): Promise<any> {
+    // Filtrar equipamentos por cliente e módulo (somente maintenance)
+    const equipmentWhereCondition = module
+      ? and(eq(equipment.customerId, customerId), sql`EXISTS (SELECT 1 FROM ${sites} WHERE ${sites.id} = ${equipment.siteId} AND ${sites.module} = ${module})`)
+      : eq(equipment.customerId, customerId);
+
+    // Buscar todos os equipamentos do cliente
+    const customerEquipment = await db
+      .select({
+        id: equipment.id,
+        name: equipment.name,
+        model: equipment.model,
+        manufacturer: equipment.manufacturer,
+        serialNumber: equipment.serialNumber,
+        value: equipment.value,
+        status: equipment.status,
+        siteId: equipment.siteId,
+        zoneId: equipment.zoneId,
+        siteName: sites.name,
+        zoneName: zones.name,
+      })
+      .from(equipment)
+      .leftJoin(sites, eq(equipment.siteId, sites.id))
+      .leftJoin(zones, eq(equipment.zoneId, zones.id))
+      .where(equipmentWhereCondition);
+
+    // Agrupar por local
+    const bySite = customerEquipment.reduce((acc, item) => {
+      const siteId = item.siteId;
+      const siteName = item.siteName || 'Sem Local';
+      
+      if (!acc[siteId]) {
+        acc[siteId] = {
+          siteId,
+          siteName,
+          totalValue: 0,
+          equipmentCount: 0,
+          zones: {}
+        };
+      }
+      
+      const equipmentValue = parseFloat(item.value || '0');
+      acc[siteId].totalValue += equipmentValue;
+      acc[siteId].equipmentCount++;
+      
+      // Agrupar por zona dentro do local
+      const zoneId = item.zoneId;
+      const zoneName = item.zoneName || 'Sem Zona';
+      
+      if (!acc[siteId].zones[zoneId]) {
+        acc[siteId].zones[zoneId] = {
+          zoneId,
+          zoneName,
+          totalValue: 0,
+          equipmentCount: 0,
+          equipment: []
+        };
+      }
+      
+      acc[siteId].zones[zoneId].totalValue += equipmentValue;
+      acc[siteId].zones[zoneId].equipmentCount++;
+      acc[siteId].zones[zoneId].equipment.push({
+        id: item.id,
+        name: item.name,
+        model: item.model,
+        manufacturer: item.manufacturer,
+        serialNumber: item.serialNumber,
+        value: equipmentValue,
+        status: item.status
+      });
+      
+      return acc;
+    }, {} as Record<string, any>);
+
+    // Converter para array e calcular totais
+    const sites = Object.values(bySite).map(site => ({
+      ...site,
+      zones: Object.values(site.zones)
+    }));
+
+    const totalValue = sites.reduce((sum, site) => sum + site.totalValue, 0);
+    const totalEquipment = sites.reduce((sum, site) => sum + site.equipmentCount, 0);
+
+    return {
+      summary: {
+        totalValue,
+        totalEquipment,
+        siteCount: sites.length
+      },
+      sites
+    };
   }
 
   async getAnalyticsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any> {
