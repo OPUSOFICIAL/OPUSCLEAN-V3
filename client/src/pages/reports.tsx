@@ -1896,84 +1896,116 @@ export default function Reports() {
         </div>
 
         {/* Quick Export Options */}
-        <ModernCard variant="gradient">
+        <ModernCard variant="glass">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Zap className="w-5 h-5 text-blue-600" />
+              <Zap className={cn("w-5 h-5", theme.text.primary)} />
               <span>Exportação Rápida</span>
             </CardTitle>
+            <p className="text-sm text-slate-600 mt-1">Baixe relatórios prontos em diferentes formatos</p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Relatório Completo PDF */}
-              <div className="group">
-                <Button 
-                  className={cn("w-full h-20 flex flex-col items-center justify-center space-y-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1", theme.buttons.primary)}
-                  onClick={() => generateReport('geral', 'pdf')}
-                  disabled={isGenerating === 'geral-pdf'}
-                  data-testid="button-quick-export-all-pdf"
-                >
-                  {isGenerating === 'geral-pdf' ? (
-                    <RefreshCw className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <FileText className="w-6 h-6" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {isGenerating === 'geral-pdf' ? 'Gerando...' : 'Relatório Completo PDF'}
-                  </span>
-                </Button>
-              </div>
+              <button
+                onClick={() => generateReport('geral', 'pdf')}
+                disabled={isGenerating === 'geral-pdf'}
+                data-testid="button-quick-export-all-pdf"
+                className={cn(
+                  "group relative bg-white rounded-xl border-2 border-slate-200 p-6 transition-all duration-300",
+                  "hover:border-slate-300 hover:shadow-lg hover:-translate-y-1",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                )}
+              >
+                <div className="flex flex-col items-center space-y-3">
+                  <div className={cn(
+                    "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
+                    "bg-gradient-to-br from-red-50 to-orange-50 group-hover:from-red-100 group-hover:to-orange-100"
+                  )}>
+                    {isGenerating === 'geral-pdf' ? (
+                      <RefreshCw className="w-7 h-7 text-red-600 animate-spin" />
+                    ) : (
+                      <FileText className="w-7 h-7 text-red-600" />
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-slate-900">Relatório Completo</h3>
+                    <p className="text-xs text-slate-500 mt-1">Formato PDF</p>
+                  </div>
+                </div>
+              </button>
               
               {/* Análise SLA CSV */}
-              <div className="group">
-                <Button 
-                  variant="outline"
-                  className="w-full h-20 flex flex-col items-center justify-center space-y-3 border-2 border-green-200 hover:border-green-400 hover:bg-green-50 text-green-700 hover:text-green-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                  onClick={() => generateReport('sla', 'csv')}
-                  disabled={isGenerating === 'sla-csv'}
-                  data-testid="button-quick-export-sla-csv"
-                >
-                  {isGenerating === 'sla-csv' ? (
-                    <RefreshCw className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <Target className="w-6 h-6" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {isGenerating === 'sla-csv' ? 'Gerando...' : 'Análise SLA CSV'}
-                  </span>
-                </Button>
-              </div>
+              <button
+                onClick={() => generateReport('sla', 'csv')}
+                disabled={isGenerating === 'sla-csv'}
+                data-testid="button-quick-export-sla-csv"
+                className={cn(
+                  "group relative bg-white rounded-xl border-2 border-slate-200 p-6 transition-all duration-300",
+                  "hover:border-slate-300 hover:shadow-lg hover:-translate-y-1",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                )}
+              >
+                <div className="flex flex-col items-center space-y-3">
+                  <div className={cn(
+                    "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
+                    "bg-gradient-to-br from-emerald-50 to-green-50 group-hover:from-emerald-100 group-hover:to-green-100"
+                  )}>
+                    {isGenerating === 'sla-csv' ? (
+                      <RefreshCw className="w-7 h-7 text-emerald-600 animate-spin" />
+                    ) : (
+                      <Target className="w-7 h-7 text-emerald-600" />
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-slate-900">Análise SLA</h3>
+                    <p className="text-xs text-slate-500 mt-1">Formato CSV</p>
+                  </div>
+                </div>
+              </button>
               
               {/* Produtividade Excel */}
-              <div className="group">
-                <Button 
-                  variant="outline"
-                  className="w-full h-20 flex flex-col items-center justify-center space-y-3 border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 text-purple-700 hover:text-purple-800 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                  onClick={() => generateReport('produtividade', 'excel')}
-                  disabled={isGenerating === 'produtividade-excel'}
-                  data-testid="button-quick-export-productivity-excel"
-                >
-                  {isGenerating === 'produtividade-excel' ? (
-                    <RefreshCw className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <TrendingUp className="w-6 h-6" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {isGenerating === 'produtividade-excel' ? 'Gerando...' : 'Produtividade Excel'}
-                  </span>
-                </Button>
-              </div>
+              <button
+                onClick={() => generateReport('produtividade', 'excel')}
+                disabled={isGenerating === 'produtividade-excel'}
+                data-testid="button-quick-export-productivity-excel"
+                className={cn(
+                  "group relative bg-white rounded-xl border-2 border-slate-200 p-6 transition-all duration-300",
+                  "hover:border-slate-300 hover:shadow-lg hover:-translate-y-1",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                )}
+              >
+                <div className="flex flex-col items-center space-y-3">
+                  <div className={cn(
+                    "w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300",
+                    "bg-gradient-to-br from-violet-50 to-purple-50 group-hover:from-violet-100 group-hover:to-purple-100"
+                  )}>
+                    {isGenerating === 'produtividade-excel' ? (
+                      <RefreshCw className="w-7 h-7 text-violet-600 animate-spin" />
+                    ) : (
+                      <TrendingUp className="w-7 h-7 text-violet-600" />
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-slate-900">Produtividade</h3>
+                    <p className="text-xs text-slate-500 mt-1">Formato Excel</p>
+                  </div>
+                </div>
+              </button>
             </div>
             
             {/* Informações adicionais */}
-            <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Download className="w-4 h-4 text-blue-600" />
+            <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-lg border border-slate-200">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 mt-0.5">
+                  <Download className="w-5 h-5 text-slate-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900">Downloads Instantâneos</p>
-                  <p className="text-xs text-slate-600">Relatórios baseados nos dados dos últimos {dateRange} dias • Geração automática com dados reais</p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Relatórios gerados com dados dos últimos <span className="font-semibold">{dateRange} dias</span> • 
+                    Processamento automático em tempo real
+                  </p>
                 </div>
               </div>
             </div>
