@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Helper function to add JWT token to fetch requests
@@ -653,26 +653,47 @@ export default function MobileWorkOrderExecute() {
                             </div>
                           )}
 
-                          {/* Botão de upload */}
+                          {/* Botões de upload */}
                           {(!item.validation?.photoMaxCount || 
                             (answers[item.id]?.length || 0) < item.validation.photoMaxCount) && (
-                            <label className="block">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                capture="environment"
-                                className="hidden"
-                                onChange={(e) => handlePhotoUpload(item.id, e.target.files)}
-                                data-testid={`photo-input-${item.id}`}
-                              />
-                              <div className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors">
-                                <Camera className="w-5 h-5 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-600">
-                                  {answers[item.id]?.length > 0 ? 'Adicionar mais fotos' : 'Tirar/Selecionar fotos'}
-                                </span>
-                              </div>
-                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                              {/* Botão Tirar Foto */}
+                              <label className="block">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  capture="environment"
+                                  className="hidden"
+                                  onChange={(e) => handlePhotoUpload(item.id, e.target.files)}
+                                  data-testid={`camera-input-${item.id}`}
+                                />
+                                <div className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-blue-500 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors">
+                                  <Camera className="w-6 h-6 text-blue-600" />
+                                  <span className="text-xs font-medium text-blue-600 text-center">
+                                    Tirar Foto
+                                  </span>
+                                </div>
+                              </label>
+
+                              {/* Botão Galeria */}
+                              <label className="block">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  className="hidden"
+                                  onChange={(e) => handlePhotoUpload(item.id, e.target.files)}
+                                  data-testid={`gallery-input-${item.id}`}
+                                />
+                                <div className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-green-500 rounded-lg bg-green-50 hover:bg-green-100 cursor-pointer transition-colors">
+                                  <ImageIcon className="w-6 h-6 text-green-600" />
+                                  <span className="text-xs font-medium text-green-600 text-center">
+                                    Da Galeria
+                                  </span>
+                                </div>
+                              </label>
+                            </div>
                           )}
 
                           {/* Contador */}
