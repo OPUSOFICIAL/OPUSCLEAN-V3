@@ -165,3 +165,7 @@
 [x] 156. BUG FIX - Fixed 401 Unauthorized error when creating service types
 [x] 157. Changed POST route to get companyId from customer instead of req.user
 [x] 158. Application restarted - Service type creation now working correctly
+[x] 159. BUG FIX - Fixed module filtering for service types display
+[x] 160. Added module filter parameter to useQuery for service types
+[x] 161. Updated all cache invalidations to include module filter
+[x] 162. Application restarted - Service types now properly filtered by module

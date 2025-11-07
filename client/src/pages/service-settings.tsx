@@ -80,7 +80,7 @@ export default function Settings() {
 
   // Queries
   const { data: serviceTypes = [], isLoading: loadingTypes } = useQuery({
-    queryKey: ["/api/customers", customerId, "service-types"],
+    queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -134,7 +134,7 @@ export default function Settings() {
   const createTypeMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/service-types`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }] });
       setIsTypeDialogOpen(false);
       typeForm.reset();
       toast({ title: "Tipo de serviço criado com sucesso!" });
@@ -148,7 +148,7 @@ export default function Settings() {
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/customers/${customerId}/service-types/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }] });
       setIsTypeDialogOpen(false);
       setEditingType(null);
       typeForm.reset();
@@ -162,7 +162,7 @@ export default function Settings() {
   const deleteTypeMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/customers/${customerId}/service-types/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }] });
       toast({ title: "Tipo de serviço excluído com sucesso!" });
     },
     onError: () => {
