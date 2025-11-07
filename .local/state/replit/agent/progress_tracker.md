@@ -162,3 +162,6 @@
 [x] 153. Verified all 14 existing service types have companyId and customerId populated
 [x] 154. Confirmed filtering works correctly - 6 clean types and 8 maintenance types across customers
 [x] 155. Application restarted - Service types now properly isolated by module and customer
+[x] 156. BUG FIX - Fixed 401 Unauthorized error when creating service types
+[x] 157. Changed POST route to get companyId from customer instead of req.user
+[x] 158. Application restarted - Service type creation now working correctly

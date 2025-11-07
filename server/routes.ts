@@ -1376,11 +1376,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/customers/:customerId/service-types", async (req, res) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+      // Buscar customer para obter companyId
+      const customer = await storage.getCustomer(req.params.customerId);
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
       }
 
-      const companyId = req.user.companyId;
+      const companyId = customer.companyId;
       console.log("Creating service type with data:", req.body, "customerId:", req.params.customerId, "companyId:", companyId);
       
       // Generate code from name if not provided
