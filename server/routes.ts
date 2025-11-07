@@ -701,6 +701,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/customers/:customerId/reports/assets", async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const assetReport = await storage.getAssetReport(customerId, module);
+      res.json(assetReport);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get asset report" });
+    }
+  });
+
   app.get("/api/sites/:siteId/zones", async (req, res) => {
     try {
       const module = req.query.module as 'clean' | 'maintenance' | undefined;
