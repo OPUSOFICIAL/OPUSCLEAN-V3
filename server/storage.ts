@@ -1244,25 +1244,33 @@ export class DatabaseStorage implements IStorage {
         previousDateFilter
       ));
 
-    // Generate status breakdown
-    const statusCounts = {
+    // Generate status breakdown - incluindo todos os status possíveis
+    const statusCounts: Record<string, number> = {
       aberta: 0,
+      em_execucao: 0,
       concluida: 0,
-      vencida: 0
+      vencida: 0,
+      cancelada: 0
     };
 
-    const previousStatusCounts = {
+    const previousStatusCounts: Record<string, number> = {
       aberta: 0,
+      em_execucao: 0,
       concluida: 0,
-      vencida: 0
+      vencida: 0,
+      cancelada: 0
     };
 
     customerWorkOrders.forEach(wo => {
-      statusCounts[wo.status as keyof typeof statusCounts]++;
+      if (statusCounts[wo.status] !== undefined) {
+        statusCounts[wo.status]++;
+      }
     });
 
     previousWorkOrders.forEach(wo => {
-      previousStatusCounts[wo.status as keyof typeof statusCounts]++;
+      if (previousStatusCounts[wo.status] !== undefined) {
+        previousStatusCounts[wo.status]++;
+      }
     });
 
     const total = customerWorkOrders.length;

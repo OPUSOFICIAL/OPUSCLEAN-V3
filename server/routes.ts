@@ -604,7 +604,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const period = req.query.period as string || "30";
       const module = req.query.module as 'clean' | 'maintenance' | undefined;
       const analytics = await storage.getAnalyticsByCustomer(req.params.customerId, period, "todos", module);
-      res.json(analytics?.workOrdersStatus || []);
+      
+      // Transform statusBreakdown to the format expected by frontend
+      const statusLabels: Record<string, string> = {
+        'aberta': 'Aberta',
+        'em_execucao': 'Em Execução',
+        'concluida': 'Concluída',
+        'vencida': 'Vencida',
+        'cancelada': 'Cancelada'
+      };
+      
+      const statusColors: Record<string, string> = {
+        'aberta': 'bg-yellow-500',
+        'em_execucao': 'bg-blue-500',
+        'concluida': 'bg-green-500',
+        'vencida': 'bg-red-500',
+        'cancelada': 'bg-gray-500'
+      };
+      
+      const workOrdersStatus = (analytics?.statusBreakdown || []).map((item: any) => ({
+        status: item.status,
+        label: statusLabels[item.status] || item.status,
+        count: item.count,
+        color: statusColors[item.status] || 'bg-gray-500',
+        percentage: item.percentage
+      }));
+      
+      res.json(workOrdersStatus);
     } catch (error) {
       res.status(500).json({ message: "Failed to get customer work orders status" });
     }
