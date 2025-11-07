@@ -139,3 +139,9 @@
 [x] 130. Added Authorization header with JWT token to QR resolve request in mobile-qr-scanner.tsx
 [x] 131. Scanner now properly authenticates before accessing QR code data
 [x] 132. Application restarted - QR code scanning working with security validations
+[x] 133. Improved error messages - Added specific handling for HTTP status codes in scanner
+[x] 134. Added 403 error handler - Shows "Acesso Negado" with server message
+[x] 135. Added 404 error handler - Shows "QR Code não encontrado"
+[x] 136. Added 401 error handler - Shows "Não autenticado"
+[x] 137. Updated generic error - Now shows "Erro de conexão" for network errors
+[x] 138. Application restarted - Better UX with specific error messages

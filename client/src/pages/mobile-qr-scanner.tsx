@@ -156,13 +156,44 @@ export default function MobileQrScanner() {
           description: `${resolved.zone.name} - ${resolved.site.name}`,
         });
       } else {
-        throw new Error('QR code não encontrado ou inativo');
+        // Tratar erros específicos por status HTTP
+        if (response.status === 403) {
+          // Acesso negado - mostrar mensagem do servidor
+          const errorData = await response.json();
+          toast({
+            title: "Acesso Negado",
+            description: errorData.message || "Você não tem permissão para acessar este QR code.",
+            variant: "destructive",
+          });
+        } else if (response.status === 404) {
+          toast({
+            title: "QR Code não encontrado",
+            description: "O QR code não foi encontrado ou está inativo.",
+            variant: "destructive",
+          });
+        } else if (response.status === 401) {
+          toast({
+            title: "Não autenticado",
+            description: "Faça login novamente para continuar.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "QR Code inválido",
+            description: "O QR code não pôde ser processado. Tente novamente.",
+            variant: "destructive",
+          });
+        }
+        
+        setIsProcessing(false);
+        setTimeout(() => startScanner(), 2000);
+        return;
       }
     } catch (error) {
       console.error("Erro ao processar QR code:", error);
       toast({
-        title: "QR Code inválido",
-        description: "O QR code não pôde ser processado. Tente novamente.",
+        title: "Erro ao processar",
+        description: "Erro de conexão. Verifique sua internet e tente novamente.",
         variant: "destructive",
       });
       
