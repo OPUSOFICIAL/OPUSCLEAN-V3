@@ -59,10 +59,12 @@ export default function MobileWorkOrderDetails() {
     setIsResuming(true);
     try {
       const authStr = localStorage.getItem('opus_clean_auth');
-      if (!authStr) {
+      const token = localStorage.getItem('opus_clean_token');
+      
+      if (!authStr || !token) {
         toast({
           title: "Erro",
-          description: "Usuário não autenticado",
+          description: "Usuário não autenticado. Faça login novamente.",
           variant: "destructive",
         });
         return;
@@ -70,17 +72,6 @@ export default function MobileWorkOrderDetails() {
 
       const authData = JSON.parse(authStr);
       const user = authData.user;
-      const token = authData.token;
-
-      if (!token) {
-        console.error('Token não encontrado no localStorage');
-        toast({
-          title: "Erro",
-          description: "Token de autenticação não encontrado. Faça login novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
 
       console.log('Tentando retomar OS com token:', token ? 'Token presente' : 'Token ausente');
 
