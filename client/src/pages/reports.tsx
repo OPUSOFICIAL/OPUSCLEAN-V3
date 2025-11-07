@@ -792,90 +792,98 @@ export default function Reports() {
       });
     }
 
-    // Relatório de Patrimônio
+    // Relatório de Patrimônio - Formato Hierárquico
     if (data.summary && data.sites) {
-      // Summary
-      doc.setFontSize(14);
+      // Cliente e Total Geral
+      doc.setFontSize(16);
       doc.setTextColor(30, 58, 138);
-      doc.text('RESUMO EXECUTIVO', 20, yPosition);
+      doc.text(`Cliente: ${data.customer?.name || 'Não identificado'}`, 20, yPosition);
       yPosition += 10;
+      
+      doc.setFontSize(14);
+      doc.setTextColor(0, 128, 0);
+      const totalGeral = `R$ ${data.summary.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+      doc.text(`Total Geral: ${totalGeral}`, 20, yPosition);
+      yPosition += 15;
 
-      const summaryData = [
-        ['Métrica', 'Valor'],
-        ['Valor Total do Patrimônio', `R$ ${data.summary.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`],
-        ['Total de Equipamentos', data.summary.totalEquipment?.toString() || '0'],
-        ['Locais com Equipamentos', data.summary.siteCount?.toString() || '0']
-      ];
+      // Resumo Executivo
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${data.summary.totalEquipment || 0} equipamentos | ${data.summary.siteCount || 0} locais | ${data.summary.zoneCount || 0} zonas`, 20, yPosition);
+      yPosition += 15;
 
-      autoTable(doc, {
-        head: [summaryData[0]],
-        body: summaryData.slice(1),
-        startY: yPosition,
-        theme: 'grid',
-        headStyles: { fillColor: [30, 58, 138] },
-        margin: { left: 20 }
-      });
-
-      yPosition = (doc as any).lastAutoTable.finalY + 15;
-
-      // Patrimônio por Local
+      // Hierarquia: Locais → Zonas → Equipamentos
       if (Array.isArray(data.sites) && data.sites.length > 0) {
-        doc.setFontSize(14);
-        doc.setTextColor(30, 58, 138);
-        doc.text('PATRIMÔNIO POR LOCAL', 20, yPosition);
-        yPosition += 10;
+        data.sites.forEach((site: any, siteIndex: number) => {
+          // Verificar se precisa de nova página
+          if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 20;
+          }
 
-        const sitesTableData = data.sites.map((site: any) => [
-          site.siteName,
-          site.equipmentCount?.toString() || '0',
-          `R$ ${site.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`
-        ]);
+          // LOCAL
+          doc.setFontSize(13);
+          doc.setTextColor(30, 58, 138);
+          const siteTotalFormatted = `R$ ${site.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+          doc.text(`${siteIndex + 1}. Local: ${site.siteName} — Total: ${siteTotalFormatted}`, 20, yPosition);
+          yPosition += 8;
 
-        autoTable(doc, {
-          head: [['Local', 'Equipamentos', 'Valor Total']],
-          body: sitesTableData,
-          startY: yPosition,
-          theme: 'grid',
-          headStyles: { fillColor: [30, 58, 138] },
-          margin: { left: 20 }
+          // ZONAS dentro do local
+          if (Array.isArray(site.zones) && site.zones.length > 0) {
+            site.zones.forEach((zone: any, zoneIndex: number) => {
+              // Verificar se precisa de nova página
+              if (yPosition > 265) {
+                doc.addPage();
+                yPosition = 20;
+              }
+
+              // ZONA
+              doc.setFontSize(11);
+              doc.setTextColor(60, 60, 60);
+              const zoneTotalFormatted = `R$ ${zone.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+              doc.text(`  • Zona: ${zone.zoneName} — Total: ${zoneTotalFormatted}`, 25, yPosition);
+              yPosition += 7;
+
+              // EQUIPAMENTOS dentro da zona
+              if (Array.isArray(zone.equipment) && zone.equipment.length > 0) {
+                zone.equipment.forEach((equip: any) => {
+                  // Verificar se precisa de nova página
+                  if (yPosition > 275) {
+                    doc.addPage();
+                    yPosition = 20;
+                  }
+
+                  const unitValueFormatted = `R$ ${equip.unitValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+                  const totalValueFormatted = `R$ ${equip.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`;
+                  const quantity = equip.quantity || '—';
+                  
+                  doc.setFontSize(9);
+                  doc.setTextColor(80, 80, 80);
+                  doc.text(`    ◦ ${equip.name} — Valor Unit.: ${unitValueFormatted} — Qtde: ${quantity} — Total: ${totalValueFormatted}`, 30, yPosition);
+                  yPosition += 5;
+                });
+              }
+              yPosition += 2; // Espaço entre zonas
+            });
+          }
+          yPosition += 5; // Espaço entre locais
         });
-
-        yPosition = (doc as any).lastAutoTable.finalY + 15;
-
-        // Check if we need a new page
-        if (yPosition > 250) {
+        
+        // Verificação de totais
+        yPosition += 10;
+        if (yPosition > 270) {
           doc.addPage();
           yPosition = 20;
         }
-
-        // Patrimônio por Zona
-        doc.setFontSize(14);
-        doc.setTextColor(30, 58, 138);
-        doc.text('PATRIMÔNIO DETALHADO POR ZONA', 20, yPosition);
-        yPosition += 10;
-
-        const zonesTableData: any[] = [];
-        data.sites.forEach((site: any) => {
-          if (Array.isArray(site.zones)) {
-            site.zones.forEach((zone: any) => {
-              zonesTableData.push([
-                site.siteName,
-                zone.zoneName,
-                zone.equipmentCount?.toString() || '0',
-                `R$ ${zone.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,00'}`
-              ]);
-            });
-          }
-        });
-
-        autoTable(doc, {
-          head: [['Local', 'Zona', 'Equipamentos', 'Valor Total']],
-          body: zonesTableData,
-          startY: yPosition,
-          theme: 'grid',
-          headStyles: { fillColor: [30, 58, 138] },
-          margin: { left: 20 }
-        });
+        
+        doc.setFontSize(10);
+        if (data.summary.totalsVerified) {
+          doc.setTextColor(0, 128, 0);
+          doc.text('✅ Conferido: todos os totais batem corretamente.', 20, yPosition);
+        } else {
+          doc.setTextColor(255, 140, 0);
+          doc.text('⚠️  Aviso: divergência detectada nos totais. Verificar cálculos.', 20, yPosition);
+        }
       }
     }
 
