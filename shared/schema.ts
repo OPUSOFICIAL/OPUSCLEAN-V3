@@ -650,6 +650,32 @@ export const aiIntegrations = pgTable("ai_integrations", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
+// Chat Conversations - Sessões de conversa com IA
+export const chatConversations = pgTable("chat_conversations", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").references(() => customers.id),
+  module: moduleEnum("module").notNull(), // Módulo ativo quando iniciou conversa
+  title: varchar("title"), // Título gerado automaticamente baseado na primeira mensagem
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// Chat Messages - Mensagens individuais em uma conversa
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey(),
+  conversationId: varchar("conversation_id").notNull().references(() => chatConversations.id, { onDelete: 'cascade' }),
+  role: varchar("role").notNull(), // 'user' ou 'assistant'
+  content: text("content").notNull(),
+  context: jsonb("context"), // Contexto usado pela IA (O.S do dia, etc)
+  aiIntegrationId: varchar("ai_integration_id").references(() => aiIntegrations.id), // Qual integração foi usada
+  tokensUsed: integer("tokens_used"), // Tokens consumidos nesta mensagem
+  error: text("error"), // Se houve erro ao processar
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   customers: many(customers),
@@ -1291,3 +1317,21 @@ export const insertAiIntegrationSchema = createInsertSchema(aiIntegrations).omit
 
 export type AiIntegration = typeof aiIntegrations.$inferSelect;
 export type InsertAiIntegration = z.infer<typeof insertAiIntegrationSchema>;
+
+// Chat schemas
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
