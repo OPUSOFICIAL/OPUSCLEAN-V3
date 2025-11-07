@@ -187,3 +187,16 @@
 [x] 174. Fixed table display - changed from array mapping to direct badge display
 [x] 175. Updated code to use checklist.siteId and checklist.zoneId instead of siteIds/zoneIds
 [x] 176. Application restarted - Local and Zona now displaying correctly in Clean checklists table
+
+## FEATURE - Equipment Popup in Floor Plan (OPUS Manutenção) (07/11/2025 11:33 AM)
+[x] 177. Added state for selected zone to show equipment popup
+[x] 178. Added query to fetch equipment by zone (maintenance module)
+[x] 179. Added query to fetch work orders for SLA calculation
+[x] 180. Created calculateEquipmentSLA function - calculates SLA% per equipment based on work orders
+[x] 181. Modified handleMouseDown - clicking zone (non-edit mode) opens equipment popup
+[x] 182. Added Equipment Dialog with Wrench icon and zone name in title
+[x] 183. Display equipment cards with: name, description, status badge, technical specs
+[x] 184. Display SLA box for each equipment (color-coded: green ≥85%, yellow ≥70%, red <70%)
+[x] 185. Show SLA details: X of Y completed on time, "Sem histórico" if no work orders
+[x] 186. Added imports for Wrench, CheckCircle2, XCircle icons
+[x] 187. Application restarted - Click on zone in maintenance module shows equipment + SLA popup

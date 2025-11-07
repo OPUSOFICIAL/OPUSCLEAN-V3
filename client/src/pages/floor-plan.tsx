@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Building, Edit3, X, RotateCcw, MapPin, Palette, Plus, Minus, Save, AlertCircle, Thermometer } from 'lucide-react';
+import { Building, Edit3, X, RotateCcw, MapPin, Palette, Plus, Minus, Save, AlertCircle, Thermometer, Wrench, CheckCircle2, XCircle } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { useClient } from '@/contexts/ClientContext';
 import { useModule } from '@/contexts/ModuleContext';
@@ -36,6 +36,7 @@ export default function FloorPlanPage() {
   const [containerRect, setContainerRect] = React.useState<DOMRect | null>(null);
   const animationFrameRef = React.useRef<number | null>(null);
   const lastMousePos = React.useRef({ x: 0, y: 0 });
+  const [selectedZoneForEquipment, setSelectedZoneForEquipment] = React.useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,6 +64,18 @@ export default function FloorPlanPage() {
   const { data: heatmapData } = useQuery({
     queryKey: ['/api/companies', companyId, 'heatmap', selectedSiteId],
     enabled: !!selectedSiteId && isHeatmapMode,
+  });
+
+  // Get equipment for selected zone (for equipment popup)
+  const { data: zoneEquipment = [] } = useQuery({
+    queryKey: ['/api/zones', selectedZoneForEquipment?.id, 'equipment', { module: currentModule }],
+    enabled: !!selectedZoneForEquipment?.id && currentModule === 'maintenance',
+  });
+
+  // Get work orders for SLA calculation
+  const { data: workOrders = [] } = useQuery({
+    queryKey: ['/api/customers', activeClientId, 'work-orders', { module: currentModule }],
+    enabled: !!activeClientId && !!selectedZoneForEquipment && currentModule === 'maintenance',
   });
 
   const allZones = zones as any[] || [];
@@ -160,6 +173,15 @@ export default function FloorPlanPage() {
   };
 
   const handleMouseDown = (e: React.MouseEvent, zoneId: string) => {
+    // If not in edit mode and in maintenance module, open equipment popup
+    if (!isEditMode && currentModule === 'maintenance') {
+      const zone = allZones.find((z: any) => z.id === zoneId);
+      if (zone) {
+        setSelectedZoneForEquipment(zone);
+      }
+      return;
+    }
+    
     if (!isEditMode) return;
     e.preventDefault();
     e.stopPropagation();
@@ -378,6 +400,29 @@ export default function FloorPlanPage() {
     } else {
       return { bg: 'bg-red-400', border: 'border-red-600', dot: 'bg-red-600', text: 'text-red-800' };
     }
+  };
+
+  // Calculate SLA for each equipment
+  const calculateEquipmentSLA = (equipmentId: string) => {
+    if (!Array.isArray(workOrders)) return { slaPercentage: 100, total: 0, onTime: 0 };
+    
+    const equipmentWOs = (workOrders as any[]).filter((wo: any) => wo.equipmentId === equipmentId);
+    const total = equipmentWOs.length;
+    
+    if (total === 0) return { slaPercentage: 100, total: 0, onTime: 0 };
+    
+    const now = new Date();
+    const completed = equipmentWOs.filter((wo: any) => wo.status === 'concluida' || wo.status === 'finalizada');
+    const onTime = completed.filter((wo: any) => {
+      if (!wo.completedAt || !wo.deadline) return false;
+      const completedDate = new Date(wo.completedAt);
+      const deadlineDate = new Date(wo.deadline);
+      return completedDate <= deadlineDate;
+    });
+    
+    const slaPercentage = total > 0 ? Math.round((onTime.length / total) * 100) : 100;
+    
+    return { slaPercentage, total, onTime: onTime.length };
   };
 
   if (isLoading) {
@@ -822,6 +867,119 @@ export default function FloorPlanPage() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Equipment List Dialog */}
+        <Dialog open={!!selectedZoneForEquipment} onOpenChange={(open) => !open && setSelectedZoneForEquipment(null)}>
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto" data-testid="dialog-zone-equipment">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Wrench className="w-5 h-5" />
+                Equipamentos - {selectedZoneForEquipment?.name}
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground mt-2">
+                {selectedZoneForEquipment?.description || 'Lista de equipamentos e SLA desta zona'}
+              </p>
+            </DialogHeader>
+            
+            {currentModule === 'maintenance' && (
+              <div className="space-y-4 mt-4">
+                {Array.isArray(zoneEquipment) && zoneEquipment.length > 0 ? (
+                  <div className="space-y-3">
+                    {(zoneEquipment as any[]).map((equipment: any) => {
+                      const slaData = calculateEquipmentSLA(equipment.id);
+                      const slaColor = slaData.slaPercentage >= 85 
+                        ? 'text-green-600 bg-green-50 border-green-200' 
+                        : slaData.slaPercentage >= 70 
+                        ? 'text-yellow-600 bg-yellow-50 border-yellow-200' 
+                        : 'text-red-600 bg-red-50 border-red-200';
+                      
+                      return (
+                        <Card key={equipment.id} className="border-2">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Wrench className="w-4 h-4 text-orange-600" />
+                                  <h3 className="font-semibold text-base">{equipment.name}</h3>
+                                  {equipment.status && (
+                                    <Badge variant="outline" className={
+                                      equipment.status === 'operacional' ? 'bg-green-50 text-green-700' :
+                                      equipment.status === 'em_manutencao' ? 'bg-yellow-50 text-yellow-700' :
+                                      'bg-red-50 text-red-700'
+                                    }>
+                                      {equipment.status === 'operacional' ? (
+                                        <><CheckCircle2 className="w-3 h-3 mr-1" /> Operacional</>
+                                      ) : equipment.status === 'em_manutencao' ? (
+                                        <><AlertCircle className="w-3 h-3 mr-1" /> Em Manutenção</>
+                                      ) : (
+                                        <><XCircle className="w-3 h-3 mr-1" /> {equipment.status}</>
+                                      )}
+                                    </Badge>
+                                  )}
+                                </div>
+                                
+                                {equipment.description && (
+                                  <p className="text-sm text-muted-foreground">{equipment.description}</p>
+                                )}
+                                
+                                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                  {equipment.manufacturer && (
+                                    <div>
+                                      <span className="font-medium">Fabricante:</span> {equipment.manufacturer}
+                                    </div>
+                                  )}
+                                  {equipment.model && (
+                                    <div>
+                                      <span className="font-medium">Modelo:</span> {equipment.model}
+                                    </div>
+                                  )}
+                                  {equipment.serialNumber && (
+                                    <div>
+                                      <span className="font-medium">Série:</span> {equipment.serialNumber}
+                                    </div>
+                                  )}
+                                  {equipment.internalCode && (
+                                    <div>
+                                      <span className="font-medium">Código:</span> {equipment.internalCode}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="flex flex-col items-end gap-2">
+                                <div className={`px-4 py-2 rounded-lg border-2 ${slaColor} text-center min-w-[100px]`}>
+                                  <div className="text-xs font-medium uppercase">SLA</div>
+                                  <div className="text-2xl font-bold">{slaData.slaPercentage}%</div>
+                                </div>
+                                <div className="text-xs text-muted-foreground text-right">
+                                  <div>{slaData.onTime} de {slaData.total} no prazo</div>
+                                  {slaData.total === 0 && (
+                                    <div className="text-xs text-gray-400 italic">Sem histórico</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Wrench className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p>Nenhum equipamento encontrado nesta zona</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={() => setSelectedZoneForEquipment(null)}>
+                Fechar
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
         </div>
