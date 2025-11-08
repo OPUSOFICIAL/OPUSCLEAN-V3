@@ -33,13 +33,11 @@ export function AIChat() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      const payload = {
+      return apiRequest('POST', '/api/chat/message', {
         message: userMessage,
         module: currentModule,
         customerId: activeClientId
-      };
-      console.log('[AI Chat] Sending payload:', payload);
-      return apiRequest('POST', '/api/chat/message', payload);
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ 
@@ -65,7 +63,6 @@ export function AIChat() {
     
     // Validate module before sending
     if (!currentModule) {
-      console.error('[AI Chat] currentModule is undefined:', currentModule);
       toast({
         title: "Erro de configuração",
         description: "Módulo não identificado. Por favor, recarregue a página.",
@@ -74,7 +71,6 @@ export function AIChat() {
       return;
     }
     
-    console.log('[AI Chat] Sending message with module:', currentModule);
     sendMessageMutation.mutate(message.trim());
   };
 

@@ -5482,9 +5482,16 @@ export class DatabaseStorage implements IStorage {
       priority: workOrders.priority,
       type: workOrders.type,
       scheduledDate: workOrders.scheduledDate,
-      completedAt: workOrders.completedAt
+      completedAt: workOrders.completedAt,
+      assignedUserId: workOrders.assignedUserId,
+      assignedUserName: users.name,
+      zoneName: zones.name,
+      siteName: sites.name
     })
     .from(workOrders)
+    .leftJoin(users, eq(workOrders.assignedUserId, users.id))
+    .leftJoin(zones, eq(workOrders.zoneId, zones.id))
+    .leftJoin(sites, eq(zones.siteId, sites.id))
     .where(and(...conditions))
     .orderBy(desc(workOrders.scheduledDate))
     .limit(filters?.limit || 20);
@@ -5550,6 +5557,123 @@ export class DatabaseStorage implements IStorage {
     }
     
     return workOrderData[0];
+  }
+
+  private async aiUpdateWorkOrder(
+    customerId: string,
+    module: 'clean' | 'maintenance',
+    workOrderNumber: number,
+    updates: { status?: string; priority?: string; assignedUserId?: string }
+  ): Promise<any> {
+    // First, get the work order to ensure it belongs to this customer and module
+    const workOrder = await this.aiGetWorkOrderDetails(customerId, module, workOrderNumber);
+    
+    if (!workOrder) {
+      return { 
+        success: false, 
+        error: `Ordem de serviço #${workOrderNumber} não encontrada ou não pertence ao cliente/módulo atual.` 
+      };
+    }
+
+    // Build update object
+    const updateData: any = {};
+    if (updates.status) updateData.status = updates.status;
+    if (updates.priority) updateData.priority = updates.priority;
+    if (updates.assignedUserId) updateData.assignedUserId = updates.assignedUserId;
+
+    // Update the work order
+    const updated = await this.updateWorkOrder(workOrder.id, updateData);
+    
+    return {
+      success: true,
+      workOrder: {
+        number: updated.number,
+        title: updated.title,
+        status: updated.status,
+        priority: updated.priority,
+        assignedUserId: updated.assignedUserId
+      }
+    };
+  }
+
+  private async aiCreateWorkOrder(
+    customerId: string,
+    module: 'clean' | 'maintenance',
+    data: {
+      title: string;
+      description?: string;
+      zoneId: string;
+      priority?: string;
+      type?: string;
+      scheduledDate: string;
+      assignedUserId?: string;
+    }
+  ): Promise<any> {
+    // Verify zone belongs to customer
+    const customerSites = await db.select({ id: sites.id })
+      .from(sites)
+      .where(and(eq(sites.customerId, customerId), eq(sites.module, module)));
+    
+    if (customerSites.length === 0) {
+      return { 
+        success: false, 
+        error: 'Nenhum local encontrado para este cliente e módulo.' 
+      };
+    }
+    
+    const siteIds = customerSites.map(s => s.id);
+    
+    // Check if zone belongs to customer's sites
+    const [zone] = await db.select()
+      .from(zones)
+      .where(and(
+        eq(zones.id, data.zoneId),
+        inArray(zones.siteId, siteIds),
+        eq(zones.module, module)
+      ))
+      .limit(1);
+    
+    if (!zone) {
+      return { 
+        success: false, 
+        error: 'Zona não encontrada ou não pertence ao cliente/módulo atual.' 
+      };
+    }
+
+    // Get next work order number
+    const nextNumber = await this.getNextWorkOrderNumber(customerId);
+
+    // Create the work order
+    const newWorkOrder = await this.createWorkOrder({
+      number: nextNumber,
+      title: data.title,
+      description: data.description || null,
+      status: 'aberta',
+      priority: (data.priority as any) || 'media',
+      type: (data.type as any) || 'corretiva_interna',
+      zoneId: data.zoneId,
+      scheduledDate: data.scheduledDate,
+      scheduledTime: null,
+      assignedUserId: data.assignedUserId || null,
+      qrCodeId: null,
+      checklistTemplateId: null,
+      maintenanceChecklistTemplateId: null,
+      equipmentId: null,
+      module
+    });
+    
+    return {
+      success: true,
+      workOrder: {
+        number: newWorkOrder.number,
+        title: newWorkOrder.title,
+        status: newWorkOrder.status,
+        priority: newWorkOrder.priority,
+        type: newWorkOrder.type,
+        scheduledDate: newWorkOrder.scheduledDate,
+        zoneId: newWorkOrder.zoneId
+      }
+    };
   }
 
   private async callAI(
@@ -5680,6 +5804,72 @@ Responda de forma concisa e útil em português.`;
               },
               required: ['number']
             }
+          }, {
+            name: 'updateWorkOrder',
+            description: 'Atualiza informações de uma O.S existente (status, prioridade, responsável). Use quando o usuário pedir para alterar/atualizar/mudar uma O.S.',
+            parameters: {
+              type: 'object',
+              properties: {
+                number: {
+                  type: 'number',
+                  description: 'Número da O.S a ser atualizada'
+                },
+                status: {
+                  type: 'string',
+                  description: 'Novo status: aberta, em_execucao, pausada, vencida, concluida, cancelada',
+                  enum: ['aberta', 'em_execucao', 'pausada', 'vencida', 'concluida', 'cancelada']
+                },
+                priority: {
+                  type: 'string',
+                  description: 'Nova prioridade: baixa, media, alta, urgente',
+                  enum: ['baixa', 'media', 'alta', 'urgente']
+                },
+                assignedUserId: {
+                  type: 'string',
+                  description: 'ID do novo responsável'
+                }
+              },
+              required: ['number']
+            }
+          }, {
+            name: 'createWorkOrder',
+            description: 'Cria uma nova ordem de serviço. Use quando o usuário pedir para criar/adicionar/registrar uma nova O.S.',
+            parameters: {
+              type: 'object',
+              properties: {
+                title: {
+                  type: 'string',
+                  description: 'Título/descrição curta da O.S'
+                },
+                description: {
+                  type: 'string',
+                  description: 'Descrição detalhada da O.S (opcional)'
+                },
+                zoneId: {
+                  type: 'string',
+                  description: 'ID da zona onde a O.S deve ser executada'
+                },
+                priority: {
+                  type: 'string',
+                  description: 'Prioridade: baixa, media, alta, urgente (padrão: media)',
+                  enum: ['baixa', 'media', 'alta', 'urgente']
+                },
+                type: {
+                  type: 'string',
+                  description: 'Tipo: programada, corretiva_interna, corretiva_publica (padrão: corretiva_interna)',
+                  enum: ['programada', 'corretiva_interna', 'corretiva_publica']
+                },
+                scheduledDate: {
+                  type: 'string',
+                  description: 'Data agendada (formato YYYY-MM-DD)'
+                },
+                assignedUserId: {
+                  type: 'string',
+                  description: 'ID do responsável (opcional)'
+                }
+              },
+              required: ['title', 'zoneId', 'scheduledDate']
+            }
           }]
         }];
 
@@ -5738,9 +5928,6 @@ Responda de forma concisa e útil em português.`;
           const funcName = functionCall.functionCall.name;
           const funcArgs = functionCall.functionCall.args || {};
 
-          console.log(`[AI FUNCTION CALL] Function: ${funcName}, Args:`, funcArgs);
-          console.log(`[AI FUNCTION CALL] Context customerId: ${context.customerId}`);
-
           let funcResult: any;
           try {
             if (funcName === 'queryWorkOrdersCount') {
@@ -5749,21 +5936,31 @@ Responda de forma concisa e útil em português.`;
                 context.module,
                 funcArgs
               );
-              console.log(`[AI FUNCTION CALL] queryWorkOrdersCount result:`, funcResult);
             } else if (funcName === 'queryWorkOrdersList') {
               funcResult = await this.aiQueryWorkOrdersList(
                 context.customerId!,
                 context.module,
                 funcArgs
               );
-              console.log(`[AI FUNCTION CALL] queryWorkOrdersList result:`, funcResult);
             } else if (funcName === 'getWorkOrderDetails') {
               funcResult = await this.aiGetWorkOrderDetails(
                 context.customerId!,
                 context.module,
                 funcArgs.number
               );
-              console.log(`[AI FUNCTION CALL] getWorkOrderDetails result:`, funcResult);
+            } else if (funcName === 'updateWorkOrder') {
+              funcResult = await this.aiUpdateWorkOrder(
+                context.customerId!,
+                context.module,
+                funcArgs.number,
+                funcArgs
+              );
+            } else if (funcName === 'createWorkOrder') {
+              funcResult = await this.aiCreateWorkOrder(
+                context.customerId!,
+                context.module,
+                funcArgs
+              );
             } else {
               funcResult = { error: 'Função não implementada' };
             }
