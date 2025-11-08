@@ -349,7 +349,7 @@ export default function Sites({ customerId }: SitesProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Locais e Zonas</h2>
@@ -373,7 +373,7 @@ export default function Sites({ customerId }: SitesProps) {
                   Adicione um novo local de trabalho com todas as informações necessárias para gestão de facilities
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">

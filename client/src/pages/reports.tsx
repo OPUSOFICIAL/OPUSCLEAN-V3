@@ -987,7 +987,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {/* Overview */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📊 Visão Geral</h3>
@@ -1093,7 +1093,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
           {/* SLA Breakdown */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📋 Breakdown por Categoria</h3>
@@ -1165,7 +1165,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
           {/* Productivity Metrics */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📈 Métricas de Produtividade</h3>
@@ -1243,7 +1243,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
           {/* Team Stats */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">👥 Estatísticas da Equipe</h3>
@@ -1337,7 +1337,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
           {/* Sites */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">🏢 Sites</h3>
@@ -1425,7 +1425,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
           {/* Historical Trends */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📈 Tendências Históricas</h3>
@@ -1537,7 +1537,7 @@ export default function Reports() {
           }
         />
       
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-4">
         {/* KPI Dashboard */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -1547,11 +1547,11 @@ export default function Reports() {
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {isLoadingMetrics ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <ModernCard key={i} variant={i % 2 === 0 ? "gradient" : "glass"}>
-                  <CardContent className="p-6">
+                  <CardContent>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <Skeleton className="h-4 w-24 mb-3" />
@@ -1577,7 +1577,7 @@ export default function Reports() {
                 const Icon = kpi.icon;
                 return (
                   <ModernCard key={kpi.title} variant={index % 2 === 0 ? "gradient" : "glass"} className={`${kpi.borderColor} border-l-4`}>
-                    <CardContent className="p-6">
+                    <CardContent>
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <p className="text-sm font-medium text-slate-600 mb-1">{kpi.title}</p>
@@ -1614,7 +1614,7 @@ export default function Reports() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {reportTypes.map((report, index) => {
               const Icon = report.icon;
               const isSelected = selectedReportType === report.id;
@@ -1631,7 +1631,7 @@ export default function Reports() {
                       isSelected ? "ring-2 ring-blue-500 shadow-2xl scale-105" : ""
                     }`}
                   >
-                  <CardContent className="p-6">
+                  <CardContent>
                     <div className={`w-full h-32 rounded-lg bg-gradient-to-br ${report.gradient} mb-4 flex items-center justify-center`}>
                       <Icon className={`w-12 h-12 text-white p-2 ${report.color} rounded-lg`} />
                     </div>
@@ -1741,7 +1741,7 @@ export default function Reports() {
         <Separator className="my-8" />
 
         {/* Analytics Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           {/* Work Orders Chart */}
           <ModernCard variant="gradient">
             <CardHeader>
@@ -1824,7 +1824,7 @@ export default function Reports() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
+              <div className="space-y-3 md:space-y-4">
                 {isLoadingSLA ? (
                   <div>
                     <div className="text-center mb-6">
@@ -1912,7 +1912,7 @@ export default function Reports() {
                 disabled={isGenerating === 'geral-pdf'}
                 data-testid="button-quick-export-all-pdf"
                 className={cn(
-                  "group relative bg-white rounded-xl border-2 border-slate-200 p-6 transition-all duration-300",
+                  "group relative bg-white rounded-xl border-2 border-slate-200 p-4 transition-all duration-300",
                   "hover:border-slate-300 hover:shadow-lg hover:-translate-y-1",
                   "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 )}
@@ -1941,7 +1941,7 @@ export default function Reports() {
                 disabled={isGenerating === 'sla-csv'}
                 data-testid="button-quick-export-sla-csv"
                 className={cn(
-                  "group relative bg-white rounded-xl border-2 border-slate-200 p-6 transition-all duration-300",
+                  "group relative bg-white rounded-xl border-2 border-slate-200 p-4 transition-all duration-300",
                   "hover:border-slate-300 hover:shadow-lg hover:-translate-y-1",
                   "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 )}
@@ -1970,7 +1970,7 @@ export default function Reports() {
                 disabled={isGenerating === 'produtividade-excel'}
                 data-testid="button-quick-export-productivity-excel"
                 className={cn(
-                  "group relative bg-white rounded-xl border-2 border-slate-200 p-6 transition-all duration-300",
+                  "group relative bg-white rounded-xl border-2 border-slate-200 p-4 transition-all duration-300",
                   "hover:border-slate-300 hover:shadow-lg hover:-translate-y-1",
                   "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 )}

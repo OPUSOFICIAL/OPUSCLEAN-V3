@@ -230,9 +230,9 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4 space-y-4">
+      <div className="max-w-7xl mx-auto p-3 md:p-4 space-y-3 md:space-y-4">
         {/* Modern KPI Cards with Glassmorphism */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {/* Eficiência Operacional */}
           <div className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-300"></div>
@@ -486,7 +486,7 @@ export default function Dashboard() {
         </div>
 
         {/* Modern Charts with Glassmorphism */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
           {/* Performance Trend */}
           <Card className="border-0 shadow-lg backdrop-blur-sm bg-white/90 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
@@ -642,7 +642,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="bg-gradient-to-br from-transparent to-slate-50/20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               {(sites as any[] || []).map((site: any) => {
                 // Get all zone IDs for this site
                 const siteZoneIds = (zones as any[] || [])
@@ -747,7 +747,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Zone Performance with Modern Design */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
           {/* Top Zones */}
           <Card className="border-0 shadow-lg backdrop-blur-sm bg-white/90 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500"></div>

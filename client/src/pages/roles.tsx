@@ -231,7 +231,7 @@ export default function Roles() {
               </DialogHeader>
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -272,7 +272,7 @@ export default function Roles() {
                     <FormLabel className="text-base font-medium mb-4 block">
                       Permissões
                     </FormLabel>
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {Object.entries(groupedPermissions).map(([category, permissions]) => (
                         <Card key={category}>
                           <CardHeader className="pb-3">
