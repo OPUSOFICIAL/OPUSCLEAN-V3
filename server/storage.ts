@@ -5709,21 +5709,30 @@ export class DatabaseStorage implements IStorage {
     
     const systemPrompt = `Você é um assistente AI para o sistema OPUS de gestão de facilities. 
 
-INFORMAÇÕES DE DATA:
-- Data atual: ${context.date}
-- Mês atual: ${context.monthName} de ${context.year} (mês ${context.month})
-- Período do mês atual: ${context.firstDayOfMonth} até ${context.lastDayOfMonth}
+DATA E PERÍODO ATUAL (SEMPRE USE ESTES VALORES):
+- Hoje: ${context.date}
+- Mês: ${context.monthName}/${context.year}
+- Primeiro dia do mês: ${context.firstDayOfMonth}
+- Último dia do mês: ${context.lastDayOfMonth}
 
-MÓDULO ATIVO: ${context.module === 'clean' ? 'OPUS Clean (limpeza)' : 'OPUS Manutenção'}
+MÓDULO: ${context.module === 'clean' ? 'OPUS Clean (limpeza)' : 'OPUS Manutenção'}
 
-INSTRUÇÕES IMPORTANTES:
-1. Quando o usuário perguntar sobre "este mês" ou "esse mês", use completedFrom=${context.firstDayOfMonth} e completedTo=${context.lastDayOfMonth}
-2. Para "hoje", use completedFrom=${context.date} e completedTo=${context.date}
-3. Para "esta semana", calcule o intervalo da semana atual
-4. SEMPRE use as funções disponíveis para consultar dados em tempo real - NUNCA invente dados
-5. Responda de forma concisa e útil em português
+REGRAS OBRIGATÓRIAS - VOCÊ DEVE SEGUIR:
+1. NUNCA peça a data ao usuário - você JÁ TEM todas as datas acima
+2. Para "esse mês", "este mês", "do mês": SEMPRE use queryWorkOrdersList com completedFrom="${context.firstDayOfMonth}" e completedTo="${context.lastDayOfMonth}"
+3. Para "hoje": use completedFrom="${context.date}" e completedTo="${context.date}"
+4. SEMPRE chame as funções para buscar dados - JAMAIS responda sem chamar funções
+5. Se o usuário perguntar sobre quantidade, use queryWorkOrdersCount
+6. Se o usuário perguntar "quais", "liste", use queryWorkOrdersList
 
-Ordens de serviço de hoje: ${context.totalWorkOrders}`;
+EXEMPLOS DE USO CORRETO:
+- Pergunta: "Quantas O.S foram concluídas esse mês?"
+  Ação: queryWorkOrdersCount(status="concluida", completedFrom="${context.firstDayOfMonth}", completedTo="${context.lastDayOfMonth}")
+  
+- Pergunta: "Liste as O.S concluídas hoje"
+  Ação: queryWorkOrdersList(status="concluida", completedFrom="${context.date}", completedTo="${context.date}")
+
+PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
 
     const contextInfo = context.totalWorkOrders > 0 
       ? `Ordens de serviço agendadas para hoje:\n${context.workOrders.map((wo: any) => `- OS #${wo.number}: ${wo.title} (${wo.status})`).join('\n')}`
@@ -5766,17 +5775,17 @@ Ordens de serviço de hoje: ${context.totalWorkOrders}`;
         const tools = [{
           functionDeclarations: [{
             name: 'queryWorkOrdersCount',
-            description: 'Conta o número de ordens de serviço (O.S) com base em filtros. Use para responder perguntas sobre "quantas O.S" existem.',
+            description: 'QUANDO USAR: Sempre que o usuário perguntar "quantas", "qual o número de", "total de" O.S. EXEMPLO: "Quantas O.S foram concluídas esse mês?" → chame esta função com status="concluida", completedFrom=primeiro dia do mês, completedTo=último dia do mês.',
             parameters: {
               type: 'object',
               properties: {
                 status: {
                   type: 'string',
-                  description: 'Status da O.S. Aceita termos naturais: "abertas"/"pendentes" (não iniciadas), "ativas"/"em andamento" (executando), "vencidas"/"atrasadas", "concluídas"/"finalizadas", "pausadas", "canceladas". Valores do banco: aberta, em_execucao, pausada, vencida, concluida, cancelada'
+                  description: 'Status: use "concluida" para O.S finalizadas, "aberta" para pendentes, "em_execucao" para em andamento, "vencida" para atrasadas'
                 },
                 type: {
                   type: 'string',
-                  description: 'Tipo da O.S: "programada", "corretiva_interna", "corretiva_publica"',
+                  description: 'Tipo: "programada", "corretiva_interna", "corretiva_publica"',
                   enum: ['programada', 'corretiva_interna', 'corretiva_publica']
                 },
                 priority: {
@@ -5786,43 +5795,43 @@ Ordens de serviço de hoje: ${context.totalWorkOrders}`;
                 },
                 dateFrom: {
                   type: 'string',
-                  description: 'Data de início do agendamento (formato YYYY-MM-DD)'
+                  description: 'Início do agendamento YYYY-MM-DD'
                 },
                 dateTo: {
                   type: 'string',
-                  description: 'Data de fim do agendamento (formato YYYY-MM-DD)'
+                  description: 'Fim do agendamento YYYY-MM-DD'
                 },
                 completedFrom: {
                   type: 'string',
-                  description: 'Data de início da conclusão - use para filtrar O.S concluídas em um período específico (formato YYYY-MM-DD). Exemplo: para "O.S concluídas hoje", use a data de hoje.'
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o primeiro dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
                 },
                 completedTo: {
                   type: 'string',
-                  description: 'Data de fim da conclusão (formato YYYY-MM-DD)'
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o último dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
                 }
               }
             }
           }, {
             name: 'queryWorkOrdersList',
-            description: 'Lista ordens de serviço com detalhes. Use para responder "quais são minhas O.S" ou listar tarefas.',
+            description: 'QUANDO USAR: Sempre que o usuário pedir "liste", "quais são", "mostre as" O.S. EXEMPLO: "Liste as O.S concluídas hoje" → chame esta função com status="concluida", completedFrom=data de hoje, completedTo=data de hoje.',
             parameters: {
               type: 'object',
               properties: {
                 status: {
                   type: 'string',
-                  description: 'Status da O.S. Aceita termos naturais: "abertas"/"pendentes" (não iniciadas), "ativas"/"em andamento" (executando), "vencidas"/"atrasadas", "concluídas"/"finalizadas", "pausadas", "canceladas". Valores do banco: aberta, em_execucao, pausada, vencida, concluida, cancelada'
+                  description: 'Status: use "concluida" para finalizadas, "aberta" para pendentes, "em_execucao" para em andamento, "vencida" para atrasadas'
                 },
                 limit: {
                   type: 'number',
-                  description: 'Número máximo de resultados (padrão: 20)'
+                  description: 'Máximo de resultados (padrão: 20)'
                 },
                 completedFrom: {
                   type: 'string',
-                  description: 'Data de início da conclusão - use para filtrar O.S concluídas em um período específico (formato YYYY-MM-DD). Exemplo: para "Liste O.S concluídas hoje", use a data de hoje.'
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o primeiro dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
                 },
                 completedTo: {
                   type: 'string',
-                  description: 'Data de fim da conclusão (formato YYYY-MM-DD)'
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o último dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
                 }
               }
             }
