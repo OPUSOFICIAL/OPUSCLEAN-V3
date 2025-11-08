@@ -460,7 +460,7 @@ export default function Checklists() {
 
   if (isLoading) {
     return (
-      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+      <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
           <p className="text-slate-600">Carregando checklists...</p>
@@ -498,7 +498,7 @@ export default function Checklists() {
       />
       
       {/* Dialog */}
-      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
+      <div className={cn("flex-1 overflow-y-auto p-4 space-y-4", theme.gradients.section)}>
         <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
           setIsCreateDialogOpen(open);
           if (!open) {
@@ -513,7 +513,7 @@ export default function Checklists() {
               </DialogTitle>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
                   {/* Form básico */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

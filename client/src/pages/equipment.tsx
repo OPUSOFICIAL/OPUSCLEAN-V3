@@ -282,7 +282,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
         }
       />
       
-      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
+      <div className={cn("flex-1 overflow-y-auto p-4 space-y-4", theme.gradients.section)}>
         <ModernCard variant="gradient">
           <ModernCardHeader icon={<Wrench className="w-6 h-6" />}>
             Lista de Equipamentos

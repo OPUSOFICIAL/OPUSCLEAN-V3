@@ -458,7 +458,7 @@ export default function MaintenancePlans() {
         }
       />
       
-      <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
+      <div className={cn("flex-1 overflow-y-auto p-4 space-y-4", theme.gradients.section)}>
         {/* Filters and Stats Combined */}
         <ModernCard variant="glass">
           <ModernCardContent>

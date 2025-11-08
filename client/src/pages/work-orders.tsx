@@ -395,8 +395,8 @@ export default function WorkOrders() {
         }
       />
       
-      <main className={cn("flex-1 overflow-auto p-6", theme.gradients.page)}>
-        <div className="max-w-7xl mx-auto space-y-6">
+      <main className={cn("flex-1 overflow-auto p-4", theme.gradients.page)}>
+        <div className="max-w-7xl mx-auto space-y-4">
           {/* Estatísticas e Filtros Integrados */}
           <ModernCard variant="gradient">
             <ModernCardContent>

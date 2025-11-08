@@ -98,7 +98,7 @@ export default function Dashboard() {
   if (statsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/40 to-slate-100/20 flex items-center justify-center">
-        <div className="text-center space-y-6">
+        <div className="text-center space-y-4">
           <div className="relative">
             <div className="w-20 h-20 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
             <div className="absolute inset-0 w-20 h-20 border-4 border-transparent border-r-blue-400 rounded-full animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
@@ -230,16 +230,16 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto p-4 space-y-4">
         {/* Modern KPI Cards with Glassmorphism */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Eficiência Operacional */}
           <div className="group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-300"></div>
             <Card className="relative border-0 shadow-lg hover:shadow-2xl transition-all duration-300 backdrop-blur-sm bg-white/90 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full"></div>
-              <CardContent className="p-6 relative">
-                <div className="flex items-start justify-between mb-4">
+              <CardContent className="p-4 relative">
+                <div className="flex items-start justify-between mb-3">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <Zap className="w-7 h-7 text-white" />
                   </div>
@@ -263,7 +263,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-600 mb-2">Eficiência Operacional</p>
-                  <p className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent mb-4">
+                  <p className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent mb-3">
                     {(stats as any)?.efficiency || 0}%
                   </p>
                   <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -292,8 +292,8 @@ export default function Dashboard() {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-300"></div>
             <Card className="relative border-0 shadow-lg hover:shadow-2xl transition-all duration-300 backdrop-blur-sm bg-white/90 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full"></div>
-              <CardContent className="p-6 relative">
-                <div className="flex items-start justify-between mb-4">
+              <CardContent className="p-4 relative">
+                <div className="flex items-start justify-between mb-3">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <Clock className="w-7 h-7 text-white" />
                   </div>
@@ -317,7 +317,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-600 mb-2">SLA Compliance</p>
-                  <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-4">
+                  <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-3">
                     {(stats as any)?.slaCompliance || 0}%
                   </p>
                   <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -346,8 +346,8 @@ export default function Dashboard() {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-300"></div>
             <Card className="relative border-0 shadow-lg hover:shadow-2xl transition-all duration-300 backdrop-blur-sm bg-white/90 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full"></div>
-              <CardContent className="p-6 relative">
-                <div className="flex items-start justify-between mb-4">
+              <CardContent className="p-4 relative">
+                <div className="flex items-start justify-between mb-3">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <CheckCircle className="w-7 h-7 text-white" />
                   </div>
@@ -373,7 +373,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-600 mb-2">OS Concluídas</p>
-                  <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-4">
+                  <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-3">
                     {(stats as any)?.completedWorkOrders || 0}
                   </p>
                   <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -407,8 +407,8 @@ export default function Dashboard() {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl opacity-0 group-hover:opacity-100 blur transition duration-300"></div>
             <Card className="relative border-0 shadow-lg hover:shadow-2xl transition-all duration-300 backdrop-blur-sm bg-white/90 overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-500/10 to-transparent rounded-bl-full"></div>
-              <CardContent className="p-6 relative">
-                <div className="flex items-start justify-between mb-4">
+              <CardContent className="p-4 relative">
+                <div className="flex items-start justify-between mb-3">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <Star className="w-7 h-7 text-white" />
                   </div>
@@ -443,11 +443,11 @@ export default function Dashboard() {
                     const qualityIndex = (stats as any)?.qualityIndex;
                     
                     if (completedOrders === 0 || qualityIndex === null || qualityIndex === undefined) {
-                      return <p className="text-4xl font-bold text-slate-400 mb-4">N/A</p>;
+                      return <p className="text-4xl font-bold text-slate-400 mb-3">N/A</p>;
                     }
                     
                     return (
-                      <p className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent mb-4">
+                      <p className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent mb-3">
                         {qualityIndex}<span className="text-xl text-slate-500">/10</span>
                       </p>
                     );
@@ -486,7 +486,7 @@ export default function Dashboard() {
         </div>
 
         {/* Modern Charts with Glassmorphism */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Performance Trend */}
           <Card className="border-0 shadow-lg backdrop-blur-sm bg-white/90 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
@@ -498,7 +498,7 @@ export default function Dashboard() {
                 Tendência de Performance
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent>
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={(analytics as any)?.daily || []}>
                   <defs>
@@ -557,7 +557,7 @@ export default function Dashboard() {
                 Distribuição de Status
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent>
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
@@ -641,8 +641,8 @@ export default function Dashboard() {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-6 bg-gradient-to-br from-transparent to-slate-50/20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <CardContent className="bg-gradient-to-br from-transparent to-slate-50/20">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(sites as any[] || []).map((site: any) => {
                 // Get all zone IDs for this site
                 const siteZoneIds = (zones as any[] || [])
@@ -663,7 +663,7 @@ export default function Dashboard() {
                 return (
                   <div 
                     key={site.id}
-                    className="group relative p-6 rounded-2xl border-2 border-slate-200/60 hover:border-blue-400/60 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer bg-white/90 backdrop-blur-md overflow-hidden hover:-translate-y-1"
+                    className="group relative p-4 rounded-2xl border-2 border-slate-200/60 hover:border-blue-400/60 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer bg-white/90 backdrop-blur-md overflow-hidden hover:-translate-y-1"
                     onClick={() => {
                       setSelectedSite(site.id);
                       queryClient.invalidateQueries({ 
@@ -747,7 +747,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Zone Performance with Modern Design */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Top Zones */}
           <Card className="border-0 shadow-lg backdrop-blur-sm bg-white/90 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500"></div>
