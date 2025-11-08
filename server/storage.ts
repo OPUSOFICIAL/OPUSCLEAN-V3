@@ -5200,8 +5200,11 @@ export class DatabaseStorage implements IStorage {
       // Fetch context
       const context = await this.getContextForAI(userId, customerId, module);
       
-      // Call AI
-      const aiResponse = await this.callAI(aiIntegration, userMessage, context);
+      // Get conversation history for context
+      const conversationHistory = await this.getConversationMessages(conversation.id);
+      
+      // Call AI with full conversation history
+      const aiResponse = await this.callAI(aiIntegration, userMessage, context, conversationHistory);
       
       // Create assistant message
       const assistantMsg = await this.createChatMessage({
@@ -5680,6 +5683,7 @@ export class DatabaseStorage implements IStorage {
     integration: AiIntegration, 
     userMessage: string, 
     context: any,
+    conversationHistory: ChatMessage[] = [],
     maxIterations: number = 3
   ): Promise<{ content: string; tokensUsed?: number }> {
     const apiKey = decryptApiKey(integration.apiKey);
@@ -5688,6 +5692,7 @@ export class DatabaseStorage implements IStorage {
 O usuário está no módulo ${context.module === 'clean' ? 'OPUS Clean (limpeza)' : 'OPUS Manutenção'}.
 Hoje é ${context.date}.
 O usuário tem ${context.totalWorkOrders} ordem(ns) de serviço para hoje.
+Use as funções disponíveis para consultar dados em tempo real.
 Responda de forma concisa e útil em português.`;
 
     const contextInfo = context.totalWorkOrders > 0 
@@ -5873,13 +5878,30 @@ Responda de forma concisa e útil em português.`;
           }]
         }];
 
-        // Function calling loop
-        let messages = [{
+        // Build conversation history for Google Gemini
+        // Convert chat messages to Gemini format, excluding the current user message (not saved yet)
+        const historyMessages: any[] = conversationHistory
+          .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+          .map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          }));
+
+        // Add system context as the first user message if no history
+        if (historyMessages.length === 0) {
+          historyMessages.push({
+            role: 'user',
+            parts: [{ text: `${systemPrompt}\n\n${contextInfo}` }]
+          });
+        }
+
+        // Add current user message
+        historyMessages.push({
           role: 'user',
-          parts: [{
-            text: `${systemPrompt}\n\n${contextInfo}\n\nUsuário: ${userMessage}`
-          }]
-        }];
+          parts: [{ text: userMessage }]
+        });
+
+        let messages = historyMessages;
 
         for (let iteration = 0; iteration < maxIterations; iteration++) {
           const googleResponse = await fetch(
