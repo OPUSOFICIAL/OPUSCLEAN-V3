@@ -5259,6 +5259,70 @@ export class DatabaseStorage implements IStorage {
   // These functions are called by the AI to fetch real-time data
   // SECURITY: All queries are automatically scoped to the active customer
 
+  /**
+   * Maps natural language terms to exact database status values
+   * This allows the AI to understand colloquial Portuguese terms
+   * 
+   * Database enum values: 'aberta', 'em_execucao', 'pausada', 'vencida', 'concluida', 'cancelada'
+   */
+  private mapStatusTerm(term: string | undefined): string | undefined {
+    if (!term) return undefined;
+
+    const normalizedTerm = term.toLowerCase().trim();
+    
+    // Status mapping: colloquial terms → exact database enum values
+    const statusMap: Record<string, string> = {
+      // "Abertas" - O.S que ainda não começaram (status: 'aberta')
+      'aberta': 'aberta',
+      'abertas': 'aberta',
+      'aberto': 'aberta',
+      'abertos': 'aberta',
+      'não iniciada': 'aberta',
+      'não iniciadas': 'aberta',
+      'pendente': 'aberta',
+      'pendentes': 'aberta',
+      
+      // "Ativas" / "Em Andamento" - O.S sendo executadas (status: 'em_execucao')
+      'ativa': 'em_execucao',
+      'ativas': 'em_execucao',
+      'em_execucao': 'em_execucao',
+      'em execução': 'em_execucao',
+      'em andamento': 'em_execucao',
+      'executando': 'em_execucao',
+      'andamento': 'em_execucao',
+      
+      // "Pausadas" (status: 'pausada')
+      'pausada': 'pausada',
+      'pausadas': 'pausada',
+      
+      // "Vencidas" / "Atrasadas" (status: 'vencida')
+      'vencida': 'vencida',
+      'vencidas': 'vencida',
+      'atrasada': 'vencida',
+      'atrasadas': 'vencida',
+      'overdue': 'vencida',
+      
+      // "Concluídas" / "Finalizadas" (status: 'concluida')
+      'concluida': 'concluida',
+      'concluídas': 'concluida',
+      'concluidas': 'concluida',
+      'finalizada': 'concluida',
+      'finalizadas': 'concluida',
+      'completa': 'concluida',
+      'completas': 'concluida',
+      'feita': 'concluida',
+      'feitas': 'concluida',
+      'terminada': 'concluida',
+      'terminadas': 'concluida',
+      
+      // "Canceladas" (status: 'cancelada')
+      'cancelada': 'cancelada',
+      'canceladas': 'cancelada'
+    };
+
+    return statusMap[normalizedTerm] || term;
+  }
+
   private async aiQueryWorkOrdersCount(customerId: string, module: 'clean' | 'maintenance', filters?: {
     status?: string;
     type?: string;
@@ -5271,8 +5335,10 @@ export class DatabaseStorage implements IStorage {
       eq(workOrders.module, module)
     ];
 
-    if (filters?.status) {
-      conditions.push(eq(workOrders.status, filters.status as any));
+    // Map colloquial status terms to database values
+    const mappedStatus = this.mapStatusTerm(filters?.status);
+    if (mappedStatus) {
+      conditions.push(eq(workOrders.status, mappedStatus as any));
     }
     if (filters?.type) {
       conditions.push(eq(workOrders.type, filters.type as any));
@@ -5316,8 +5382,10 @@ export class DatabaseStorage implements IStorage {
       eq(workOrders.module, module)
     ];
 
-    if (filters?.status) {
-      conditions.push(eq(workOrders.status, filters.status as any));
+    // Map colloquial status terms to database values
+    const mappedStatus = this.mapStatusTerm(filters?.status);
+    if (mappedStatus) {
+      conditions.push(eq(workOrders.status, mappedStatus as any));
     }
     if (filters?.userId) {
       conditions.push(eq(workOrders.assignedUserId, filters.userId));
@@ -5402,8 +5470,7 @@ Responda de forma concisa e útil em português.`;
               properties: {
                 status: {
                   type: 'string',
-                  description: 'Status da O.S: "pendente", "em_execucao", "concluida", "atrasada", "cancelada"',
-                  enum: ['pendente', 'em_execucao', 'concluida', 'atrasada', 'cancelada']
+                  description: 'Status da O.S. Aceita termos naturais: "abertas"/"pendentes" (não iniciadas), "ativas"/"em andamento" (executando), "vencidas"/"atrasadas", "concluídas"/"finalizadas", "pausadas", "canceladas". Valores do banco: aberta, em_execucao, pausada, vencida, concluida, cancelada'
                 },
                 type: {
                   type: 'string',
@@ -5433,8 +5500,7 @@ Responda de forma concisa e útil em português.`;
               properties: {
                 status: {
                   type: 'string',
-                  description: 'Filtrar por status',
-                  enum: ['pendente', 'em_execucao', 'concluida', 'atrasada', 'cancelada']
+                  description: 'Status da O.S. Aceita termos naturais: "abertas"/"pendentes" (não iniciadas), "ativas"/"em andamento" (executando), "vencidas"/"atrasadas", "concluídas"/"finalizadas", "pausadas", "canceladas". Valores do banco: aberta, em_execucao, pausada, vencida, concluida, cancelada'
                 },
                 limit: {
                   type: 'number',
