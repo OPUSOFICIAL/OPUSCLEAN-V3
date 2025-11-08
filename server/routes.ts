@@ -3867,7 +3867,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not authenticated" });
       }
 
-      const conversation = await storage.getActiveConversation(req.user.id);
+      const { customerId, module } = req.query;
+      
+      const conversation = await storage.getActiveConversation(
+        req.user.id,
+        customerId as string,
+        module as 'clean' | 'maintenance'
+      );
       
       if (!conversation) {
         return res.json({ conversation: null, messages: [] });

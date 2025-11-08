@@ -5095,13 +5095,23 @@ export class DatabaseStorage implements IStorage {
   // CHAT METHODS
   // ============================================================================
 
-  async getActiveConversation(userId: string): Promise<ChatConversation | undefined> {
+  async getActiveConversation(userId: string, customerId?: string, module?: 'clean' | 'maintenance'): Promise<ChatConversation | undefined> {
+    const conditions = [
+      eq(chatConversations.userId, userId),
+      eq(chatConversations.isActive, true)
+    ];
+    
+    if (customerId) {
+      conditions.push(eq(chatConversations.customerId, customerId));
+    }
+    
+    if (module) {
+      conditions.push(eq(chatConversations.module, module));
+    }
+    
     const [conversation] = await db.select()
       .from(chatConversations)
-      .where(and(
-        eq(chatConversations.userId, userId),
-        eq(chatConversations.isActive, true)
-      ))
+      .where(and(...conditions))
       .orderBy(desc(chatConversations.updatedAt))
       .limit(1);
     
@@ -5415,17 +5425,12 @@ export class DatabaseStorage implements IStorage {
     completedFrom?: string;
     completedTo?: string;
   }): Promise<any[]> {
-    console.log(`[AI QUERY] aiQueryWorkOrdersList - customerId: ${customerId}, module: ${module}, filters:`, filters);
-    
     // Get customer's sites
     const customerSites = await db.select({ id: sites.id })
       .from(sites)
       .where(and(eq(sites.customerId, customerId), eq(sites.module, module)));
     
-    console.log(`[AI QUERY] Found ${customerSites.length} sites for customer ${customerId} and module ${module}`);
-    
     if (customerSites.length === 0) {
-      console.log(`[AI QUERY] No sites found - returning empty array`);
       return [];
     }
     
@@ -5436,10 +5441,7 @@ export class DatabaseStorage implements IStorage {
       .from(zones)
       .where(and(inArray(zones.siteId, siteIds), eq(zones.module, module)));
     
-    console.log(`[AI QUERY] Found ${customerZones.length} zones for ${siteIds.length} sites`);
-    
     if (customerZones.length === 0) {
-      console.log(`[AI QUERY] No zones found - returning empty array`);
       return [];
     }
     
@@ -5453,7 +5455,6 @@ export class DatabaseStorage implements IStorage {
 
     // Map colloquial status terms to database values
     const mappedStatus = this.mapStatusTerm(filters?.status);
-    console.log(`[AI QUERY] Status mapping: "${filters?.status}" → "${mappedStatus}"`);
     
     if (mappedStatus) {
       conditions.push(eq(workOrders.status, mappedStatus as any));
@@ -5488,9 +5489,67 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(workOrders.scheduledDate))
     .limit(filters?.limit || 20);
 
-    console.log(`[AI QUERY] Found ${orders.length} work orders matching conditions`);
-
     return orders;
+  }
+
+  private async aiGetWorkOrderDetails(customerId: string, module: 'clean' | 'maintenance', workOrderNumber: number): Promise<any> {
+    // Get customer's sites
+    const customerSites = await db.select({ id: sites.id })
+      .from(sites)
+      .where(and(eq(sites.customerId, customerId), eq(sites.module, module)));
+    
+    if (customerSites.length === 0) {
+      return null;
+    }
+    
+    const siteIds = customerSites.map(s => s.id);
+    
+    // Get zones for these sites
+    const customerZones = await db.select({ id: zones.id })
+      .from(zones)
+      .where(and(inArray(zones.siteId, siteIds), eq(zones.module, module)));
+    
+    if (customerZones.length === 0) {
+      return null;
+    }
+    
+    const zoneIds = customerZones.map(z => z.id);
+    
+    // Find the work order with all details
+    const workOrderData = await db.select({
+      id: workOrders.id,
+      number: workOrders.number,
+      title: workOrders.title,
+      description: workOrders.description,
+      status: workOrders.status,
+      priority: workOrders.priority,
+      type: workOrders.type,
+      scheduledDate: workOrders.scheduledDate,
+      scheduledTime: workOrders.scheduledTime,
+      completedAt: workOrders.completedAt,
+      assignedUserId: workOrders.assignedUserId,
+      zoneId: workOrders.zoneId,
+      createdAt: workOrders.createdAt,
+      zoneName: zones.name,
+      siteName: sites.name,
+      assignedUserName: users.name
+    })
+    .from(workOrders)
+    .leftJoin(zones, eq(workOrders.zoneId, zones.id))
+    .leftJoin(sites, eq(zones.siteId, sites.id))
+    .leftJoin(users, eq(workOrders.assignedUserId, users.id))
+    .where(and(
+      eq(workOrders.number, workOrderNumber),
+      inArray(workOrders.zoneId, zoneIds),
+      eq(workOrders.module, module)
+    ))
+    .limit(1);
+    
+    if (workOrderData.length === 0) {
+      return null;
+    }
+    
+    return workOrderData[0];
   }
 
   private async callAI(
@@ -5608,6 +5667,19 @@ Responda de forma concisa e útil em português.`;
                 }
               }
             }
+          }, {
+            name: 'getWorkOrderDetails',
+            description: 'Obtém detalhes completos de uma O.S específica pelo número. Use quando o usuário perguntar sobre uma O.S específica (ex: "quando foi concluída a O.S 1213?", "detalhes da O.S 1213")',
+            parameters: {
+              type: 'object',
+              properties: {
+                number: {
+                  type: 'number',
+                  description: 'Número da O.S (ex: 1213)'
+                }
+              },
+              required: ['number']
+            }
           }]
         }];
 
@@ -5685,6 +5757,13 @@ Responda de forma concisa e útil em português.`;
                 funcArgs
               );
               console.log(`[AI FUNCTION CALL] queryWorkOrdersList result:`, funcResult);
+            } else if (funcName === 'getWorkOrderDetails') {
+              funcResult = await this.aiGetWorkOrderDetails(
+                context.customerId!,
+                context.module,
+                funcArgs.number
+              );
+              console.log(`[AI FUNCTION CALL] getWorkOrderDetails result:`, funcResult);
             } else {
               funcResult = { error: 'Função não implementada' };
             }

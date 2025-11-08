@@ -18,13 +18,13 @@ export function AIChat() {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch conversation and messages
+  // Fetch conversation and messages (filtered by customerId and module)
   const { data: conversationData, isLoading } = useQuery<{
     conversation: any | null;
     messages: ChatMessage[];
   }>({
-    queryKey: ["/api/chat/conversation"],
-    enabled: isOpen
+    queryKey: ["/api/chat/conversation", activeClientId, currentModule],
+    enabled: isOpen && !!activeClientId && !!currentModule
   });
 
   // Send message mutation
@@ -39,7 +39,7 @@ export function AIChat() {
       return apiRequest('POST', '/api/chat/message', payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversation"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversation", activeClientId, currentModule] });
       setMessage("");
     },
     onError: (error: any) => {
