@@ -24,6 +24,19 @@ export function AIChat() {
     messages: ChatMessage[];
   }>({
     queryKey: ["/api/chat/conversation", activeClientId, currentModule],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        customerId: activeClientId || '',
+        module: currentModule || ''
+      });
+      const response = await fetch(`/api/chat/conversation?${params}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch conversation');
+      }
+      return response.json();
+    },
     enabled: isOpen && !!activeClientId && !!currentModule
   });
 
