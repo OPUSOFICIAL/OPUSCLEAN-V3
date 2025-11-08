@@ -5415,12 +5415,17 @@ export class DatabaseStorage implements IStorage {
     completedFrom?: string;
     completedTo?: string;
   }): Promise<any[]> {
+    console.log(`[AI QUERY] aiQueryWorkOrdersList - customerId: ${customerId}, module: ${module}, filters:`, filters);
+    
     // Get customer's sites
     const customerSites = await db.select({ id: sites.id })
       .from(sites)
       .where(and(eq(sites.customerId, customerId), eq(sites.module, module)));
     
+    console.log(`[AI QUERY] Found ${customerSites.length} sites for customer ${customerId} and module ${module}`);
+    
     if (customerSites.length === 0) {
+      console.log(`[AI QUERY] No sites found - returning empty array`);
       return [];
     }
     
@@ -5431,7 +5436,10 @@ export class DatabaseStorage implements IStorage {
       .from(zones)
       .where(and(inArray(zones.siteId, siteIds), eq(zones.module, module)));
     
+    console.log(`[AI QUERY] Found ${customerZones.length} zones for ${siteIds.length} sites`);
+    
     if (customerZones.length === 0) {
+      console.log(`[AI QUERY] No zones found - returning empty array`);
       return [];
     }
     
@@ -5445,6 +5453,8 @@ export class DatabaseStorage implements IStorage {
 
     // Map colloquial status terms to database values
     const mappedStatus = this.mapStatusTerm(filters?.status);
+    console.log(`[AI QUERY] Status mapping: "${filters?.status}" → "${mappedStatus}"`);
+    
     if (mappedStatus) {
       conditions.push(eq(workOrders.status, mappedStatus as any));
     }
@@ -5477,6 +5487,8 @@ export class DatabaseStorage implements IStorage {
     .where(and(...conditions))
     .orderBy(desc(workOrders.scheduledDate))
     .limit(filters?.limit || 20);
+
+    console.log(`[AI QUERY] Found ${orders.length} work orders matching conditions`);
 
     return orders;
   }
