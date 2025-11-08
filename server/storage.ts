@@ -5344,14 +5344,9 @@ export class DatabaseStorage implements IStorage {
     const siteIds = customerSites.map(s => s.id);
     
     // Get zones for these sites
-    let siteCondition = eq(zones.siteId, siteIds[0]);
-    for (let i = 1; i < siteIds.length; i++) {
-      siteCondition = sql`${siteCondition} OR ${zones.siteId} = ${siteIds[i]}` as any;
-    }
-    
     const customerZones = await db.select({ id: zones.id })
       .from(zones)
-      .where(and(siteCondition, eq(zones.module, module)));
+      .where(and(inArray(zones.siteId, siteIds), eq(zones.module, module)));
     
     if (customerZones.length === 0) {
       return { count: 0, breakdown: { byStatus: {}, total: 0 } };
@@ -5359,14 +5354,9 @@ export class DatabaseStorage implements IStorage {
     
     const zoneIds = customerZones.map(z => z.id);
     
-    // Build zone condition for work orders
-    let zoneCondition = eq(workOrders.zoneId, zoneIds[0]);
-    for (let i = 1; i < zoneIds.length; i++) {
-      zoneCondition = sql`${zoneCondition} OR ${workOrders.zoneId} = ${zoneIds[i]}` as any;
-    }
-    
+    // Build conditions for work orders
     let conditions = [
-      zoneCondition,
+      inArray(workOrders.zoneId, zoneIds),
       eq(workOrders.module, module)
     ];
 
@@ -5438,14 +5428,9 @@ export class DatabaseStorage implements IStorage {
     const siteIds = customerSites.map(s => s.id);
     
     // Get zones for these sites
-    let siteCondition = eq(zones.siteId, siteIds[0]);
-    for (let i = 1; i < siteIds.length; i++) {
-      siteCondition = sql`${siteCondition} OR ${zones.siteId} = ${siteIds[i]}` as any;
-    }
-    
     const customerZones = await db.select({ id: zones.id })
       .from(zones)
-      .where(and(siteCondition, eq(zones.module, module)));
+      .where(and(inArray(zones.siteId, siteIds), eq(zones.module, module)));
     
     if (customerZones.length === 0) {
       return [];
@@ -5453,14 +5438,9 @@ export class DatabaseStorage implements IStorage {
     
     const zoneIds = customerZones.map(z => z.id);
     
-    // Build zone condition for work orders
-    let zoneCondition = eq(workOrders.zoneId, zoneIds[0]);
-    for (let i = 1; i < zoneIds.length; i++) {
-      zoneCondition = sql`${zoneCondition} OR ${workOrders.zoneId} = ${zoneIds[i]}` as any;
-    }
-    
+    // Build conditions for work orders
     let conditions = [
-      zoneCondition,
+      inArray(workOrders.zoneId, zoneIds),
       eq(workOrders.module, module)
     ];
 
@@ -5676,6 +5656,9 @@ Responda de forma concisa e útil em português.`;
           const funcName = functionCall.functionCall.name;
           const funcArgs = functionCall.functionCall.args || {};
 
+          console.log(`[AI FUNCTION CALL] Function: ${funcName}, Args:`, funcArgs);
+          console.log(`[AI FUNCTION CALL] Context customerId: ${context.customerId}`);
+
           let funcResult: any;
           try {
             if (funcName === 'queryWorkOrdersCount') {
@@ -5684,6 +5667,7 @@ Responda de forma concisa e útil em português.`;
                 context.module,
                 funcArgs
               );
+              console.log(`[AI FUNCTION CALL] queryWorkOrdersCount result:`, funcResult);
             } else if (funcName === 'queryWorkOrdersList') {
               funcResult = await this.aiQueryWorkOrdersList(
                 context.customerId!,
@@ -5693,10 +5677,12 @@ Responda de forma concisa e útil em português.`;
                   userId: context.userId
                 }
               );
+              console.log(`[AI FUNCTION CALL] queryWorkOrdersList result:`, funcResult);
             } else {
               funcResult = { error: 'Função não implementada' };
             }
           } catch (error: any) {
+            console.error(`[AI FUNCTION CALL ERROR] ${funcName}:`, error);
             funcResult = { error: error.message };
           }
 
