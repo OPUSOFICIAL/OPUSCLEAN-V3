@@ -159,31 +159,45 @@ export function AIChat() {
           </div>
         ) : (
           <>
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                data-testid={`message-${msg.role}-${msg.id}`}
-              >
+            {messages.map((msg) => {
+              const messageTime = msg.createdAt 
+                ? new Date(msg.createdAt).toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                : '';
+              
+              return (
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                      : msg.error 
-                        ? 'bg-red-50 text-red-900 border border-red-200 shadow-sm'
-                        : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
-                  }`}
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  data-testid={`message-${msg.role}-${msg.id}`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  {msg.error && (
-                    <div className="mt-2 pt-2 border-t border-red-200">
-                      <p className="text-xs text-red-700 font-medium">⚠️ Detalhes do erro:</p>
-                      <p className="text-xs text-red-600 mt-1">{msg.error}</p>
+                  <div className="flex flex-col max-w-[80%]">
+                    <div
+                      className={`rounded-lg px-4 py-2 ${
+                        msg.role === 'user'
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                          : msg.error 
+                            ? 'bg-red-50 text-red-900 border border-red-200 shadow-sm'
+                            : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {msg.error && (
+                        <div className="mt-2 pt-2 border-t border-red-200">
+                          <p className="text-xs text-red-700 font-medium">⚠️ Detalhes do erro:</p>
+                          <p className="text-xs text-red-600 mt-1">{msg.error}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <span className={`text-xs text-gray-500 mt-1 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                      {messageTime}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div ref={messagesEndRef} />
           </>
         )}

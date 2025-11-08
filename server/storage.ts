@@ -36,7 +36,7 @@ import {
   type ChatMessage, type InsertChatMessage
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne, gte, lte } from "drizzle-orm";
+import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne, gte, lte, lt } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
