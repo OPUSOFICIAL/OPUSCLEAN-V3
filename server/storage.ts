@@ -5557,6 +5557,7 @@ Responda de forma concisa e útil em português.`;
 
         // Function calling loop
         let messages = [{
+          role: 'user',
           parts: [{
             text: `${systemPrompt}\n\n${contextInfo}\n\nUsuário: ${userMessage}`
           }]
@@ -5639,7 +5640,7 @@ Responda de forma concisa e útil em português.`;
             parts: parts
           } as any);
           messages.push({
-            role: 'function',
+            role: 'user',
             parts: [{
               functionResponse: {
                 name: funcName,
