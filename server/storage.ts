@@ -5694,7 +5694,7 @@ Responda de forma concisa e útil em português.`;
             parts: [{
               functionResponse: {
                 name: funcName,
-                response: funcResult
+                response: { result: funcResult }
               }
             }]
           } as any);
