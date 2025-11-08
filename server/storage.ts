@@ -36,7 +36,7 @@ import {
   type ChatMessage, type InsertChatMessage
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne } from "drizzle-orm";
+import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne, gte, lte } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
@@ -5249,11 +5249,104 @@ export class DatabaseStorage implements IStorage {
       date: today,
       module,
       workOrders: todayWorkOrders,
-      totalWorkOrders: todayWorkOrders.length
+      totalWorkOrders: todayWorkOrders.length,
+      customerId,
+      userId
     };
   }
 
-  private async callAI(integration: AiIntegration, userMessage: string, context: any): Promise<{ content: string; tokensUsed?: number }> {
+  // === AI QUERY FUNCTIONS (Internal - Customer-Scoped) ===
+  // These functions are called by the AI to fetch real-time data
+  // SECURITY: All queries are automatically scoped to the active customer
+
+  private async aiQueryWorkOrdersCount(customerId: string, module: 'clean' | 'maintenance', filters?: {
+    status?: string;
+    type?: string;
+    priority?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<{ count: number; breakdown: any }> {
+    let conditions = [
+      eq(workOrders.companyId, customerId),
+      eq(workOrders.module, module)
+    ];
+
+    if (filters?.status) {
+      conditions.push(eq(workOrders.status, filters.status as any));
+    }
+    if (filters?.type) {
+      conditions.push(eq(workOrders.type, filters.type as any));
+    }
+    if (filters?.priority) {
+      conditions.push(eq(workOrders.priority, filters.priority as any));
+    }
+    if (filters?.dateFrom) {
+      conditions.push(gte(workOrders.scheduledDate, filters.dateFrom));
+    }
+    if (filters?.dateTo) {
+      conditions.push(lte(workOrders.scheduledDate, filters.dateTo));
+    }
+
+    const orders = await db.select()
+      .from(workOrders)
+      .where(and(...conditions));
+
+    // Breakdown by status
+    const byStatus = orders.reduce((acc: any, wo) => {
+      acc[wo.status] = (acc[wo.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      count: orders.length,
+      breakdown: {
+        byStatus,
+        total: orders.length
+      }
+    };
+  }
+
+  private async aiQueryWorkOrdersList(customerId: string, module: 'clean' | 'maintenance', filters?: {
+    status?: string;
+    limit?: number;
+    userId?: string;
+  }): Promise<any[]> {
+    let conditions = [
+      eq(workOrders.companyId, customerId),
+      eq(workOrders.module, module)
+    ];
+
+    if (filters?.status) {
+      conditions.push(eq(workOrders.status, filters.status as any));
+    }
+    if (filters?.userId) {
+      conditions.push(eq(workOrders.assignedUserId, filters.userId));
+    }
+
+    const orders = await db.select({
+      id: workOrders.id,
+      number: workOrders.number,
+      title: workOrders.title,
+      status: workOrders.status,
+      priority: workOrders.priority,
+      type: workOrders.type,
+      scheduledDate: workOrders.scheduledDate,
+      completedAt: workOrders.completedAt
+    })
+    .from(workOrders)
+    .where(and(...conditions))
+    .orderBy(desc(workOrders.scheduledDate))
+    .limit(filters?.limit || 20);
+
+    return orders;
+  }
+
+  private async callAI(
+    integration: AiIntegration, 
+    userMessage: string, 
+    context: any,
+    maxIterations: number = 3
+  ): Promise<{ content: string; tokensUsed?: number }> {
     const apiKey = decryptApiKey(integration.apiKey);
     
     const systemPrompt = `Você é um assistente AI para o sistema OPUS de gestão de facilities. 
@@ -5298,41 +5391,159 @@ Responda de forma concisa e útil em português.`;
           tokensUsed: openaiData.usage?.total_tokens
         };
 
-      case 'google':
-        const googleResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${integration.model || 'gemini-2.0-flash-exp'}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `${systemPrompt}\n\n${contextInfo}\n\nUsuário: ${userMessage}`
-                }]
-              }]
-            })
-          }
-        );
+      case 'google': {
+        // Define tools/functions that the AI can call
+        const tools = [{
+          functionDeclarations: [{
+            name: 'queryWorkOrdersCount',
+            description: 'Conta o número de ordens de serviço (O.S) com base em filtros. Use para responder perguntas sobre "quantas O.S" existem.',
+            parameters: {
+              type: 'object',
+              properties: {
+                status: {
+                  type: 'string',
+                  description: 'Status da O.S: "pendente", "em_execucao", "concluida", "atrasada", "cancelada"',
+                  enum: ['pendente', 'em_execucao', 'concluida', 'atrasada', 'cancelada']
+                },
+                type: {
+                  type: 'string',
+                  description: 'Tipo da O.S: "programada", "corretiva_interna", "corretiva_publica"',
+                  enum: ['programada', 'corretiva_interna', 'corretiva_publica']
+                },
+                priority: {
+                  type: 'string',
+                  description: 'Prioridade: "baixa", "media", "alta"',
+                  enum: ['baixa', 'media', 'alta']
+                },
+                dateFrom: {
+                  type: 'string',
+                  description: 'Data de início (formato YYYY-MM-DD)'
+                },
+                dateTo: {
+                  type: 'string',
+                  description: 'Data de fim (formato YYYY-MM-DD)'
+                }
+              }
+            }
+          }, {
+            name: 'queryWorkOrdersList',
+            description: 'Lista ordens de serviço com detalhes. Use para responder "quais são minhas O.S" ou listar tarefas.',
+            parameters: {
+              type: 'object',
+              properties: {
+                status: {
+                  type: 'string',
+                  description: 'Filtrar por status',
+                  enum: ['pendente', 'em_execucao', 'concluida', 'atrasada', 'cancelada']
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Número máximo de resultados (padrão: 20)'
+                }
+              }
+            }
+          }]
+        }];
 
-        if (!googleResponse.ok) {
-          const errorData = await googleResponse.json().catch(() => ({}));
-          const errorMsg = errorData.error?.message || googleResponse.statusText;
-          const statusCode = googleResponse.status;
-          
-          // User-friendly error messages
-          if (statusCode === 429) {
-            throw new Error(`A API do Google Gemini atingiu o limite de requisições. Por favor, aguarde alguns minutos ou configure uma nova API key com mais cota. Acesse: https://aistudio.google.com/app/apikey`);
-          } else if (statusCode === 400 && errorMsg.includes('API key not valid')) {
-            throw new Error(`API key do Google Gemini inválida. Por favor, verifique a configuração em Integrações AI. Gere uma nova key em: https://aistudio.google.com/app/apikey`);
+        // Function calling loop
+        let messages = [{
+          parts: [{
+            text: `${systemPrompt}\n\n${contextInfo}\n\nUsuário: ${userMessage}`
+          }]
+        }];
+
+        for (let iteration = 0; iteration < maxIterations; iteration++) {
+          const googleResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${integration.model || 'gemini-2.0-flash-exp'}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: messages,
+                tools: tools
+              })
+            }
+          );
+
+          if (!googleResponse.ok) {
+            const errorData = await googleResponse.json().catch(() => ({}));
+            const errorMsg = errorData.error?.message || googleResponse.statusText;
+            const statusCode = googleResponse.status;
+            
+            // User-friendly error messages
+            if (statusCode === 429) {
+              throw new Error(`A API do Google Gemini atingiu o limite de requisições. Por favor, aguarde alguns minutos ou configure uma nova API key com mais cota. Acesse: https://aistudio.google.com/app/apikey`);
+            } else if (statusCode === 400 && errorMsg.includes('API key not valid')) {
+              throw new Error(`API key do Google Gemini inválida. Por favor, verifique a configuração em Integrações AI. Gere uma nova key em: https://aistudio.google.com/app/apikey`);
+            }
+            
+            throw new Error(`Google Gemini: ${errorMsg} (Status: ${statusCode})`);
           }
+
+          const googleData = await googleResponse.json();
+          const candidate = googleData.candidates[0];
+          const parts = candidate.content.parts;
+
+          // Check if AI wants to call a function
+          const functionCall = parts.find((p: any) => p.functionCall);
           
-          throw new Error(`Google Gemini: ${errorMsg} (Status: ${statusCode})`);
+          if (!functionCall) {
+            // No function call, return the text response
+            const textPart = parts.find((p: any) => p.text);
+            return {
+              content: textPart?.text || 'Desculpe, não consegui processar sua pergunta.'
+            };
+          }
+
+          // Execute the function call
+          const funcName = functionCall.functionCall.name;
+          const funcArgs = functionCall.functionCall.args || {};
+
+          let funcResult: any;
+          try {
+            if (funcName === 'queryWorkOrdersCount') {
+              funcResult = await this.aiQueryWorkOrdersCount(
+                context.customerId!,
+                context.module,
+                funcArgs
+              );
+            } else if (funcName === 'queryWorkOrdersList') {
+              funcResult = await this.aiQueryWorkOrdersList(
+                context.customerId!,
+                context.module,
+                {
+                  ...funcArgs,
+                  userId: context.userId
+                }
+              );
+            } else {
+              funcResult = { error: 'Função não implementada' };
+            }
+          } catch (error: any) {
+            funcResult = { error: error.message };
+          }
+
+          // Add function result to messages and continue
+          messages.push({
+            role: 'model',
+            parts: parts
+          } as any);
+          messages.push({
+            role: 'function',
+            parts: [{
+              functionResponse: {
+                name: funcName,
+                response: funcResult
+              }
+            }]
+          } as any);
         }
 
-        const googleData = await googleResponse.json();
+        // Max iterations reached
         return {
-          content: googleData.candidates[0].content.parts[0].text
+          content: 'Desculpe, não consegui processar sua pergunta completamente.'
         };
+      }
 
       case 'anthropic':
         const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
