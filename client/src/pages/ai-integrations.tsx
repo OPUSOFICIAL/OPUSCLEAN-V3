@@ -248,7 +248,7 @@ export default function AiIntegrationsPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/ai-integrations'] });
       toast({ 
-        title: data.success ? "Conexão bem-sucedida" : "Falha na conexão", 
+        title: data.success ? "✓ Conexão bem-sucedida" : "✗ Teste de conexão falhou", 
         description: data.message,
         variant: data.success ? "default" : "destructive"
       });
@@ -256,7 +256,7 @@ export default function AiIntegrationsPage() {
     },
     onError: (error: any) => {
       toast({ 
-        title: "Erro ao testar", 
+        title: "✗ Erro ao testar conexão", 
         description: error.message || "Não foi possível testar a conexão.",
         variant: "destructive"
       });

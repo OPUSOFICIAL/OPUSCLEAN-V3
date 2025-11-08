@@ -240,3 +240,13 @@
 [x] 219. Updated admin password to admin123 with bcrypt hash
 [x] 220. Restarted application - All data loaded successfully
 [x] 221. Database fully populated - System ready for production use with complete dataset
+
+## AI INTEGRATION BUG FIXES (08/11/2025 08:50 PM)
+[x] 222. Investigated "Unsupported state or unable to authenticate data" error in AI integrations
+[x] 223. Root cause: API keys encrypted with different ENCRYPTION_KEY from previous environment
+[x] 224. Added error handling in testAiIntegration to catch decryption failures
+[x] 225. Now shows clear message: "API Key não pode ser descriptografada. Recadastre a API key"
+[x] 226. Fixed frontend showing generic "Falha na conexão" message always
+[x] 227. Updated toast titles: "✓ Conexão bem-sucedida" vs "✗ Teste de conexão falhou"
+[x] 228. Description now shows specific backend error messages (API key invalid, model not found, etc)
+[x] 229. Restarted application - AI integration fixes applied successfully

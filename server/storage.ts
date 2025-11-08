@@ -4956,7 +4956,24 @@ export class DatabaseStorage implements IStorage {
     }
     
     try {
-      const apiKey = decryptApiKey(integration.apiKey);
+      let apiKey: string;
+      try {
+        apiKey = decryptApiKey(integration.apiKey);
+      } catch (decryptError: any) {
+        // Erro de descriptografia - a chave foi criada com uma ENCRYPTION_KEY diferente
+        const errorMsg = 'API Key não pode ser descriptografada. Por favor, recadastre a API key editando esta integração.';
+        
+        await db.update(aiIntegrations)
+          .set({
+            lastTestedAt: sql`now()`,
+            status: 'erro',
+            lastErrorMessage: errorMsg
+          })
+          .where(eq(aiIntegrations.id, id));
+        
+        return { success: false, message: errorMsg };
+      }
+      
       let testSuccess = false;
       let errorMessage = '';
       
