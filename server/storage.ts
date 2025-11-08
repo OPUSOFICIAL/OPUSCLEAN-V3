@@ -4996,7 +4996,23 @@ export class DatabaseStorage implements IStorage {
           
         case 'google':
           try {
-            const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+            // Test with actual content generation using the specified model
+            const modelToTest = integration.model || 'gemini-2.0-flash-exp';
+            const googleResponse = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelToTest}:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [{
+                      text: 'Test connection'
+                    }]
+                  }]
+                })
+              }
+            );
+            
             testSuccess = googleResponse.ok;
             if (!testSuccess) {
               const errorBody = await googleResponse.text();
@@ -5005,7 +5021,17 @@ export class DatabaseStorage implements IStorage {
               // Parse error message if it's JSON
               try {
                 const errorJson = JSON.parse(errorBody);
-                errorMessage = errorJson.error?.message || `Google AI API retornou erro ${googleResponse.status}`;
+                const errMsg = errorJson.error?.message || '';
+                
+                if (googleResponse.status === 429) {
+                  errorMessage = 'Limite de requisições atingido. Aguarde alguns minutos ou use uma API key com mais cota.';
+                } else if (googleResponse.status === 400 && errMsg.includes('API key not valid')) {
+                  errorMessage = 'API key inválida. Verifique se a key está correta.';
+                } else if (googleResponse.status === 404) {
+                  errorMessage = `Modelo "${modelToTest}" não encontrado. Verifique o nome do modelo.`;
+                } else {
+                  errorMessage = errMsg || `Google AI API retornou erro ${googleResponse.status}`;
+                }
               } catch {
                 errorMessage = `Google AI API retornou erro ${googleResponse.status}: ${errorBody.substring(0, 100)}`;
               }
@@ -5261,7 +5287,9 @@ Responda de forma concisa e útil em português.`;
         });
 
         if (!openaiResponse.ok) {
-          throw new Error(`OpenAI API error: ${openaiResponse.statusText}`);
+          const errorData = await openaiResponse.json().catch(() => ({}));
+          const errorMsg = errorData.error?.message || openaiResponse.statusText;
+          throw new Error(`OpenAI: ${errorMsg} (Status: ${openaiResponse.status})`);
         }
 
         const openaiData = await openaiResponse.json();
@@ -5287,7 +5315,18 @@ Responda de forma concisa e útil em português.`;
         );
 
         if (!googleResponse.ok) {
-          throw new Error(`Google AI API error: ${googleResponse.statusText}`);
+          const errorData = await googleResponse.json().catch(() => ({}));
+          const errorMsg = errorData.error?.message || googleResponse.statusText;
+          const statusCode = googleResponse.status;
+          
+          // User-friendly error messages
+          if (statusCode === 429) {
+            throw new Error(`A API do Google Gemini atingiu o limite de requisições. Por favor, aguarde alguns minutos ou configure uma nova API key com mais cota. Acesse: https://aistudio.google.com/app/apikey`);
+          } else if (statusCode === 400 && errorMsg.includes('API key not valid')) {
+            throw new Error(`API key do Google Gemini inválida. Por favor, verifique a configuração em Integrações AI. Gere uma nova key em: https://aistudio.google.com/app/apikey`);
+          }
+          
+          throw new Error(`Google Gemini: ${errorMsg} (Status: ${statusCode})`);
         }
 
         const googleData = await googleResponse.json();
@@ -5312,7 +5351,9 @@ Responda de forma concisa e útil em português.`;
         });
 
         if (!anthropicResponse.ok) {
-          throw new Error(`Anthropic API error: ${anthropicResponse.statusText}`);
+          const errorData = await anthropicResponse.json().catch(() => ({}));
+          const errorMsg = errorData.error?.message || anthropicResponse.statusText;
+          throw new Error(`Anthropic: ${errorMsg} (Status: ${anthropicResponse.status})`);
         }
 
         const anthropicData = await anthropicResponse.json();

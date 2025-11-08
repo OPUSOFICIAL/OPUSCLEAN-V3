@@ -166,12 +166,17 @@ export function AIChat() {
                   className={`max-w-[80%] rounded-lg px-4 py-2 ${
                     msg.role === 'user'
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                      : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
+                      : msg.error 
+                        ? 'bg-red-50 text-red-900 border border-red-200 shadow-sm'
+                        : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   {msg.error && (
-                    <p className="text-xs mt-1 opacity-75">⚠️ Erro ao processar</p>
+                    <div className="mt-2 pt-2 border-t border-red-200">
+                      <p className="text-xs text-red-700 font-medium">⚠️ Detalhes do erro:</p>
+                      <p className="text-xs text-red-600 mt-1">{msg.error}</p>
+                    </div>
                   )}
                 </div>
               </div>
