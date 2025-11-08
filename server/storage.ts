@@ -5332,8 +5332,41 @@ export class DatabaseStorage implements IStorage {
     completedFrom?: string;
     completedTo?: string;
   }): Promise<{ count: number; breakdown: any }> {
+    // Get customer's sites
+    const customerSites = await db.select({ id: sites.id })
+      .from(sites)
+      .where(and(eq(sites.customerId, customerId), eq(sites.module, module)));
+    
+    if (customerSites.length === 0) {
+      return { count: 0, breakdown: { byStatus: {}, total: 0 } };
+    }
+    
+    const siteIds = customerSites.map(s => s.id);
+    
+    // Get zones for these sites
+    let siteCondition = eq(zones.siteId, siteIds[0]);
+    for (let i = 1; i < siteIds.length; i++) {
+      siteCondition = sql`${siteCondition} OR ${zones.siteId} = ${siteIds[i]}` as any;
+    }
+    
+    const customerZones = await db.select({ id: zones.id })
+      .from(zones)
+      .where(and(siteCondition, eq(zones.module, module)));
+    
+    if (customerZones.length === 0) {
+      return { count: 0, breakdown: { byStatus: {}, total: 0 } };
+    }
+    
+    const zoneIds = customerZones.map(z => z.id);
+    
+    // Build zone condition for work orders
+    let zoneCondition = eq(workOrders.zoneId, zoneIds[0]);
+    for (let i = 1; i < zoneIds.length; i++) {
+      zoneCondition = sql`${zoneCondition} OR ${workOrders.zoneId} = ${zoneIds[i]}` as any;
+    }
+    
     let conditions = [
-      eq(workOrders.companyId, customerId),
+      zoneCondition,
       eq(workOrders.module, module)
     ];
 
@@ -5393,8 +5426,41 @@ export class DatabaseStorage implements IStorage {
     completedFrom?: string;
     completedTo?: string;
   }): Promise<any[]> {
+    // Get customer's sites
+    const customerSites = await db.select({ id: sites.id })
+      .from(sites)
+      .where(and(eq(sites.customerId, customerId), eq(sites.module, module)));
+    
+    if (customerSites.length === 0) {
+      return [];
+    }
+    
+    const siteIds = customerSites.map(s => s.id);
+    
+    // Get zones for these sites
+    let siteCondition = eq(zones.siteId, siteIds[0]);
+    for (let i = 1; i < siteIds.length; i++) {
+      siteCondition = sql`${siteCondition} OR ${zones.siteId} = ${siteIds[i]}` as any;
+    }
+    
+    const customerZones = await db.select({ id: zones.id })
+      .from(zones)
+      .where(and(siteCondition, eq(zones.module, module)));
+    
+    if (customerZones.length === 0) {
+      return [];
+    }
+    
+    const zoneIds = customerZones.map(z => z.id);
+    
+    // Build zone condition for work orders
+    let zoneCondition = eq(workOrders.zoneId, zoneIds[0]);
+    for (let i = 1; i < zoneIds.length; i++) {
+      zoneCondition = sql`${zoneCondition} OR ${workOrders.zoneId} = ${zoneIds[i]}` as any;
+    }
+    
     let conditions = [
-      eq(workOrders.companyId, customerId),
+      zoneCondition,
       eq(workOrders.module, module)
     ];
 

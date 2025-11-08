@@ -3888,7 +3888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not authenticated" });
       }
 
-      const { message, module } = req.body;
+      const { message, module, customerId } = req.body;
 
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ message: "Message is required" });
@@ -3898,10 +3898,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid module is required" });
       }
 
+      // Use customerId from request body (for OPUS users) or from user object (for customer users)
+      const effectiveCustomerId = customerId || req.user.customerId || null;
+
+      if (!effectiveCustomerId) {
+        return res.status(400).json({ message: "Customer ID is required" });
+      }
+
       const result = await storage.processUserMessage(
         req.user.id,
         req.user.companyId,
-        req.user.customerId || null,
+        effectiveCustomerId,
         module,
         message
       );

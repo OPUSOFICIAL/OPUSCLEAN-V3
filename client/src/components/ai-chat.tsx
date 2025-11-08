@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
+import { useClient } from "@/contexts/ClientContext";
 import type { ChatMessage } from "@shared/schema";
 
 export function AIChat() {
   const { toast } = useToast();
   const { currentModule } = useModule();
+  const { activeClientId } = useClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState("");
@@ -30,7 +32,8 @@ export function AIChat() {
     mutationFn: async (userMessage: string) => {
       const payload = {
         message: userMessage,
-        module: currentModule
+        module: currentModule,
+        customerId: activeClientId
       };
       console.log('[AI Chat] Sending payload:', payload);
       return apiRequest('POST', '/api/chat/message', payload);
