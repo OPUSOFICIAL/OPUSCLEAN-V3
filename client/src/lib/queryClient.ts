@@ -77,8 +77,6 @@ export const getQueryFn: <T>(options: {
       url += "?" + params.toString();
     }
     
-    console.log('[QUERY FN] queryKey:', queryKey, '→ URL:', url);
-    
     const res = await fetch(url, {
       headers,
       credentials: "include",

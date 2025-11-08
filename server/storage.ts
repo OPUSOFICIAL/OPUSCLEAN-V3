@@ -5154,8 +5154,8 @@ export class DatabaseStorage implements IStorage {
     module: 'clean' | 'maintenance', 
     userMessage: string
   ): Promise<{ conversationId: string; messages: ChatMessage[] }> {
-    // Get or create conversation
-    let conversation = await this.getActiveConversation(userId);
+    // Get or create conversation for this user, customer, and module
+    let conversation = await this.getActiveConversation(userId, customerId || undefined, module);
     
     if (!conversation) {
       conversation = await this.createConversation({
