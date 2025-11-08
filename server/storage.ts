@@ -5239,7 +5239,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async getContextForAI(userId: string, customerId: string | null, module: 'clean' | 'maintenance'): Promise<any> {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    // Calculate current month range
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // JavaScript months are 0-indexed
+    const firstDayOfMonth = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate(); // Get last day of month
+    const lastDayOfMonth = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
     
     // Get today's work orders
     const workOrdersQuery = customerId
@@ -5258,8 +5266,19 @@ export class DatabaseStorage implements IStorage {
     .where(workOrdersQuery)
     .limit(50);
 
+    // Month names in Portuguese
+    const monthNames = [
+      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+    ];
+
     return {
       date: today,
+      year: year,
+      month: month,
+      monthName: monthNames[month - 1],
+      firstDayOfMonth: firstDayOfMonth,
+      lastDayOfMonth: lastDayOfMonth,
       module,
       workOrders: todayWorkOrders,
       totalWorkOrders: todayWorkOrders.length,
@@ -5689,15 +5708,26 @@ export class DatabaseStorage implements IStorage {
     const apiKey = decryptApiKey(integration.apiKey);
     
     const systemPrompt = `Você é um assistente AI para o sistema OPUS de gestão de facilities. 
-O usuário está no módulo ${context.module === 'clean' ? 'OPUS Clean (limpeza)' : 'OPUS Manutenção'}.
-Hoje é ${context.date}.
-O usuário tem ${context.totalWorkOrders} ordem(ns) de serviço para hoje.
-Use as funções disponíveis para consultar dados em tempo real.
-Responda de forma concisa e útil em português.`;
+
+INFORMAÇÕES DE DATA:
+- Data atual: ${context.date}
+- Mês atual: ${context.monthName} de ${context.year} (mês ${context.month})
+- Período do mês atual: ${context.firstDayOfMonth} até ${context.lastDayOfMonth}
+
+MÓDULO ATIVO: ${context.module === 'clean' ? 'OPUS Clean (limpeza)' : 'OPUS Manutenção'}
+
+INSTRUÇÕES IMPORTANTES:
+1. Quando o usuário perguntar sobre "este mês" ou "esse mês", use completedFrom=${context.firstDayOfMonth} e completedTo=${context.lastDayOfMonth}
+2. Para "hoje", use completedFrom=${context.date} e completedTo=${context.date}
+3. Para "esta semana", calcule o intervalo da semana atual
+4. SEMPRE use as funções disponíveis para consultar dados em tempo real - NUNCA invente dados
+5. Responda de forma concisa e útil em português
+
+Ordens de serviço de hoje: ${context.totalWorkOrders}`;
 
     const contextInfo = context.totalWorkOrders > 0 
-      ? `Ordens de serviço de hoje:\n${context.workOrders.map((wo: any) => `- OS #${wo.number}: ${wo.title} (${wo.status})`).join('\n')}`
-      : 'Nenhuma ordem de serviço para hoje.';
+      ? `Ordens de serviço agendadas para hoje:\n${context.workOrders.map((wo: any) => `- OS #${wo.number}: ${wo.title} (${wo.status})`).join('\n')}`
+      : 'Nenhuma ordem de serviço agendada para hoje.';
 
     switch (integration.provider) {
       case 'openai':
