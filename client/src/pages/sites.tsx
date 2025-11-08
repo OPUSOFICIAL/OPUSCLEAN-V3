@@ -349,7 +349,7 @@ export default function Sites({ customerId }: SitesProps) {
   }
 
   return (
-    <div className="space-y-3 md:space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Locais e Zonas</h2>

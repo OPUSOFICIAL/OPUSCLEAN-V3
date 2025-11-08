@@ -338,7 +338,7 @@ export default function AiIntegrationsPage() {
   // Access control check
   if ((user as any)?.userType !== 'opus_user') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-3 md:p-6">
+      <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-white p-4">
         <ModernCard variant="glass" className="max-w-2xl mx-auto mt-20">
           <ModernCardContent className="text-center py-12">
             <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -399,7 +399,7 @@ export default function AiIntegrationsPage() {
             </ModernCardContent>
           </ModernCard>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {integrations.map((integration) => (
               <ModernCard 
                 key={integration.id} 

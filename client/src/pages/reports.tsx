@@ -987,7 +987,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Overview */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📊 Visão Geral</h3>
@@ -1093,7 +1093,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* SLA Breakdown */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📋 Breakdown por Categoria</h3>
@@ -1165,7 +1165,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           {/* Productivity Metrics */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📈 Métricas de Produtividade</h3>
@@ -1243,7 +1243,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           {/* Team Stats */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">👥 Estatísticas da Equipe</h3>
@@ -1337,7 +1337,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Sites */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">🏢 Sites</h3>
@@ -1425,7 +1425,7 @@ export default function Reports() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
           {/* Historical Trends */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800">📈 Tendências Históricas</h3>
@@ -1537,7 +1537,7 @@ export default function Reports() {
           }
         />
       
-        <div className="space-y-3 md:space-y-4">
+        <div className="space-y-3">
         {/* KPI Dashboard */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -1547,7 +1547,7 @@ export default function Reports() {
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {isLoadingMetrics ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <ModernCard key={i} variant={i % 2 === 0 ? "gradient" : "glass"}>
@@ -1614,7 +1614,7 @@ export default function Reports() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {reportTypes.map((report, index) => {
               const Icon = report.icon;
               const isSelected = selectedReportType === report.id;
@@ -1824,7 +1824,7 @@ export default function Reports() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-3">
                 {isLoadingSLA ? (
                   <div>
                     <div className="text-center mb-6">

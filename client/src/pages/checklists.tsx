@@ -498,7 +498,7 @@ export default function Checklists() {
       />
       
       {/* Dialog */}
-      <div className={cn("flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4", theme.gradients.section)}>
+      <div className={cn("flex-1 overflow-y-auto p-4 space-y-3", theme.gradients.section)}>
         <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
           setIsCreateDialogOpen(open);
           if (!open) {
