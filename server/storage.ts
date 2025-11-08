@@ -5329,6 +5329,8 @@ export class DatabaseStorage implements IStorage {
     priority?: string;
     dateFrom?: string;
     dateTo?: string;
+    completedFrom?: string;
+    completedTo?: string;
   }): Promise<{ count: number; breakdown: any }> {
     let conditions = [
       eq(workOrders.companyId, customerId),
@@ -5351,6 +5353,18 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters?.dateTo) {
       conditions.push(lte(workOrders.scheduledDate, filters.dateTo));
+    }
+    if (filters?.completedFrom) {
+      // Start of day: YYYY-MM-DD 00:00:00
+      const startOfDay = `${filters.completedFrom}T00:00:00`;
+      conditions.push(gte(workOrders.completedAt, startOfDay));
+    }
+    if (filters?.completedTo) {
+      // Next day start: YYYY-MM-DD+1 00:00:00 (< to include entire day with fractional seconds)
+      const nextDay = new Date(filters.completedTo);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayStart = nextDay.toISOString().split('T')[0] + 'T00:00:00';
+      conditions.push(lt(workOrders.completedAt, nextDayStart));
     }
 
     const orders = await db.select()
@@ -5376,6 +5390,8 @@ export class DatabaseStorage implements IStorage {
     status?: string;
     limit?: number;
     userId?: string;
+    completedFrom?: string;
+    completedTo?: string;
   }): Promise<any[]> {
     let conditions = [
       eq(workOrders.companyId, customerId),
@@ -5389,6 +5405,18 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters?.userId) {
       conditions.push(eq(workOrders.assignedUserId, filters.userId));
+    }
+    if (filters?.completedFrom) {
+      // Start of day: YYYY-MM-DD 00:00:00
+      const startOfDay = `${filters.completedFrom}T00:00:00`;
+      conditions.push(gte(workOrders.completedAt, startOfDay));
+    }
+    if (filters?.completedTo) {
+      // Next day start: YYYY-MM-DD+1 00:00:00 (< to include entire day with fractional seconds)
+      const nextDay = new Date(filters.completedTo);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayStart = nextDay.toISOString().split('T')[0] + 'T00:00:00';
+      conditions.push(lt(workOrders.completedAt, nextDayStart));
     }
 
     const orders = await db.select({
@@ -5484,11 +5512,19 @@ Responda de forma concisa e útil em português.`;
                 },
                 dateFrom: {
                   type: 'string',
-                  description: 'Data de início (formato YYYY-MM-DD)'
+                  description: 'Data de início do agendamento (formato YYYY-MM-DD)'
                 },
                 dateTo: {
                   type: 'string',
-                  description: 'Data de fim (formato YYYY-MM-DD)'
+                  description: 'Data de fim do agendamento (formato YYYY-MM-DD)'
+                },
+                completedFrom: {
+                  type: 'string',
+                  description: 'Data de início da conclusão - use para filtrar O.S concluídas em um período específico (formato YYYY-MM-DD). Exemplo: para "O.S concluídas hoje", use a data de hoje.'
+                },
+                completedTo: {
+                  type: 'string',
+                  description: 'Data de fim da conclusão (formato YYYY-MM-DD)'
                 }
               }
             }
@@ -5505,6 +5541,14 @@ Responda de forma concisa e útil em português.`;
                 limit: {
                   type: 'number',
                   description: 'Número máximo de resultados (padrão: 20)'
+                },
+                completedFrom: {
+                  type: 'string',
+                  description: 'Data de início da conclusão - use para filtrar O.S concluídas em um período específico (formato YYYY-MM-DD). Exemplo: para "Liste O.S concluídas hoje", use a data de hoje.'
+                },
+                completedTo: {
+                  type: 'string',
+                  description: 'Data de fim da conclusão (formato YYYY-MM-DD)'
                 }
               }
             }
