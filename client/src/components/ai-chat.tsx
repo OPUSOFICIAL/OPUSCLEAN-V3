@@ -23,20 +23,10 @@ export function AIChat() {
     conversation: any | null;
     messages: ChatMessage[];
   }>({
-    queryKey: ["/api/chat/conversation", activeClientId, currentModule],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        customerId: activeClientId || '',
-        module: currentModule || ''
-      });
-      const response = await fetch(`/api/chat/conversation?${params}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch conversation');
-      }
-      return response.json();
-    },
+    queryKey: ["/api/chat/conversation", { 
+      customerId: activeClientId || '', 
+      module: currentModule || '' 
+    }],
     enabled: isOpen && !!activeClientId && !!currentModule
   });
 
@@ -52,7 +42,12 @@ export function AIChat() {
       return apiRequest('POST', '/api/chat/message', payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat/conversation", activeClientId, currentModule] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/chat/conversation", { 
+          customerId: activeClientId, 
+          module: currentModule 
+        }] 
+      });
       setMessage("");
     },
     onError: (error: any) => {
