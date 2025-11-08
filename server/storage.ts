@@ -5378,16 +5378,15 @@ export class DatabaseStorage implements IStorage {
       conditions.push(lte(workOrders.scheduledDate, filters.dateTo));
     }
     if (filters?.completedFrom) {
-      // Start of day: YYYY-MM-DD 00:00:00
-      const startOfDay = `${filters.completedFrom}T00:00:00`;
+      // Start of day: YYYY-MM-DD 00:00:00 as Date object
+      const startOfDay = new Date(`${filters.completedFrom}T00:00:00`);
       conditions.push(gte(workOrders.completedAt, startOfDay));
     }
     if (filters?.completedTo) {
       // Next day start: YYYY-MM-DD+1 00:00:00 (< to include entire day with fractional seconds)
-      const nextDay = new Date(filters.completedTo);
+      const nextDay = new Date(`${filters.completedTo}T00:00:00`);
       nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayStart = nextDay.toISOString().split('T')[0] + 'T00:00:00';
-      conditions.push(lt(workOrders.completedAt, nextDayStart));
+      conditions.push(lt(workOrders.completedAt, nextDay));
     }
 
     const orders = await db.select()
@@ -5453,16 +5452,15 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(workOrders.assignedUserId, filters.userId));
     }
     if (filters?.completedFrom) {
-      // Start of day: YYYY-MM-DD 00:00:00
-      const startOfDay = `${filters.completedFrom}T00:00:00`;
+      // Start of day: YYYY-MM-DD 00:00:00 as Date object
+      const startOfDay = new Date(`${filters.completedFrom}T00:00:00`);
       conditions.push(gte(workOrders.completedAt, startOfDay));
     }
     if (filters?.completedTo) {
       // Next day start: YYYY-MM-DD+1 00:00:00 (< to include entire day with fractional seconds)
-      const nextDay = new Date(filters.completedTo);
+      const nextDay = new Date(`${filters.completedTo}T00:00:00`);
       nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayStart = nextDay.toISOString().split('T')[0] + 'T00:00:00';
-      conditions.push(lt(workOrders.completedAt, nextDayStart));
+      conditions.push(lt(workOrders.completedAt, nextDay));
     }
 
     const orders = await db.select({
