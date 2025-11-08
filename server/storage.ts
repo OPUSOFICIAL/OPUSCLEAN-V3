@@ -5682,10 +5682,7 @@ Responda de forma concisa e útil em português.`;
               funcResult = await this.aiQueryWorkOrdersList(
                 context.customerId!,
                 context.module,
-                {
-                  ...funcArgs,
-                  userId: context.userId
-                }
+                funcArgs
               );
               console.log(`[AI FUNCTION CALL] queryWorkOrdersList result:`, funcResult);
             } else {
