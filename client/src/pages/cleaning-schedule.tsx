@@ -53,6 +53,8 @@ export default function CleaningSchedule() {
   const [showEditActivityModal, setShowEditActivityModal] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
+  const [showMetricsModal, setShowMetricsModal] = useState(false);
+  const [metricsModalType, setMetricsModalType] = useState<'active' | 'daily' | 'weekly' | 'locations' | null>(null);
 
   // Removido: geração automática que estava criando OSs excessivamente
 
@@ -399,9 +401,16 @@ export default function CleaningSchedule() {
           </CardContent>
         </Card>
 
-        {/* Summary Cards - Modernizado */}
+        {/* Summary Cards - Modernizado e Interativo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card className="bg-gradient-to-br from-blue-50 via-blue-100/50 to-white border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card 
+            className="bg-gradient-to-br from-blue-50 via-blue-100/50 to-white border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover-elevate"
+            onClick={() => {
+              setMetricsModalType('active');
+              setShowMetricsModal(true);
+            }}
+            data-testid="card-active-activities"
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -417,7 +426,14 @@ export default function CleaningSchedule() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-emerald-50 via-emerald-100/50 to-white border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card 
+            className="bg-gradient-to-br from-emerald-50 via-emerald-100/50 to-white border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover-elevate"
+            onClick={() => {
+              setMetricsModalType('daily');
+              setShowMetricsModal(true);
+            }}
+            data-testid="card-daily-activities"
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -433,7 +449,14 @@ export default function CleaningSchedule() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-violet-50 via-violet-100/50 to-white border-violet-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card 
+            className="bg-gradient-to-br from-violet-50 via-violet-100/50 to-white border-violet-200/50 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover-elevate"
+            onClick={() => {
+              setMetricsModalType('weekly');
+              setShowMetricsModal(true);
+            }}
+            data-testid="card-weekly-activities"
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -449,7 +472,14 @@ export default function CleaningSchedule() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 via-amber-100/50 to-white border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card 
+            className="bg-gradient-to-br from-amber-50 via-amber-100/50 to-white border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover-elevate"
+            onClick={() => {
+              setMetricsModalType('locations');
+              setShowMetricsModal(true);
+            }}
+            data-testid="card-locations-covered"
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
