@@ -212,6 +212,7 @@ export interface IStorage {
   createCleaningActivity(activity: InsertCleaningActivity): Promise<CleaningActivity>;
   updateCleaningActivity(id: string, activity: Partial<InsertCleaningActivity>): Promise<CleaningActivity>;
   deleteCleaningActivity(id: string): Promise<void>;
+  clearAllCleaningActivities(): Promise<void>;
 
   // Maintenance Activities
   getMaintenanceActivitiesByCustomer(customerId: string): Promise<MaintenanceActivity[]>;
@@ -232,6 +233,8 @@ export interface IStorage {
   getWorkOrder(id: string): Promise<WorkOrder | undefined>;
   createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
   updateWorkOrder(id: string, workOrder: Partial<InsertWorkOrder>): Promise<WorkOrder>;
+  deleteWorkOrder(id: string): Promise<void>;
+  clearAllWorkOrders(): Promise<void>;
   getNextWorkOrderNumber(companyId: string): Promise<number>;
   reopenWorkOrder(workOrderId: string, userId: string, reason: string, attachments?: any): Promise<WorkOrder>;
 
@@ -2460,6 +2463,14 @@ export class DatabaseStorage implements IStorage {
     await db.delete(cleaningActivities).where(eq(cleaningActivities.id, id));
   }
 
+  async clearAllCleaningActivities(): Promise<void> {
+    // Primeiro, deletar todas as work orders relacionadas a atividades de limpeza
+    await db.delete(workOrders).where(isNotNull(workOrders.cleaningActivityId));
+    
+    // Depois deletar todas as cleaning activities
+    await db.delete(cleaningActivities);
+  }
+
   // Maintenance Activities
   async getMaintenanceActivitiesByCustomer(customerId: string): Promise<MaintenanceActivity[]> {
     return await db.select().from(maintenanceActivities)
@@ -3151,6 +3162,10 @@ export class DatabaseStorage implements IStorage {
         console.error("Failed to create audit log:", logError);
       }
     }
+  }
+
+  async clearAllWorkOrders(): Promise<void> {
+    await db.delete(workOrders);
   }
 
   // Audit Logs

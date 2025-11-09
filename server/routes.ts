@@ -1735,6 +1735,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all work orders (for testing/reset)
+  app.delete("/api/work-orders/clear-all", requireAdmin, async (req, res) => {
+    try {
+      await storage.clearAllWorkOrders();
+      res.json({ message: "All work orders cleared successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear work orders" });
+    }
+  });
+
   // Work Order Comments
   app.get("/api/work-orders/:workOrderId/comments", async (req, res) => {
     try {
@@ -2766,6 +2776,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting cleaning activity:", error);
       res.status(500).json({ message: "Failed to delete cleaning activity" });
+    }
+  });
+
+  // Clear all cleaning activities (for testing/reset)
+  app.delete("/api/cleaning-activities/clear-all", requireAdmin, async (req, res) => {
+    try {
+      await storage.clearAllCleaningActivities();
+      res.json({ message: "All cleaning activities cleared successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear cleaning activities" });
     }
   });
 
