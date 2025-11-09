@@ -1242,6 +1242,162 @@ export default function CleaningSchedule() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Modal de Métricas */}
+        <Dialog open={showMetricsModal} onOpenChange={setShowMetricsModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                {metricsModalType === 'active' && (
+                  <>
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                    Atividades Ativas
+                  </>
+                )}
+                {metricsModalType === 'daily' && (
+                  <>
+                    <Clock className="w-5 h-5 text-emerald-600" />
+                    Atividades Diárias
+                  </>
+                )}
+                {metricsModalType === 'weekly' && (
+                  <>
+                    <Clock className="w-5 h-5 text-violet-600" />
+                    Atividades Semanais
+                  </>
+                )}
+                {metricsModalType === 'locations' && (
+                  <>
+                    <MapPin className="w-5 h-5 text-amber-600" />
+                    Locais Cobertos
+                  </>
+                )}
+              </DialogTitle>
+              <DialogDescription>
+                Detalhes das métricas selecionadas
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              {metricsModalType === 'locations' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {Array.from(new Set((activities as any[])?.map((a: any) => a.zoneId) || [])).map((zoneId: any) => {
+                    const zoneName = getZoneName(zoneId);
+                    const activitiesInZone = (activities as any[])?.filter((a: any) => a.zoneId === zoneId) || [];
+                    
+                    return (
+                      <Card key={zoneId} className="hover-elevate">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                              <MapPin className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm mb-1 truncate">{zoneName}</h4>
+                              <p className="text-xs text-muted-foreground">
+                                {activitiesInZone.length} atividade(s)
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {activitiesInZone.slice(0, 3).map((act: any) => (
+                                  <Badge key={act.id} variant="outline" className="text-xs">
+                                    {act.name}
+                                  </Badge>
+                                ))}
+                                {activitiesInZone.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{activitiesInZone.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(() => {
+                    const filteredActivities = metricsModalType === 'active'
+                      ? (activities as any[])?.filter((a: any) => a.isActive) || []
+                      : metricsModalType === 'daily'
+                      ? (activities as any[])?.filter((a: any) => a.frequency === 'diaria') || []
+                      : metricsModalType === 'weekly'
+                      ? (activities as any[])?.filter((a: any) => a.frequency === 'semanal') || []
+                      : [];
+
+                    return filteredActivities.length > 0 ? (
+                      filteredActivities.map((activity: any) => (
+                        <Card key={activity.id} className="hover-elevate">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                  <h3 className="font-semibold text-sm truncate">{activity.name}</h3>
+                                  {getFrequencyBadge(activity.frequency)}
+                                  {activity.isActive ? (
+                                    <Badge className="bg-chart-2/10 text-chart-2 text-xs">Ativa</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs">Inativa</Badge>
+                                  )}
+                                </div>
+                                
+                                {activity.description && (
+                                  <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                                    {activity.description}
+                                  </p>
+                                )}
+                                
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {getZoneName(activity.zoneId)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {getSLAForActivity(activity)}
+                                  </span>
+                                  {activity.assignedUserId && (
+                                    <span className="flex items-center gap-1">
+                                      <User className="w-3 h-3" />
+                                      {getAssignedUserName(activity.assignedUserId)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedActivity(activity);
+                                    setShowActivityDetailsModal(true);
+                                    setShowMetricsModal(false);
+                                  }}
+                                  className="h-8 w-8 p-0"
+                                  data-testid={`button-view-${activity.id}`}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">Nenhuma atividade encontrada</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </>
   );
