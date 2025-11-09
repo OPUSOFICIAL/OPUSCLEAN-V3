@@ -116,19 +116,23 @@ export default function CleaningSchedule() {
   // Mutation to clear all cleaning activities
   const clearAllActivitiesMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('DELETE', '/api/cleaning-activities/clear-all');
+      if (!activeClientId) {
+        throw new Error("Cliente não selecionado");
+      }
+      await apiRequest('DELETE', `/api/cleaning-activities/clear-all?customerId=${activeClientId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "cleaning-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
       toast({
         title: "Atividades limpas",
         description: "Todas as atividades de limpeza foram removidas com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Erro",
-        description: "Não foi possível limpar as atividades.",
+        description: error?.message || "Não foi possível limpar as atividades.",
         variant: "destructive",
       });
     },

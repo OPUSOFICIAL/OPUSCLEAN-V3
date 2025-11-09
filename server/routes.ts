@@ -2782,9 +2782,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clear all cleaning activities (for testing/reset)
   app.delete("/api/cleaning-activities/clear-all", requireAdmin, async (req, res) => {
     try {
-      await storage.clearAllCleaningActivities();
+      const customerId = req.query.customerId as string;
+      console.log('[CLEAR ALL] Recebida requisição para limpar atividades do cliente:', customerId);
+      
+      if (!customerId) {
+        return res.status(400).json({ message: "Customer ID is required" });
+      }
+      
+      await storage.clearAllCleaningActivities(customerId);
+      console.log('[CLEAR ALL] Atividades limpas com sucesso para cliente:', customerId);
       res.json({ message: "All cleaning activities cleared successfully" });
     } catch (error) {
+      console.error('[CLEAR ALL] Erro ao limpar atividades:', error);
       res.status(500).json({ message: "Failed to clear cleaning activities" });
     }
   });
