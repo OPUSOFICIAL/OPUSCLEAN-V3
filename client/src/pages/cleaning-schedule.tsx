@@ -1653,8 +1653,16 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       
       // Determinar janela de tempo baseada nas atividades criadas
       const activities = result.activities.map((a: any) => a.activity);
+      
+      // DEBUG: Ver estrutura das atividades retornadas
+      console.log('[DEBUG] Primeira atividade:', JSON.stringify(activities[0], null, 2));
+      
+      // Tentar ambos formatos: camelCase e snake_case
       const startDates = activities
-        .map((a: any) => a.startDate ? new Date(a.startDate) : null)
+        .map((a: any) => {
+          const date = a.startDate || a.start_date;
+          return date ? new Date(date) : null;
+        })
         .filter((d: any) => d !== null);
       
       // Validar que há pelo menos uma startDate válida
@@ -1675,11 +1683,12 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       // Para cada atividade, usar endDate se existir, senão startDate + 30 dias
       // Pegar o MAIOR desses limites para cobrir todas as atividades
       const activityLimits = activities.map((a: any) => {
-        const start = a.startDate ? new Date(a.startDate) : null;
+        const start = (a.startDate || a.start_date) ? new Date(a.startDate || a.start_date) : null;
         if (!start) return null;
         
-        if (a.endDate) {
-          return new Date(a.endDate);
+        const end = a.endDate || a.end_date;
+        if (end) {
+          return new Date(end);
         } else {
           const limit = new Date(start);
           limit.setDate(limit.getDate() + 30);
