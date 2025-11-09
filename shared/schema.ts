@@ -222,6 +222,8 @@ export const cleaningActivities = pgTable("cleaning_activities", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
   startTime: time("start_time"),
   endTime: time("end_time"),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
 });
 
 // 10. TABELA: checklist_templates (Templates de Checklist)
