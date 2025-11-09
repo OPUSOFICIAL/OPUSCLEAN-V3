@@ -270,7 +270,12 @@ export default function Checklists() {
 
   const deleteChecklistMutation = useMutation({
     mutationFn: async (checklistId: string) => {
-      await apiRequest("DELETE", `/api/customers/${activeClientId}/checklist-templates/${checklistId}`);
+      const response = await apiRequest("DELETE", `/api/customers/${activeClientId}/checklist-templates/${checklistId}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete checklist");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "checklist-templates"] });
@@ -279,10 +284,10 @@ export default function Checklists() {
         description: "O checklist foi excluído com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Erro ao excluir checklist",
-        description: "Houve um problema ao excluir o checklist.",
+        description: error.message || "Houve um problema ao excluir o checklist.",
         variant: "destructive",
       });
     },
