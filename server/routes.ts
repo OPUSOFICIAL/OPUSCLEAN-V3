@@ -2928,12 +2928,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Company ID is required" });
       }
       
-      // Default window: APENAS MÊS CORRENTE (1 mês)
-      // Isso evita criar milhões de OS, gerando apenas o necessário
-      const now = new Date();
-      const startDate = windowStart ? new Date(windowStart) : new Date(now.getFullYear(), now.getMonth(), 1);
-      // Fim = último dia do mês corrente
-      const endDate = windowEnd ? new Date(windowEnd) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      // Validar que windowStart e windowEnd foram fornecidos
+      if (!windowStart || !windowEnd) {
+        return res.status(400).json({ 
+          message: "windowStart and windowEnd are required to prevent retroactive work order generation" 
+        });
+      }
+      
+      const startDate = new Date(windowStart);
+      const endDate = new Date(windowEnd);
+      
+      // Validar que as datas são válidas
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format for windowStart or windowEnd" });
+      }
+      
+      // Validar que windowEnd >= windowStart
+      if (endDate < startDate) {
+        return res.status(400).json({ message: "windowEnd must be greater than or equal to windowStart" });
+      }
       
       console.log(`[SCHEDULER] Gerando OS para período: ${startDate.toISOString()} até ${endDate.toISOString()}`);
       

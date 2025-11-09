@@ -1650,11 +1650,52 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       
       // Gerar ordens de trabalho automaticamente
       const companyId = result.companyId || "company-opus-default";
-      console.log("Gerando OSs para companyId:", companyId);
+      
+      // Determinar janela de tempo baseada nas atividades criadas
+      const activities = result.activities.map((a: any) => a.activity);
+      const startDates = activities
+        .map((a: any) => a.startDate ? new Date(a.startDate) : null)
+        .filter((d: any) => d !== null);
+      
+      // Validar que há pelo menos uma startDate válida
+      if (startDates.length === 0) {
+        toast({
+          title: "Erro ao gerar OSs",
+          description: "Todas as atividades precisam ter uma data de início válida",
+          variant: "destructive"
+        });
+        onSuccess();
+        return;
+      }
+      
+      // windowStart = menor startDate das atividades criadas
+      const windowStart = new Date(Math.min(...startDates.map((d: Date) => d.getTime())));
+      
+      // windowEnd = menor limite aplicável:
+      // Para cada atividade, usar endDate se existir, senão startDate + 30 dias
+      // Pegar o MAIOR desses limites para cobrir todas as atividades
+      const activityLimits = activities.map((a: any) => {
+        const start = a.startDate ? new Date(a.startDate) : null;
+        if (!start) return null;
+        
+        if (a.endDate) {
+          return new Date(a.endDate);
+        } else {
+          const limit = new Date(start);
+          limit.setDate(limit.getDate() + 30);
+          return limit;
+        }
+      }).filter((d: any) => d !== null);
+      
+      const windowEnd = new Date(Math.max(...activityLimits.map((d: Date) => d.getTime())));
+      
+      console.log(`[GERADOR OS] Janela: ${windowStart.toISOString()} até ${windowEnd.toISOString()}`);
       
       try {
         const response = await apiRequest("POST", "/api/scheduler/generate-work-orders", {
-          companyId
+          companyId,
+          windowStart: windowStart.toISOString(),
+          windowEnd: windowEnd.toISOString()
         });
         
         const data = await response.json();
