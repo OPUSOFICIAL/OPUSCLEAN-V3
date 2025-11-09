@@ -3393,11 +3393,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create equipment
   app.post("/api/equipment", async (req, res) => {
     try {
+      console.log("Creating equipment with data:", req.body);
       const equipment = insertEquipmentSchema.parse(req.body);
+      console.log("Validated equipment:", equipment);
       const newEquipment = await storage.createEquipment(equipment);
       res.status(201).json(newEquipment);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Equipment validation error:", JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       // Check for unique constraint violation on serial number
