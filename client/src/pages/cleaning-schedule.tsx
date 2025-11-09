@@ -22,7 +22,8 @@ import {
   User,
   Timer,
   Save,
-  Settings
+  Settings,
+  Building2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -183,6 +184,53 @@ export default function CleaningSchedule() {
   const getZoneName = (zoneId: string) => {
     const zone = (zones as any[] || []).find((z: any) => z.id === zoneId);
     return zone?.name || 'Local não encontrado';
+  };
+
+  // Função para obter nomes de múltiplas zonas (compatível com campos antigos e novos)
+  const getZoneNames = (activity: any) => {
+    // Usar zone_ids (snake_case) ou zoneIds (camelCase) - novo formato
+    const zoneIds = activity.zone_ids || activity.zoneIds;
+    if (zoneIds && Array.isArray(zoneIds) && zoneIds.length > 0) {
+      const names = zoneIds
+        .map((id: string) => {
+          const zone = (zones as any[] || []).find((z: any) => z.id === id);
+          return zone?.name;
+        })
+        .filter(Boolean);
+      return names.join(', ') || 'Zonas não encontradas';
+    }
+    
+    // Fallback para formato antigo com zone_id/zoneId único
+    const zoneId = activity.zone_id || activity.zoneId;
+    if (zoneId) {
+      return getZoneName(zoneId);
+    }
+    
+    return 'Sem zona';
+  };
+
+  // Função para obter nomes de múltiplos sites
+  const getSiteNames = (activity: any) => {
+    // Usar site_ids (snake_case) ou siteIds (camelCase) - novo formato
+    const siteIds = activity.site_ids || activity.siteIds;
+    if (siteIds && Array.isArray(siteIds) && siteIds.length > 0) {
+      const names = siteIds
+        .map((id: string) => {
+          const site = (sites as any[] || []).find((s: any) => s.id === id);
+          return site?.name;
+        })
+        .filter(Boolean);
+      return names.join(', ') || 'Sites não encontrados';
+    }
+    
+    // Fallback para formato antigo com site_id/siteId único
+    const siteId = activity.site_id || activity.siteId;
+    if (siteId) {
+      const site = (sites as any[] || []).find((s: any) => s.id === siteId);
+      return site?.name || 'Site não encontrado';
+    }
+    
+    return 'Sem site';
   };
 
   // Função para obter responsável por ID
@@ -642,7 +690,7 @@ export default function CleaningSchedule() {
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs opacity-80">
                                       <MapPin className="w-3 h-3" />
-                                      <span className="truncate">{getZoneName(activity.zoneId)}</span>
+                                      <span className="truncate">{getZoneNames(activity)}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs opacity-80 mt-1">
                                       <Clock className="w-3 h-3" />
@@ -719,7 +767,11 @@ export default function CleaningSchedule() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center space-x-1">
                             <MapPin className="w-4 h-4" />
-                            <span>Local: {getZoneName(activity.zoneId)}</span>
+                            <span>Zonas: {getZoneNames(activity)}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Building2 className="w-4 h-4" />
+                            <span>Sites: {getSiteNames(activity)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="w-4 h-4" />
@@ -862,7 +914,7 @@ export default function CleaningSchedule() {
                             <div className="flex items-center gap-4 text-xs text-gray-600">
                               <span className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
-                                {getZoneName(activity.zoneId)}
+                                {getZoneNames(activity)}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
@@ -1352,7 +1404,7 @@ export default function CleaningSchedule() {
                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1">
                                     <MapPin className="w-3 h-3" />
-                                    {getZoneName(activity.zoneId)}
+                                    {getZoneNames(activity)}
                                   </span>
                                   <span className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
