@@ -2698,6 +2698,7 @@ export class DatabaseStorage implements IStorage {
     // Step 1: Fetch ALL existing work orders for this period in ONE query (batch read)
     const existingWorkOrders = await db.select({
       cleaningActivityId: workOrders.cleaningActivityId,
+      zoneId: workOrders.zoneId,
       scheduledDate: workOrders.scheduledDate
     }).from(workOrders)
       .where(and(
@@ -2709,9 +2710,9 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[SCHEDULER BATCH] ${existingWorkOrders.length} O.S existentes no período`);
     
-    // Create a Set for fast lookup of existing work orders
+    // Create a Set for fast lookup of existing work orders (includes zoneId to avoid duplicates per zone)
     const existingSet = new Set(
-      existingWorkOrders.map(wo => `${wo.cleaningActivityId}|${wo.scheduledDate?.toISOString()}`)
+      existingWorkOrders.map(wo => `${wo.cleaningActivityId}|${wo.zoneId}|${wo.scheduledDate?.toISOString()}`)
     );
     
     // Step 2: Build all work orders to create in memory (no database queries)
@@ -2721,45 +2722,59 @@ export class DatabaseStorage implements IStorage {
     for (const activity of activeActivities) {
       const occurrences = this.expandOccurrences(activity, windowStart, windowEnd);
       
+      // Get zones from zone_ids array (new format) or fallback to single zone_id (old format)
+      const zoneIds = (activity as any).zone_ids && (activity as any).zone_ids.length > 0 
+        ? (activity as any).zone_ids 
+        : (activity.zoneId ? [activity.zoneId] : []);
+      
+      // Skip if no zones defined
+      if (zoneIds.length === 0) {
+        console.log(`[SCHEDULER] Atividade ${activity.id} não tem zonas definidas, pulando`);
+        continue;
+      }
+      
       for (const occ of occurrences) {
-        const key = `${activity.id}|${occ.date.toISOString()}`;
-        
-        // Skip if already exists (in-memory check, very fast)
-        if (existingSet.has(key)) {
-          continue;
-        }
-        
-        // Build title with occurrence label if multiple times
-        let title = `${activity.name}`;
-        if (occ.total > 1) {
-          let periodo = 'ao dia';
-          if (activity.frequency === 'semanal') {
-            periodo = 'na semana';
-          } else if (activity.frequency === 'turno') {
-            periodo = 'turnos';
+        // Create one work order for EACH zone in the activity
+        for (const zoneId of zoneIds) {
+          const key = `${activity.id}|${zoneId}|${occ.date.toISOString()}`;
+          
+          // Skip if already exists (in-memory check, very fast)
+          if (existingSet.has(key)) {
+            continue;
           }
-          title = `${activity.name} - ${occ.occurrence}ª/${occ.total} (${occ.total}x ${periodo})`;
+          
+          // Build title with occurrence label if multiple times
+          let title = `${activity.name}`;
+          if (occ.total > 1) {
+            let periodo = 'ao dia';
+            if (activity.frequency === 'semanal') {
+              periodo = 'na semana';
+            } else if (activity.frequency === 'turno') {
+              periodo = 'turnos';
+            }
+            title = `${activity.name} - ${occ.occurrence}ª/${occ.total} (${occ.total}x ${periodo})`;
+          }
+          
+          // Build work order data with zone from array
+          workOrdersToCreate.push({
+            id: crypto.randomUUID(),
+            number: currentNumber++,
+            companyId: companyId,
+            zoneId: zoneId,  // Use zone from array
+            serviceId: activity.serviceId,
+            cleaningActivityId: activity.id,
+            checklistTemplateId: activity.checklistTemplateId,
+            type: 'programada' as const,
+            status: 'aberta' as const,
+            priority: 'media' as const,
+            title: title,
+            description: activity.description,
+            scheduledDate: occ.date,
+            dueDate: new Date(occ.date.getTime() + (2 * 60 * 60 * 1000)),
+            origin: 'Sistema - Cronograma',
+            module: 'clean' as const
+          });
         }
-        
-        // Build work order data
-        workOrdersToCreate.push({
-          id: crypto.randomUUID(),
-          number: currentNumber++,
-          companyId: companyId,
-          zoneId: activity.zoneId,
-          serviceId: activity.serviceId,
-          cleaningActivityId: activity.id,
-          checklistTemplateId: activity.checklistTemplateId,
-          type: 'programada' as const,
-          status: 'aberta' as const,
-          priority: 'media' as const,
-          title: title,
-          description: activity.description,
-          scheduledDate: occ.date,
-          dueDate: new Date(occ.date.getTime() + (2 * 60 * 60 * 1000)),
-          origin: 'Sistema - Cronograma',
-          module: 'clean' as const
-        });
       }
     }
     
