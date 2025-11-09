@@ -1412,12 +1412,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers/:customerId/service-types", async (req, res) => {
     try {
       const module = req.query.module as 'clean' | 'maintenance' | undefined;
-      console.log(`[GET SERVICE TYPES] customerId: ${req.params.customerId}, module: ${module}`);
       const serviceTypes = await storage.getServiceTypesByCustomer(req.params.customerId, module);
-      console.log(`[GET SERVICE TYPES] Found ${serviceTypes.length} types:`, serviceTypes.map(t => `${t.name} (${t.module})`));
       res.json(serviceTypes);
     } catch (error) {
-      console.error('[GET SERVICE TYPES] Error:', error);
       res.status(500).json({ message: "Failed to get service types" });
     }
   });

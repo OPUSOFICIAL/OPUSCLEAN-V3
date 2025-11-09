@@ -76,8 +76,8 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
 
   // Queries
   const { data: serviceTypes = [], isLoading: loadingTypes } = useQuery({
-    queryKey: ["/api/customers", customerId, "service-types"],
-    enabled: !!customerId,
+    queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }],
+    enabled: !!customerId && !!currentModule,
   });
 
   // CATEGORIAS - COMENTADO
@@ -125,7 +125,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
   const createTypeMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/customers/${customerId}/service-types`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }] });
       setIsTypeDialogOpen(false);
       typeForm.reset();
       toast({ title: "Tipo de serviço criado com sucesso!" });
@@ -139,7 +139,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/customers/${customerId}/service-types/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }] });
       setIsTypeDialogOpen(false);
       setEditingType(null);
       typeForm.reset();
@@ -153,7 +153,7 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
   const deleteTypeMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/customers/${customerId}/service-types/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }] });
       toast({ title: "Tipo de serviço excluído com sucesso!" });
     },
     onError: () => {
@@ -244,9 +244,11 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
   // Handlers
   const onSubmitType = (data: any) => {
     if (editingType) {
-      updateTypeMutation.mutate({ id: editingType.id, data });
+      // Incluir o módulo atual ao editar tipo de serviço
+      updateTypeMutation.mutate({ id: editingType.id, data: { ...data, module: currentModule } });
     } else {
-      createTypeMutation.mutate(data);
+      // Incluir o módulo atual ao criar tipo de serviço
+      createTypeMutation.mutate({ ...data, module: currentModule });
     }
   };
 
@@ -545,9 +547,6 @@ export default function ServiceSettingsMobile({ customerId }: ServiceSettingsMob
                           {type.description && (
                             <p className="text-xs text-muted-foreground mb-1 line-clamp-2" data-testid={`text-type-description-${type.id}`}>{type.description}</p>
                           )}
-                          <p className="text-xs text-muted-foreground" data-testid={`text-type-categories-${type.id}`}>
-                            Categorias: {(serviceCategories as any[]).filter(c => c.typeId === type.id).length}
-                          </p>
                         </div>
                         <div className="flex items-center gap-1">
                           <Button 

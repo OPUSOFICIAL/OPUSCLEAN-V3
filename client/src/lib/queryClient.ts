@@ -77,11 +77,6 @@ export const getQueryFn: <T>(options: {
       url += "?" + params.toString();
     }
     
-    // Debug log for service-types requests
-    if (url.includes('service-types')) {
-      console.log('[QUERY CLIENT] Fetching URL:', url, 'QueryParams:', queryParams);
-    }
-    
     const res = await fetch(url, {
       headers,
       credentials: "include",

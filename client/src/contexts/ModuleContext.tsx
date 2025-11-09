@@ -146,11 +146,11 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     if (canAccessModule(module)) {
       setCurrentModule(module);
       
-      // Invalidar cache de dados dependentes de módulo
-      queryClient.invalidateQueries({ 
+      // Remover completamente cache de dados dependentes de módulo
+      queryClient.removeQueries({ 
         predicate: (query) => {
           const key = query.queryKey;
-          // Invalidar queries que contêm "service-types", "service-categories", "dashboard-goals", etc
+          // Remover queries que contêm "service-types", "service-categories", "dashboard-goals", etc
           return key.some(part => 
             typeof part === 'string' && (
               part.includes('service-types') || 

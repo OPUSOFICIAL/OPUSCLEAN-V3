@@ -63,8 +63,8 @@ export default function Services({ customerId }: ServicesProps) {
 
   // Get service types from database
   const { data: serviceTypes = [] } = useQuery<any[]>({
-    queryKey: ["/api/customers", customerId, "service-types"],
-    enabled: !!customerId,
+    queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }],
+    enabled: !!customerId && !!currentModule,
   });
 
 

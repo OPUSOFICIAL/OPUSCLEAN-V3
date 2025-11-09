@@ -81,7 +81,6 @@ export default function Settings() {
   // Invalidate service types cache when module changes
   useEffect(() => {
     if (customerId && currentModule) {
-      console.log(`[SERVICE SETTINGS] Invalidating cache for module: ${currentModule}`);
       queryClient.invalidateQueries({ 
         queryKey: ["/api/customers", customerId, "service-types"] 
       });
