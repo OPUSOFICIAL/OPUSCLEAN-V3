@@ -2,7 +2,7 @@ import {
   companies, sites, zones, qrCodePoints, users, checklistTemplates, 
   slaConfigs, cleaningActivities, workOrders, bathroomCounters, webhookConfigs, services,
   serviceTypes, serviceCategories, serviceZones, dashboardGoals, auditLogs, customers,
-  userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters,
+  userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters, customerCounters,
   workOrderComments,
   equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
@@ -234,7 +234,7 @@ export interface IStorage {
   updateWorkOrder(id: string, workOrder: Partial<InsertWorkOrder>): Promise<WorkOrder>;
   deleteWorkOrder(id: string): Promise<void>;
   clearAllWorkOrders(): Promise<void>;
-  getNextWorkOrderNumber(companyId: string): Promise<number>;
+  getNextWorkOrderNumber(customerId: string): Promise<number>;
   reopenWorkOrder(workOrderId: string, userId: string, reason: string, attachments?: any): Promise<WorkOrder>;
 
   // Work Order Comments
@@ -351,6 +351,11 @@ export interface IStorage {
   getCompanyCounter(companyId: string, key: string): Promise<CompanyCounter | undefined>;
   createCompanyCounter(counter: InsertCompanyCounter): Promise<CompanyCounter>;
   incrementCompanyCounter(companyId: string, key: string): Promise<number>;
+  
+  // Customer Counters (sequential numbering per customer)
+  getCustomerCounter(customerId: string, key: string): Promise<CustomerCounter | undefined>;
+  createCustomerCounter(counter: InsertCustomerCounter): Promise<CustomerCounter>;
+  incrementCustomerCounter(customerId: string, key: string): Promise<number>;
 
   // Reports Metrics
   getReportsMetrics(companyId: string, period: string): Promise<{
@@ -3200,8 +3205,8 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(auditLogs.timestamp));
   }
 
-  async getNextWorkOrderNumber(companyId: string): Promise<number> {
-    return await this.incrementCompanyCounter(companyId, 'work_order');
+  async getNextWorkOrderNumber(customerId: string): Promise<number> {
+    return await this.incrementCustomerCounter(customerId, 'work_order');
   }
 
   async reopenWorkOrder(workOrderId: string, userId: string, reason: string, attachments?: any): Promise<WorkOrder> {
@@ -4366,6 +4371,51 @@ export class DatabaseStorage implements IStorage {
     const newCounter = await this.createCompanyCounter({
       id: `cc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       companyId,
+      key,
+      nextNumber: 2 // Since we're returning 1 for the first use
+    });
+    
+    return 1; // First number
+  }
+
+  // Customer Counters Implementation
+  async getCustomerCounter(customerId: string, key: string): Promise<CustomerCounter | undefined> {
+    const [counter] = await db.select()
+      .from(customerCounters)
+      .where(and(
+        eq(customerCounters.customerId, customerId),
+        eq(customerCounters.key, key)
+      ))
+      .limit(1);
+    return counter;
+  }
+
+  async createCustomerCounter(counter: InsertCustomerCounter): Promise<CustomerCounter> {
+    const [newCounter] = await db.insert(customerCounters).values(counter).returning();
+    return newCounter;
+  }
+
+  async incrementCustomerCounter(customerId: string, key: string): Promise<number> {
+    // Try to increment existing counter
+    const [result] = await db.update(customerCounters)
+      .set({
+        nextNumber: sql`${customerCounters.nextNumber} + 1`,
+        updatedAt: sql`now()`
+      })
+      .where(and(
+        eq(customerCounters.customerId, customerId),
+        eq(customerCounters.key, key)
+      ))
+      .returning({ nextNumber: customerCounters.nextNumber });
+
+    if (result && result.nextNumber !== null) {
+      return result.nextNumber;
+    }
+
+    // If no existing counter, create one
+    const newCounter = await this.createCustomerCounter({
+      id: `custc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      customerId,
       key,
       nextNumber: 2 // Since we're returning 1 for the first use
     });

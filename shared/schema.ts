@@ -250,6 +250,7 @@ export const workOrders = pgTable("work_orders", {
   id: varchar("id").primaryKey(),
   number: integer("number").notNull(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").references(() => customers.id),
   module: moduleEnum("module").notNull().default('clean'),
   zoneId: varchar("zone_id").references(() => zones.id),
   serviceId: varchar("service_id").references(() => services.id),
@@ -291,7 +292,7 @@ export const workOrders = pgTable("work_orders", {
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 }, (table) => ({
-  uniqueWorkOrderNumber: uniqueIndex("work_orders_company_number_unique").on(table.companyId, table.number),
+  uniqueWorkOrderNumber: uniqueIndex("work_orders_customer_number_unique").on(table.customerId, table.number),
 }));
 
 // 12. TABELA: audit_logs (Logs de Auditoria)
@@ -404,6 +405,17 @@ export const companyCounters = pgTable("company_counters", {
   nextNumber: integer("next_number").notNull().default(1),
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
+
+// 21B. TABELA: customer_counters (Contadores por Cliente)
+export const customerCounters = pgTable("customer_counters", {
+  id: varchar("id").primaryKey(),
+  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  key: varchar("key").notNull(),
+  nextNumber: integer("next_number").notNull().default(1),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => ({
+  uniqueCustomerKey: unique("customer_counters_customer_key_unique").on(table.customerId, table.key),
+}));
 
 // 22. TABELA: qr_code_points (Pontos de QR Code)
 export const qrCodePoints = pgTable("qr_code_points", {
@@ -1187,6 +1199,7 @@ export const insertSiteShiftSchema = createInsertSchema(siteShifts);
 export const insertSlaConfigSchema = createInsertSchema(slaConfigs);
 export const insertWebhookConfigSchema = createInsertSchema(webhookConfigs);
 export const insertCompanyCounterSchema = createInsertSchema(companyCounters);
+export const insertCustomerCounterSchema = createInsertSchema(customerCounters);
 export const insertQrCodePointSchema = createInsertSchema(qrCodePoints).omit({ 
   id: true,
   createdAt: true,
@@ -1278,6 +1291,9 @@ export type InsertWebhookConfig = z.infer<typeof insertWebhookConfigSchema>;
 
 export type CompanyCounter = typeof companyCounters.$inferSelect;
 export type InsertCompanyCounter = z.infer<typeof insertCompanyCounterSchema>;
+
+export type CustomerCounter = typeof customerCounters.$inferSelect;
+export type InsertCustomerCounter = z.infer<typeof insertCustomerCounterSchema>;
 
 export type QrCodePoint = typeof qrCodePoints.$inferSelect;
 export type InsertQrCodePoint = z.infer<typeof insertQrCodePointSchema>;
