@@ -2685,36 +2685,51 @@ export class DatabaseStorage implements IStorage {
 
   // Generate scheduled work orders from cleaning activities
   async generateScheduledWorkOrders(companyId: string, windowStart: Date, windowEnd: Date): Promise<WorkOrder[]> {
+    console.log(`[SCHEDULER BATCH] Iniciando geração de O.S de limpeza para ${companyId}`);
+    
     // Get active cleaning activities
     const activities = await this.getCleaningActivitiesByCompany(companyId);
     const activeActivities = activities.filter(a => a.isActive);
     
-    const generatedOrders: WorkOrder[] = [];
+    console.log(`[SCHEDULER BATCH] ${activeActivities.length} atividades ativas encontradas`);
+    
+    // Step 1: Fetch ALL existing work orders for this period in ONE query (batch read)
+    const existingWorkOrders = await db.select({
+      cleaningActivityId: workOrders.cleaningActivityId,
+      scheduledDate: workOrders.scheduledDate
+    }).from(workOrders)
+      .where(and(
+        eq(workOrders.companyId, companyId),
+        sql`${workOrders.scheduledDate} >= ${windowStart}`,
+        sql`${workOrders.scheduledDate} <= ${windowEnd}`,
+        isNotNull(workOrders.cleaningActivityId)
+      ));
+    
+    console.log(`[SCHEDULER BATCH] ${existingWorkOrders.length} O.S existentes no período`);
+    
+    // Create a Set for fast lookup of existing work orders
+    const existingSet = new Set(
+      existingWorkOrders.map(wo => `${wo.cleaningActivityId}|${wo.scheduledDate?.toISOString()}`)
+    );
+    
+    // Step 2: Build all work orders to create in memory (no database queries)
+    const workOrdersToCreate: any[] = [];
+    let currentNumber = await this.getNextWorkOrderNumber(companyId);
     
     for (const activity of activeActivities) {
       const occurrences = this.expandOccurrences(activity, windowStart, windowEnd);
       
       for (const occ of occurrences) {
-        // Check if work order already exists for this activity and exact datetime (idempotency)
-        const existing = await db.select().from(workOrders)
-          .where(and(
-            eq(workOrders.companyId, companyId),
-            eq(workOrders.cleaningActivityId, activity.id),
-            eq(workOrders.scheduledDate, occ.date)
-          ))
-          .limit(1);
-          
-        if (existing.length > 0) {
-          continue; // Skip if already exists
-        }
+        const key = `${activity.id}|${occ.date.toISOString()}`;
         
-        // Generate work order number
-        const workOrderNumber = await this.getNextWorkOrderNumber(companyId);
+        // Skip if already exists (in-memory check, very fast)
+        if (existingSet.has(key)) {
+          continue;
+        }
         
         // Build title with occurrence label if multiple times
         let title = `${activity.name}`;
         if (occ.total > 1) {
-          // Determinar o período baseado na frequência
           let periodo = 'ao dia';
           if (activity.frequency === 'semanal') {
             periodo = 'na semana';
@@ -2724,10 +2739,10 @@ export class DatabaseStorage implements IStorage {
           title = `${activity.name} - ${occ.occurrence}ª/${occ.total} (${occ.total}x ${periodo})`;
         }
         
-        // Create work order
-        const workOrderData = {
+        // Build work order data
+        workOrdersToCreate.push({
           id: crypto.randomUUID(),
-          number: workOrderNumber,
+          number: currentNumber++,
           companyId: companyId,
           zoneId: activity.zoneId,
           serviceId: activity.serviceId,
@@ -2739,28 +2754,105 @@ export class DatabaseStorage implements IStorage {
           title: title,
           description: activity.description,
           scheduledDate: occ.date,
-          dueDate: new Date(occ.date.getTime() + (2 * 60 * 60 * 1000)), // 2 hours after scheduled
-          origin: 'Sistema - Cronograma'
-        };
-        
-        const [createdOrder] = await db.insert(workOrders).values(workOrderData).returning();
-        generatedOrders.push(createdOrder);
+          dueDate: new Date(occ.date.getTime() + (2 * 60 * 60 * 1000)),
+          origin: 'Sistema - Cronograma',
+          module: 'clean' as const
+        });
       }
     }
     
+    console.log(`[SCHEDULER BATCH] ${workOrdersToCreate.length} novas O.S para criar`);
+    
+    // Step 3: Insert ALL work orders in ONE batch operation (if any)
+    if (workOrdersToCreate.length === 0) {
+      console.log(`[SCHEDULER BATCH] ✅ Nenhuma O.S nova para criar`);
+      return [];
+    }
+    
+    // Insert in batches of 500 to avoid query size limits
+    const batchSize = 500;
+    const generatedOrders: WorkOrder[] = [];
+    
+    for (let i = 0; i < workOrdersToCreate.length; i += batchSize) {
+      const batch = workOrdersToCreate.slice(i, i + batchSize);
+      const inserted = await db.insert(workOrders).values(batch).returning();
+      generatedOrders.push(...inserted);
+      console.log(`[SCHEDULER BATCH] Batch ${Math.floor(i / batchSize) + 1}: ${inserted.length} O.S criadas`);
+    }
+    
+    console.log(`[SCHEDULER BATCH] ✅ Total: ${generatedOrders.length} O.S criadas com sucesso`);
     return generatedOrders;
   }
 
   // Generate scheduled work orders from maintenance activities
   async generateMaintenanceWorkOrders(companyId: string, windowStart: Date, windowEnd: Date): Promise<WorkOrder[]> {
+    console.log(`[SCHEDULER BATCH] Iniciando geração de O.S de manutenção para ${companyId}`);
+    
     // Get active maintenance activities
     const activities = await this.getMaintenanceActivitiesByCompany(companyId);
     const activeActivities = activities.filter((a: any) => a.isActive);
     
-    const generatedOrders: WorkOrder[] = [];
+    console.log(`[SCHEDULER BATCH] ${activeActivities.length} atividades de manutenção ativas`);
+    
+    // Step 1: Fetch ALL existing maintenance work orders for this period in ONE query
+    const existingWorkOrders = await db.select({
+      maintenanceActivityId: workOrders.maintenanceActivityId,
+      equipmentId: workOrders.equipmentId,
+      scheduledDate: workOrders.scheduledDate
+    }).from(workOrders)
+      .where(and(
+        eq(workOrders.companyId, companyId),
+        sql`${workOrders.scheduledDate} >= ${windowStart}`,
+        sql`${workOrders.scheduledDate} <= ${windowEnd}`,
+        isNotNull(workOrders.maintenanceActivityId)
+      ));
+    
+    console.log(`[SCHEDULER BATCH] ${existingWorkOrders.length} O.S de manutenção existentes no período`);
+    
+    // Create a Set for fast lookup
+    const existingSet = new Set(
+      existingWorkOrders.map(wo => `${wo.maintenanceActivityId}|${wo.equipmentId}|${wo.scheduledDate?.toISOString()}`)
+    );
+    
+    // Collect all unique equipment IDs needed
+    const allEquipmentIds = new Set<string>();
+    for (const activity of activeActivities) {
+      if (activity.equipmentIds && activity.equipmentIds.length > 0) {
+        activity.equipmentIds.forEach((id: string) => allEquipmentIds.add(id));
+      }
+    }
+    
+    // Step 2: Fetch ALL equipment in ONE query (if any needed)
+    const equipmentMap = new Map<string, any>();
+    if (allEquipmentIds.size > 0) {
+      const allEquipment = await db.select().from(equipment)
+        .where(inArray(equipment.id, Array.from(allEquipmentIds)));
+      allEquipment.forEach(eq => equipmentMap.set(eq.id, eq));
+      console.log(`[SCHEDULER BATCH] ${allEquipment.length} equipamentos carregados`);
+    }
+    
+    // Step 3: Collect all unique checklist template IDs
+    const templateIds = new Set<string>();
+    for (const activity of activeActivities) {
+      if (activity.checklistTemplateId) {
+        templateIds.add(activity.checklistTemplateId);
+      }
+    }
+    
+    // Fetch all templates in ONE query (if any needed)
+    const templateMap = new Map<string, any>();
+    if (templateIds.size > 0) {
+      const templates = await db.select().from(maintenanceChecklistTemplates)
+        .where(inArray(maintenanceChecklistTemplates.id, Array.from(templateIds)));
+      templates.forEach(t => templateMap.set(t.id, t));
+      console.log(`[SCHEDULER BATCH] ${templates.length} templates de checklist carregados`);
+    }
+    
+    // Step 4: Build all work orders in memory
+    const workOrdersToCreate: any[] = [];
+    let currentNumber = await this.getNextWorkOrderNumber(companyId);
     
     for (const activity of activeActivities) {
-      // Convert maintenance activity to format compatible with expandOccurrences
       const activityForExpansion: any = {
         ...activity,
         module: 'maintenance'
@@ -2768,54 +2860,37 @@ export class DatabaseStorage implements IStorage {
       
       const occurrences = this.expandOccurrences(activityForExpansion, windowStart, windowEnd);
       
-      console.log(`[SCHEDULER DEBUG] Activity: "${activity.name}" (${activity.id})`);
-      console.log(`[SCHEDULER DEBUG] Occurrences generated: ${occurrences.length}`);
-      occurrences.forEach((occ, idx) => {
-        console.log(`  ${idx + 1}. ${occ.date.toISOString().split('T')[0]} (${occ.occurrence}/${occ.total})`);
-      });
-      
-      // Get equipment based on equipmentIds array
-      let equipmentList: any[] = [];
-      console.log(`[SCHEDULER DEBUG] activity.equipmentIds:`, activity.equipmentIds);
-      console.log(`[SCHEDULER DEBUG] equipmentIds type:`, typeof activity.equipmentIds);
-      console.log(`[SCHEDULER DEBUG] equipmentIds isArray:`, Array.isArray(activity.equipmentIds));
-      
+      // Get equipment for this activity
+      const equipmentList: any[] = [];
       if (activity.equipmentIds && activity.equipmentIds.length > 0) {
-        // Get all specified equipment
-        equipmentList = await db.select().from(equipment)
-          .where(inArray(equipment.id, activity.equipmentIds));
-        
-        console.log(`[SCHEDULER DEBUG] Equipment IDs in activity: ${activity.equipmentIds.length}`);
-        console.log(`[SCHEDULER DEBUG] Equipment found: ${equipmentList.length}`);
-        equipmentList.forEach(eq => {
-          console.log(`  - ${eq.name} (ID: ${eq.id})`);
+        activity.equipmentIds.forEach((id: string) => {
+          const eq = equipmentMap.get(id);
+          if (eq) equipmentList.push(eq);
         });
-      } else {
-        console.log(`[SCHEDULER DEBUG] ❌ No equipment IDs found in activity - skipping OS generation`);
       }
       
-      // Generate work orders for each equipment and occurrence combination
+      if (equipmentList.length === 0) continue;
+      
+      // Get template data if available
+      let validChecklistTemplateId = null;
+      let serviceId = null;
+      if (activity.checklistTemplateId) {
+        const template = templateMap.get(activity.checklistTemplateId);
+        if (template) {
+          validChecklistTemplateId = activity.checklistTemplateId;
+          serviceId = template.serviceId;
+        }
+      }
+      
+      // Generate work orders for each equipment and occurrence
       for (const equipItem of equipmentList) {
         for (const occ of occurrences) {
-          // Check if work order already exists (idempotency)
-          const existing = await db.select().from(workOrders)
-            .where(and(
-              eq(workOrders.companyId, companyId),
-              eq(workOrders.maintenanceActivityId, activity.id),
-              eq(workOrders.equipmentId, equipItem.id),
-              eq(workOrders.scheduledDate, occ.date)
-            ))
-            .limit(1);
-            
-          if (existing.length > 0) {
-            console.log(`[SCHEDULER DEBUG] ⏭️  Skipping - OS already exists for ${occ.date.toISOString().split('T')[0]}`);
-            continue; // Skip if already exists
+          const key = `${activity.id}|${equipItem.id}|${occ.date.toISOString()}`;
+          
+          // Skip if already exists (in-memory check)
+          if (existingSet.has(key)) {
+            continue;
           }
-          
-          console.log(`[SCHEDULER DEBUG] ✅ Creating OS for ${occ.date.toISOString().split('T')[0]}`);
-          
-          // Generate work order number
-          const workOrderNumber = await this.getNextWorkOrderNumber(companyId);
           
           // Build title
           let title = `${activity.name} - ${equipItem.name}`;
@@ -2829,46 +2904,48 @@ export class DatabaseStorage implements IStorage {
             title = `${activity.name} - ${equipItem.name} - ${occ.occurrence}ª/${occ.total}`;
           }
           
-          // Verify if checklist template exists and get serviceId from it
-          let validChecklistTemplateId = null;
-          let serviceId = null;
-          if (activity.checklistTemplateId) {
-            const [template] = await db.select().from(maintenanceChecklistTemplates)
-              .where(eq(maintenanceChecklistTemplates.id, activity.checklistTemplateId))
-              .limit(1);
-            if (template) {
-              validChecklistTemplateId = activity.checklistTemplateId;
-              serviceId = template.serviceId; // Get serviceId from checklist template
-            }
-          }
-          
-          // Create work order with site and zone from equipment
-          const workOrderData = {
+          workOrdersToCreate.push({
             id: crypto.randomUUID(),
-            number: workOrderNumber,
+            number: currentNumber++,
             companyId: companyId,
             equipmentId: equipItem.id,
             maintenanceActivityId: activity.id,
             maintenanceChecklistTemplateId: validChecklistTemplateId,
-            serviceId: serviceId, // Add serviceId from checklist template
+            serviceId: serviceId,
             type: 'programada' as const,
             status: 'aberta' as const,
             priority: 'media' as const,
             title: title,
             description: activity.description || `Manutenção ${activity.type} para ${equipItem.name}`,
             scheduledDate: occ.date,
-            dueDate: new Date(occ.date.getTime() + (4 * 60 * 60 * 1000)), // 4 hours after scheduled
+            dueDate: new Date(occ.date.getTime() + (4 * 60 * 60 * 1000)),
             origin: 'Sistema - Plano de Manutenção',
             module: 'maintenance' as const,
-            zoneId: equipItem.zoneId  // Add zone from equipment
-          };
-          
-          const [createdOrder] = await db.insert(workOrders).values(workOrderData).returning();
-          generatedOrders.push(createdOrder);
+            zoneId: equipItem.zoneId
+          });
         }
       }
     }
     
+    console.log(`[SCHEDULER BATCH] ${workOrdersToCreate.length} novas O.S de manutenção para criar`);
+    
+    // Step 5: Insert in batches
+    if (workOrdersToCreate.length === 0) {
+      console.log(`[SCHEDULER BATCH] ✅ Nenhuma O.S nova de manutenção para criar`);
+      return [];
+    }
+    
+    const batchSize = 500;
+    const generatedOrders: WorkOrder[] = [];
+    
+    for (let i = 0; i < workOrdersToCreate.length; i += batchSize) {
+      const batch = workOrdersToCreate.slice(i, i + batchSize);
+      const inserted = await db.insert(workOrders).values(batch).returning();
+      generatedOrders.push(...inserted);
+      console.log(`[SCHEDULER BATCH] Batch ${Math.floor(i / batchSize) + 1}: ${inserted.length} O.S de manutenção criadas`);
+    }
+    
+    console.log(`[SCHEDULER BATCH] ✅ Total: ${generatedOrders.length} O.S de manutenção criadas com sucesso`);
     return generatedOrders;
   }
 
