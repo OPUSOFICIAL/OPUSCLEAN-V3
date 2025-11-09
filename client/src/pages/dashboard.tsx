@@ -229,7 +229,7 @@ export default function Dashboard() {
         </div>
       </div>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4 space-y-3 ml-[-10px] mr-[-10px]">
+      <div className="max-w-7xl mx-auto p-4 space-y-3">
         {/* Modern KPI Cards with Glassmorphism */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Eficiência Operacional */}
