@@ -78,10 +78,21 @@ export default function Settings() {
     }
   }, [customerId, queryClient]);
 
+  // Invalidate service types cache when module changes
+  useEffect(() => {
+    if (customerId && currentModule) {
+      console.log(`[SERVICE SETTINGS] Invalidating cache for module: ${currentModule}`);
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers", customerId, "service-types"] 
+      });
+    }
+  }, [currentModule, customerId, queryClient]);
+
   // Queries
   const { data: serviceTypes = [], isLoading: loadingTypes } = useQuery({
     queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }],
     enabled: !!customerId,
+    staleTime: 0, // Força revalidação imediata
   });
 
   // CATEGORIAS - COMENTADO
