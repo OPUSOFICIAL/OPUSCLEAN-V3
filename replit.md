@@ -6,6 +6,15 @@
 > 
 > **🗄️ Backup do Banco**: Informações sobre backup e restauração do banco de dados em [DATABASE_BACKUP_INFO.md](./DATABASE_BACKUP_INFO.md)
 
+## Recent Changes (09/11/2025)
+
+**Sistema de Numeração por Cliente**: A numeração de work orders foi migrada de company-level para customer-level:
+- Cada cliente tem sua própria sequência de numeração independente
+- Nova tabela `customer_counters` gerencia os contadores por cliente
+- Campo `customerId` adicionado à tabela `work_orders` (obrigatório)
+- Constraint unique alterada de `(company_id, number)` para `(customer_id, number)`
+- Função `getNextWorkOrderNumber()` agora recebe `customerId` ao invés de `companyId`
+
 # Overview
 
 OPUS is a modular facilities management platform designed to streamline operations and enhance efficiency. It currently includes OPUS Clean for cleaning and facilities management and OPUS Manutenção for maintenance management. The platform offers web-based administration and mobile applications, supporting scheduling, work order management, QR code-based task execution, and public service requests. OPUS is built to serve multiple companies, sites, and zones, providing real-time analytics through a modern full-stack architecture, with the vision of offering a comprehensive, scalable solution for modern facilities management.
