@@ -1205,7 +1205,9 @@ export const insertPublicRequestLogSchema = createInsertSchema(publicRequestLogs
 export const insertWorkOrderCommentSchema = createInsertSchema(workOrderComments);
 
 // Maintenance insert schemas
-export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true });
+export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true }).extend({
+  value: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+});
 export const insertMaintenanceChecklistTemplateSchema = createInsertSchema(maintenanceChecklistTemplates).omit({ id: true });
 export const insertMaintenanceChecklistExecutionSchema = createInsertSchema(maintenanceChecklistExecutions).omit({ id: true });
 export const insertMaintenancePlanSchema = createInsertSchema(maintenancePlans).omit({ id: true });
