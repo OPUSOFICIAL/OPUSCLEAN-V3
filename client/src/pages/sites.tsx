@@ -660,7 +660,7 @@ export default function Sites({ customerId }: SitesProps) {
                     data-testid="button-create-first-zone"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Criar Primeiro Local
+                    Criar Primeira Zona
                   </Button>
                 </div>
               ) : (
