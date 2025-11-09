@@ -1625,7 +1625,8 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       // Criar todas as atividades
       const createdActivities = [];
       for (const { data: activityData, companyId } of activitiesToCreate) {
-        const created = await apiRequest("POST", "/api/cleaning-activities", activityData);
+        const response = await apiRequest("POST", "/api/cleaning-activities", activityData);
+        const created = await response.json();
         createdActivities.push({ activity: created, companyId });
       }
       
