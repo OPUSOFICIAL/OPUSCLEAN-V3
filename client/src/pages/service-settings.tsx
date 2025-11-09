@@ -252,7 +252,8 @@ export default function Settings() {
   // Handlers
   const onSubmitType = (data: any) => {
     if (editingType) {
-      updateTypeMutation.mutate({ id: editingType.id, data });
+      // Incluir o módulo atual ao editar tipo de serviço
+      updateTypeMutation.mutate({ id: editingType.id, data: { ...data, module: currentModule } });
     } else {
       // Incluir o módulo atual ao criar tipo de serviço
       createTypeMutation.mutate({ ...data, module: currentModule });

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useUserModules } from '@/hooks/useUserModules';
 import { useClient } from './ClientContext';
+import { queryClient } from '@/lib/queryClient';
 
 export type ModuleType = 'clean' | 'maintenance';
 
@@ -144,6 +145,21 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     // Validar se o usuário pode acessar o módulo antes de trocar
     if (canAccessModule(module)) {
       setCurrentModule(module);
+      
+      // Invalidar cache de dados dependentes de módulo
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          // Invalidar queries que contêm "service-types", "service-categories", "dashboard-goals", etc
+          return key.some(part => 
+            typeof part === 'string' && (
+              part.includes('service-types') || 
+              part.includes('service-categories') ||
+              part.includes('dashboard-goals')
+            )
+          );
+        }
+      });
       
       // Verificar se o cliente atual possui o módulo selecionado
       const currentClientHasModule = activeClient?.modules?.includes(module);
