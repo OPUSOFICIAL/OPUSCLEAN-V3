@@ -230,13 +230,9 @@ export default function Checklists() {
       setIsCreateDialogOpen(false);
       resetForm();
       
-      // Check if multiple checklists were created
-      const count = result.count || 1;
       toast({
-        title: count > 1 ? "Checklists criados" : "Checklist criado",
-        description: count > 1 
-          ? `${count} checklists foram criados com sucesso (um para cada combinação de local e zona).`
-          : "O checklist foi criado com sucesso.",
+        title: "Checklist criado",
+        description: "O checklist foi criado com sucesso.",
       });
     },
     onError: () => {

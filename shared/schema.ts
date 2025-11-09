@@ -224,6 +224,8 @@ export const cleaningActivities = pgTable("cleaning_activities", {
   endTime: time("end_time"),
   startDate: date("start_date"),
   endDate: date("end_date"),
+  siteIds: text("site_ids").array(),
+  zoneIds: text("zone_ids").array(),
 });
 
 // 10. TABELA: checklist_templates (Templates de Checklist)
@@ -239,6 +241,8 @@ export const checklistTemplates = pgTable("checklist_templates", {
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
   zoneId: varchar("zone_id").references(() => zones.id),
+  siteIds: text("site_ids").array(),
+  zoneIds: text("zone_ids").array(),
 });
 
 // 11. TABELA: work_orders (Ordens de Trabalho)

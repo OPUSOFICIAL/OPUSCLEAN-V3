@@ -1592,56 +1592,39 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
 
   const createActivityMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Criar uma atividade para cada combinação de local+zona
-      const activitiesToCreate = [];
+      // Get companyId from first selected site
+      const firstSite = (sites as any[])?.find(s => s.id === data.siteIds[0]);
+      const companyId = firstSite?.companyId || "company-opus-default";
       
-      for (const siteId of data.siteIds) {
-        for (const zoneId of data.zoneIds) {
-          // Get the site to obtain companyId
-          const site = (sites as any[])?.find(s => s.id === siteId);
-          const companyId = site?.companyId || "company-opus-default";
-          
-          const submitData = {
-            name: data.name,
-            description: data.description,
-            frequency: data.frequency,
-            frequencyConfig: data.frequencyConfig,
-            serviceId: data.serviceId,
-            siteId: siteId,  // Single siteId
-            zoneId: zoneId,  // Single zoneId
-            checklistTemplateId: data.checklistTemplateId, // Checklist é obrigatório
-            startDate: data.startDate,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            isActive: data.isActive,
-            companyId,
-            module: currentModule,
-          };
-          
-          activitiesToCreate.push({ data: submitData, companyId });
-        }
-      }
+      // Create single activity with multiple sites and zones
+      const submitData = {
+        name: data.name,
+        description: data.description,
+        frequency: data.frequency,
+        frequencyConfig: data.frequencyConfig,
+        serviceId: data.serviceId,
+        siteIds: data.siteIds,  // Array of site IDs
+        zoneIds: data.zoneIds,  // Array of zone IDs
+        checklistTemplateId: data.checklistTemplateId,
+        startDate: data.startDate,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        isActive: data.isActive,
+        companyId,
+        module: currentModule,
+      };
       
-      // Criar todas as atividades
-      const createdActivities = [];
-      for (const { data: activityData, companyId } of activitiesToCreate) {
-        const response = await apiRequest("POST", "/api/cleaning-activities", activityData);
-        const created = await response.json();
-        createdActivities.push({ activity: created, companyId });
-      }
+      const response = await apiRequest("POST", "/api/cleaning-activities", submitData);
+      const created = await response.json();
       
-      // Retornar primeira companyId para usar no onSuccess
       return { 
-        activities: createdActivities, 
-        companyId: activitiesToCreate[0]?.companyId || "company-opus-default",
-        count: createdActivities.length
+        activity: created,
+        companyId
       };
     },
     onSuccess: async (result: any) => {
       toast({ 
-        title: result.count > 1 
-          ? `${result.count} atividades de limpeza criadas com sucesso!`
-          : "Atividade de limpeza criada com sucesso!" 
+        title: "Atividade de limpeza criada com sucesso!"
       });
       
       // Invalidar cache para mostrar a nova atividade na lista
@@ -1652,8 +1635,9 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       // Gerar ordens de trabalho automaticamente
       const companyId = result.companyId || "company-opus-default";
       
-      // Determinar janela de tempo baseada nas atividades criadas
-      const activities = result.activities.map((a: any) => a.activity);
+      // Determinar janela de tempo baseada na atividade criada
+      const activity = result.activity;
+      const activities = [activity];
       
       // DEBUG: Ver estrutura das atividades retornadas
       console.log('[DEBUG] Primeira atividade:', JSON.stringify(activities[0], null, 2));
