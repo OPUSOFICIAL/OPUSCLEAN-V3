@@ -311,19 +311,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the first site's company for the checklist template
       const companyId = customerSites[0].companyId;
       
-      // Convert zoneIds array to zoneId (single value) for database compatibility
+      // Extract site and zone arrays
       const { zoneIds, siteIds, ...restBody } = req.body;
-      const checklistData = { 
-        ...restBody, 
-        companyId,
-        zoneId: zoneIds && zoneIds.length > 0 ? zoneIds[0] : null,
-        siteId: siteIds && siteIds.length > 0 ? siteIds[0] : null
-      };
+      const sitesArray = siteIds && siteIds.length > 0 ? siteIds : [null];
+      const zonesArray = zoneIds && zoneIds.length > 0 ? zoneIds : [null];
       
-      console.log("[CHECKLIST CREATE] Data:", JSON.stringify(checklistData, null, 2));
+      // Create a checklist for each combination of site + zone
+      const createdTemplates = [];
+      for (const siteId of sitesArray) {
+        for (const zoneId of zonesArray) {
+          const checklistData = { 
+            ...restBody, 
+            companyId,
+            zoneId,
+            siteId
+          };
+          
+          console.log("[CHECKLIST CREATE] Creating for site:", siteId, "zone:", zoneId);
+          
+          const template = await storage.createChecklistTemplate(checklistData);
+          createdTemplates.push(template);
+        }
+      }
       
-      const template = await storage.createChecklistTemplate(checklistData);
-      res.json(template);
+      // Return first template for backward compatibility, or all templates if multiple
+      res.json(createdTemplates.length === 1 ? createdTemplates[0] : { 
+        count: createdTemplates.length,
+        templates: createdTemplates 
+      });
     } catch (error: any) {
       console.error("Error creating checklist template:", error?.message || error);
       console.error("Stack:", error?.stack);

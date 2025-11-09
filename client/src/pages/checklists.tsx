@@ -225,13 +225,18 @@ export default function Checklists() {
       const response = await apiRequest("POST", `/api/customers/${activeClientId}/checklist-templates`, data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "checklist-templates"] });
       setIsCreateDialogOpen(false);
       resetForm();
+      
+      // Check if multiple checklists were created
+      const count = result.count || 1;
       toast({
-        title: "Checklist criado",
-        description: "O checklist foi criado com sucesso.",
+        title: count > 1 ? "Checklists criados" : "Checklist criado",
+        description: count > 1 
+          ? `${count} checklists foram criados com sucesso (um para cada combinação de local e zona).`
+          : "O checklist foi criado com sucesso.",
       });
     },
     onError: () => {
