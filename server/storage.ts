@@ -5943,13 +5943,12 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
             parts: [{ text: msg.content }]
           }));
 
-        // Add system context as the first user message if no history
-        if (historyMessages.length === 0) {
-          historyMessages.push({
-            role: 'user',
-            parts: [{ text: `${systemPrompt}\n\n${contextInfo}` }]
-          });
-        }
+        // ALWAYS prepend system context at the beginning so AI never forgets the current date
+        // This must be included in EVERY request, not just the first one
+        historyMessages.unshift({
+          role: 'user',
+          parts: [{ text: `${systemPrompt}\n\n${contextInfo}` }]
+        });
 
         // Add current user message
         historyMessages.push({

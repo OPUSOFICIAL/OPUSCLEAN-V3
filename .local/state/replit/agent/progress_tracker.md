@@ -250,3 +250,14 @@
 [x] 227. Updated toast titles: "✓ Conexão bem-sucedida" vs "✗ Teste de conexão falhou"
 [x] 228. Description now shows specific backend error messages (API key invalid, model not found, etc)
 [x] 229. Restarted application - AI integration fixes applied successfully
+
+## AI CHAT DATE CONTEXT FIX (08/11/2025 09:15 PM)
+[x] 230. User reported: AI chat asks "Qual é o mês atual?" when user asks "quantas OS concluídas neste mês?"
+[x] 231. Investigated callAI function - found systemPrompt already includes current date context
+[x] 232. Root cause: systemPrompt only sent in FIRST message (historyMessages.length === 0)
+[x] 233. In subsequent messages, AI "forgets" the current date context
+[x] 234. Fixed: Changed from if-condition to ALWAYS prepend systemPrompt using unshift()
+[x] 235. Now AI receives current date context in EVERY request, not just the first one
+[x] 236. System prompt includes: date, monthName, year, firstDayOfMonth, lastDayOfMonth
+[x] 237. AI explicitly instructed: "NUNCA peça a data ao usuário - você JÁ TEM todas as datas"
+[x] 238. Restarted application - AI chat now knows current date in all messages
