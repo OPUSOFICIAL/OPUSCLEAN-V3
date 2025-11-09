@@ -261,3 +261,18 @@
 [x] 236. System prompt includes: date, monthName, year, firstDayOfMonth, lastDayOfMonth
 [x] 237. AI explicitly instructed: "NUNCA peça a data ao usuário - você JÁ TEM todas as datas"
 [x] 238. Restarted application - AI chat now knows current date in all messages
+
+## WORK ORDER GENERATION BUG - 2X PER DAY (08/11/2025 04:25 PM)
+[x] 239. User reported: O.S configured for "2x ao dia" only shows "1º/2", missing "2º/2"
+[x] 240. Investigated database: All 18 O.S had same title "1ª/2", none with "2ª/2"
+[x] 241. Root cause: scheduled_date column was `date` type (date only, no time)
+[x] 242. Problem: Both O.S (08:00 and 20:00) saved as same date "2025-11-01"
+[x] 243. When generating 2nd O.S, system found existing O.S and skipped creation
+[x] 244. Solution: Changed scheduled_date from date() to timestamp() in schema
+[x] 245. Also changed dueDate to timestamp() for consistency
+[x] 246. Cleaned orphaned work_order_comments (38 rows deleted)
+[x] 247. Ran npm run db:push --force to sync schema changes
+[x] 248. Regenerated all work orders with POST /api/scheduler/generate-work-orders
+[x] 249. ✅ 540 work orders generated successfully
+[x] 250. Verified fix: "1ª/2" at 08:00:00, "2ª/2" at 20:00:00 - both created correctly
+[x] 251. All activities with 2x per day now generate BOTH occurrences with different timestamps
