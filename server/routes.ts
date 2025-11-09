@@ -17,8 +17,9 @@ import {
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
   insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
   insertAiIntegrationSchema,
-  type User
+  type User, type InsertUser
 } from "@shared/schema";
+import { nanoid } from "nanoid";
 import { z } from "zod";
 import crypto from "crypto";
 import {
@@ -3081,18 +3082,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hashedPassword = await bcrypt.hash(userData.password, 12);
       }
       
-      // NÃO enviar o campo ID - deixar o DEFAULT do banco gerar
-      const userDataToInsert: any = {
+      // Gerar ID único para o usuário
+      const userId = `user-${nanoid()}`;
+      
+      const userDataToInsert = {
+        id: userId,
         username: userData.username,
         email: userData.email,
         password: hashedPassword || '',
         name: userData.name,
         role: userData.role,
-        userType: 'opus_user',
+        userType: 'opus_user' as const,
         companyId: 'company-opus-default',
         customerId: null,
         authProvider: userData.authProvider || 'local',
         msTenantId: userData.msTenantId || null,
+        modules: userData.modules || ['clean'],
         isActive: userData.isActive ?? true,
       };
       
