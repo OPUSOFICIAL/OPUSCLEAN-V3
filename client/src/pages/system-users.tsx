@@ -15,13 +15,15 @@ import { apiRequest } from '@/lib/queryClient';
 import { Users, Plus, Edit, Trash2, Shield, Building2, KeyRound } from 'lucide-react';
 import usePermissions from '@/hooks/usePermissions';
 import { useModule, MODULE_CONFIGS } from '@/contexts/ModuleContext';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username é obrigatório'),
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').or(z.literal('')),
   name: z.string().min(1, 'Nome é obrigatório'),
   role: z.enum(['admin', 'gestor_cliente', 'supervisor_site', 'operador', 'auditor']),
+  modules: z.array(z.enum(['clean', 'maintenance'])).min(1, 'Selecione pelo menos um módulo'),
 });
 
 type CreateUserForm = z.infer<typeof createUserSchema>;
@@ -34,6 +36,7 @@ type User = {
   userType: string;
   assignedClientId?: string;
   isActive: boolean;
+  modules?: ('clean' | 'maintenance')[];
   createdAt: string;
   updatedAt: string;
 };
@@ -55,6 +58,7 @@ export default function SystemUsers() {
       password: '',
       name: '',
       role: 'operador',
+      modules: ['clean', 'maintenance'],
     },
   });
 
@@ -198,6 +202,7 @@ export default function SystemUsers() {
       email: user.email,
       name: user.name,
       role: user.role as any,
+      modules: user.modules || ['clean', 'maintenance'],
       password: '', // Não pré-carregar senha
     });
     setIsCreateDialogOpen(true);
@@ -427,6 +432,71 @@ export default function SystemUsers() {
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="modules"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Módulos Disponíveis</FormLabel>
+                      <div className="space-y-2">
+                        <FormField
+                          control={form.control}
+                          name="modules"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes('clean')}
+                                  onCheckedChange={(checked) => {
+                                    const currentModules = field.value || [];
+                                    if (checked) {
+                                      field.onChange([...currentModules.filter((m: string) => m !== 'clean'), 'clean']);
+                                    } else {
+                                      field.onChange(currentModules.filter((m: string) => m !== 'clean'));
+                                    }
+                                  }}
+                                  data-testid="checkbox-module-clean"
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                OPUS Clean (Limpeza)
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="modules"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-2 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes('maintenance')}
+                                  onCheckedChange={(checked) => {
+                                    const currentModules = field.value || [];
+                                    if (checked) {
+                                      field.onChange([...currentModules.filter((m: string) => m !== 'maintenance'), 'maintenance']);
+                                    } else {
+                                      field.onChange(currentModules.filter((m: string) => m !== 'maintenance'));
+                                    }
+                                  }}
+                                  data-testid="checkbox-module-maintenance"
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                OPUS Manutenção
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Selecione os módulos que este usuário pode acessar
+                      </p>
+                    </FormItem>
+                  )}
+                />
+
                 <div className="flex justify-end space-x-2">
                   <Button 
                     type="button" 
@@ -503,6 +573,20 @@ export default function SystemUsers() {
                           <div className="space-y-1">
                             <div><strong>Username:</strong> {user.username}</div>
                             <div><strong>Email:</strong> {user.email}</div>
+                            {user.modules && user.modules.length > 0 && (
+                              <div className="flex gap-1 mt-2">
+                                {user.modules.includes('clean') && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    OPUS Clean
+                                  </Badge>
+                                )}
+                                {user.modules.includes('maintenance') && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    OPUS Manutenção
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </CardDescription>
                       </div>
