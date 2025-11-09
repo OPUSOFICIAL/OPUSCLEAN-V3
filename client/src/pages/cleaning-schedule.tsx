@@ -113,40 +113,9 @@ export default function CleaningSchedule() {
     },
   });
 
-  // Mutation to clear all cleaning activities
-  const clearAllActivitiesMutation = useMutation({
-    mutationFn: async () => {
-      if (!activeClientId) {
-        throw new Error("Cliente não selecionado");
-      }
-      await apiRequest('DELETE', `/api/cleaning-activities/clear-all?customerId=${activeClientId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "cleaning-activities"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
-      toast({
-        title: "Atividades limpas",
-        description: "Todas as atividades de limpeza foram removidas com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error?.message || "Não foi possível limpar as atividades.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleDeleteActivity = async (activity: any) => {
     if (confirm(`Deseja realmente excluir a atividade "${activity.name}"? Esta ação não pode ser desfeita.`)) {
       await deleteCleaningActivityMutation.mutateAsync(activity.id);
-    }
-  };
-
-  const handleClearAllActivities = async () => {
-    if (confirm(`⚠️ ATENÇÃO: Deseja realmente limpar TODAS as atividades de limpeza e work orders relacionadas?\n\nEsta ação é irreversível e deve ser usada apenas para testes/reset.`)) {
-      await clearAllActivitiesMutation.mutateAsync();
     }
   };
 
@@ -363,7 +332,7 @@ export default function CleaningSchedule() {
         title="Plano de Limpeza" 
         description="Gerenciamento de atividades de limpeza programadas"
       >
-        <div className="flex items-center space-x-2 flex-wrap gap-2">
+        <div className="flex items-center space-x-2">
           <Select value={viewMode} onValueChange={(value: "monthly" | "list") => setViewMode(value)}>
             <SelectTrigger className="w-32" data-testid="select-view-mode">
               <SelectValue />
@@ -379,16 +348,6 @@ export default function CleaningSchedule() {
           >
             <Plus className="w-4 h-4 mr-2" />
             Nova Atividade
-          </Button>
-          <Button 
-            onClick={handleClearAllActivities}
-            variant="destructive"
-            size="sm"
-            disabled={clearAllActivitiesMutation.isPending}
-            data-testid="button-clear-all-activities"
-          >
-            <Trash2 className="w-4 h-4 mr-2" />
-            {clearAllActivitiesMutation.isPending ? "Limpando..." : "Limpar Todas"}
           </Button>
         </div>
       </Header>

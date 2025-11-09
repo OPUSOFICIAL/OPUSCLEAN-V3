@@ -212,7 +212,6 @@ export interface IStorage {
   createCleaningActivity(activity: InsertCleaningActivity): Promise<CleaningActivity>;
   updateCleaningActivity(id: string, activity: Partial<InsertCleaningActivity>): Promise<CleaningActivity>;
   deleteCleaningActivity(id: string): Promise<void>;
-  clearAllCleaningActivities(customerId: string): Promise<void>;
 
   // Maintenance Activities
   getMaintenanceActivitiesByCustomer(customerId: string): Promise<MaintenanceActivity[]>;
@@ -2461,37 +2460,6 @@ export class DatabaseStorage implements IStorage {
     
     // Depois deletar a cleaning activity
     await db.delete(cleaningActivities).where(eq(cleaningActivities.id, id));
-  }
-
-  async clearAllCleaningActivities(customerId: string): Promise<void> {
-    console.log('[STORAGE] Buscando atividades para limpar do cliente:', customerId);
-    
-    // Primeiro, buscar todas as cleaning activities do cliente
-    const customerActivities = await db.select({ id: cleaningActivities.id })
-      .from(cleaningActivities)
-      .where(eq(cleaningActivities.customerId, customerId));
-    
-    const activityIds = customerActivities.map(a => a.id);
-    console.log('[STORAGE] Encontradas', activityIds.length, 'atividades para deletar');
-    
-    if (activityIds.length === 0) {
-      console.log('[STORAGE] Nenhuma atividade encontrada para deletar');
-      return;
-    }
-    
-    // Deletar as work orders relacionadas a essas atividades
-    const deletedWorkOrders = await db.delete(workOrders)
-      .where(inArray(workOrders.cleaningActivityId, activityIds))
-      .returning({ id: workOrders.id });
-    
-    console.log('[STORAGE] Deletadas', deletedWorkOrders.length, 'work orders');
-    
-    // Deletar as cleaning activities do cliente
-    const deletedActivities = await db.delete(cleaningActivities)
-      .where(eq(cleaningActivities.customerId, customerId))
-      .returning({ id: cleaningActivities.id });
-    
-    console.log('[STORAGE] Deletadas', deletedActivities.length, 'atividades de limpeza');
   }
 
   // Maintenance Activities
