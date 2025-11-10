@@ -2744,9 +2744,9 @@ export class DatabaseStorage implements IStorage {
       for (const activity of customerActivities) {
         const occurrences = this.expandOccurrences(activity, windowStart, windowEnd);
         
-        // Get zones from zone_ids array (new format) or fallback to single zone_id (old format)
-        const zoneIds = (activity as any).zone_ids && (activity as any).zone_ids.length > 0 
-          ? (activity as any).zone_ids 
+        // Get zones from zoneIds array (new format) or fallback to single zoneId (old format)
+        const zoneIds = (activity as any).zoneIds && (activity as any).zoneIds.length > 0 
+          ? (activity as any).zoneIds 
           : (activity.zoneId ? [activity.zoneId] : []);
         
         // Skip if no zones defined
