@@ -23,7 +23,11 @@ import {
   Wrench,
   RefreshCw,
   Settings,
-  Package
+  Package,
+  Eye,
+  Calendar,
+  Clock,
+  AlertCircle
 } from "lucide-react";
 
 interface EquipmentProps {
@@ -37,6 +41,8 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<any>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [selectedEquipmentForHistory, setSelectedEquipmentForHistory] = useState<any>(null);
   
   // Form states
   const [selectedSiteId, setSelectedSiteId] = useState("");
@@ -77,6 +83,12 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const { data: equipment, isLoading } = useQuery({
     queryKey: [`/api/customers/${customerId}/equipment`],
     enabled: !!customerId,
+  });
+
+  // Fetch work order history for selected equipment
+  const { data: workOrderHistory, isLoading: isLoadingHistory } = useQuery({
+    queryKey: [`/api/equipment/${selectedEquipmentForHistory?.id}/work-orders`],
+    enabled: !!selectedEquipmentForHistory?.id && isHistoryDialogOpen,
   });
 
   // Redirect if not in maintenance module
@@ -227,6 +239,11 @@ export default function Equipment({ customerId }: EquipmentProps) {
     if (confirm("Tem certeza que deseja excluir este equipamento?")) {
       deleteEquipmentMutation.mutate(id);
     }
+  };
+
+  const handleViewHistory = (equip: any) => {
+    setSelectedEquipmentForHistory(equip);
+    setIsHistoryDialogOpen(true);
   };
 
   const handleRefresh = async () => {
@@ -558,6 +575,15 @@ export default function Equipment({ customerId }: EquipmentProps) {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleViewHistory(equip)}
+                            data-testid={`button-view-history-${equip.id}`}
+                            title="Visualizar histórico"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleEdit(equip)}
                             data-testid={`button-edit-${equip.id}`}
                           >
@@ -756,6 +782,176 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 disabled={updateEquipmentMutation.isPending}
               >
                 {updateEquipmentMutation.isPending ? "Atualizando..." : "Atualizar"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Work Order History Dialog */}
+        <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Histórico de Ordens de Serviço
+              </DialogTitle>
+              <DialogDescription>
+                {selectedEquipmentForHistory && (
+                  <div className="mt-2 space-y-1">
+                    <p className="font-medium text-base">
+                      {selectedEquipmentForHistory.name}
+                    </p>
+                    <div className="flex gap-4 text-sm">
+                      {selectedEquipmentForHistory.manufacturer && (
+                        <span>Fabricante: {selectedEquipmentForHistory.manufacturer}</span>
+                      )}
+                      {selectedEquipmentForHistory.model && (
+                        <span>Modelo: {selectedEquipmentForHistory.model}</span>
+                      )}
+                      {selectedEquipmentForHistory.serialNumber && (
+                        <span>Série: {selectedEquipmentForHistory.serialNumber}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4">
+              {isLoadingHistory ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 border-4 border-orange-100 border-t-orange-600 rounded-full animate-spin mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Carregando histórico...</p>
+                </div>
+              ) : !Array.isArray(workOrderHistory) || workOrderHistory.length === 0 ? (
+                <div className="text-center py-12">
+                  <AlertCircle className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 text-lg font-medium">Nenhuma ordem de serviço encontrada</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Este equipamento ainda não possui histórico de manutenção
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {workOrderHistory.map((wo: any) => (
+                    <div
+                      key={wo.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      data-testid={`work-order-${wo.id}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-lg">
+                              #{wo.number}
+                            </span>
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                              wo.status === 'concluida' ? 'bg-green-100 text-green-800' :
+                              wo.status === 'em_execucao' ? 'bg-blue-100 text-blue-800' :
+                              wo.status === 'pausada' ? 'bg-yellow-100 text-yellow-800' :
+                              wo.status === 'vencida' ? 'bg-red-100 text-red-800' :
+                              wo.status === 'cancelada' ? 'bg-gray-100 text-gray-800' :
+                              'bg-slate-100 text-slate-800'
+                            }`}>
+                              {wo.status === 'concluida' ? 'Concluída' :
+                               wo.status === 'em_execucao' ? 'Em Execução' :
+                               wo.status === 'pausada' ? 'Pausada' :
+                               wo.status === 'vencida' ? 'Vencida' :
+                               wo.status === 'cancelada' ? 'Cancelada' :
+                               'Aberta'}
+                            </span>
+                            {wo.priority && (
+                              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                wo.priority === 'critica' ? 'bg-red-100 text-red-800' :
+                                wo.priority === 'alta' ? 'bg-orange-100 text-orange-800' :
+                                wo.priority === 'media' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {wo.priority === 'critica' ? 'Crítica' :
+                                 wo.priority === 'alta' ? 'Alta' :
+                                 wo.priority === 'media' ? 'Média' :
+                                 'Baixa'}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-semibold text-gray-900">{wo.title}</h4>
+                          {wo.description && (
+                            <p className="text-sm text-gray-600 mt-1">{wo.description}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 pt-3 border-t">
+                        {wo.scheduledDate && (
+                          <div className="flex items-start gap-2">
+                            <Calendar className="h-4 w-4 text-gray-400 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="text-gray-500">Agendado</p>
+                              <p className="font-medium">
+                                {new Date(wo.scheduledDate).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {wo.startedAt && (
+                          <div className="flex items-start gap-2">
+                            <Clock className="h-4 w-4 text-gray-400 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="text-gray-500">Iniciado</p>
+                              <p className="font-medium">
+                                {new Date(wo.startedAt).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {wo.completedAt && (
+                          <div className="flex items-start gap-2">
+                            <Clock className="h-4 w-4 text-green-600 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="text-gray-500">Concluído</p>
+                              <p className="font-medium text-green-700">
+                                {new Date(wo.completedAt).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {wo.type && (
+                          <div className="flex items-start gap-2">
+                            <Wrench className="h-4 w-4 text-gray-400 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="text-gray-500">Tipo</p>
+                              <p className="font-medium">
+                                {wo.type === 'programada' ? 'Programada' :
+                                 wo.type === 'corretiva_interna' ? 'Corretiva Interna' :
+                                 'Corretiva Pública'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {wo.observations && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs text-gray-500 uppercase font-medium mb-1">Observações</p>
+                          <p className="text-sm text-gray-700">{wo.observations}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setIsHistoryDialogOpen(false)}
+                data-testid="button-close-history"
+              >
+                Fechar
               </Button>
             </div>
           </DialogContent>

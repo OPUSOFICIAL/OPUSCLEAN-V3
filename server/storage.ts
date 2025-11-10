@@ -229,6 +229,7 @@ export interface IStorage {
   // Work Orders
   getWorkOrdersByCompany(companyId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]>;
   getWorkOrdersByUser(userId: string): Promise<WorkOrder[]>;
+  getWorkOrdersByEquipment(equipmentId: string): Promise<WorkOrder[]>;
   getWorkOrder(id: string): Promise<WorkOrder | undefined>;
   createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
   updateWorkOrder(id: string, workOrder: Partial<InsertWorkOrder>): Promise<WorkOrder>;
@@ -3013,6 +3014,12 @@ export class DatabaseStorage implements IStorage {
   async getWorkOrdersByUser(userId: string): Promise<WorkOrder[]> {
     return await db.select().from(workOrders)
       .where(eq(workOrders.assignedUserId, userId))
+      .orderBy(desc(workOrders.createdAt));
+  }
+
+  async getWorkOrdersByEquipment(equipmentId: string): Promise<WorkOrder[]> {
+    return await db.select().from(workOrders)
+      .where(eq(workOrders.equipmentId, equipmentId))
       .orderBy(desc(workOrders.createdAt));
   }
 

@@ -42,7 +42,7 @@ The frontend is built with React and TypeScript, using Wouter for routing and Ta
 
 **Multi-Tenancy**: Implements a hierarchical multi-tenancy model (Companies > Sites > Zones) with robust role-based access control and client/module-specific data isolation. Module-specific pages include verification to prevent cross-module access.
 
-**Equipment Management (Maintenance Module)**: Supports direct equipment selection for checklist assignment and maintenance planning, allowing templates and plans to target single or multiple equipment items. All equipment management is customer and module-specific.
+**Equipment Management (Maintenance Module)**: Supports direct equipment selection for checklist assignment and maintenance planning, allowing templates and plans to target single or multiple equipment items. All equipment management is customer and module-specific. Equipment history viewer feature allows users to view the complete service order history for each equipment with a "Visualizar" button (Eye icon) that opens a modal displaying all work orders associated with that equipment, including status, priority, dates, and observations.
 
 **QR Code System**: Facilitates Execution QRs for internal staff work order management and Public QRs for end-users to submit service requests, automatically generating corrective work orders.
 

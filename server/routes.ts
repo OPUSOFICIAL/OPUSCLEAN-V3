@@ -3564,6 +3564,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get equipment work order history
+  app.get("/api/equipment/:equipmentId/work-orders", async (req, res) => {
+    try {
+      const workOrders = await storage.getWorkOrdersByEquipment(req.params.equipmentId);
+      res.json(workOrders);
+    } catch (error) {
+      console.error("Error fetching equipment work order history:", error);
+      res.status(500).json({ message: "Failed to fetch equipment work order history" });
+    }
+  });
+
   // ============================================================================
   // MAINTENANCE MODULE - Maintenance Checklist Templates Routes
   // ============================================================================
