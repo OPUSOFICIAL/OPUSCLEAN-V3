@@ -2721,64 +2721,83 @@ export class DatabaseStorage implements IStorage {
     );
     
     // Step 2: Build all work orders to create in memory (no database queries)
-    const workOrdersToCreate: any[] = [];
-    let currentNumber = await this.getNextWorkOrderNumber(companyId);
-    
+    // Group activities by customerId to get separate counter sequences
+    const activitiesByCustomer = new Map<string, any[]>();
     for (const activity of activeActivities) {
-      const occurrences = this.expandOccurrences(activity, windowStart, windowEnd);
-      
-      // Get zones from zone_ids array (new format) or fallback to single zone_id (old format)
-      const zoneIds = (activity as any).zone_ids && (activity as any).zone_ids.length > 0 
-        ? (activity as any).zone_ids 
-        : (activity.zoneId ? [activity.zoneId] : []);
-      
-      // Skip if no zones defined
-      if (zoneIds.length === 0) {
-        console.log(`[SCHEDULER] Atividade ${activity.id} não tem zonas definidas, pulando`);
+      const customerId = (activity as any).customerId;
+      if (!customerId) {
+        console.log(`[SCHEDULER] Atividade ${activity.id} não tem customerId, pulando`);
         continue;
       }
+      if (!activitiesByCustomer.has(customerId)) {
+        activitiesByCustomer.set(customerId, []);
+      }
+      activitiesByCustomer.get(customerId)!.push(activity);
+    }
+    
+    const workOrdersToCreate: any[] = [];
+    
+    // Process each customer's activities separately with their own counter
+    for (const [customerId, customerActivities] of Array.from(activitiesByCustomer.entries())) {
+      let currentNumber = await this.getNextWorkOrderNumber(customerId);
       
-      for (const occ of occurrences) {
-        // Create one work order for EACH zone in the activity
-        for (const zoneId of zoneIds) {
-          const key = `${activity.id}|${zoneId}|${occ.date.toISOString()}`;
-          
-          // Skip if already exists (in-memory check, very fast)
-          if (existingSet.has(key)) {
-            continue;
-          }
-          
-          // Build title with occurrence label if multiple times
-          let title = `${activity.name}`;
-          if (occ.total > 1) {
-            let periodo = 'ao dia';
-            if (activity.frequency === 'semanal') {
-              periodo = 'na semana';
-            } else if (activity.frequency === 'turno') {
-              periodo = 'turnos';
+      for (const activity of customerActivities) {
+        const occurrences = this.expandOccurrences(activity, windowStart, windowEnd);
+        
+        // Get zones from zone_ids array (new format) or fallback to single zone_id (old format)
+        const zoneIds = (activity as any).zone_ids && (activity as any).zone_ids.length > 0 
+          ? (activity as any).zone_ids 
+          : (activity.zoneId ? [activity.zoneId] : []);
+        
+        // Skip if no zones defined
+        if (zoneIds.length === 0) {
+          console.log(`[SCHEDULER] Atividade ${activity.id} não tem zonas definidas, pulando`);
+          continue;
+        }
+        
+        for (const occ of occurrences) {
+          // Create one work order for EACH zone in the activity
+          for (const zoneId of zoneIds) {
+            const key = `${activity.id}|${zoneId}|${occ.date.toISOString()}`;
+            
+            // Skip if already exists (in-memory check, very fast)
+            if (existingSet.has(key)) {
+              continue;
             }
-            title = `${activity.name} - ${occ.occurrence}ª/${occ.total} (${occ.total}x ${periodo})`;
+            
+            // Build title with occurrence label if multiple times
+            let title = `${activity.name}`;
+            if (occ.total > 1) {
+              let periodo = 'ao dia';
+              if (activity.frequency === 'semanal') {
+                periodo = 'na semana';
+              } else if (activity.frequency === 'turno') {
+                periodo = 'turnos';
+              }
+              title = `${activity.name} - ${occ.occurrence}ª/${occ.total} (${occ.total}x ${periodo})`;
+            }
+            
+            // Build work order data with zone from array
+            workOrdersToCreate.push({
+              id: crypto.randomUUID(),
+              number: currentNumber++,
+              companyId: companyId,
+              customerId: customerId,
+              zoneId: zoneId,  // Use zone from array
+              serviceId: activity.serviceId,
+              cleaningActivityId: activity.id,
+              checklistTemplateId: activity.checklistTemplateId,
+              type: 'programada' as const,
+              status: 'aberta' as const,
+              priority: 'media' as const,
+              title: title,
+              description: activity.description,
+              scheduledDate: occ.date,
+              dueDate: new Date(occ.date.getTime() + (2 * 60 * 60 * 1000)),
+              origin: 'Sistema - Cronograma',
+              module: 'clean' as const
+            });
           }
-          
-          // Build work order data with zone from array
-          workOrdersToCreate.push({
-            id: crypto.randomUUID(),
-            number: currentNumber++,
-            companyId: companyId,
-            zoneId: zoneId,  // Use zone from array
-            serviceId: activity.serviceId,
-            cleaningActivityId: activity.id,
-            checklistTemplateId: activity.checklistTemplateId,
-            type: 'programada' as const,
-            status: 'aberta' as const,
-            priority: 'media' as const,
-            title: title,
-            description: activity.description,
-            scheduledDate: occ.date,
-            dueDate: new Date(occ.date.getTime() + (2 * 60 * 60 * 1000)),
-            origin: 'Sistema - Cronograma',
-            module: 'clean' as const
-          });
         }
       }
     }
@@ -2870,11 +2889,27 @@ export class DatabaseStorage implements IStorage {
       console.log(`[SCHEDULER BATCH] ${templates.length} templates de checklist carregados`);
     }
     
-    // Step 4: Build all work orders in memory
-    const workOrdersToCreate: any[] = [];
-    let currentNumber = await this.getNextWorkOrderNumber(companyId);
-    
+    // Step 4: Build all work orders in memory - group by customerId
+    const activitiesByCustomer = new Map<string, any[]>();
     for (const activity of activeActivities) {
+      const customerId = activity.customerId;
+      if (!customerId) {
+        console.log(`[SCHEDULER] Atividade de manutenção ${activity.id} não tem customerId, pulando`);
+        continue;
+      }
+      if (!activitiesByCustomer.has(customerId)) {
+        activitiesByCustomer.set(customerId, []);
+      }
+      activitiesByCustomer.get(customerId)!.push(activity);
+    }
+    
+    const workOrdersToCreate: any[] = [];
+    
+    // Process each customer's activities separately with their own counter
+    for (const [customerId, customerActivities] of Array.from(activitiesByCustomer.entries())) {
+      let currentNumber = await this.getNextWorkOrderNumber(customerId);
+      
+      for (const activity of customerActivities) {
       const activityForExpansion: any = {
         ...activity,
         module: 'maintenance'
@@ -2930,6 +2965,7 @@ export class DatabaseStorage implements IStorage {
             id: crypto.randomUUID(),
             number: currentNumber++,
             companyId: companyId,
+            customerId: customerId,
             equipmentId: equipItem.id,
             maintenanceActivityId: activity.id,
             maintenanceChecklistTemplateId: validChecklistTemplateId,
@@ -2947,6 +2983,7 @@ export class DatabaseStorage implements IStorage {
           });
         }
       }
+    }
     }
     
     console.log(`[SCHEDULER BATCH] ${workOrdersToCreate.length} novas O.S de manutenção para criar`);

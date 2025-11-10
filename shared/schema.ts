@@ -207,6 +207,7 @@ export const services = pgTable("services", {
 export const cleaningActivities = pgTable("cleaning_activities", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").references(() => customers.id),
   serviceId: varchar("service_id").references(() => services.id),
   siteId: varchar("site_id").references(() => sites.id),
   zoneId: varchar("zone_id").references(() => zones.id),

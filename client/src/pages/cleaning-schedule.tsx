@@ -1663,6 +1663,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
         endTime: data.endTime,
         isActive: data.isActive,
         companyId,
+        customerId: activeClientId,
         module: currentModule,
       };
       

@@ -6,9 +6,17 @@
 > 
 > **🗄️ Backup do Banco**: Informações sobre backup e restauração do banco de dados em [DATABASE_BACKUP_INFO.md](./DATABASE_BACKUP_INFO.md)
 
-## Recent Changes (09/11/2025)
+## Recent Changes (10/11/2025)
 
-**Sistema de Numeração por Cliente**: A numeração de work orders foi migrada de company-level para customer-level:
+**Correção Crítica - customerId em Atividades de Limpeza**: Resolvido problema crítico que impedia a criação de planos de limpeza e geração de OSs automáticas:
+- Adicionado campo `customerId` (nullable) à tabela `cleaning_activities`
+- Atualizado frontend para enviar `customerId` ao criar atividades de limpeza
+- Refatorado `generateScheduledWorkOrders()` para usar contadores por cliente (`customerId`)
+- Refatorado `generateMaintenanceWorkOrders()` para usar contadores por cliente (`customerId`)
+- Cada cliente agora tem numeração independente de OSs tanto de limpeza quanto manutenção
+- Migração automática de dados existentes para o novo formato
+
+**Sistema de Numeração por Cliente (09/11/2025)**: A numeração de work orders foi migrada de company-level para customer-level:
 - Cada cliente tem sua própria sequência de numeração independente
 - Nova tabela `customer_counters` gerencia os contadores por cliente
 - Campo `customerId` adicionado à tabela `work_orders` (obrigatório)
