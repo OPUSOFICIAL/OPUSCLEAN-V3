@@ -1618,6 +1618,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         module: req.body.module || 'clean'
       };
+      
+      // Debug: Log dos dados recebidos
+      console.log('[DEBUG] Dados recebidos para criação de OS:', JSON.stringify(dataWithModule, null, 2));
+      
       const workOrder = insertWorkOrderSchema.parse(dataWithModule);
       const newWorkOrder = await storage.createWorkOrder(workOrder);
       
