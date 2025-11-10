@@ -139,26 +139,32 @@ export default function MobileDashboard() {
     !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
   );
   
-  // 🔥 NOVO: Minhas em Execução - O.S que o colaborador iniciou
-  const myInProgressOrders = filteredWorkOrders.filter(wo => 
-    wo.assignedUserId === user.id && wo.status === 'em_execucao'
-  );
+  // 🔥 ATUALIZADO: Minhas em Execução - O.S que o colaborador trabalhou
+  const myInProgressOrders = filteredWorkOrders.filter(wo => {
+    const assignedIds = (wo as any).assignedUserIds || [];
+    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+    return isAssignedToMe && wo.status === 'em_execucao';
+  });
   
-  const myPendingOrders = filteredWorkOrders.filter(wo => 
-    wo.assignedUserId === user.id && 
-    wo.status !== 'concluida' && 
-    wo.status !== 'cancelada' && 
-    wo.status !== 'pausada' && 
-    wo.status !== 'em_execucao' // Excluir as que já estão em execução
-  );
+  const myPendingOrders = filteredWorkOrders.filter(wo => {
+    const assignedIds = (wo as any).assignedUserIds || [];
+    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+    return isAssignedToMe && 
+      wo.status !== 'concluida' && 
+      wo.status !== 'cancelada' && 
+      wo.status !== 'pausada' && 
+      wo.status !== 'em_execucao'; // Excluir as que já estão em execução
+  });
   
   const myPausedOrders = filteredWorkOrders.filter(wo => 
     wo.status === 'pausada'
   );
   
-  const myCompletedOrders = filteredWorkOrders.filter(wo => 
-    wo.assignedUserId === user.id && wo.status === 'concluida'
-  );
+  const myCompletedOrders = filteredWorkOrders.filter(wo => {
+    const assignedIds = (wo as any).assignedUserIds || [];
+    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+    return isAssignedToMe && wo.status === 'concluida';
+  });
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
