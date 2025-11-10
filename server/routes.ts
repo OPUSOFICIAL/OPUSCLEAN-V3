@@ -2400,6 +2400,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer branding configuration
+  app.put("/api/customers/:id/branding", requireManageClients, async (req, res) => {
+    try {
+      const { loginLogo, sidebarLogo, sidebarLogoCollapsed, moduleColors } = req.body;
+      
+      const brandingUpdate: any = {};
+      if (loginLogo !== undefined) brandingUpdate.loginLogo = loginLogo;
+      if (sidebarLogo !== undefined) brandingUpdate.sidebarLogo = sidebarLogo;
+      if (sidebarLogoCollapsed !== undefined) brandingUpdate.sidebarLogoCollapsed = sidebarLogoCollapsed;
+      if (moduleColors !== undefined) brandingUpdate.moduleColors = moduleColors;
+      
+      const updatedCustomer = await storage.updateCustomer(req.params.id, brandingUpdate);
+      res.json(updatedCustomer);
+    } catch (error) {
+      console.error("Error updating customer branding:", error);
+      res.status(500).json({ message: "Failed to update customer branding" });
+    }
+  });
+
+  // Upload logo for customer branding
+  app.post("/api/customers/:id/upload-logo", requireManageClients, async (req, res) => {
+    try {
+      const { logoType, imageData, fileName } = req.body;
+      
+      if (!logoType || !imageData || !fileName) {
+        return res.status(400).json({ message: "logoType, imageData, and fileName are required" });
+      }
+      
+      if (!['loginLogo', 'sidebarLogo', 'sidebarLogoCollapsed'].includes(logoType)) {
+        return res.status(400).json({ message: "Invalid logoType. Must be one of: loginLogo, sidebarLogo, sidebarLogoCollapsed" });
+      }
+      
+      // Import fs promises
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      // Create customer logos directory if it doesn't exist
+      const customerLogosDir = path.join(process.cwd(), 'attached_assets', 'customer_logos');
+      await fs.mkdir(customerLogosDir, { recursive: true });
+      
+      // Generate unique filename
+      const ext = path.extname(fileName) || '.png';
+      const uniqueFileName = `${req.params.id}_${logoType}_${Date.now()}${ext}`;
+      const filePath = path.join(customerLogosDir, uniqueFileName);
+      
+      // Remove base64 prefix if present
+      const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+      
+      // Write file
+      await fs.writeFile(filePath, base64Data, 'base64');
+      
+      // Return relative path for storage
+      const relativePath = `/attached_assets/customer_logos/${uniqueFileName}`;
+      
+      res.json({ 
+        success: true, 
+        path: relativePath,
+        logoType 
+      });
+    } catch (error) {
+      console.error("Error uploading customer logo:", error);
+      res.status(500).json({ message: "Failed to upload logo" });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/login", loginLimiter, async (req, res) => {
     try {
