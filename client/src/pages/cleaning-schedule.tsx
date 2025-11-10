@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { useLocation } from "wouter";
 import { 
   Plus, 
@@ -39,6 +40,7 @@ import { ChevronDown } from "lucide-react";
 export default function CleaningSchedule() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -414,6 +416,8 @@ export default function CleaningSchedule() {
             </SelectContent>
           </Select>
           <Button 
+            className={theme.buttons.primary}
+            style={theme.buttons.primaryStyle}
             onClick={() => setShowCreateModal(true)}
             data-testid="button-create-activity"
           >
@@ -757,7 +761,12 @@ export default function CleaningSchedule() {
                 <p className="text-sm text-muted-foreground mt-2">
                   Crie sua primeira atividade de limpeza para começar
                 </p>
-                <Button className="mt-4" data-testid="button-create-first-activity">
+                <Button 
+                  className={`mt-4 ${theme.buttons.primary}`}
+                  style={theme.buttons.primaryStyle}
+                  onClick={() => setShowCreateModal(true)}
+                  data-testid="button-create-first-activity"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Criar Primeira Atividade
                 </Button>
@@ -1169,6 +1178,8 @@ export default function CleaningSchedule() {
                 
                 {selectedActivities.length > 0 && (
                   <Button 
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                     size="sm"
                     onClick={() => {
                       setShowDayDetailsModal(false);
@@ -1301,6 +1312,8 @@ export default function CleaningSchedule() {
                     Cancelar
                   </Button>
                   <Button 
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                     type="button"
                     onClick={() => {
                       toast({
@@ -1576,6 +1589,7 @@ interface CreateCleaningActivityModalProps {
 
 function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: CreateCleaningActivityModalProps) {
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -2178,6 +2192,8 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
               Cancelar
             </Button>
             <Button 
+              className={theme.buttons.primary}
+              style={theme.buttons.primaryStyle}
               type="submit" 
               disabled={createActivityMutation.isPending}
               data-testid="button-submit"
