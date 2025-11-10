@@ -16,7 +16,7 @@ export const frequencyEnum = pgEnum('frequency', ['diaria', 'semanal', 'mensal',
 export const bathroomCounterActionEnum = pgEnum('bathroom_counter_action', ['increment', 'decrement', 'reset']);
 export const moduleEnum = pgEnum('module', ['clean', 'maintenance']);
 export const equipmentStatusEnum = pgEnum('equipment_status', ['operacional', 'em_manutencao', 'inoperante', 'aposentado']);
-export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'anthropic', 'google', 'custom']);
+export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'anthropic', 'google', 'groq', 'azure_openai', 'cohere', 'huggingface', 'custom']);
 export const aiIntegrationStatusEnum = pgEnum('ai_integration_status', ['ativa', 'inativa', 'erro']);
 
 // Sistema de permissões granulares
