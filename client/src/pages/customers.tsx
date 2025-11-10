@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit, Trash2, Search, Users, Building2 } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users, Building2, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useModuleTheme } from "@/hooks/use-module-theme";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Customer, InsertCustomer } from "@shared/schema";
+import { CustomerBrandingConfig } from "@/components/customer-branding-config";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -48,7 +49,9 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBrandingDialogOpen, setIsBrandingDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [brandingCustomer, setBrandingCustomer] = useState<Customer | null>(null);
 
   // Company ID comes from props
 
@@ -317,6 +320,17 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                           data-testid={`button-edit-customer-${customer.id}`}
                         >
                           <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setBrandingCustomer(customer);
+                            setIsBrandingDialogOpen(true);
+                          }}
+                          data-testid={`button-branding-customer-${customer.id}`}
+                        >
+                          <Palette className="w-4 h-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -765,6 +779,15 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Branding Configuration Dialog */}
+      {brandingCustomer && (
+        <CustomerBrandingConfig
+          customer={brandingCustomer}
+          open={isBrandingDialogOpen}
+          onOpenChange={setIsBrandingDialogOpen}
+        />
+      )}
         </div>
       </div>
     </div>
