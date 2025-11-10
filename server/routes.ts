@@ -1695,6 +1695,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrder.cancelledBy = req.user?.id;
       }
       
+      // 🔥 NOVO: Adicionar colaborador ao array de responsáveis quando há mudança de status
+      if (req.user?.id && workOrder.status) {
+        const currentWO = await storage.getWorkOrder(req.params.id);
+        if (currentWO) {
+          // Pegar array atual de responsáveis (ou inicializar vazio)
+          const currentAssignedIds = currentWO.assignedUserIds || [];
+          
+          // Adicionar usuário atual se não estiver na lista (evitar duplicatas)
+          if (!currentAssignedIds.includes(req.user.id)) {
+            workOrder.assignedUserIds = [...currentAssignedIds, req.user.id];
+          }
+          
+          // Também atualizar assignedUserId para compatibilidade
+          workOrder.assignedUserId = req.user.id;
+        }
+      }
+      
       const updatedWorkOrder = await storage.updateWorkOrder(req.params.id, workOrder);
       
       // Send webhook notification if configured
@@ -1717,6 +1734,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (workOrder.status === 'cancelada') {
         workOrder.cancelledAt = new Date();
         workOrder.cancelledBy = req.user?.id;
+      }
+      
+      // 🔥 NOVO: Adicionar colaborador ao array de responsáveis quando há mudança de status
+      if (req.user?.id && workOrder.status) {
+        const currentWO = await storage.getWorkOrder(req.params.id);
+        if (currentWO) {
+          // Pegar array atual de responsáveis (ou inicializar vazio)
+          const currentAssignedIds = currentWO.assignedUserIds || [];
+          
+          // Adicionar usuário atual se não estiver na lista (evitar duplicatas)
+          if (!currentAssignedIds.includes(req.user.id)) {
+            workOrder.assignedUserIds = [...currentAssignedIds, req.user.id];
+          }
+          
+          // Também atualizar assignedUserId para compatibilidade
+          workOrder.assignedUserId = req.user.id;
+        }
       }
       
       const updatedWorkOrder = await storage.updateWorkOrder(req.params.id, workOrder);
