@@ -267,6 +267,7 @@ export const workOrders = pgTable("work_orders", {
   title: varchar("title").notNull(),
   description: text("description"),
   assignedUserId: varchar("assigned_user_id").references(() => users.id),
+  assignedUserIds: text("assigned_user_ids").array(),
   origin: varchar("origin"),
   qrCodePointId: varchar("qr_code_point_id").references(() => qrCodePoints.id),
   requesterName: varchar("requester_name"),
