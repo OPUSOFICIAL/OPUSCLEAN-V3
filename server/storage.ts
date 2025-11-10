@@ -1728,37 +1728,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCleaningActivitiesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<CleaningActivity[]> {
-    // Get sites for this customer
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
-    const siteIds = customerSites.map(site => site.id);
-    
-    if (siteIds.length === 0) {
-      return [];
-    }
-    
-    // Get zones for these sites
-    let zonesWhereCondition = eq(zones.siteId, siteIds[0]);
-    for (let i = 1; i < siteIds.length; i++) {
-      zonesWhereCondition = sql`${zonesWhereCondition} OR ${zones.siteId} = ${siteIds[i]}`;
-    }
-    
-    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
-    const zoneIds = customerZones.map(zone => zone.id);
-    
-    if (zoneIds.length === 0) {
-      return [];
-    }
-    
-    // Get cleaning activities for these zones
-    let activitiesWhereCondition = eq(cleaningActivities.zoneId, zoneIds[0]);
-    for (let i = 1; i < zoneIds.length; i++) {
-      activitiesWhereCondition = sql`${activitiesWhereCondition} OR ${cleaningActivities.zoneId} = ${zoneIds[i]}`;
-    }
-    
-    // Apply module filter if provided
+    // Directly filter by customerId since activities now have this field
     const whereConditions = module
-      ? and(activitiesWhereCondition, eq(cleaningActivities.module, module))
-      : activitiesWhereCondition;
+      ? and(eq(cleaningActivities.customerId, customerId), eq(cleaningActivities.module, module))
+      : eq(cleaningActivities.customerId, customerId);
     
     return await db.select()
       .from(cleaningActivities)
