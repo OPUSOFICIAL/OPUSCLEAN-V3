@@ -36,6 +36,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule, MODULE_CONFIGS } from "@/contexts/ModuleContext";
+import { ModuleColorDemo } from "@/components/module-color-demo";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -227,6 +228,9 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
               </SelectItem>
             </SelectContent>
           </Select>
+          <div className="mt-2">
+            <ModuleColorDemo />
+          </div>
         </div>
       )}
       {/* Module Indicator - para usuários com módulo único */}
@@ -240,7 +244,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
               ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'
               : 'bg-gradient-to-br from-blue-50 to-slate-50 border-blue-200'
           }`}>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               {currentModule === 'maintenance' ? (
                 <Cog className="w-4 h-4 text-orange-600" />
               ) : (
@@ -250,6 +254,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
                 {MODULE_CONFIGS[currentModule].displayName}
               </p>
             </div>
+            <ModuleColorDemo />
           </div>
         </div>
       )}
