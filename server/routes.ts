@@ -2570,21 +2570,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let modules: ('clean' | 'maintenance')[] = [];
 
-      // Separate logic for OPUS users and customer users
-      if (user.userType === 'customer_user') {
-        // Customer users: get modules from their associated customer
-        if (user.customerId) {
-          const customer = await storage.getCustomer(user.customerId);
-          if (customer) {
-            modules = (customer.modules || ['clean']) as ('clean' | 'maintenance')[];
-          }
-        }
-      } else {
-        // OPUS users: get modules from the user directly
-        const fullUser = await storage.getUser(user.id);
-        if (fullUser) {
-          modules = (fullUser.modules || ['clean']) as ('clean' | 'maintenance')[];
-        }
+      // 🔥 CORRIGIDO: SEMPRE pegar módulos do USUÁRIO, não do cliente
+      // Isso garante que as permissões individuais sejam respeitadas
+      const fullUser = await storage.getUser(user.id);
+      if (fullUser) {
+        modules = (fullUser.modules || ['clean']) as ('clean' | 'maintenance')[];
       }
       
       // SEGURANÇA: Garantir que sempre retorne pelo menos 1 módulo
