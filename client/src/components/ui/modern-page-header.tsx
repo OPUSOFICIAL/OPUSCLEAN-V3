@@ -39,20 +39,21 @@ export function ModernPageHeader({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               {Icon && (
-                <div className={cn(
-                  "p-3 rounded-2xl backdrop-blur-xl",
-                  theme.gradients.stat,
-                  theme.shadows.button,
-                  "text-white"
-                )}>
+                <div 
+                  className="p-3 rounded-2xl backdrop-blur-xl text-white"
+                  style={{
+                    ...theme.styles.gradient,
+                    ...theme.shadows.buttonStyle
+                  }}
+                >
                   <Icon className="w-8 h-8" />
                 </div>
               )}
               <div>
-                <h1 className={cn(
-                  "text-4xl font-bold bg-clip-text text-transparent",
-                  theme.gradients.header
-                )}>
+                <h1 
+                  className="text-4xl font-bold"
+                  style={theme.styles.color}
+                >
                   {title}
                 </h1>
                 {description && (
@@ -90,14 +91,11 @@ export function ModernPageHeader({
                         {stat.label}
                       </span>
                       {StatIcon && (
-                        <StatIcon className={cn("w-4 h-4", theme.text.primary)} />
+                        <StatIcon className="w-4 h-4" style={theme.text.primaryStyle} />
                       )}
                     </div>
                     <div className="flex items-end gap-2">
-                      <span className={cn(
-                        "text-2xl font-bold",
-                        theme.text.dark
-                      )}>
+                      <span className="text-2xl font-bold text-slate-700">
                         {stat.value}
                       </span>
                       {stat.trend && (

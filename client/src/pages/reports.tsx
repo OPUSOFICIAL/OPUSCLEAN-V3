@@ -1526,6 +1526,7 @@ export default function Reports() {
               <Button 
                 onClick={refreshData}
                 className={theme.buttons.primary}
+                style={theme.buttons.primaryStyle}
                 size="sm"
                 disabled={isRefreshing}
                 data-testid="button-refresh-data"
@@ -1752,6 +1753,7 @@ export default function Reports() {
                 </CardTitle>
                 <Button 
                   className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                   size="sm" 
                   onClick={() => generateReport('geral', 'csv')}
                   data-testid="button-export-work-orders-csv"
@@ -1814,6 +1816,7 @@ export default function Reports() {
                 </CardTitle>
                 <Button 
                   className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                   size="sm" 
                   onClick={() => generateReport('sla', 'csv')}
                   data-testid="button-export-sla-csv"

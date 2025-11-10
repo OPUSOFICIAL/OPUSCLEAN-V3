@@ -1,143 +1,177 @@
-import { useModule } from "@/contexts/ModuleContext";
+import { CSSProperties } from "react";
 
 /**
- * Hook para obter classes CSS dinâmicas baseadas no módulo ativo
- * Design predominantemente BRANCO com cor do módulo como identificação sutil
+ * Hook para obter estilos CSS dinâmicos baseados no módulo ativo
+ * TODOS os estilos usam variáveis CSS: --module-primary, --module-secondary, --module-accent
+ * Design predominantemente BRANCO com cor do módulo como identificação
  */
 export function useModuleTheme() {
-  const { currentModule } = useModule();
   
-  const isClean = currentModule === 'clean';
-  const isMaintenance = currentModule === 'maintenance';
+  // TODOS OS ESTILOS USAM VARIÁVEIS CSS - SEM BRANCHES CONDICIONAIS
   
   return {
-    // Cores primárias do módulo (apenas para identificação)
-    primary: isClean ? 'blue' : 'orange',
-    primaryHex: isClean ? '#3B82F6' : '#F97316',
-    
-    // Gradientes MODERNOS - predominantemente branco com detalhes sofisticados
-    gradients: {
-      // Gradiente sutil para backgrounds de páginas
-      page: 'bg-gradient-to-br from-white via-slate-50/40 to-slate-100/20',
+    // Estilos inline básicos
+    styles: {
+      gradient: {
+        background: 'linear-gradient(135deg, var(--module-primary), var(--module-secondary))'
+      } as CSSProperties,
       
-      // Gradiente muito leve para sections
-      section: 'bg-gradient-to-b from-white to-slate-50/30',
+      color: {
+        color: 'var(--module-primary)'
+      } as CSSProperties,
       
-      // Gradiente para headers (cor do módulo)
-      header: isClean
-        ? 'bg-gradient-to-r from-blue-600 to-blue-700'
-        : 'bg-gradient-to-r from-orange-600 to-orange-700',
-        
-      // Gradiente sutil para cards especiais (glassmorphism)
-      glass: isClean
-        ? 'bg-gradient-to-br from-white/95 via-blue-50/30 to-white/90 backdrop-blur-sm'
-        : 'bg-gradient-to-br from-white/95 via-orange-50/30 to-white/90 backdrop-blur-sm',
-        
-      // Gradiente para cards destacados (muito sutil)
-      cardAccent: isClean
-        ? 'bg-gradient-to-br from-white to-blue-50/20'
-        : 'bg-gradient-to-br from-white to-orange-50/20',
-        
-      // Gradiente para stats cards (cor do módulo)
-      stat: isClean
-        ? 'bg-gradient-to-br from-blue-500 to-blue-600'
-        : 'bg-gradient-to-br from-orange-500 to-orange-600',
-        
-      // Gradiente para hover effects
-      hover: isClean
-        ? 'hover:bg-gradient-to-br hover:from-white hover:to-blue-50/30'
-        : 'hover:bg-gradient-to-br hover:from-white hover:to-orange-50/30',
+      bgColor: {
+        backgroundColor: 'var(--module-primary)'
+      } as CSSProperties,
+      
+      borderColor: {
+        borderColor: 'var(--module-primary)'
+      } as CSSProperties,
     },
     
-    // Sombras neutras (sem cor)
+    // Gradientes - neutros ou usando variáveis CSS
+    gradients: {
+      page: 'bg-gradient-to-br from-white via-slate-50/40 to-slate-100/20',
+      section: 'bg-gradient-to-b from-white to-slate-50/30',
+      
+      // Header e stat cards usam estilos inline
+      headerStyle: {
+        background: 'linear-gradient(to right, var(--module-primary), var(--module-secondary))'
+      } as CSSProperties,
+      
+      statStyle: {
+        background: 'linear-gradient(to bottom right, var(--module-primary), var(--module-secondary))'
+      } as CSSProperties,
+      
+      // Cards com toque suave de cor
+      glassStyle: {
+        background: 'linear-gradient(to bottom right, rgba(255,255,255,0.95), color-mix(in srgb, var(--module-primary) 5%, white), rgba(255,255,255,0.9))',
+        backdropFilter: 'blur(10px)'
+      } as CSSProperties,
+      
+      cardAccentStyle: {
+        background: 'linear-gradient(to bottom right, white, color-mix(in srgb, var(--module-primary) 3%, white))'
+      } as CSSProperties,
+    },
+    
+    // Sombras neutras (cinza, não coloridas)
     shadows: {
-      // Sombra sutil para cards - CINZA, não colorida
       card: 'shadow-lg shadow-slate-200/50 hover:shadow-slate-300/60',
-        
-      // Sombra para botões - apenas no hover
-      button: isClean
-        ? 'hover:shadow-md hover:shadow-blue-500/20'
-        : 'hover:shadow-md hover:shadow-orange-500/20',
-        
-      // Sombra intensa - CINZA
+      button: 'hover:shadow-md',
+      buttonStyle: {
+        boxShadow: '0 4px 6px -1px color-mix(in srgb, var(--module-primary) 10%, transparent)'
+      } as CSSProperties,
       intense: 'shadow-xl shadow-slate-300/40',
     },
     
-    // Botões - cor do módulo apenas no primário
+    // Botões - cor do módulo
     buttons: {
-      primary: isClean
-        ? 'bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200'
-        : 'bg-orange-600 hover:bg-orange-700 text-white transition-all duration-200',
+      primary: 'text-white transition-all duration-200',
+      primaryStyle: {
+        background: 'linear-gradient(135deg, var(--module-primary), var(--module-secondary))'
+      } as CSSProperties,
         
-      outline: isClean
-        ? 'border border-blue-600 hover:bg-blue-50 text-blue-600 transition-all duration-200'
-        : 'border border-orange-600 hover:bg-orange-50 text-orange-600 transition-all duration-200',
+      outline: 'border transition-all duration-200',
+      outlineStyle: {
+        borderColor: 'var(--module-primary)',
+        color: 'var(--module-primary)',
+        backgroundColor: 'transparent'
+      } as CSSProperties,
+      
+      outlineHoverStyle: {
+        backgroundColor: 'color-mix(in srgb, var(--module-primary) 5%, white)'
+      } as CSSProperties,
     },
     
-    // Badges/Tags - cor sutil do módulo
+    // Badges/Tags
     badges: {
-      primary: isClean
-        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-        : 'bg-orange-50 text-orange-700 border border-orange-200',
+      primary: 'border',
+      primaryStyle: {
+        backgroundColor: 'color-mix(in srgb, var(--module-primary) 10%, white)',
+        color: 'var(--module-primary)',
+        borderColor: 'color-mix(in srgb, var(--module-primary) 30%, white)'
+      } as CSSProperties,
         
-      light: isClean
-        ? 'bg-blue-50/50 text-blue-600'
-        : 'bg-orange-50/50 text-orange-600',
+      light: '',
+      lightStyle: {
+        backgroundColor: 'color-mix(in srgb, var(--module-primary) 5%, white)',
+        color: 'var(--module-primary)'
+      } as CSSProperties,
     },
     
-    // Cards MODERNOS com gradientes sutis
+    // Cards
     cards: {
-      // Card padrão - BRANCO limpo com borda sutil
       modern: 'bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200',
       
-      // Card com gradiente muito sutil
-      gradient: isClean
-        ? 'bg-gradient-to-br from-white to-blue-50/20 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300'
-        : 'bg-gradient-to-br from-white to-orange-50/20 border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300',
+      gradient: 'border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300',
+      gradientStyle: {
+        background: 'linear-gradient(to bottom right, white, color-mix(in srgb, var(--module-primary) 3%, white))'
+      } as CSSProperties,
         
-      // Card glassmorphism - moderno e sofisticado
-      glass: isClean
-        ? 'bg-gradient-to-br from-white/95 via-blue-50/20 to-white/90 backdrop-blur-sm border border-slate-200/60 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300'
-        : 'bg-gradient-to-br from-white/95 via-orange-50/20 to-white/90 backdrop-blur-sm border border-slate-200/60 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300',
+      glass: 'border border-slate-200/60 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300',
+      glassStyle: {
+        background: 'linear-gradient(to bottom right, rgba(255,255,255,0.95), color-mix(in srgb, var(--module-primary) 5%, white), rgba(255,255,255,0.9))',
+        backdropFilter: 'blur(10px)'
+      } as CSSProperties,
         
-      // Card de destaque - cor do módulo
-      featured: isClean
-        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg border border-blue-400/20'
-        : 'bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl shadow-lg border border-orange-400/20',
+      featured: 'text-white rounded-xl shadow-lg transition-all duration-300',
+      featuredStyle: {
+        background: 'linear-gradient(to bottom right, var(--module-primary), var(--module-secondary))'
+      } as CSSProperties,
     },
     
-    // Cores de texto - cor do módulo para destaques
+    // Cores de texto
     text: {
-      primary: isClean ? 'text-blue-600' : 'text-orange-600',
-      light: isClean ? 'text-blue-500' : 'text-orange-500',
-      dark: isClean ? 'text-blue-700' : 'text-orange-700',
+      primary: '',
+      primaryStyle: { color: 'var(--module-primary)' } as CSSProperties,
+      
+      light: '',
+      lightStyle: { color: 'color-mix(in srgb, var(--module-primary) 80%, white)' } as CSSProperties,
+      
+      dark: '',
+      darkStyle: { color: 'color-mix(in srgb, var(--module-primary) 120%, black)' } as CSSProperties,
     },
     
-    // Bordas - cor do módulo apenas para destaque
+    // Bordas
     borders: {
-      primary: isClean ? 'border-blue-500' : 'border-orange-500',
-      light: isClean ? 'border-blue-200' : 'border-orange-200',
-      accent: isClean ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-orange-500',
+      primary: 'border',
+      primaryStyle: { borderColor: 'var(--module-primary)' } as CSSProperties,
+      
+      light: 'border',
+      lightStyle: { borderColor: 'color-mix(in srgb, var(--module-primary) 40%, white)' } as CSSProperties,
+      
+      accent: 'border-l-4',
+      accentStyle: { borderLeftColor: 'var(--module-primary)' } as CSSProperties,
     },
     
-    // Backgrounds - cor do módulo muito sutil
+    // Backgrounds
     backgrounds: {
-      light: isClean ? 'bg-blue-50/50' : 'bg-orange-50/50',
-      lighter: isClean ? 'bg-blue-50/30' : 'bg-orange-50/30',
-      primary: isClean ? 'bg-blue-600' : 'bg-orange-600',
+      light: '',
+      lightStyle: { backgroundColor: 'color-mix(in srgb, var(--module-primary) 10%, white)' } as CSSProperties,
+      
+      lighter: '',
+      lighterStyle: { backgroundColor: 'color-mix(in srgb, var(--module-primary) 5%, white)' } as CSSProperties,
+      
+      primary: '',
+      primaryStyle: { backgroundColor: 'var(--module-primary)' } as CSSProperties,
     },
     
-    // Hover effects - neutro
+    // Hover effects
     hover: {
       card: 'hover:border-slate-300 hover:shadow-md',
+      cardStyle: {
+        borderColor: 'color-mix(in srgb, var(--module-primary) 20%, var(--border))'
+      } as CSSProperties,
     },
     
-    // Animações especiais
+    // Animações
     animations: {
       shimmer: 'relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
-      pulse: isClean
-        ? 'animate-pulse bg-blue-100/30'
-        : 'animate-pulse bg-orange-100/30',
+      pulse: '',
+      pulseStyle: {
+        animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        backgroundColor: 'color-mix(in srgb, var(--module-primary) 10%, transparent)'
+      } as CSSProperties,
     }
   };
 }

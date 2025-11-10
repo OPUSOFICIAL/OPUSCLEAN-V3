@@ -51,6 +51,18 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
   const { currentModule, setModule, moduleConfig, allowedModules, hasMultipleModules } = useModule();
   
+  // Helper para obter cores de um módulo específico (com fallback para cores padrão)
+  const getModulePalette = (moduleId: 'clean' | 'maintenance') => {
+    const defaultColors = MODULE_CONFIGS[moduleId];
+    const customColors = activeClient?.moduleColors?.[moduleId];
+    
+    return {
+      primary: customColors?.primary || defaultColors.primaryColor,
+      secondary: customColors?.secondary || defaultColors.secondaryColor,
+      accent: customColors?.accent || defaultColors.accentColor,
+    };
+  };
+  
   // Usuários do tipo customer_user não podem alterar o cliente
   const isCustomerUser = user?.userType === 'customer_user';
   
@@ -216,13 +228,13 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
             <SelectContent>
               <SelectItem value="clean" disabled={!effectiveAllowedModules.includes('clean')}>
                 <span className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-blue-600" />
+                  <Building className="w-4 h-4" style={{ color: getModulePalette('clean').primary }} />
                   {MODULE_CONFIGS.clean.displayName}
                 </span>
               </SelectItem>
               <SelectItem value="maintenance" disabled={!effectiveAllowedModules.includes('maintenance')}>
                 <span className="flex items-center gap-2">
-                  <Cog className="w-4 h-4 text-orange-600" />
+                  <Cog className="w-4 h-4" style={{ color: getModulePalette('maintenance').primary }} />
                   {MODULE_CONFIGS.maintenance.displayName}
                 </span>
               </SelectItem>
