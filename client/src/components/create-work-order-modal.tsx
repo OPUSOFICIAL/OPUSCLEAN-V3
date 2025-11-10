@@ -55,7 +55,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
 
   // Serviços para módulo Clean
   const { data: services } = useQuery({
-    queryKey: ["/api/customers", customerId, "services"],
+    queryKey: ["/api/customers", customerId, "services", { module: currentModule }],
     enabled: !!customerId && currentModule === 'clean',
   });
 
@@ -105,9 +105,8 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   // Filtrar checklists de limpeza pelo serviço selecionado (Clean)
   const filteredCleanChecklists = (cleanChecklistTemplates as any[] || []).filter((template: any) => {
     if (!formData.serviceId) return true;
-    // Checklist deve ter o serviceId no array de serviceIds
-    return template.serviceIds && Array.isArray(template.serviceIds) && 
-           template.serviceIds.includes(formData.serviceId);
+    // Checklist deve ter o serviceId (relação 1:1)
+    return template.serviceId === formData.serviceId;
   });
 
 
