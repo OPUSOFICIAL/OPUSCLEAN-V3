@@ -36,7 +36,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule, MODULE_CONFIGS } from "@/contexts/ModuleContext";
-import { ModuleColorDemo } from "@/components/module-color-demo";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -215,11 +214,11 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           </div>
         </div>
       )}
-      {/* Module/Platform Selector - mostrar se o USUÁRIO tem múltiplos módulos */}
-      {!isCollapsed && hasMultipleModules && (
+      {/* Module/Platform Selector - mostrar se o CLIENTE ATIVO tem múltiplos módulos */}
+      {!isCollapsed && effectiveHasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
           <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Plataforma {MODULE_CONFIGS[currentModule].displayName}
+            Plataforma
           </label>
           <Select value={currentModule} onValueChange={(value) => setModule(value as 'clean' | 'maintenance')}>
             <SelectTrigger data-testid="module-selector" className="bg-white shadow-sm border-slate-300 hover:border-slate-400 transition-colors">
@@ -228,28 +227,25 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
             <SelectContent>
               <SelectItem value="clean" disabled={!effectiveAllowedModules.includes('clean')}>
                 <span className="flex items-center gap-2">
-                  <Building className="w-4 h-4" style={{ color: getModulePalette('clean').primary }} />
+                  <Building className="w-4 h-4" />
                   {MODULE_CONFIGS.clean.displayName}
                 </span>
               </SelectItem>
               <SelectItem value="maintenance" disabled={!effectiveAllowedModules.includes('maintenance')}>
                 <span className="flex items-center gap-2">
-                  <Cog className="w-4 h-4" style={{ color: getModulePalette('maintenance').primary }} />
+                  <Cog className="w-4 h-4" />
                   {MODULE_CONFIGS.maintenance.displayName}
                 </span>
               </SelectItem>
             </SelectContent>
           </Select>
-          <div className="mt-2">
-            <ModuleColorDemo />
-          </div>
         </div>
       )}
-      {/* Module Indicator - para usuários com módulo único */}
-      {!isCollapsed && !hasMultipleModules && (
+      {/* Module Indicator - para clientes com módulo único */}
+      {!isCollapsed && !effectiveHasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
           <label className="block text-sm font-semibold text-slate-500 mb-2">
-            Plataforma {MODULE_CONFIGS[currentModule].displayName}
+            Plataforma
           </label>
           <div 
             className="px-3 py-2 border rounded-md shadow-sm"
@@ -258,7 +254,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
               borderColor: `color-mix(in srgb, var(--module-primary) 40%, white)`
             }}
           >
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
               {currentModule === 'maintenance' ? (
                 <Cog className="w-4 h-4" style={{ color: 'var(--module-primary)' }} />
               ) : (
@@ -268,7 +264,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
                 {MODULE_CONFIGS[currentModule].displayName}
               </p>
             </div>
-            <ModuleColorDemo />
           </div>
         </div>
       )}
