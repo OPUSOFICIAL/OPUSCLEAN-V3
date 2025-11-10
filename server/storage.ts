@@ -4449,15 +4449,28 @@ export class DatabaseStorage implements IStorage {
       return result.nextNumber;
     }
 
-    // If no existing counter, create one
+    // If no existing counter, find the max number already in use for this customer
+    let startNumber = 1;
+    
+    if (key === 'work_order') {
+      const [maxResult] = await db.select({ maxNumber: sql<number>`COALESCE(MAX(${workOrders.number}), 0)` })
+        .from(workOrders)
+        .where(eq(workOrders.customerId, customerId));
+      
+      if (maxResult && maxResult.maxNumber) {
+        startNumber = maxResult.maxNumber + 1;
+      }
+    }
+    
+    // Create counter starting from the next available number
     const newCounter = await this.createCustomerCounter({
       id: `custc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       customerId,
       key,
-      nextNumber: 2 // Since we're returning 1 for the first use
+      nextNumber: startNumber + 1 // Next number after the one we're returning
     });
     
-    return 1; // First number
+    return startNumber; // Return the first available number
   }
 
   // Reports Metrics - KPI cards for reports page

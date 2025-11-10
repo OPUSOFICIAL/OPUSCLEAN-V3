@@ -8,13 +8,27 @@
 
 ## Recent Changes (10/11/2025)
 
-**Correção Crítica - customerId em Atividades de Limpeza**: Resolvido problema crítico que impedia a criação de planos de limpeza e geração de OSs automáticas:
-- Adicionado campo `customerId` (nullable) à tabela `cleaning_activities`
-- Atualizado frontend para enviar `customerId` ao criar atividades de limpeza
-- Refatorado `generateScheduledWorkOrders()` para usar contadores por cliente (`customerId`)
-- Refatorado `generateMaintenanceWorkOrders()` para usar contadores por cliente (`customerId`)
-- Cada cliente agora tem numeração independente de OSs tanto de limpeza quanto manutenção
-- Migração automática de dados existentes para o novo formato
+**Correções Críticas - Sistema de Limpeza e Contadores**: Resolvidos múltiplos bugs críticos que impediam o funcionamento do sistema de limpeza:
+
+1. **Campo `customerId` em Atividades de Limpeza**:
+   - Adicionado campo `customerId` (nullable) à tabela `cleaning_activities`
+   - Frontend atualizado para enviar `customerId` ao criar atividades
+   - Funções de geração de OSs refatoradas para processar por cliente
+
+2. **Bug de Nomenclatura de Campo (snake_case vs camelCase)**:
+   - Corrigido bug em `generateScheduledWorkOrders()` que procurava `zone_ids` ao invés de `zoneIds`
+   - Drizzle ORM retorna campos em camelCase, não snake_case
+   - Atividades estavam sendo puladas incorretamente como "sem zonas"
+
+3. **Contadores de Work Orders**:
+   - Corrigido `incrementCustomerCounter()` para inicializar com base no número máximo existente
+   - Previne erro "duplicate key violation" ao criar novas OSs
+   - Contadores agora consultam o MAX(number) antes de criar novo contador
+
+4. **Calendário de Limpeza**:
+   - Corrigido problema de timezone na comparação de datas do calendário
+   - Função `getActivitiesForDay()` agora compara apenas ano/mês/dia sem considerar horas
+   - Atividades agora aparecem corretamente nos dias programados
 
 **Sistema de Numeração por Cliente (09/11/2025)**: A numeração de work orders foi migrada de company-level para customer-level:
 - Cada cliente tem sua própria sequência de numeração independente

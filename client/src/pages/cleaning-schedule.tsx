@@ -289,22 +289,35 @@ export default function CleaningSchedule() {
     if (!activities) return [];
     
     return (activities as any[]).filter((activity: any) => {
-      // Criar a data do dia que estamos verificando
-      const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-      checkDate.setHours(0, 0, 0, 0);
+      // Criar as datas para comparação (sem timezone issues)
+      const checkYear = currentDate.getFullYear();
+      const checkMonth = currentDate.getMonth();
+      const checkDay = day;
       
       // Verificar se a atividade já começou (startDate)
       if (activity.startDate) {
-        const startDate = new Date(activity.startDate);
-        startDate.setHours(0, 0, 0, 0);
-        if (checkDate < startDate) return false;
+        const startDate = new Date(activity.startDate + 'T00:00:00'); // Force local timezone
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth();
+        const startDay = startDate.getDate();
+        
+        // Compare year/month/day only
+        if (checkYear < startYear) return false;
+        if (checkYear === startYear && checkMonth < startMonth) return false;
+        if (checkYear === startYear && checkMonth === startMonth && checkDay < startDay) return false;
       }
       
       // Verificar se a atividade já terminou (endDate)
       if (activity.endDate) {
-        const endDate = new Date(activity.endDate);
-        endDate.setHours(0, 0, 0, 0);
-        if (checkDate > endDate) return false;
+        const endDate = new Date(activity.endDate + 'T23:59:59'); // Force local timezone
+        const endYear = endDate.getFullYear();
+        const endMonth = endDate.getMonth();
+        const endDay = endDate.getDate();
+        
+        // Compare year/month/day only
+        if (checkYear > endYear) return false;
+        if (checkYear === endYear && checkMonth > endMonth) return false;
+        if (checkYear === endYear && checkMonth === endMonth && checkDay > endDay) return false;
       }
       
       if (activity.frequency === 'diaria') return true;
