@@ -2867,16 +2867,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only generate if start date is in current month or past
         if (startDate <= endOfMonth) {
-          // Use start date or today, whichever is later
-          const windowStart = startDate > now ? startDate : now;
-          
           try {
             await storage.generateMaintenanceWorkOrders(
               activity.companyId,
-              windowStart,
+              startDate, // Use activity start date, not "now"
               endOfMonth
             );
-            console.log(`[PLAN CREATED] Generated work orders from ${windowStart.toISOString()} to ${endOfMonth.toISOString()} for activity ${activity.id}`);
+            console.log(`[PLAN CREATED] Generated work orders from ${startDate.toISOString()} to ${endOfMonth.toISOString()} for activity ${activity.id}`);
           } catch (error) {
             console.error(`[PLAN CREATED] Failed to generate work orders:`, error);
             // Don't fail the request if work order generation fails
