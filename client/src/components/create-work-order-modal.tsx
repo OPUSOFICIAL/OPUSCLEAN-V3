@@ -24,6 +24,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     description: "",
     type: "corretiva_interna",
     priority: "media",
+    siteId: "", // Para manutenção: selecionar o site primeiro
     zoneId: "",
     assignedUserId: "unassigned",
     // Campos específicos do Clean
@@ -69,26 +70,13 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     enabled: !!customerId && currentModule === 'maintenance',
   });
 
-  // Filtrar equipamentos pela zona selecionada
-  const filteredEquipment = (equipmentList as any[] || []).filter((eq: any) => 
-    formData.zoneId ? eq.zoneId === formData.zoneId : true
-  );
-
-  // Filtrar checklists pelo equipamento selecionado
-  const filteredChecklists = (maintenanceChecklistTemplates as any[] || []).filter((template: any) => {
-    if (!formData.equipmentId) return true;
-    // Checklist deve ter o equipmentId no array de equipmentIds
-    return template.equipmentIds && Array.isArray(template.equipmentIds) && 
-           template.equipmentIds.includes(formData.equipmentId);
-  });
-
   // Buscar dados do customer para pegar o companyId
   const { data: customer } = useQuery({
     queryKey: ["/api/customers", customerId],
     enabled: !!customerId,
   });
 
-  // Carregar todas as zones de todos os sites (filtrado por módulo)
+  // Para módulo Clean: Carregar todas as zones de todos os sites
   const { data: allZones } = useQuery({
     queryKey: ["/api/customers", customerId, "all-zones", { module: currentModule }],
     queryFn: async () => {
@@ -106,7 +94,26 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
       const allSitesZones = await Promise.all(zonePromises);
       return allSitesZones.flat();
     },
-    enabled: !!sites && Array.isArray(sites),
+    enabled: !!sites && Array.isArray(sites) && currentModule === 'clean',
+  });
+
+  // Para módulo Manutenção: Carregar zones filtradas pelo site selecionado
+  const { data: zonesForSite } = useQuery({
+    queryKey: ["/api/sites", formData.siteId, "zones", { module: currentModule }],
+    enabled: !!formData.siteId && currentModule === 'maintenance',
+  });
+
+  // Filtrar equipamentos pela zona selecionada
+  const filteredEquipment = (equipmentList as any[] || []).filter((eq: any) => 
+    formData.zoneId ? eq.zoneId === formData.zoneId : true
+  );
+
+  // Filtrar checklists pelo equipamento selecionado
+  const filteredChecklists = (maintenanceChecklistTemplates as any[] || []).filter((template: any) => {
+    if (!formData.equipmentId) return true;
+    // Checklist deve ter o equipmentId no array de equipmentIds
+    return template.equipmentIds && Array.isArray(template.equipmentIds) && 
+           template.equipmentIds.includes(formData.equipmentId);
   });
 
 
@@ -230,6 +237,18 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   };
 
   const handleChange = (field: string, value: string) => {
+    // Se mudar o site (Manutenção), resetar zona, equipamento e checklist
+    if (field === 'siteId' && currentModule === 'maintenance') {
+      setFormData(prev => ({ 
+        ...prev, 
+        [field]: value,
+        zoneId: "", // Resetar zona
+        equipmentId: "", // Resetar equipamento
+        maintenanceChecklistTemplateId: "" // Resetar checklist
+      }));
+      return;
+    }
+    
     // Se mudar a zona, resetar equipamento e checklist
     if (field === 'zoneId' && currentModule === 'maintenance') {
       setFormData(prev => ({ 
@@ -361,35 +380,34 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
               {currentModule === 'maintenance' ? 'Local e Equipamento' : 'Local e Serviços'}
             </h4>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Local (sempre presente) */}
-              <div className="space-y-2">
-                <Label htmlFor="zone">Local *</Label>
-                <Select value={formData.zoneId} onValueChange={(value) => handleChange("zoneId", value)}>
-                  <SelectTrigger data-testid="select-zone">
-                    <SelectValue placeholder="Selecione um local" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {!allZones ? (
-                      <SelectItem value="loading" disabled>Carregando locais...</SelectItem>
-                    ) : Array.isArray(allZones) && allZones.length > 0 ? (
-                      allZones.map((zone: any) => (
-                        <SelectItem key={zone.id} value={zone.id}>
-                          <div>
-                            <div className="font-medium">{zone.name}</div>
-                            <div className="text-xs text-gray-500">{zone.siteName}</div>
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-zones" disabled>Nenhum local cadastrado</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Módulo CLEAN */}
+            {currentModule === 'clean' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="zone">Local *</Label>
+                  <Select value={formData.zoneId} onValueChange={(value) => handleChange("zoneId", value)}>
+                    <SelectTrigger data-testid="select-zone">
+                      <SelectValue placeholder="Selecione um local" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!allZones ? (
+                        <SelectItem value="loading" disabled>Carregando locais...</SelectItem>
+                      ) : Array.isArray(allZones) && allZones.length > 0 ? (
+                        allZones.map((zone: any) => (
+                          <SelectItem key={zone.id} value={zone.id}>
+                            <div>
+                              <div className="font-medium">{zone.name}</div>
+                              <div className="text-xs text-gray-500">{zone.siteName}</div>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-zones" disabled>Nenhum local cadastrado</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Campos específicos do módulo CLEAN */}
-              {currentModule === 'clean' && (
                 <div className="space-y-2">
                   <Label htmlFor="service">Tipo de Serviço *</Label>
                   <Select value={formData.serviceId} onValueChange={(value) => handleChange("serviceId", value)}>
@@ -408,82 +426,135 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Campos específicos do módulo MANUTENÇÃO */}
-              {currentModule === 'maintenance' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="equipment">Equipamento *</Label>
-                    <Select 
-                      value={formData.equipmentId} 
-                      onValueChange={(value) => handleChange("equipmentId", value)}
-                      disabled={!formData.zoneId}
-                    >
-                      <SelectTrigger data-testid="select-equipment">
-                        <SelectValue placeholder={!formData.zoneId ? "Primeiro selecione um local" : "Selecione um equipamento"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {!equipmentList ? (
-                          <SelectItem value="loading" disabled>Carregando equipamentos...</SelectItem>
-                        ) : filteredEquipment.length > 0 ? (
-                          filteredEquipment
-                            .filter((eq: any) => eq.status === 'operacional')
-                            .map((equipment: any) => (
-                              <SelectItem key={equipment.id} value={equipment.id}>
-                                <div>
-                                  <div className="font-medium">{equipment.name}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {equipment.manufacturer} - {equipment.model}
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))
-                        ) : formData.zoneId ? (
-                          <SelectItem value="no-equipment" disabled>Nenhum equipamento neste local</SelectItem>
-                        ) : (
-                          <SelectItem value="no-zone" disabled>Selecione um local primeiro</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {formData.zoneId && filteredEquipment.length === 0 && (
-                      <p className="text-xs text-orange-600">Não há equipamentos cadastrados neste local</p>
-                    )}
-                  </div>
+            {/* Módulo MANUTENÇÃO */}
+            {currentModule === 'maintenance' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="site">Local *</Label>
+                  <Select value={formData.siteId} onValueChange={(value) => handleChange("siteId", value)}>
+                    <SelectTrigger data-testid="select-site">
+                      <SelectValue placeholder="Selecione um local" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!sites ? (
+                        <SelectItem value="loading" disabled>Carregando locais...</SelectItem>
+                      ) : Array.isArray(sites) && sites.length > 0 ? (
+                        (sites as any[]).map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-sites" disabled>Nenhum local cadastrado</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="checklist">Checklist de Manutenção (Opcional)</Label>
-                    <Select 
-                      value={formData.maintenanceChecklistTemplateId || "none"} 
-                      onValueChange={(value) => handleChange("maintenanceChecklistTemplateId", value === "none" ? "" : value)}
-                      disabled={!formData.equipmentId}
-                    >
-                      <SelectTrigger data-testid="select-maintenance-checklist">
-                        <SelectValue placeholder={!formData.equipmentId ? "Primeiro selecione um equipamento" : "Selecione um checklist"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhum</SelectItem>
-                        {filteredChecklists.length > 0 ? (
-                          filteredChecklists.map((template: any) => (
-                            <SelectItem key={template.id} value={template.id}>
+                <div className="space-y-2">
+                  <Label htmlFor="zone">Zona *</Label>
+                  <Select 
+                    value={formData.zoneId} 
+                    onValueChange={(value) => handleChange("zoneId", value)}
+                    disabled={!formData.siteId}
+                  >
+                    <SelectTrigger data-testid="select-zone">
+                      <SelectValue placeholder={!formData.siteId ? "Primeiro selecione um local" : "Selecione uma zona"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!zonesForSite ? (
+                        <SelectItem value="loading" disabled>Carregando zonas...</SelectItem>
+                      ) : Array.isArray(zonesForSite) && zonesForSite.length > 0 ? (
+                        (zonesForSite as any[]).map((zone: any) => (
+                          <SelectItem key={zone.id} value={zone.id}>
+                            {zone.name}
+                          </SelectItem>
+                        ))
+                      ) : formData.siteId ? (
+                        <SelectItem value="no-zones" disabled>Nenhuma zona neste local</SelectItem>
+                      ) : (
+                        <SelectItem value="select-site" disabled>Selecione um local primeiro</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {formData.siteId && (!zonesForSite || (zonesForSite as any[]).length === 0) && (
+                    <p className="text-xs text-orange-600">Não há zonas cadastradas neste local</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="equipment">Equipamento *</Label>
+                  <Select 
+                    value={formData.equipmentId} 
+                    onValueChange={(value) => handleChange("equipmentId", value)}
+                    disabled={!formData.zoneId}
+                  >
+                    <SelectTrigger data-testid="select-equipment">
+                      <SelectValue placeholder={!formData.zoneId ? "Primeiro selecione uma zona" : "Selecione um equipamento"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!equipmentList ? (
+                        <SelectItem value="loading" disabled>Carregando equipamentos...</SelectItem>
+                      ) : filteredEquipment.length > 0 ? (
+                        filteredEquipment
+                          .filter((eq: any) => eq.status === 'operacional')
+                          .map((equipment: any) => (
+                            <SelectItem key={equipment.id} value={equipment.id}>
                               <div>
-                                <div className="font-medium">{template.name}</div>
-                                <div className="text-xs text-gray-500">{template.description}</div>
+                                <div className="font-medium">{equipment.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {equipment.manufacturer} - {equipment.model}
+                                </div>
                               </div>
                             </SelectItem>
                           ))
-                        ) : formData.equipmentId ? (
-                          <SelectItem value="no-checklist" disabled>Nenhum checklist para este equipamento</SelectItem>
-                        ) : null}
-                      </SelectContent>
-                    </Select>
-                    {formData.equipmentId && filteredChecklists.length === 0 && (
-                      <p className="text-xs text-orange-600">Não há checklists disponíveis para este equipamento</p>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+                      ) : formData.zoneId ? (
+                        <SelectItem value="no-equipment" disabled>Nenhum equipamento nesta zona</SelectItem>
+                      ) : (
+                        <SelectItem value="select-zone" disabled>Selecione uma zona primeiro</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {formData.zoneId && filteredEquipment.length === 0 && (
+                    <p className="text-xs text-orange-600">Não há equipamentos cadastrados nesta zona</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="checklist">Checklist de Manutenção (Opcional)</Label>
+                  <Select 
+                    value={formData.maintenanceChecklistTemplateId || "none"} 
+                    onValueChange={(value) => handleChange("maintenanceChecklistTemplateId", value === "none" ? "" : value)}
+                    disabled={!formData.equipmentId}
+                  >
+                    <SelectTrigger data-testid="select-maintenance-checklist">
+                      <SelectValue placeholder={!formData.equipmentId ? "Primeiro selecione um equipamento" : "Selecione um checklist"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {filteredChecklists.length > 0 ? (
+                        filteredChecklists.map((template: any) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            <div>
+                              <div className="font-medium">{template.name}</div>
+                              <div className="text-xs text-gray-500">{template.description}</div>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : formData.equipmentId ? (
+                        <SelectItem value="no-checklist" disabled>Nenhum checklist para este equipamento</SelectItem>
+                      ) : null}
+                    </SelectContent>
+                  </Select>
+                  {formData.equipmentId && filteredChecklists.length === 0 && (
+                    <p className="text-xs text-orange-600">Não há checklists disponíveis para este equipamento</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
 
