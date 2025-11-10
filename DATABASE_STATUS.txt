@@ -3,7 +3,7 @@ OPUS - DATABASE STATUS REPORT
 ================================================================================
 
 Date: November 2025
-Status: CLEAN SLATE - READY FOR TESTING
+Status: CLEAN + SYSTEM DEFAULT ROLES
 
 --------------------------------------------------------------------------------
 ADMIN CREDENTIALS
@@ -17,9 +17,98 @@ Type:     OPUS Administrator
 DATABASE STATISTICS
 --------------------------------------------------------------------------------
 Total Tables:        38 tables
-Total Data Rows:     1 row (admin user only)
+Total Data Rows:     
+  - Users:           1 (admin only)
+  - Custom Roles:    3 (system defaults)
+  - Permissions:     59 (all roles configured)
+  
 Work Order Counter:  Reset to 0 (next will be #1)
-Backup File:         database_dump.sql (87KB)
+Backup File:         database_dump.sql (96KB)
+
+--------------------------------------------------------------------------------
+SYSTEM DEFAULT ROLES (3 FUNÇÕES PADRÃO)
+--------------------------------------------------------------------------------
+
+1. 🔐 ADMINISTRADOR (47 permissões)
+   - Acesso total ao sistema
+   - Para usuários OPUS internos
+   - Todas as operações CRUD
+   - Gerenciamento de roles e usuários
+   
+2. 👤 CLIENTE (8 permissões)
+   - Visualização de dashboards e relatórios
+   - Visualizar ordens de serviço
+   - Comentar e avaliar OS
+   - Ver plantas dos locais e heatmaps
+   - Apenas visualização (sem edição)
+   
+3. 📱 OPERADOR (4 permissões)
+   - Operador de campo via mobile
+   - Ver dashboard
+   - Ver e editar work orders
+   - Ver checklists
+   - Executar tarefas
+
+--------------------------------------------------------------------------------
+DETAILED PERMISSIONS BREAKDOWN
+--------------------------------------------------------------------------------
+
+ADMINISTRADOR (47 permissões):
+✓ Dashboard & Work Orders (7)
+  - dashboard_view, workorders_view, workorders_create
+  - workorders_edit, workorders_delete, workorders_comment, workorders_evaluate
+
+✓ Schedule (4)
+  - schedule_view, schedule_create, schedule_edit, schedule_delete
+
+✓ Checklists (4)
+  - checklists_view, checklists_create, checklists_edit, checklists_delete
+
+✓ QR Codes (4)
+  - qrcodes_view, qrcodes_create, qrcodes_edit, qrcodes_delete
+
+✓ Floor Plan & Heatmap (3)
+  - floor_plan_view, floor_plan_edit, heatmap_view
+
+✓ Sites (4)
+  - sites_view, sites_create, sites_edit, sites_delete
+
+✓ Users (4)
+  - users_view, users_create, users_edit, users_delete
+
+✓ Customers (4)
+  - customers_view, customers_create, customers_edit, customers_delete
+
+✓ Reports & Audit (2)
+  - reports_view, audit_logs_view
+
+✓ Service Settings (2)
+  - service_settings_view, service_settings_edit
+
+✓ Roles (1)
+  - roles_manage
+
+✓ OPUS Users (4)
+  - opus_users_view, opus_users_create, opus_users_edit, opus_users_delete
+
+✓ Client Users (4)
+  - client_users_view, client_users_create, client_users_edit, client_users_delete
+
+CLIENTE (8 permissões):
+✓ dashboard_view
+✓ workorders_view
+✓ workorders_comment
+✓ workorders_evaluate
+✓ floor_plan_view
+✓ heatmap_view
+✓ sites_view
+✓ reports_view
+
+OPERADOR (4 permissões):
+✓ dashboard_view
+✓ workorders_view
+✓ workorders_edit
+✓ checklists_view
 
 --------------------------------------------------------------------------------
 DATABASE SCHEMA SUMMARY
@@ -32,28 +121,28 @@ DATABASE SCHEMA SUMMARY
   - sites, zones, site_shifts
 
 ✓ Work Orders (4 tables)
-  - work_orders, work_order_history, work_order_comments, pause_reasons
+  - work_orders, work_order_history, work_order_comments, bathroom_counters
 
 ✓ Clean Module (3 tables)
-  - cleaning_activities, cleaning_plans, cleaning_plan_zones
+  - cleaning_activities, cleaning_plans, service_zones
 
 ✓ Maintenance Module (5 tables)
   - equipment, maintenance_activities, maintenance_plans
-  - maintenance_plan_equipment, maintenance_checklist_templates
+  - maintenance_plan_equipments, maintenance_checklist_templates
 
 ✓ Services & Checklists (5 tables)
-  - services, service_types, checklist_templates
-  - checklist_template_items, checklist_responses
+  - services, service_types, service_categories
+  - checklist_templates, maintenance_checklist_executions
 
 ✓ QR Code System (2 tables)
-  - qr_code_points, qr_codes
+  - qr_code_points, public_request_logs
 
 ✓ AI Integration (3 tables)
-  - ai_integrations, chat_messages, chat_sessions
+  - ai_integrations, chat_messages, chat_conversations
 
 ✓ Configuration (6 tables)
-  - sla_configs, webhook_configs, notification_settings
-  - site_opening_hours
+  - sla_configs, webhook_configs, dashboard_goals
+  - role_permissions, audit_logs, equipment_types
 
 --------------------------------------------------------------------------------
 BACKUP & RESTORE
@@ -64,7 +153,7 @@ Create Backup:
 Restore Database:
   psql $DATABASE_URL < database_dump.sql
 
-Current Backup: database_dump.sql (2597 lines)
+Current Backup: database_dump.sql (2660 lines, 96KB)
 
 --------------------------------------------------------------------------------
 AI INTEGRATION STATUS
@@ -82,32 +171,36 @@ Recommended: Groq with llama-3-groq-8b-tool-use
 TESTING WORKFLOW
 --------------------------------------------------------------------------------
 1. Login → admin@opus.com / admin123
-2. Create Customer → Add test client
-3. Create Site → Add location with module (Clean/Maintenance)
-4. Create Zones → Add areas within site
-5. Configure AI → Add Groq API key at /ai-integrations
-6. Create Work Order → Test manual creation
-7. Test AI Chat → Use floating chat button
+2. View Roles → /roles (deve mostrar 3 funções padrão!)
+3. Create Customer → Add test client
+4. Create Site → Add location with module (Clean/Maintenance)
+5. Create Zones → Add areas within site
+6. Configure AI → Add Groq API key at /ai-integrations
+7. Create Work Order → Test manual creation
+8. Test AI Chat → Use floating chat button
 
 --------------------------------------------------------------------------------
 DOCUMENTATION FILES
 --------------------------------------------------------------------------------
 replit.md                    - Complete project overview
-database_dump.sql            - Full database backup
+database_dump.sql            - Full database backup (2660 lines, 96KB)
 docs/README.md               - Documentation index
 docs/database-backup.md      - Backup/restore guide
 docs/groq-models.md          - AI model documentation
+DATABASE_STATUS.txt          - This status report
 
 --------------------------------------------------------------------------------
-RECENT CHANGES
+RECENT CHANGES (November 10, 2025)
 --------------------------------------------------------------------------------
-✓ Database completely reset (all 37 tables cleaned)
+✓ Database completely reset (all 38 tables cleaned)
 ✓ Admin user recreated with default credentials
+✓ ⭐ 3 SYSTEM DEFAULT ROLES restored (Administrador, Cliente, Operador)
+✓ ⭐ 59 permissions configured across all roles
 ✓ Groq AI integration fully implemented
 ✓ Function calling with 5 administrative tools
 ✓ Date serialization bug fixed
 ✓ Complete documentation created
 
 ================================================================================
-STATUS: READY FOR FRESH START TESTING
+STATUS: READY WITH SYSTEM DEFAULT ROLES
 ================================================================================
