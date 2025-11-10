@@ -142,47 +142,41 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   }, [currentModule, moduleConfig]);
 
   const setModule = (module: ModuleType) => {
-    // Validar se o usuário pode acessar o módulo antes de trocar
-    if (canAccessModule(module)) {
-      setCurrentModule(module);
-      
-      // Remover completamente cache de dados dependentes de módulo
-      queryClient.removeQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey;
-          // Remover queries que contêm "service-types", "service-categories", "dashboard-goals", etc
-          return key.some(part => 
-            typeof part === 'string' && (
-              part.includes('service-types') || 
-              part.includes('service-categories') ||
-              part.includes('dashboard-goals')
-            )
-          );
-        }
-      });
-      
-      // Verificar se o cliente atual possui o módulo selecionado
-      const currentClientHasModule = activeClient?.modules?.includes(module);
-      
-      // Só trocar de cliente se o cliente atual NÃO possuir o módulo
-      if (!currentClientHasModule && customers && customers.length > 0) {
-        const firstClientWithModule = customers.find(
-          customer => customer.isActive && customer.modules?.includes(module)
-        );
-        
-        if (firstClientWithModule) {
-          console.log(`[MODULE] Cliente atual não possui módulo "${module}", trocando para: ${firstClientWithModule.name}`);
-          setActiveClientId(firstClientWithModule.id);
-          setLocation('/');
-        }
-      } else if (currentClientHasModule) {
-        console.log(`[MODULE] Cliente atual "${activeClient?.name}" possui módulo "${module}", mantendo cliente ativo`);
-      }
-    } else {
-      console.warn(`[MODULE] Tentativa de acesso negada ao módulo: ${module}`);
-      // Se tentou acessar módulo não autorizado, forçar defaultModule
-      setCurrentModule(defaultModule);
+    // 🔥 VALIDAÇÃO DUPLA: Verificar se usuário TEM ACESSO e se cliente POSSUI o módulo
+    const userHasAccess = canAccessModule(module);
+    const clientModules = (activeClient?.modules || []) as ModuleType[];
+    const clientHasModule = clientModules.includes(module);
+    
+    // Verificar se usuário tem acesso ao módulo
+    if (!userHasAccess) {
+      console.warn(`[MODULE] ❌ ACESSO NEGADO - Usuário não tem permissão para módulo: ${module}`);
+      return; // Não trocar
     }
+    
+    // Verificar se cliente possui o módulo
+    if (!clientHasModule) {
+      console.warn(`[MODULE] ❌ ACESSO NEGADO - Cliente "${activeClient?.name}" não possui módulo: ${module}`);
+      return; // Não trocar
+    }
+    
+    // ✅ Passou na validação dupla - PODE TROCAR
+    console.log(`[MODULE] ✅ Validação aprovada - Trocando para módulo: ${module}`);
+    setCurrentModule(module);
+    
+    // Remover completamente cache de dados dependentes de módulo
+    queryClient.removeQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey;
+        // Remover queries que contêm "service-types", "service-categories", "dashboard-goals", etc
+        return key.some(part => 
+          typeof part === 'string' && (
+            part.includes('service-types') || 
+            part.includes('service-categories') ||
+            part.includes('dashboard-goals')
+          )
+        );
+      }
+    });
   };
 
   const getModuleRoute = (path: string) => {
