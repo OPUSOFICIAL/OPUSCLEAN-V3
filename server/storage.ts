@@ -3119,20 +3119,32 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    const [newWorkOrder] = await db.insert(workOrders)
-      .values({ 
-        ...workOrder,
-        id,
-        number,
-        customerId,
-        checklistTemplateId,
-        estimatedHours,
-        module: workOrder.module || 'clean' // Default to 'clean' if not specified
-      })
-      .returning();
+    console.log('[STORAGE DEBUG] Inserindo work order com:', {
+      id,
+      number,
+      customerId,
+      companyId: workOrder.companyId,
+      module: workOrder.module || 'clean',
+      zoneId: workOrder.zoneId,
+      serviceId: workOrder.serviceId
+    });
+    
+    try {
+      const [newWorkOrder] = await db.insert(workOrders)
+        .values({ 
+          ...workOrder,
+          id,
+          number,
+          customerId,
+          checklistTemplateId,
+          estimatedHours,
+          module: workOrder.module || 'clean' // Default to 'clean' if not specified
+        })
+        .returning();
       
-    // Create audit log for work order creation
-    if (newWorkOrder) {
+      console.log('[STORAGE DEBUG] Work order criada com sucesso:', newWorkOrder.id);
+      
+      // Create audit log for work order creation
       try {
         await this.createAuditLog({
           companyId: newWorkOrder.companyId,
@@ -3146,9 +3158,17 @@ export class DatabaseStorage implements IStorage {
       } catch (logError) {
         console.error("Failed to create audit log:", logError);
       }
+      
+      return newWorkOrder;
+    } catch (error: any) {
+      console.error('[STORAGE DEBUG] Erro ao inserir work order:', {
+        message: error.message,
+        code: error.code,
+        constraint: error.constraint,
+        detail: error.detail
+      });
+      throw error;
     }
-    
-    return newWorkOrder;
   }
 
   async updateWorkOrder(id: string, workOrder: Partial<InsertWorkOrder>): Promise<WorkOrder> {
