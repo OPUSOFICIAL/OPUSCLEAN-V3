@@ -165,7 +165,6 @@ export default function AssetReport({ customerId }: AssetReportProps) {
           </Button>
         }
       />
-      
       <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
         {isLoadingEquipment ? (
           <div className="text-center py-8">
@@ -194,7 +193,7 @@ export default function AssetReport({ customerId }: AssetReportProps) {
                         {site.equipmentCount} equipamento(s)
                       </p>
                     </div>
-                    <Badge className={cn("text-lg px-4 py-2", theme.badges.primary)}>
+                    <Badge className="inline-flex items-center rounded-full font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground hover:bg-primary/80 text-lg px-4 py-2 border pl-[20px] pr-[20px] ml-[10px] mr-[10px]">
                       {formatCurrency(site.totalValue)}
                     </Badge>
                   </div>
