@@ -5742,7 +5742,12 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(workOrders.scheduledDate))
     .limit(filters?.limit || 20);
 
-    return orders;
+    // Convert Date objects to ISO strings for JSON serialization
+    return orders.map(order => ({
+      ...order,
+      scheduledDate: order.scheduledDate ? new Date(order.scheduledDate).toISOString().split('T')[0] : null,
+      completedAt: order.completedAt ? new Date(order.completedAt).toISOString() : null
+    }));
   }
 
   private async aiGetWorkOrderDetails(customerId: string, module: 'clean' | 'maintenance', workOrderNumber: number): Promise<any> {
@@ -5802,7 +5807,15 @@ export class DatabaseStorage implements IStorage {
       return null;
     }
     
-    return workOrderData[0];
+    const order = workOrderData[0];
+    
+    // Convert Date objects to ISO strings for JSON serialization
+    return {
+      ...order,
+      scheduledDate: order.scheduledDate ? new Date(order.scheduledDate).toISOString().split('T')[0] : null,
+      completedAt: order.completedAt ? new Date(order.completedAt).toISOString() : null,
+      createdAt: order.createdAt ? new Date(order.createdAt).toISOString() : null
+    };
   }
 
   private async aiUpdateWorkOrder(
