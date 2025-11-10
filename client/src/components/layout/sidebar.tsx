@@ -138,8 +138,12 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
         <div className="flex items-center justify-between">
           <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-start'}`}>
             <img 
-              src={aceleraLogo} 
-              alt="Acelera Full Facilities" 
+              src={
+                isCollapsed 
+                  ? (activeClient?.sidebarLogoCollapsed || activeClient?.sidebarLogo || aceleraLogo)
+                  : (activeClient?.sidebarLogo || aceleraLogo)
+              } 
+              alt={activeClient?.name || "Acelera Full Facilities"} 
               className={`${
                 isCollapsed ? 'h-20 w-auto' : 'h-32 w-auto max-w-full'
               } object-contain transition-all duration-300`}

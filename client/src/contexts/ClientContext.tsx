@@ -7,6 +7,10 @@ interface Customer {
   name: string;
   isActive: boolean;
   modules: string[];
+  loginLogo?: string | null;
+  sidebarLogo?: string | null;
+  sidebarLogoCollapsed?: string | null;
+  moduleColors?: any;
 }
 
 interface ClientContextType {
