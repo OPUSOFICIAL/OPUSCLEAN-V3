@@ -352,6 +352,18 @@ export default function WorkOrders() {
     return user?.name || "Não atribuído";
   };
 
+  // 🔥 NOVO: Função para mostrar múltiplos responsáveis
+  const getUserNames = (userIds: string[] | null | undefined) => {
+    if (!userIds || userIds.length === 0) return "Não atribuído";
+    
+    const names = userIds.map(id => {
+      const user = (users as any[])?.find((u: any) => u.id === id);
+      return user?.name || id.slice(0, 8);
+    });
+    
+    return names.join(", ");
+  };
+
   // Formata data sem problemas de timezone
   const formatDateOnly = (dateString: string | null | undefined) => {
     if (!dateString) return '-';
@@ -573,7 +585,7 @@ export default function WorkOrders() {
                             {wo.title || 'Sem título'}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600" data-testid={`text-operator-${wo.id}`}>
-                            {getUserName(wo.assignedUserId)}
+                            {getUserNames(wo.assignedUserIds) || getUserName(wo.assignedUserId)}
                           </td>
                           <td className="py-3 px-4" data-testid={`badge-priority-${wo.id}`}>
                             {getPriorityBadge(wo.priority)}
