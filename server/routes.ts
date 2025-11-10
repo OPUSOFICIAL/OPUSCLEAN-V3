@@ -420,9 +420,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => wo.zoneId === zoneId);
       }
       
-      // Filter by assignedTo if provided (include unassigned work orders too)
+      // Filter by assignedTo if provided (include unassigned work orders and paused ones)
       if (assignedTo) {
-        workOrders = workOrders.filter(wo => wo.assignedUserId === assignedTo || wo.assignedUserId === null);
+        workOrders = workOrders.filter(wo => 
+          wo.assignedUserId === assignedTo || 
+          wo.assignedUserId === null || 
+          wo.status === 'pausada' // Operadores podem ver O.S. pausadas por qualquer colaborador
+        );
       }
       
       // Filter by status if provided
@@ -1580,9 +1584,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => wo.zoneId === zoneId);
       }
       
-      // Filter by assignedTo if provided (include unassigned work orders too)
+      // Filter by assignedTo if provided (include unassigned work orders and paused ones)
       if (assignedTo) {
-        workOrders = workOrders.filter(wo => wo.assignedUserId === assignedTo || wo.assignedUserId === null);
+        workOrders = workOrders.filter(wo => 
+          wo.assignedUserId === assignedTo || 
+          wo.assignedUserId === null || 
+          wo.status === 'pausada' // Operadores podem ver O.S. pausadas por qualquer colaborador
+        );
       }
       
       res.json(workOrders);
