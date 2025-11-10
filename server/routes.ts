@@ -1695,8 +1695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrder.cancelledBy = req.user?.id;
       }
       
-      // 🔥 NOVO: Adicionar colaborador ao array de responsáveis quando há mudança de status
-      if (req.user?.id && workOrder.status) {
+      // 🔥 ATUALIZADO: Adicionar colaborador ao array de responsáveis em QUALQUER alteração
+      if (req.user?.id) {
         const currentWO = await storage.getWorkOrder(req.params.id);
         if (currentWO) {
           // Pegar array atual de responsáveis (ou inicializar vazio)
@@ -1705,9 +1705,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Adicionar usuário atual se não estiver na lista (evitar duplicatas)
           if (!currentAssignedIds.includes(req.user.id)) {
             workOrder.assignedUserIds = [...currentAssignedIds, req.user.id];
+            console.log(`[WO UPDATE] Adicionando colaborador ${req.user.id} ao array. Array atual:`, currentAssignedIds, '→ Novo array:', workOrder.assignedUserIds);
           }
           
-          // Também atualizar assignedUserId para compatibilidade
+          // Também atualizar assignedUserId para última pessoa que editou
           workOrder.assignedUserId = req.user.id;
         }
       }
@@ -1736,8 +1737,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrder.cancelledBy = req.user?.id;
       }
       
-      // 🔥 NOVO: Adicionar colaborador ao array de responsáveis quando há mudança de status
-      if (req.user?.id && workOrder.status) {
+      // 🔥 ATUALIZADO: Adicionar colaborador ao array de responsáveis em QUALQUER alteração
+      if (req.user?.id) {
         const currentWO = await storage.getWorkOrder(req.params.id);
         if (currentWO) {
           // Pegar array atual de responsáveis (ou inicializar vazio)
@@ -1746,9 +1747,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Adicionar usuário atual se não estiver na lista (evitar duplicatas)
           if (!currentAssignedIds.includes(req.user.id)) {
             workOrder.assignedUserIds = [...currentAssignedIds, req.user.id];
+            console.log(`[WO UPDATE] Adicionando colaborador ${req.user.id} ao array. Array atual:`, currentAssignedIds, '→ Novo array:', workOrder.assignedUserIds);
           }
           
-          // Também atualizar assignedUserId para compatibilidade
+          // Também atualizar assignedUserId para última pessoa que editou
           workOrder.assignedUserId = req.user.id;
         }
       }

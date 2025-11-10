@@ -458,26 +458,39 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
                 </Select>
               </div>
               
+              {/* 🔥 ATUALIZADO: Mostrar múltiplos responsáveis */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Responsável</label>
-                <Select value={formData.assignedUserId} onValueChange={(value) => setFormData(prev => ({...prev, assignedUserId: value}))}>
-                  <SelectTrigger data-testid="select-assigned-user">
-                    <SelectValue placeholder="Selecione um responsável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Não atribuído</SelectItem>
-                    {(users as any[] || [])
-                      .filter((user: any) => user.role === "operador" || user.role === "supervisor_site")
-                      .map((user: any) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            {user.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Responsáveis (Colaboradores que trabalharam)
+                </label>
+                <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 min-h-[42px]">
+                  {(() => {
+                    const assignedIds = (workOrder as any)?.assignedUserIds || [];
+                    if (assignedIds.length === 0) {
+                      return (
+                        <Badge variant="secondary" className="text-sm">
+                          Nenhum responsável
+                        </Badge>
+                      );
+                    }
+                    return assignedIds.map((userId: string) => {
+                      const user = (users as any[] || []).find((u: any) => u.id === userId);
+                      return (
+                        <Badge 
+                          key={userId} 
+                          variant="default"
+                          className="flex items-center gap-1.5 text-sm"
+                        >
+                          <User className="w-3 h-3" />
+                          {user?.name || userId.slice(0, 8)}
+                        </Badge>
+                      );
+                    });
+                  })()}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Colaboradores são adicionados automaticamente ao iniciar, pausar, retomar ou concluir a O.S.
+                </p>
               </div>
               
               <div>

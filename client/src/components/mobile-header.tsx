@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useModule, MODULE_CONFIGS } from "@/contexts/ModuleContext";
 import { useUserModules } from "@/hooks/useUserModules";
+import { useClient } from "@/contexts/ClientContext";
 import { ArrowLeft, Wrench, Building, RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -16,7 +17,12 @@ interface MobileHeaderProps {
 export function MobileHeader({ title, subtitle, showBack = false, backUrl = "/mobile", actions }: MobileHeaderProps) {
   const [, setLocation] = useLocation();
   const { currentModule, moduleConfig, hasMultipleModules, canAccessModule, setModule, allowedModules } = useModule();
-  const { hasMultipleModules: userHasMultipleModules } = useUserModules();
+  const { activeClient } = useClient();
+  
+  // 🔥 CORRIGIDO: Calcular módulos permitidos baseado na interseção entre módulos do usuário e do cliente ativo
+  const clientModules = (activeClient?.modules || []) as ('clean' | 'maintenance')[];
+  const effectiveAllowedModules = allowedModules.filter(module => clientModules.includes(module));
+  const effectiveHasMultipleModules = effectiveAllowedModules.length > 1;
 
   // Se o usuário não tem acesso ao módulo atual, não renderizar nada (proteção extra)
   if (!canAccessModule(currentModule)) {
@@ -28,9 +34,11 @@ export function MobileHeader({ title, subtitle, showBack = false, backUrl = "/mo
   };
 
   const handleToggleModule = () => {
-    // Alternar entre os módulos disponíveis
+    // 🔥 CORRIGIDO: Só alternar se ambos os módulos estão disponíveis
     const nextModule = currentModule === 'clean' ? 'maintenance' : 'clean';
-    if (canAccessModule(nextModule)) {
+    
+    // Verificar se o próximo módulo está na lista de módulos efetivamente permitidos
+    if (effectiveAllowedModules.includes(nextModule) && canAccessModule(nextModule)) {
       setModule(nextModule);
       // Redirecionar para o dashboard mobile
       setLocation('/mobile');
@@ -77,8 +85,8 @@ export function MobileHeader({ title, subtitle, showBack = false, backUrl = "/mo
             )}
           </div>
 
-          {/* Indicador/Seletor de Módulo Ativo */}
-          {userHasMultipleModules ? (
+          {/* Indicador/Seletor de Módulo Ativo - Mostrar botão apenas se cliente atual tem múltiplos módulos */}
+          {effectiveHasMultipleModules ? (
             <Button
               onClick={handleToggleModule}
               variant="secondary"
