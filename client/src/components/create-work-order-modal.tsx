@@ -233,7 +233,18 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
       return;
     }
 
-    createWorkOrderMutation.mutate(formData);
+    if (currentModule === 'maintenance' && !formData.maintenanceChecklistTemplateId) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Selecione um checklist de manutenção",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Criar cópia sem o siteId (que é apenas para controle do frontend)
+    const { siteId, ...submitData } = formData;
+    createWorkOrderMutation.mutate(submitData);
   };
 
   const handleChange = (field: string, value: string) => {
@@ -524,17 +535,16 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="checklist">Checklist de Manutenção (Opcional)</Label>
+                  <Label htmlFor="checklist">Checklist de Manutenção *</Label>
                   <Select 
-                    value={formData.maintenanceChecklistTemplateId || "none"} 
-                    onValueChange={(value) => handleChange("maintenanceChecklistTemplateId", value === "none" ? "" : value)}
+                    value={formData.maintenanceChecklistTemplateId} 
+                    onValueChange={(value) => handleChange("maintenanceChecklistTemplateId", value)}
                     disabled={!formData.equipmentId}
                   >
                     <SelectTrigger data-testid="select-maintenance-checklist">
                       <SelectValue placeholder={!formData.equipmentId ? "Primeiro selecione um equipamento" : "Selecione um checklist"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
                       {filteredChecklists.length > 0 ? (
                         filteredChecklists.map((template: any) => (
                           <SelectItem key={template.id} value={template.id}>
