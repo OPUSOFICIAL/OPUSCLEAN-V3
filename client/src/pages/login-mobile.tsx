@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { login, setAuthState } from "@/lib/auth";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
-import opusLogo from "@assets/ChatGPT Image 8 de set. de 2025, 18_10_10_1757366528566.png";
+import aceleraLogo from "@assets/imagem_2025-11-10_010501695-Photoroom_1762805733799.png";
 
 export default function LoginMobile() {
   const [, setLocation] = useLocation();
@@ -74,11 +74,11 @@ export default function LoginMobile() {
           <div className="relative z-10 text-center space-y-6">
             {/* Logo */}
             <div className="mb-8">
-              <div className="w-24 h-24 mx-auto bg-white/95 rounded-2xl p-4 shadow-xl">
+              <div className="w-40 h-24 mx-auto bg-white/95 rounded-2xl p-4 shadow-xl flex items-center justify-center">
                 <img 
-                  src={opusLogo} 
-                  alt="OPUS" 
-                  className="w-full h-full object-contain"
+                  src={aceleraLogo} 
+                  alt="Acelera Full Facilities" 
+                  className="w-full h-auto object-contain"
                 />
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function LoginMobile() {
             {/* Footer */}
             <div className="text-center pt-4">
               <p className="text-xs text-slate-500">
-                © 2025 OPUS. Todos os direitos reservados.
+                © 2025 Acelera Full Facilities. Todos os direitos reservados.
               </p>
             </div>
 

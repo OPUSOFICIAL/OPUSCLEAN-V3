@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { login, setAuthState } from "@/lib/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
-import opusLogo from "@assets/ChatGPT Image 8 de set. de 2025, 18_10_10_1757366528566.png";
+import aceleraLogo from "@assets/imagem_2025-11-10_010501695-Photoroom_1762805733799.png";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -100,14 +100,14 @@ export default function Login() {
           </div>
           
           {/* Content */}
-          <div className="relative z-10 text-center space-y-4">
+          <div className="relative z-10 text-center space-y-6">
             {/* Logo */}
-            <div className="mb-6">
-              <div className="w-32 h-32 mx-auto bg-white/95 rounded-2xl p-4 shadow-xl">
+            <div className="mb-4">
+              <div className="w-48 h-32 mx-auto bg-white/95 rounded-2xl p-6 shadow-xl flex items-center justify-center">
                 <img 
-                  src={opusLogo} 
-                  alt="OPUS" 
-                  className="w-full h-full object-contain"
+                  src={aceleraLogo} 
+                  alt="Acelera Full Facilities" 
+                  className="w-full h-auto object-contain"
                 />
               </div>
             </div>
@@ -248,7 +248,7 @@ export default function Login() {
               </div>
               
               <p className="text-xs text-slate-500">
-                © 2025 OPUS. Todos os direitos reservados.
+                © 2025 Acelera Full Facilities. Todos os direitos reservados.
               </p>
             </div>
 
