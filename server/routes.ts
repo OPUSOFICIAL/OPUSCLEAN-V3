@@ -1619,9 +1619,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         module: req.body.module || 'clean'
       };
       
-      // Debug: Log dos dados recebidos
-      console.log('[DEBUG] Dados recebidos para criação de OS:', JSON.stringify(dataWithModule, null, 2));
-      
       const workOrder = insertWorkOrderSchema.parse(dataWithModule);
       const newWorkOrder = await storage.createWorkOrder(workOrder);
       
@@ -1666,17 +1663,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (error.code === '23503') {
-        console.error('[DEBUG] Erro de constraint FK:', {
-          constraint: error.constraint,
-          detail: error.detail,
-          table: error.table,
-          column: error.column
-        });
         return res.status(400).json({ 
           message: "Referência inválida",
-          details: `Campo inválido: ${error.constraint || error.detail || 'desconhecido'}`,
-          constraint: error.constraint,
-          rawError: error.detail
+          details: "A zona, serviço ou usuário selecionado não existe. Por favor, verifique os dados e tente novamente."
         });
       }
       

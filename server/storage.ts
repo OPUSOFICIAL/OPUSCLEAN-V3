@@ -3061,7 +3061,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
-    const number = await this.getNextWorkOrderNumber(workOrder.companyId);
+    // Get customerId from zone (zone -> site -> customerId)
+    let customerId = workOrder.customerId;
+    
+    if (!customerId && workOrder.zoneId) {
+      const [zone] = await db.select().from(zones).where(eq(zones.id, workOrder.zoneId)).limit(1);
+      if (zone) {
+        const [site] = await db.select().from(sites).where(eq(sites.id, zone.siteId)).limit(1);
+        if (site) {
+          customerId = site.customerId;
+        }
+      }
+    }
+    
+    if (!customerId) {
+      throw new Error('CustomerId not found for work order');
+    }
+    
+    const number = await this.getNextWorkOrderNumber(customerId);
     const id = crypto.randomUUID();
     
     // Auto-assign checklist template and estimated hours based on service
@@ -3100,6 +3117,7 @@ export class DatabaseStorage implements IStorage {
         ...workOrder,
         id,
         number,
+        customerId,
         checklistTemplateId,
         estimatedHours,
         module: workOrder.module || 'clean' // Default to 'clean' if not specified
