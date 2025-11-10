@@ -187,8 +187,8 @@ export default function Landing() {
                 }}
                 transition={{ duration: 4, repeat: Infinity }}
               />
-              <h1 className="relative text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
-                OPUS
+              <h1 className="relative text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+                Acelera it
               </h1>
             </div>
           </motion.div>
@@ -199,7 +199,7 @@ export default function Landing() {
             transition={{ delay: 0.3, duration: 0.8 }}
             className="text-xl md:text-2xl text-blue-200 font-light tracking-wide"
           >
-            Facilities Management Platform
+            Full Facilities
           </motion.p>
         </motion.div>
 
@@ -314,7 +314,7 @@ export default function Landing() {
           className="mt-16 text-center"
         >
           <p className="text-slate-500 text-sm">
-            © 2025 OPUS. Plataforma de gestão de facilities de última geração.
+            © 2025 Acelera it. Plataforma de gestão de facilities de última geração.
           </p>
         </motion.div>
       </div>

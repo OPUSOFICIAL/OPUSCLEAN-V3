@@ -1,8 +1,8 @@
-# OPUS - Project Summary
+# Acelera it - Full Facilities - Project Summary
 
 ## Overview
 
-OPUS is a modular facilities management platform, currently encompassing OPUS Clean for cleaning and OPUS Manutenção for maintenance. It aims to streamline operations through web-based administration and mobile applications, offering features like scheduling, work order management, QR code-based task execution, and public service requests. Designed for multi-company, multi-site, and multi-zone environments, OPUS provides real-time analytics and a scalable solution for modern facilities management.
+Acelera it Full Facilities is a modular facilities management platform, currently encompassing Clean module for cleaning and Maintenance module for maintenance. It aims to streamline operations through web-based administration and mobile applications, offering features like scheduling, work order management, QR code-based task execution, and public service requests. Designed for multi-company, multi-site, and multi-zone environments, Acelera it provides real-time analytics and a scalable solution for modern facilities management.
 
 ## User Preferences
 
@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 - Email: `admin@opus.com`
 - Password: `admin123`
 - Modules: Clean + Maintenance
-- Type: OPUS Administrator
+- Type: Administrator
 
 **Database Backup:**
 - Full dump available: `database_dump.sql` (2597 lines)
@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 
 The system features a modern, predominantly white design with subtle gradients and glassmorphism effects for depth and sophistication. It utilizes `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Manutenção) are used for identification on focal elements like buttons and badges. The design is responsive, optimized for both desktop and mobile, with touch-friendly elements and streamlined navigation. The mobile dashboard highlights in-progress work orders with a distinct green-to-emerald gradient card and a dedicated statistics card.
 
-**Landing Page**: Ultra-modern presentation page displayed before login, featuring dark glassmorphism aesthetics with animated gradient orbs (blue, purple, cyan), mouse parallax effects, floating particles, smooth Framer Motion animations, and interactive feature cards. The landing showcases the OPUS brand with a gradient text logo and provides an elegant entry point to the system.
+**Landing Page**: Ultra-modern presentation page displayed before login, featuring dark glassmorphism aesthetics with animated gradient orbs (blue, purple, cyan), mouse parallax effects, floating particles, smooth Framer Motion animations, and interactive feature cards. The landing showcases the "Acelera it - Full Facilities" brand with a gradient text logo and provides an elegant entry point to the system.
 
 ### Technical Implementations
 
