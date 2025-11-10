@@ -2880,7 +2880,6 @@ export class DatabaseStorage implements IStorage {
     
     // Process each customer's activities separately with their own counter
     for (const [customerId, customerActivities] of Array.from(activitiesByCustomer.entries())) {
-      let currentNumber = await this.getNextWorkOrderNumber(customerId);
       
       for (const activity of customerActivities) {
       const activityForExpansion: any = {
@@ -2934,9 +2933,12 @@ export class DatabaseStorage implements IStorage {
             title = `${activity.name} - ${equipItem.name} - ${occ.occurrence}ª/${occ.total}`;
           }
           
+          // Increment counter for each work order
+          const nextNumber = await this.incrementCustomerCounter(customerId, 'work_order');
+          
           workOrdersToCreate.push({
             id: crypto.randomUUID(),
-            number: currentNumber++,
+            number: nextNumber,
             companyId: companyId,
             customerId: customerId,
             equipmentId: equipItem.id,
