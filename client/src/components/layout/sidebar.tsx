@@ -239,16 +239,18 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           <label className="block text-sm font-semibold text-slate-500 mb-2">
             Plataforma {MODULE_CONFIGS[currentModule].displayName}
           </label>
-          <div className={`px-3 py-2 border rounded-md shadow-sm ${
-            currentModule === 'maintenance'
-              ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'
-              : 'bg-gradient-to-br from-blue-50 to-slate-50 border-blue-200'
-          }`}>
+          <div 
+            className="px-3 py-2 border rounded-md shadow-sm"
+            style={{
+              background: `linear-gradient(to bottom right, color-mix(in srgb, var(--module-primary) 10%, white), color-mix(in srgb, var(--module-secondary) 5%, white))`,
+              borderColor: `color-mix(in srgb, var(--module-primary) 40%, white)`
+            }}
+          >
             <div className="flex items-center gap-2 mb-2">
               {currentModule === 'maintenance' ? (
-                <Cog className="w-4 h-4 text-orange-600" />
+                <Cog className="w-4 h-4" style={{ color: 'var(--module-primary)' }} />
               ) : (
-                <Building className="w-4 h-4 text-blue-600" />
+                <Building className="w-4 h-4" style={{ color: 'var(--module-primary)' }} />
               )}
               <p className="text-sm font-medium text-slate-700">
                 {MODULE_CONFIGS[currentModule].displayName}
@@ -264,20 +266,18 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           const Icon = item.icon;
           const isActive = location === item.path;
           
-          // Gradiente baseado no módulo ativo
-          const activeGradient = currentModule === 'maintenance'
-            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md hover:shadow-lg'
-            : 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md hover:shadow-lg';
-          
           return (
             <Link key={item.path} href={item.path}>
               <Button
                 variant={isActive ? "default" : "ghost"}
                 className={`w-full ${isCollapsed ? 'justify-center px-0' : 'justify-start space-x-3'} transition-all duration-200 ${
                   isActive 
-                    ? activeGradient
+                    ? 'text-white shadow-md hover:shadow-lg'
                     : "hover:bg-slate-100 hover:text-slate-900"
                 }`}
+                style={isActive ? {
+                  background: `linear-gradient(to right, var(--module-primary), var(--module-secondary))`
+                } : undefined}
                 data-testid={`nav-${item.path.slice(1) || 'dashboard'}`}
                 title={isCollapsed ? item.label : undefined}
               >
