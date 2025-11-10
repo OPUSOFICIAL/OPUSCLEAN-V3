@@ -32,6 +32,7 @@ import QrPublic from "@/pages/qr-public";
 import Login from "@/pages/login";
 import LoginMobile from "@/pages/login-mobile";
 import ModuleSelection from "@/pages/module-selection";
+import Landing from "@/pages/landing";
 import MobileDashboard from "@/pages/mobile-dashboard";
 import MobileQrScanner from "@/pages/mobile-qr-scanner";
 import MobileWorkOrderExecute from "@/pages/mobile-work-order-execute";
@@ -134,7 +135,7 @@ function Router() {
   const { isMobileOnlyUser, isLoading } = usePermissions();
   const [location] = useLocation();
 
-  // Se não está autenticado, mostrar login
+  // Se não está autenticado, mostrar landing/login
   if (!isAuthenticated || !user) {
     return (
       <Switch>
@@ -143,7 +144,8 @@ function Router() {
         <Route path="/module-selection" component={ModuleSelection} />
         <Route path="/login-mobile" component={LoginMobile} />
         <Route path="/login" component={Login} />
-        <Route component={Login} />
+        <Route path="/" component={Landing} />
+        <Route component={Landing} />
       </Switch>
     );
   }
