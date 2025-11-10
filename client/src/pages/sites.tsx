@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { 
   Plus, 
   Building, 
@@ -31,6 +32,7 @@ interface SitesProps {
 
 export default function Sites({ customerId }: SitesProps) {
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreateZoneDialogOpen, setIsCreateZoneDialogOpen] = useState(false);
   const [isEditZoneDialogOpen, setIsEditZoneDialogOpen] = useState(false);
@@ -358,7 +360,7 @@ export default function Sites({ customerId }: SitesProps) {
         <div className="flex items-center space-x-2">
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="button-create-site">
+              <Button className={theme.buttons.primary} style={theme.buttons.primaryStyle} data-testid="button-create-site">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Local
               </Button>
@@ -425,6 +427,8 @@ export default function Sites({ customerId }: SitesProps) {
                     Cancelar
                   </Button>
                   <Button 
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                     onClick={handleCreateSite}
                     disabled={createSiteMutation.isPending}
                     data-testid="button-save-site"
@@ -453,7 +457,8 @@ export default function Sites({ customerId }: SitesProps) {
                   Crie seu primeiro local para começar
                 </p>
                 <Button 
-                  className="mt-4"
+                  className={`mt-4 ${theme.buttons.primary}`}
+                  style={theme.buttons.primaryStyle}
                   onClick={() => setIsCreateDialogOpen(true)}
                   data-testid="button-create-first-site"
                 >
@@ -549,7 +554,7 @@ export default function Sites({ customerId }: SitesProps) {
                 </CardTitle>
                 <Dialog open={isCreateZoneDialogOpen} onOpenChange={setIsCreateZoneDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" data-testid="button-create-zone">
+                    <Button className={theme.buttons.primary} style={theme.buttons.primaryStyle} size="sm" data-testid="button-create-zone">
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Zona
                     </Button>
@@ -634,6 +639,8 @@ export default function Sites({ customerId }: SitesProps) {
                           Cancelar
                         </Button>
                         <Button 
+                          className={theme.buttons.primary}
+                          style={theme.buttons.primaryStyle}
                           onClick={handleCreateZone}
                           disabled={createZoneMutation.isPending}
                           data-testid="button-save-zone"
@@ -655,7 +662,8 @@ export default function Sites({ customerId }: SitesProps) {
                     Crie a primeira zona para este local
                   </p>
                   <Button 
-                    className="mt-4"
+                    className={`mt-4 ${theme.buttons.primary}`}
+                    style={theme.buttons.primaryStyle}
                     onClick={() => setIsCreateZoneDialogOpen(true)}
                     data-testid="button-create-first-zone"
                   >
@@ -772,6 +780,8 @@ export default function Sites({ customerId }: SitesProps) {
                   Cancelar
                 </Button>
                 <Button 
+                  className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                   onClick={handleUpdateSite}
                   disabled={updateSiteMutation.isPending}
                   data-testid="button-save-edit-site"
@@ -866,6 +876,8 @@ export default function Sites({ customerId }: SitesProps) {
                   Cancelar
                 </Button>
                 <Button 
+                  className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                   onClick={handleUpdateZone}
                   disabled={updateZoneMutation.isPending}
                   data-testid="button-save-edit-zone"

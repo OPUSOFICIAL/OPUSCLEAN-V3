@@ -214,6 +214,7 @@ export default function Roles() {
                     form.reset();
                   }}
                   className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                   data-testid="button-create-role"
                 >
                   <Plus className="h-4 w-4 mr-2" />

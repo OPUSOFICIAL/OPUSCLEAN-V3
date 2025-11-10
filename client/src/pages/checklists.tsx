@@ -495,6 +495,7 @@ export default function Checklists() {
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
             className={cn(theme.buttons.primary)}
+            style={theme.buttons.primaryStyle}
             data-testid="button-create-checklist"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -1039,6 +1040,7 @@ export default function Checklists() {
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)}
                 className={cn(theme.buttons.primary)}
+                style={theme.buttons.primaryStyle}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Primeira Checklist

@@ -418,6 +418,7 @@ export default function QrCodes() {
           <Button 
             onClick={handleRefresh}
             className={cn("flex items-center gap-2", theme.buttons.primary)}
+            style={theme.buttons.primaryStyle}
             size="sm"
             disabled={isRefreshing}
             data-testid="button-refresh-header"
@@ -555,6 +556,7 @@ export default function QrCodes() {
                   <Button 
                     onClick={handleCreateQrPoint} 
                     className={cn("w-full h-14 text-base font-semibold", theme.buttons.primary)}
+                    style={theme.buttons.primaryStyle}
                     disabled={createQrPointMutation.isPending}
                     data-testid="button-create-qr"
                   >
@@ -628,6 +630,7 @@ export default function QrCodes() {
                 <Button
                   onClick={handleRefresh}
                   className={cn("flex items-center gap-2", theme.buttons.primary)}
+                  style={theme.buttons.primaryStyle}
                   size="sm"
                   disabled={isRefreshing}
                   data-testid="button-refresh-qr"

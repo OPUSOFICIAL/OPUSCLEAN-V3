@@ -222,6 +222,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)}
                 className={theme.buttons.primary}
+                style={theme.buttons.primaryStyle}
                 data-testid="button-create-customer"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -274,6 +275,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                 <Button 
                   onClick={() => setIsCreateDialogOpen(true)}
                   className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                   data-testid="button-create-first-customer"
                 >
                   <Plus className="w-4 h-4 mr-2" />

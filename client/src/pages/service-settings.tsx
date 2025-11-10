@@ -415,6 +415,7 @@ export default function Settings() {
                           typeForm.reset({ name: "", description: "", code: "" });
                         }}
                         className={theme.buttons.primary}
+                        style={theme.buttons.primaryStyle}
                         data-testid="button-create-type"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -754,6 +755,7 @@ export default function Settings() {
                           });
                         }}
                         className={theme.buttons.primary}
+                        style={theme.buttons.primaryStyle}
                         data-testid="button-create-goal"
                       >
                         <Plus className="w-4 h-4 mr-2" />

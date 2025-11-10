@@ -388,6 +388,7 @@ export default function WorkOrders() {
             <Button 
               onClick={handleRefresh}
               className={cn("flex items-center gap-2", theme.buttons.primary)}
+              style={theme.buttons.primaryStyle}
               size="sm"
               disabled={isRefreshing}
               data-testid="button-refresh"
@@ -398,6 +399,7 @@ export default function WorkOrders() {
             <Button 
               onClick={() => setShowCreateModal(true)} 
               className={theme.buttons.primary}
+              style={theme.buttons.primaryStyle}
               data-testid="button-create-work-order"
             >
               <Plus className="w-4 h-4 mr-2" />

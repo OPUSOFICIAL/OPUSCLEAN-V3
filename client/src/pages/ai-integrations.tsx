@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useModuleTheme } from "@/hooks/use-module-theme";
+import { cn } from "@/lib/utils";
 import { 
   Bot, Plus, Edit, Trash2, TestTube, Loader2, 
   Check, X, Brain, Sparkles, Shield, Key,
@@ -165,6 +167,7 @@ const providerConfigs: Record<AiProvider, ProviderConfig> = {
 export default function AiIntegrationsPage() {
   const { user } = getAuthState();
   const { toast } = useToast();
+  const theme = useModuleTheme();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIntegration, setEditingIntegration] = useState<AiIntegration | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
@@ -381,7 +384,8 @@ export default function AiIntegrationsPage() {
           </div>
           <Button 
             onClick={openCreateDialog}
-            className="flex items-center gap-2"
+            className={cn("flex items-center gap-2", theme.buttons.primary)}
+            style={theme.buttons.primaryStyle}
             data-testid="button-add-integration"
           >
             <Plus className="h-4 w-4" />
@@ -404,7 +408,11 @@ export default function AiIntegrationsPage() {
               <p className="text-gray-600 mb-6">
                 Configure sua primeira integração AI para começar
               </p>
-              <Button onClick={openCreateDialog}>
+              <Button 
+                onClick={openCreateDialog}
+                className={theme.buttons.primary}
+                style={theme.buttons.primaryStyle}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Integração
               </Button>
