@@ -24,11 +24,12 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     description: "",
     type: "corretiva_interna",
     priority: "media",
-    siteId: "", // Para manutenção: selecionar o site primeiro
-    zoneId: "",
+    siteId: "", // Local (Site)
+    zoneId: "", // Zona
     assignedUserId: "unassigned",
     // Campos específicos do Clean
     serviceId: "",
+    checklistTemplateId: "",
     // Campos específicos do Manutenção
     equipmentId: "",
     maintenanceChecklistTemplateId: "",
@@ -70,50 +71,43 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     enabled: !!customerId && currentModule === 'maintenance',
   });
 
+  // Templates de checklist de limpeza (Clean)
+  const { data: cleanChecklistTemplates } = useQuery({
+    queryKey: ["/api/customers", customerId, "checklist-templates"],
+    enabled: !!customerId && currentModule === 'clean',
+  });
+
   // Buscar dados do customer para pegar o companyId
   const { data: customer } = useQuery({
     queryKey: ["/api/customers", customerId],
     enabled: !!customerId,
   });
 
-  // Para módulo Clean: Carregar todas as zones de todos os sites
-  const { data: allZones } = useQuery({
-    queryKey: ["/api/customers", customerId, "all-zones", { module: currentModule }],
-    queryFn: async () => {
-      if (!sites || !Array.isArray(sites)) return [];
-      
-      const zonePromises = sites.map(async (site: any) => {
-        const response = await apiRequest("GET", `/api/sites/${site.id}/zones?module=${currentModule}`);
-        const zones = await response.json() as any[];
-        return zones.map(zone => ({
-          ...zone,
-          siteName: site.name
-        }));
-      });
-      
-      const allSitesZones = await Promise.all(zonePromises);
-      return allSitesZones.flat();
-    },
-    enabled: !!sites && Array.isArray(sites) && currentModule === 'clean',
-  });
-
-  // Para módulo Manutenção: Carregar zones filtradas pelo site selecionado
+  // Carregar zones filtradas pelo site selecionado (usado por ambos módulos)
   const { data: zonesForSite } = useQuery({
     queryKey: ["/api/sites", formData.siteId, "zones", { module: currentModule }],
-    enabled: !!formData.siteId && currentModule === 'maintenance',
+    enabled: !!formData.siteId,
   });
 
-  // Filtrar equipamentos pela zona selecionada
+  // Filtrar equipamentos pela zona selecionada (Manutenção)
   const filteredEquipment = (equipmentList as any[] || []).filter((eq: any) => 
     formData.zoneId ? eq.zoneId === formData.zoneId : true
   );
 
-  // Filtrar checklists pelo equipamento selecionado
-  const filteredChecklists = (maintenanceChecklistTemplates as any[] || []).filter((template: any) => {
+  // Filtrar checklists de manutenção pelo equipamento selecionado
+  const filteredMaintenanceChecklists = (maintenanceChecklistTemplates as any[] || []).filter((template: any) => {
     if (!formData.equipmentId) return true;
     // Checklist deve ter o equipmentId no array de equipmentIds
     return template.equipmentIds && Array.isArray(template.equipmentIds) && 
            template.equipmentIds.includes(formData.equipmentId);
+  });
+
+  // Filtrar checklists de limpeza pelo serviço selecionado (Clean)
+  const filteredCleanChecklists = (cleanChecklistTemplates as any[] || []).filter((template: any) => {
+    if (!formData.serviceId) return true;
+    // Checklist deve ter o serviceId no array de serviceIds
+    return template.serviceIds && Array.isArray(template.serviceIds) && 
+           template.serviceIds.includes(formData.serviceId);
   });
 
 
@@ -139,6 +133,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
       // Campos específicos do módulo Clean
       if (currentModule === 'clean') {
         submitData.serviceId = data.serviceId || null;
+        submitData.checklistTemplateId = data.checklistTemplateId || null;
       }
 
       // Campos específicos do módulo Manutenção
@@ -215,31 +210,58 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     }
 
     // Validação específica por módulo
-    if (currentModule === 'clean' && !formData.serviceId) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Selecione um tipo de serviço",
-        variant: "destructive"
-      });
-      return;
+    if (currentModule === 'clean') {
+      if (!formData.siteId) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Selecione um local",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!formData.serviceId) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Selecione um serviço",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!formData.checklistTemplateId) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Selecione um checklist",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
-    if (currentModule === 'maintenance' && !formData.equipmentId) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Selecione um equipamento",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (currentModule === 'maintenance' && !formData.maintenanceChecklistTemplateId) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Selecione um checklist de manutenção",
-        variant: "destructive"
-      });
-      return;
+    if (currentModule === 'maintenance') {
+      if (!formData.siteId) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Selecione um local",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!formData.equipmentId) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Selecione um equipamento",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!formData.maintenanceChecklistTemplateId) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Selecione um checklist de manutenção",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Criar cópia sem o siteId (que é apenas para controle do frontend)
@@ -248,37 +270,76 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   };
 
   const handleChange = (field: string, value: string) => {
-    // Se mudar o site (Manutenção), resetar zona, equipamento e checklist
-    if (field === 'siteId' && currentModule === 'maintenance') {
-      setFormData(prev => ({ 
-        ...prev, 
-        [field]: value,
-        zoneId: "", // Resetar zona
-        equipmentId: "", // Resetar equipamento
-        maintenanceChecklistTemplateId: "" // Resetar checklist
-      }));
-      return;
+    // MÓDULO CLEAN
+    if (currentModule === 'clean') {
+      // Se mudar o site, resetar zona, serviço e checklist
+      if (field === 'siteId') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          zoneId: "",
+          serviceId: "",
+          checklistTemplateId: ""
+        }));
+        return;
+      }
+      
+      // Se mudar a zona, resetar serviço e checklist
+      if (field === 'zoneId') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          serviceId: "",
+          checklistTemplateId: ""
+        }));
+        return;
+      }
+      
+      // Se mudar o serviço, resetar checklist
+      if (field === 'serviceId') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          checklistTemplateId: ""
+        }));
+        return;
+      }
     }
     
-    // Se mudar a zona, resetar equipamento e checklist
-    if (field === 'zoneId' && currentModule === 'maintenance') {
-      setFormData(prev => ({ 
-        ...prev, 
-        [field]: value,
-        equipmentId: "", // Resetar equipamento
-        maintenanceChecklistTemplateId: "" // Resetar checklist
-      }));
-      return;
-    }
-    
-    // Se mudar o equipamento, resetar checklist
-    if (field === 'equipmentId' && currentModule === 'maintenance') {
-      setFormData(prev => ({ 
-        ...prev, 
-        [field]: value,
-        maintenanceChecklistTemplateId: "" // Resetar checklist
-      }));
-      return;
+    // MÓDULO MANUTENÇÃO
+    if (currentModule === 'maintenance') {
+      // Se mudar o site, resetar zona, equipamento e checklist
+      if (field === 'siteId') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          zoneId: "",
+          equipmentId: "",
+          maintenanceChecklistTemplateId: ""
+        }));
+        return;
+      }
+      
+      // Se mudar a zona, resetar equipamento e checklist
+      if (field === 'zoneId') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          equipmentId: "",
+          maintenanceChecklistTemplateId: ""
+        }));
+        return;
+      }
+      
+      // Se mudar o equipamento, resetar checklist
+      if (field === 'equipmentId') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          maintenanceChecklistTemplateId: ""
+        }));
+        return;
+      }
     }
     
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -395,47 +456,126 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
             {currentModule === 'clean' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="zone">Local *</Label>
-                  <Select value={formData.zoneId} onValueChange={(value) => handleChange("zoneId", value)}>
-                    <SelectTrigger data-testid="select-zone">
+                  <Label htmlFor="site">Local *</Label>
+                  <Select value={formData.siteId} onValueChange={(value) => handleChange("siteId", value)}>
+                    <SelectTrigger data-testid="select-site">
                       <SelectValue placeholder="Selecione um local" />
                     </SelectTrigger>
                     <SelectContent>
-                      {!allZones ? (
+                      {!sites ? (
                         <SelectItem value="loading" disabled>Carregando locais...</SelectItem>
-                      ) : Array.isArray(allZones) && allZones.length > 0 ? (
-                        allZones.map((zone: any) => (
-                          <SelectItem key={zone.id} value={zone.id}>
-                            <div>
-                              <div className="font-medium">{zone.name}</div>
-                              <div className="text-xs text-gray-500">{zone.siteName}</div>
-                            </div>
+                      ) : Array.isArray(sites) && sites.length > 0 ? (
+                        (sites as any[]).map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="no-zones" disabled>Nenhum local cadastrado</SelectItem>
+                        <SelectItem value="no-sites" disabled>Nenhum local cadastrado</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="service">Tipo de Serviço *</Label>
-                  <Select value={formData.serviceId} onValueChange={(value) => handleChange("serviceId", value)}>
-                    <SelectTrigger data-testid="select-service">
-                      <SelectValue placeholder="Selecione um serviço" />
+                  <Label htmlFor="zone">Zona *</Label>
+                  <Select 
+                    value={formData.zoneId} 
+                    onValueChange={(value) => handleChange("zoneId", value)}
+                    disabled={!formData.siteId}
+                  >
+                    <SelectTrigger data-testid="select-zone">
+                      <SelectValue placeholder={!formData.siteId ? "Primeiro selecione um local" : "Selecione uma zona"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {(services as any[] || []).map((service: any) => (
-                        <SelectItem key={service.id} value={service.id}>
-                          <div>
-                            <div className="font-medium">{service.name}</div>
-                            <div className="text-xs text-gray-500">{service.description}</div>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {!zonesForSite ? (
+                        <SelectItem value="loading" disabled>Carregando zonas...</SelectItem>
+                      ) : Array.isArray(zonesForSite) && zonesForSite.length > 0 ? (
+                        (zonesForSite as any[]).map((zone: any) => (
+                          <SelectItem key={zone.id} value={zone.id}>
+                            {zone.name}
+                          </SelectItem>
+                        ))
+                      ) : formData.siteId ? (
+                        <SelectItem value="no-zones" disabled>Nenhuma zona neste local</SelectItem>
+                      ) : (
+                        <SelectItem value="select-site" disabled>Selecione um local primeiro</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  {formData.siteId && (!zonesForSite || (zonesForSite as any[]).length === 0) && (
+                    <p className="text-xs text-green-600">Não há zonas cadastradas neste local</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="service">Serviço *</Label>
+                  <Select 
+                    value={formData.serviceId} 
+                    onValueChange={(value) => handleChange("serviceId", value)}
+                    disabled={!formData.zoneId}
+                  >
+                    <SelectTrigger data-testid="select-service">
+                      <SelectValue placeholder={!formData.zoneId ? "Primeiro selecione uma zona" : "Selecione um serviço"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!services ? (
+                        <SelectItem value="loading" disabled>Carregando serviços...</SelectItem>
+                      ) : (services as any[] || []).length > 0 ? (
+                        (services as any[]).map((service: any) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            <div>
+                              <div className="font-medium">{service.name}</div>
+                              {service.description && (
+                                <div className="text-xs text-gray-500">{service.description}</div>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : formData.zoneId ? (
+                        <SelectItem value="no-services" disabled>Nenhum serviço cadastrado</SelectItem>
+                      ) : (
+                        <SelectItem value="select-zone" disabled>Selecione uma zona primeiro</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {formData.zoneId && (!services || (services as any[]).length === 0) && (
+                    <p className="text-xs text-green-600">Não há serviços cadastrados</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="checklist">Checklist *</Label>
+                  <Select 
+                    value={formData.checklistTemplateId} 
+                    onValueChange={(value) => handleChange("checklistTemplateId", value)}
+                    disabled={!formData.serviceId}
+                  >
+                    <SelectTrigger data-testid="select-checklist">
+                      <SelectValue placeholder={!formData.serviceId ? "Primeiro selecione um serviço" : "Selecione um checklist"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredCleanChecklists.length > 0 ? (
+                        filteredCleanChecklists.map((template: any) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            <div>
+                              <div className="font-medium">{template.name}</div>
+                              {template.description && (
+                                <div className="text-xs text-gray-500">{template.description}</div>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : formData.serviceId ? (
+                        <SelectItem value="no-checklists" disabled>Nenhum checklist cadastrado para este serviço</SelectItem>
+                      ) : (
+                        <SelectItem value="select-service" disabled>Selecione um serviço primeiro</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {formData.serviceId && filteredCleanChecklists.length === 0 && (
+                    <p className="text-xs text-green-600">Não há checklists cadastrados para este serviço</p>
+                  )}
                 </div>
               </div>
             )}
@@ -545,8 +685,8 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                       <SelectValue placeholder={!formData.equipmentId ? "Primeiro selecione um equipamento" : "Selecione um checklist"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredChecklists.length > 0 ? (
-                        filteredChecklists.map((template: any) => (
+                      {filteredMaintenanceChecklists.length > 0 ? (
+                        filteredMaintenanceChecklists.map((template: any) => (
                           <SelectItem key={template.id} value={template.id}>
                             <div>
                               <div className="font-medium">{template.name}</div>
@@ -559,7 +699,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                       ) : null}
                     </SelectContent>
                   </Select>
-                  {formData.equipmentId && filteredChecklists.length === 0 && (
+                  {formData.equipmentId && filteredMaintenanceChecklists.length === 0 && (
                     <p className="text-xs text-orange-600">Não há checklists disponíveis para este equipamento</p>
                   )}
                 </div>
