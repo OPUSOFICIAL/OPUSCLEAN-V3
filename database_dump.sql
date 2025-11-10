@@ -1268,6 +1268,9 @@ COPY public.company_counters (id, company_id, key, next_number, updated_at) FROM
 --
 
 COPY public.custom_roles (id, company_id, name, description, is_system_role, is_active, created_at, updated_at) FROM stdin;
+role-system-admin	company-opus-default	Administrador	Acesso total ao sistema - para usuários OPUS	t	t	2025-11-10 15:41:08.996064	2025-11-10 15:41:08.996064
+role-system-cliente	company-opus-default	Cliente	Visualização de dashboards, relatórios, plantas dos locais e ordens de serviço. Pode comentar e avaliar OS.	t	t	2025-11-10 15:41:08.996064	2025-11-10 15:41:08.996064
+role-system-operador	company-opus-default	Operador	Operador de campo - executa OS via aplicativo mobile	t	t	2025-11-10 15:41:08.996064	2025-11-10 15:41:08.996064
 \.
 
 
@@ -1284,6 +1287,7 @@ COPY public.customer_counters (id, customer_id, key, next_number, updated_at) FR
 --
 
 COPY public.customers (id, company_id, name, email, phone, document, address, city, state, zip_code, contact_person, notes, modules, is_active, created_at, updated_at) FROM stdin;
+3f04639c-fea8-44d7-9d95-3591cad79a67	company-opus-default	Opus Manager	administradorFacilities@grupoopus.com	71994080797	59.912.499/0001-56	Rua das palmeiras, 821 - Block residence 201 - Cruzeiro	Caxias do Sul	RS	95074-310	Daniel Lacerda		{clean,maintenance}	t	2025-11-10 15:33:16.639746	2025-11-10 15:33:16.639746
 \.
 
 
@@ -1372,6 +1376,65 @@ COPY public.qr_code_points (id, zone_id, equipment_id, service_id, code, type, n
 --
 
 COPY public.role_permissions (id, role_id, permission, created_at) FROM stdin;
+perm-admin-1	role-system-admin	dashboard_view	2025-11-10 15:41:31.860517
+perm-admin-2	role-system-admin	workorders_view	2025-11-10 15:41:31.860517
+perm-admin-3	role-system-admin	workorders_create	2025-11-10 15:41:31.860517
+perm-admin-4	role-system-admin	workorders_edit	2025-11-10 15:41:31.860517
+perm-admin-5	role-system-admin	workorders_delete	2025-11-10 15:41:31.860517
+perm-admin-6	role-system-admin	workorders_comment	2025-11-10 15:41:31.860517
+perm-admin-7	role-system-admin	workorders_evaluate	2025-11-10 15:41:31.860517
+perm-admin-8	role-system-admin	schedule_view	2025-11-10 15:41:31.860517
+perm-admin-9	role-system-admin	schedule_create	2025-11-10 15:41:31.860517
+perm-admin-10	role-system-admin	schedule_edit	2025-11-10 15:41:31.860517
+perm-admin-11	role-system-admin	schedule_delete	2025-11-10 15:41:31.860517
+perm-admin-12	role-system-admin	checklists_view	2025-11-10 15:41:31.860517
+perm-admin-13	role-system-admin	checklists_create	2025-11-10 15:41:31.860517
+perm-admin-14	role-system-admin	checklists_edit	2025-11-10 15:41:31.860517
+perm-admin-15	role-system-admin	checklists_delete	2025-11-10 15:41:31.860517
+perm-admin-16	role-system-admin	qrcodes_view	2025-11-10 15:41:31.860517
+perm-admin-17	role-system-admin	qrcodes_create	2025-11-10 15:41:31.860517
+perm-admin-18	role-system-admin	qrcodes_edit	2025-11-10 15:41:31.860517
+perm-admin-19	role-system-admin	qrcodes_delete	2025-11-10 15:41:31.860517
+perm-admin-20	role-system-admin	floor_plan_view	2025-11-10 15:41:31.860517
+perm-admin-21	role-system-admin	floor_plan_edit	2025-11-10 15:41:31.860517
+perm-admin-22	role-system-admin	heatmap_view	2025-11-10 15:41:31.860517
+perm-admin-23	role-system-admin	sites_view	2025-11-10 15:41:31.860517
+perm-admin-24	role-system-admin	sites_create	2025-11-10 15:41:31.860517
+perm-admin-25	role-system-admin	sites_edit	2025-11-10 15:41:31.860517
+perm-admin-26	role-system-admin	sites_delete	2025-11-10 15:41:31.860517
+perm-admin-27	role-system-admin	users_view	2025-11-10 15:41:31.860517
+perm-admin-28	role-system-admin	users_create	2025-11-10 15:41:31.860517
+perm-admin-29	role-system-admin	users_edit	2025-11-10 15:41:31.860517
+perm-admin-30	role-system-admin	users_delete	2025-11-10 15:41:31.860517
+perm-admin-31	role-system-admin	customers_view	2025-11-10 15:41:31.860517
+perm-admin-32	role-system-admin	customers_create	2025-11-10 15:41:31.860517
+perm-admin-33	role-system-admin	customers_edit	2025-11-10 15:41:31.860517
+perm-admin-34	role-system-admin	customers_delete	2025-11-10 15:41:31.860517
+perm-admin-35	role-system-admin	reports_view	2025-11-10 15:41:31.860517
+perm-admin-36	role-system-admin	audit_logs_view	2025-11-10 15:41:31.860517
+perm-admin-37	role-system-admin	service_settings_view	2025-11-10 15:41:31.860517
+perm-admin-38	role-system-admin	service_settings_edit	2025-11-10 15:41:31.860517
+perm-admin-39	role-system-admin	roles_manage	2025-11-10 15:41:31.860517
+perm-admin-40	role-system-admin	opus_users_view	2025-11-10 15:41:31.860517
+perm-admin-41	role-system-admin	opus_users_create	2025-11-10 15:41:31.860517
+perm-admin-42	role-system-admin	opus_users_edit	2025-11-10 15:41:31.860517
+perm-admin-43	role-system-admin	opus_users_delete	2025-11-10 15:41:31.860517
+perm-admin-44	role-system-admin	client_users_view	2025-11-10 15:41:31.860517
+perm-admin-45	role-system-admin	client_users_create	2025-11-10 15:41:31.860517
+perm-admin-46	role-system-admin	client_users_edit	2025-11-10 15:41:31.860517
+perm-admin-47	role-system-admin	client_users_delete	2025-11-10 15:41:31.860517
+perm-cliente-1	role-system-cliente	dashboard_view	2025-11-10 15:41:45.95035
+perm-cliente-2	role-system-cliente	workorders_view	2025-11-10 15:41:45.95035
+perm-cliente-3	role-system-cliente	workorders_comment	2025-11-10 15:41:45.95035
+perm-cliente-4	role-system-cliente	workorders_evaluate	2025-11-10 15:41:45.95035
+perm-cliente-5	role-system-cliente	floor_plan_view	2025-11-10 15:41:45.95035
+perm-cliente-6	role-system-cliente	heatmap_view	2025-11-10 15:41:45.95035
+perm-cliente-7	role-system-cliente	sites_view	2025-11-10 15:41:45.95035
+perm-cliente-8	role-system-cliente	reports_view	2025-11-10 15:41:45.95035
+perm-operador-1	role-system-operador	dashboard_view	2025-11-10 15:41:45.95035
+perm-operador-2	role-system-operador	workorders_view	2025-11-10 15:41:45.95035
+perm-operador-3	role-system-operador	workorders_edit	2025-11-10 15:41:45.95035
+perm-operador-4	role-system-operador	checklists_view	2025-11-10 15:41:45.95035
 \.
 
 
