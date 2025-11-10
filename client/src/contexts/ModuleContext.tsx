@@ -135,11 +135,24 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
       
       document.documentElement.setAttribute('data-module', currentModule);
       
-      document.documentElement.style.setProperty('--module-primary', moduleConfig.primaryColor);
-      document.documentElement.style.setProperty('--module-secondary', moduleConfig.secondaryColor);
-      document.documentElement.style.setProperty('--module-accent', moduleConfig.accentColor);
+      // Usar cores customizadas do cliente se disponíveis, senão usar cores padrão
+      const customColors = activeClient?.moduleColors?.[currentModule];
+      const primaryColor = customColors?.primary || moduleConfig.primaryColor;
+      const secondaryColor = customColors?.secondary || moduleConfig.secondaryColor;
+      const accentColor = customColors?.accent || moduleConfig.accentColor;
+      
+      document.documentElement.style.setProperty('--module-primary', primaryColor);
+      document.documentElement.style.setProperty('--module-secondary', secondaryColor);
+      document.documentElement.style.setProperty('--module-accent', accentColor);
+      
+      console.log(`[MODULE] Aplicando cores personalizadas do módulo ${currentModule}:`, {
+        primary: primaryColor,
+        secondary: secondaryColor,
+        accent: accentColor,
+        customized: !!customColors
+      });
     }
-  }, [currentModule, moduleConfig]);
+  }, [currentModule, moduleConfig, activeClient]);
 
   const setModule = (module: ModuleType) => {
     // 🔥 VALIDAÇÃO DUPLA: Verificar se usuário TEM ACESSO e se cliente POSSUI o módulo

@@ -79,10 +79,14 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       return await apiRequest("PUT", `/api/customers/${customer.id}/branding`, brandingData);
     },
     onSuccess: () => {
+      // Invalidar cache da lista de clientes
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
+      // Invalidar cache do cliente específico para recarregar com as novas cores
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customer.id] });
       setUploadingLogo(null);
       toast({
         title: "Configuração de branding atualizada!",
+        description: "As novas cores serão aplicadas automaticamente.",
       });
     },
     onError: () => {
