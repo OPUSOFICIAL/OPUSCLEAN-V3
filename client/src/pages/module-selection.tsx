@@ -133,70 +133,98 @@ export default function ModuleSelection() {
           </div>
 
           {/* Module Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12 max-w-6xl mx-auto">
             {/* OPUS Clean Card */}
             {availableModules.includes('clean') && (
               <div 
                 onClick={() => !isLoading && handleModuleSelect('clean')}
-                className="group relative transform transition-all duration-300 hover:scale-105"
+                className="group relative"
                 data-testid="card-module-clean"
               >
-                <Card className="relative overflow-hidden border-0 shadow-2xl hover:shadow-blue-500/50 transition-all duration-500 cursor-pointer bg-white/95 backdrop-blur-sm">
+                {/* Gradient Border Effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 rounded-2xl opacity-0 group-hover:opacity-100 blur-sm transition-all duration-500"></div>
+                
+                <Card className="relative overflow-hidden border-0 rounded-2xl shadow-2xl hover:shadow-blue-500/30 transition-all duration-500 cursor-pointer bg-gradient-to-br from-white via-blue-50/30 to-white backdrop-blur-xl transform group-hover:-translate-y-2">
                   {/* Animated Gradient Background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
                   {/* Shine Effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1500"></div>
                   </div>
                   
-                  <CardContent className="relative p-10 md:p-12 text-center">
+                  <CardContent className="relative p-12 md:p-14">
                     {/* Icon */}
-                    <div className="mb-8 flex justify-center">
-                      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 group-hover:from-blue-500 group-hover:to-blue-700 transition-all duration-500 flex items-center justify-center shadow-lg group-hover:shadow-2xl group-hover:shadow-blue-500/50">
-                        <Building className="h-16 w-16 text-white" strokeWidth={2.5} />
+                    <div className="mb-10 flex justify-center">
+                      <div className="relative">
+                        {/* Glow Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
+                        {/* Icon Circle */}
+                        <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 group-hover:from-blue-500 group-hover:via-blue-600 group-hover:to-blue-700 transition-all duration-500 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110">
+                          <Building className="h-20 w-20 text-white drop-shadow-lg" strokeWidth={2} />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Title */}
-                    <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4" data-testid="text-module-clean-title">
-                      OPUS Clean
-                    </h2>
-
-                    {/* Description */}
-                    <p className="text-lg text-slate-600 mb-8 font-medium" data-testid="text-module-clean-description">
-                      Gestão de Limpeza e Facilities
-                    </p>
+                    {/* Content */}
+                    <div className="text-center mb-10">
+                      <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 bg-clip-text text-transparent mb-3" data-testid="text-module-clean-title">
+                        OPUS Clean
+                      </h2>
+                      <div className="w-24 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent mx-auto mb-6"></div>
+                      <p className="text-xl text-slate-700 font-medium" data-testid="text-module-clean-description">
+                        Gestão de Limpeza e Facilities
+                      </p>
+                    </div>
 
                     {/* Features List */}
-                    <ul className="text-sm text-slate-600 space-y-2 mb-8 text-left">
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        Controle de ordens de serviço
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        Gestão de equipes e turnos
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                        Relatórios e analytics
-                      </li>
-                    </ul>
+                    <div className="bg-blue-50/50 backdrop-blur-sm rounded-xl p-6 mb-8 border border-blue-100/50">
+                      <ul className="space-y-3">
+                        <li className="flex items-center gap-3 text-slate-700">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="font-medium">Controle de ordens de serviço</span>
+                        </li>
+                        <li className="flex items-center gap-3 text-slate-700">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="font-medium">Gestão de equipes e turnos</span>
+                        </li>
+                        <li className="flex items-center gap-3 text-slate-700">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="font-medium">Relatórios e analytics</span>
+                        </li>
+                      </ul>
+                    </div>
 
                     {/* Button */}
                     <Button
                       disabled={isLoading}
-                      className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-7 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="w-full bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 hover:from-blue-700 hover:via-blue-800 hover:to-blue-900 text-white font-bold py-8 text-xl rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
                       data-testid="button-select-clean"
                     >
                       {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                          Carregando...
-                        </>
+                        <div className="flex items-center justify-center">
+                          <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                          <span>Carregando...</span>
+                        </div>
                       ) : (
-                        'Acessar OPUS Clean →'
+                        <div className="flex items-center justify-center gap-2">
+                          <span>Acessar OPUS Clean</span>
+                          <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
                       )}
                     </Button>
                   </CardContent>
@@ -208,65 +236,93 @@ export default function ModuleSelection() {
             {availableModules.includes('maintenance') && (
               <div 
                 onClick={() => !isLoading && handleModuleSelect('maintenance')}
-                className="group relative transform transition-all duration-300 hover:scale-105"
+                className="group relative"
                 data-testid="card-module-maintenance"
               >
-                <Card className="relative overflow-hidden border-0 shadow-2xl hover:shadow-orange-500/50 transition-all duration-500 cursor-pointer bg-white/95 backdrop-blur-sm">
+                {/* Gradient Border Effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-2xl opacity-0 group-hover:opacity-100 blur-sm transition-all duration-500"></div>
+                
+                <Card className="relative overflow-hidden border-0 rounded-2xl shadow-2xl hover:shadow-orange-500/30 transition-all duration-500 cursor-pointer bg-gradient-to-br from-white via-orange-50/30 to-white backdrop-blur-xl transform group-hover:-translate-y-2">
                   {/* Animated Gradient Background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-orange-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-orange-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
                   {/* Shine Effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1500"></div>
                   </div>
                   
-                  <CardContent className="relative p-10 md:p-12 text-center">
+                  <CardContent className="relative p-12 md:p-14">
                     {/* Icon */}
-                    <div className="mb-8 flex justify-center">
-                      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 group-hover:from-orange-500 group-hover:to-orange-700 transition-all duration-500 flex items-center justify-center shadow-lg group-hover:shadow-2xl group-hover:shadow-orange-500/50">
-                        <Wrench className="h-16 w-16 text-white" strokeWidth={2.5} />
+                    <div className="mb-10 flex justify-center">
+                      <div className="relative">
+                        {/* Glow Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
+                        {/* Icon Circle */}
+                        <div className="relative w-36 h-36 rounded-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 group-hover:from-orange-500 group-hover:via-orange-600 group-hover:to-orange-700 transition-all duration-500 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110">
+                          <Wrench className="h-20 w-20 text-white drop-shadow-lg" strokeWidth={2} />
+                        </div>
                       </div>
                     </div>
 
-                    {/* Title */}
-                    <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent mb-4" data-testid="text-module-maintenance-title">
-                      OPUS Manutenção
-                    </h2>
-
-                    {/* Description */}
-                    <p className="text-lg text-slate-600 mb-8 font-medium" data-testid="text-module-maintenance-description">
-                      Gestão de Manutenção Preventiva e Corretiva
-                    </p>
+                    {/* Content */}
+                    <div className="text-center mb-10">
+                      <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-600 via-orange-700 to-orange-800 bg-clip-text text-transparent mb-3" data-testid="text-module-maintenance-title">
+                        OPUS Manutenção
+                      </h2>
+                      <div className="w-24 h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent mx-auto mb-6"></div>
+                      <p className="text-xl text-slate-700 font-medium" data-testid="text-module-maintenance-description">
+                        Gestão de Manutenção Preventiva e Corretiva
+                      </p>
+                    </div>
 
                     {/* Features List */}
-                    <ul className="text-sm text-slate-600 space-y-2 mb-8 text-left">
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
-                        Planos de manutenção
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
-                        Gestão de equipamentos
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
-                        Calendário de atividades
-                      </li>
-                    </ul>
+                    <div className="bg-orange-50/50 backdrop-blur-sm rounded-xl p-6 mb-8 border border-orange-100/50">
+                      <ul className="space-y-3">
+                        <li className="flex items-center gap-3 text-slate-700">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="font-medium">Planos de manutenção</span>
+                        </li>
+                        <li className="flex items-center gap-3 text-slate-700">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="font-medium">Gestão de equipamentos</span>
+                        </li>
+                        <li className="flex items-center gap-3 text-slate-700">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="font-medium">Calendário de atividades</span>
+                        </li>
+                      </ul>
+                    </div>
 
                     {/* Button */}
                     <Button
                       disabled={isLoading}
-                      className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-bold py-7 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="w-full bg-gradient-to-r from-orange-600 via-orange-700 to-orange-800 hover:from-orange-700 hover:via-orange-800 hover:to-orange-900 text-white font-bold py-8 text-xl rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105"
                       data-testid="button-select-maintenance"
                     >
                       {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                          Carregando...
-                        </>
+                        <div className="flex items-center justify-center">
+                          <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                          <span>Carregando...</span>
+                        </div>
                       ) : (
-                        'Acessar OPUS Manutenção →'
+                        <div className="flex items-center justify-center gap-2">
+                          <span>Acessar OPUS Manutenção</span>
+                          <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
                       )}
                     </Button>
                   </CardContent>
