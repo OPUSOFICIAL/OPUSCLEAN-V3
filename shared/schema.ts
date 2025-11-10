@@ -1159,34 +1159,34 @@ export const insertServiceSchema = createInsertSchema(services).omit({ id: true 
 export const insertCleaningActivitySchema = createInsertSchema(cleaningActivities).omit({ id: true });
 export const insertChecklistTemplateSchema = createInsertSchema(checklistTemplates).omit({ id: true });
 export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({ id: true, number: true }).extend({
-  completedAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
-  startedAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
-  scheduledStartAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
-  scheduledEndAt: z.union([z.date(), z.string().datetime(), z.null()]).optional(),
+  completedAt: z.union([z.date(), z.string().datetime(), z.null()]).optional().transform((val) => {
+    if (!val) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  startedAt: z.union([z.date(), z.string().datetime(), z.null()]).optional().transform((val) => {
+    if (!val) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  scheduledStartAt: z.union([z.date(), z.string().datetime(), z.null()]).optional().transform((val) => {
+    if (!val) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
+  scheduledEndAt: z.union([z.date(), z.string().datetime(), z.null()]).optional().transform((val) => {
+    if (!val) return null;
+    if (typeof val === 'string') return new Date(val);
+    return val;
+  }),
   scheduledDate: z.union([z.string(), z.date(), z.null()]).optional().transform((val) => {
     if (!val) return null;
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return val;
-    }
-    if (val instanceof Date) {
-      const year = val.getFullYear();
-      const month = String(val.getMonth() + 1).padStart(2, '0');
-      const day = String(val.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
+    if (typeof val === 'string') return new Date(val);
     return val;
   }),
   dueDate: z.union([z.string(), z.date(), z.null()]).optional().transform((val) => {
     if (!val) return null;
-    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return val;
-    }
-    if (val instanceof Date) {
-      const year = val.getFullYear();
-      const month = String(val.getMonth() + 1).padStart(2, '0');
-      const day = String(val.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
+    if (typeof val === 'string') return new Date(val);
     return val;
   }),
 });

@@ -2076,7 +2076,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         origin: 'QR Atendimento',
         attachments: photo ? [photo] : undefined,
         scheduledDate: null,
-        dueDate: null
+        dueDate: null,
+        scheduledStartAt: null,
+        scheduledEndAt: null,
+        startedAt: null,
+        completedAt: null
       });
 
       // Log the public request for spam control
