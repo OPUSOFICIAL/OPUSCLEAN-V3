@@ -22,6 +22,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 
 interface ServicesProps {
   customerId: string;
@@ -55,6 +56,7 @@ export default function Services({ customerId }: ServicesProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
 
   const { data: services = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/customers", customerId, "services", { module: currentModule }],
@@ -196,6 +198,8 @@ export default function Services({ customerId }: ServicesProps) {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
+              className={theme.buttons.primary}
+              style={theme.buttons.primaryStyle}
               data-testid="button-add-service"
               onClick={() => {
                 setEditingService(null);

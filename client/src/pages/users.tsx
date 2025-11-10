@@ -415,7 +415,11 @@ export default function Users({ customerId }: UsersProps) {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className={theme.buttons.primary} data-testid="button-create-user">
+            <Button 
+              className={theme.buttons.primary}
+              style={theme.buttons.primaryStyle}
+              data-testid="button-create-user"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Novo Usuário
             </Button>
