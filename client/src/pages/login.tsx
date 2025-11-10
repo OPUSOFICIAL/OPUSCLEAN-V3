@@ -81,83 +81,61 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-2 sm:p-4 overflow-x-hidden">
-      {/* Container principal */}
-      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-2xl shadow-2xl overflow-hidden min-h-[500px]">
+    <div className="min-h-screen w-full relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#grid)" />
+        </svg>
+      </div>
+
+      {/* Decorative elements */}
+      <div className="absolute top-20 right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 left-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl"></div>
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-3xl"></div>
+
+      {/* Main content container */}
+      <div className="relative z-10 w-full max-w-md mx-auto space-y-8">
         
-        {/* Lado esquerdo - Hero Section */}
-        <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-4 lg:p-8 flex flex-col justify-center items-center text-white overflow-hidden">
-          {/* Background pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="100" height="100" fill="url(#grid)" />
-            </svg>
+        {/* Logo */}
+        <div className="text-center">
+          <div className="inline-block bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
+            <img 
+              src={aceleraLogo} 
+              alt="Acelera Full Facilities" 
+              className="h-24 w-auto object-contain mx-auto"
+            />
           </div>
-          
-          {/* Content */}
-          <div className="relative z-10 text-center space-y-6">
-            {/* Logo */}
-            <div className="mb-4">
-              <div className="w-48 h-32 mx-auto bg-white/95 rounded-2xl p-6 shadow-xl flex items-center justify-center">
-                <img 
-                  src={aceleraLogo} 
-                  alt="Acelera Full Facilities" 
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-            </div>
-            
-            {/* Hero Text */}
-            <div className="space-y-3">
-              <p className="text-lg text-slate-300 max-w-sm mx-auto leading-relaxed">
-                Plataforma inteligente para gestão completa de facilities e infraestrutura corporativa
-              </p>
-            </div>
-            
-            {/* Features */}
-            <div className="grid grid-cols-1 gap-3 mt-6 text-left max-w-sm mx-auto">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span className="text-sm text-slate-300">Gestão em tempo real</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span className="text-sm text-slate-300">Relatórios inteligentes</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span className="text-sm text-slate-300">Controle multi-site</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Decorative elements */}
-          <div className="absolute top-10 right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl"></div>
-          <div className="absolute bottom-10 left-10 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl"></div>
         </div>
 
-        {/* Lado direito - Login Form */}
-        <div className="p-6 lg:p-8 flex flex-col justify-center">
-          <div className="w-full max-w-sm mx-auto space-y-6">
-            
-            {/* Header */}
-            <div className="text-center space-y-1">
+        {/* Tagline */}
+        <div className="text-center space-y-2">
+          <p className="text-xl text-white/90 font-medium">
+            Plataforma inteligente para gestão completa
+          </p>
+          <p className="text-base text-blue-200">
+            de facilities e infraestrutura corporativa
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
+          <CardContent className="p-8">
+            {/* Card Header */}
+            <div className="text-center mb-6 space-y-1">
               <h2 className="text-2xl font-bold text-slate-900">Entrar</h2>
               <p className="text-sm text-slate-600">Acesse sua conta para continuar</p>
             </div>
 
-            {/* Login Form */}
-            <Card className="border-0 shadow-none">
-              <CardContent className="p-0">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  
-                  {/* Username Field */}
-                  <div className="space-y-2">
+            <form onSubmit={handleLogin} className="space-y-4">
+              
+              {/* Username Field */}
+              <div className="space-y-2">
                     <label htmlFor="username" className="text-sm font-medium text-slate-900">
                       Usuário
                     </label>
@@ -232,27 +210,24 @@ export default function Login() {
                     )}
                   </Button>
 
-                </form>
-              </CardContent>
-            </Card>
+            </form>
+          </CardContent>
+        </Card>
 
-            {/* Footer */}
-            <div className="text-center space-y-4">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-slate-500">Precisa de ajuda?</span>
-                </div>
-              </div>
-              
-              <p className="text-xs text-slate-500">
-                © 2025 Acelera Full Facilities. Todos os direitos reservados.
-              </p>
+        {/* Footer */}
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
             </div>
-
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 text-white/70">Precisa de ajuda?</span>
+            </div>
           </div>
+          
+          <p className="text-xs text-white/50">
+            © 2025 Acelera Full Facilities. Todos os direitos reservados.
+          </p>
         </div>
 
       </div>
