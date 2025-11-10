@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Palette, Upload, X, Check } from "lucide-react";
+import { Palette, Upload, X, Check, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,67 +30,60 @@ interface ModuleColors {
   };
 }
 
+interface LogoPreview {
+  file: File | null;
+  previewUrl: string | null;
+}
+
 export function CustomerBrandingConfig({ customer, open, onOpenChange }: CustomerBrandingConfigProps) {
   const { toast } = useToast();
   const [moduleColors, setModuleColors] = useState<ModuleColors>((customer.moduleColors as ModuleColors) || {});
-  const [uploadingLogo, setUploadingLogo] = useState<string | null>(null);
+  
+  // Estados para preview de logos
+  const [loginLogo, setLoginLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.loginLogo || null });
+  const [sidebarLogo, setSidebarLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.sidebarLogo || null });
+  const [sidebarCollapsedLogo, setSidebarCollapsedLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.sidebarLogoCollapsed || null });
+  
+  const [isSavingLogos, setIsSavingLogos] = useState(false);
   
   const loginLogoRef = useRef<HTMLInputElement>(null);
   const sidebarLogoRef = useRef<HTMLInputElement>(null);
   const sidebarCollapsedRef = useRef<HTMLInputElement>(null);
 
-  const uploadLogoMutation = useMutation({
-    mutationFn: async ({ logoType, file }: { logoType: string; file: File }) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          try {
-            const base64Data = reader.result as string;
-            const response = await apiRequest("POST", `/api/customers/${customer.id}/upload-logo`, {
-              logoType,
-              imageData: base64Data,
-              fileName: file.name,
-            });
-            resolve(response);
-          } catch (error) {
-            reject(error);
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    },
-    onSuccess: (data: any, variables) => {
-      updateBrandingMutation.mutate({
-        [variables.logoType]: data.path,
-      });
-    },
-    onError: () => {
-      setUploadingLogo(null);
-      toast({
-        title: "Erro ao fazer upload da logo",
-        variant: "destructive",
-      });
-    },
-  });
+  // Resetar previews quando o diálogo abrir ou o cliente mudar
+  useEffect(() => {
+    if (open) {
+      setLoginLogo({ file: null, previewUrl: customer.loginLogo || null });
+      setSidebarLogo({ file: null, previewUrl: customer.sidebarLogo || null });
+      setSidebarCollapsedLogo({ file: null, previewUrl: customer.sidebarLogoCollapsed || null });
+      setModuleColors((customer.moduleColors as ModuleColors) || {});
+    }
+  }, [open, customer]);
+
+  // Limpar URLs de preview ao desmontar
+  useEffect(() => {
+    return () => {
+      if (loginLogo.previewUrl && loginLogo.file) URL.revokeObjectURL(loginLogo.previewUrl);
+      if (sidebarLogo.previewUrl && sidebarLogo.file) URL.revokeObjectURL(sidebarLogo.previewUrl);
+      if (sidebarCollapsedLogo.previewUrl && sidebarCollapsedLogo.file) URL.revokeObjectURL(sidebarCollapsedLogo.previewUrl);
+    };
+  }, []);
 
   const updateBrandingMutation = useMutation({
     mutationFn: async (brandingData: any) => {
       return await apiRequest("PUT", `/api/customers/${customer.id}/branding`, brandingData);
     },
     onSuccess: () => {
-      // Invalidar cache da lista de clientes
       queryClient.invalidateQueries({ queryKey: ["/api/companies"] });
-      // Invalidar cache do cliente específico para recarregar com as novas cores
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customer.id] });
-      setUploadingLogo(null);
+      setIsSavingLogos(false);
       toast({
         title: "Configuração de branding atualizada!",
-        description: "As novas cores serão aplicadas automaticamente.",
+        description: "As mudanças foram aplicadas com sucesso.",
       });
     },
     onError: () => {
-      setUploadingLogo(null);
+      setIsSavingLogos(false);
       toast({
         title: "Erro ao atualizar branding",
         variant: "destructive",
@@ -98,7 +91,10 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     },
   });
 
-  const handleFileSelect = (logoType: string, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (
+    logoType: 'login' | 'sidebar' | 'sidebarCollapsed',
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -111,11 +107,86 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       return;
     }
 
-    setUploadingLogo(logoType);
-    uploadLogoMutation.mutate({ logoType, file });
+    // Criar preview local
+    const previewUrl = URL.createObjectURL(file);
+    
+    const setLogo = logoType === 'login' ? setLoginLogo : 
+                    logoType === 'sidebar' ? setSidebarLogo : 
+                    setSidebarCollapsedLogo;
+
+    setLogo({ file, previewUrl });
   };
 
-  const handleColorChange = (module: 'clean' | 'maintenance', colorType: 'primary' | 'secondary' | 'accent', value: string) => {
+  const removeLogo = (logoType: 'login' | 'sidebar' | 'sidebarCollapsed') => {
+    const setLogo = logoType === 'login' ? setLoginLogo : 
+                    logoType === 'sidebar' ? setSidebarLogo : 
+                    setSidebarCollapsedLogo;
+    
+    const logo = logoType === 'login' ? loginLogo :
+                 logoType === 'sidebar' ? sidebarLogo :
+                 sidebarCollapsedLogo;
+    
+    // Revogar URL de preview se for um arquivo local
+    if (logo.previewUrl && logo.file) {
+      URL.revokeObjectURL(logo.previewUrl);
+    }
+    
+    setLogo({ file: null, previewUrl: null });
+  };
+
+  const handleSaveLogos = async () => {
+    setIsSavingLogos(true);
+    
+    try {
+      const brandingData: any = {};
+
+      // Fazer upload das logos selecionadas
+      for (const [logoType, logo, apiKey] of [
+        ['login', loginLogo, 'loginLogo'] as const,
+        ['sidebar', sidebarLogo, 'sidebarLogo'] as const,
+        ['sidebarCollapsed', sidebarCollapsedLogo, 'sidebarLogoCollapsed'] as const,
+      ]) {
+        if (logo.file) {
+          // Upload da logo
+          const reader = new FileReader();
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(logo.file!);
+          });
+
+          const uploadResponse = await apiRequest("POST", `/api/customers/${customer.id}/upload-logo`, {
+            logoType: apiKey,
+            imageData: base64Data,
+            fileName: logo.file.name,
+          }) as { path: string };
+
+          brandingData[apiKey] = uploadResponse.path;
+        } else if (logo.previewUrl === null) {
+          // Logo foi removida
+          brandingData[apiKey] = null;
+        }
+      }
+
+      // Salvar branding data
+      if (Object.keys(brandingData).length > 0) {
+        await updateBrandingMutation.mutateAsync(brandingData);
+      }
+    } catch (error) {
+      setIsSavingLogos(false);
+      toast({
+        title: "Erro ao salvar logos",
+        description: "Ocorreu um erro ao fazer upload das imagens.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleColorChange = (
+    module: 'clean' | 'maintenance',
+    colorType: 'primary' | 'secondary' | 'accent',
+    value: string
+  ) => {
     setModuleColors(prev => ({
       ...prev,
       [module]: {
@@ -129,16 +200,85 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     updateBrandingMutation.mutate({ moduleColors });
   };
 
-  const clearLogo = (logoType: 'loginLogo' | 'sidebarLogo' | 'sidebarLogoCollapsed') => {
-    updateBrandingMutation.mutate({ [logoType]: null });
-  };
+  const hasLogoChanges = loginLogo.file !== null || sidebarLogo.file !== null || sidebarCollapsedLogo.file !== null ||
+                         (loginLogo.previewUrl === null && customer.loginLogo) ||
+                         (sidebarLogo.previewUrl === null && customer.sidebarLogo) ||
+                         (sidebarCollapsedLogo.previewUrl === null && customer.sidebarLogoCollapsed);
 
-  const getLogoPreview = (logoType: 'loginLogo' | 'sidebarLogo' | 'sidebarLogoCollapsed') => {
-    const logoPath = customer[logoType];
-    if (!logoPath) return null;
-    
-    return logoPath;
-  };
+  const LogoUploadCard = ({ 
+    title, 
+    description, 
+    logo, 
+    inputRef, 
+    logoType,
+    recommendedSize 
+  }: { 
+    title: string;
+    description: string;
+    logo: LogoPreview;
+    inputRef: React.RefObject<HTMLInputElement>;
+    logoType: 'login' | 'sidebar' | 'sidebarCollapsed';
+    recommendedSize: string;
+  }) => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description} (recomendado: {recommendedSize})</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {logo.previewUrl ? (
+          <div className="space-y-3">
+            <div className="relative inline-block">
+              <img
+                src={logo.previewUrl}
+                alt={`${title} Preview`}
+                className="max-h-32 max-w-full border rounded-md bg-gray-50 object-contain"
+              />
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute -top-2 -right-2 h-6 w-6"
+                onClick={() => removeLogo(logoType)}
+                data-testid={`button-remove-${logoType}-logo`}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            {logo.file && (
+              <p className="text-xs text-muted-foreground">
+                ✓ Novo arquivo selecionado: {logo.file.name}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-md bg-gray-50">
+            <div className="text-center">
+              <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+              <p className="mt-2 text-sm text-gray-500">Nenhuma logo selecionada</p>
+            </div>
+          </div>
+        )}
+        
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleFileSelect(logoType, e)}
+        />
+        
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => inputRef.current?.click()}
+          data-testid={`button-select-${logoType}-logo`}
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          {logo.previewUrl ? 'Trocar Logo' : 'Selecionar Logo'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,310 +297,200 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
           </TabsList>
 
           <TabsContent value="logos" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Logo da Tela de Login</CardTitle>
-                <CardDescription>
-                  Logo exibida na tela de login (recomendado: 400x200px)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {getLogoPreview('loginLogo') && (
-                  <div className="relative inline-block">
-                    <img
-                      src={getLogoPreview('loginLogo')!}
-                      alt="Login Logo Preview"
-                      className="max-h-24 border rounded"
-                    />
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6"
-                      onClick={() => clearLogo('loginLogo')}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-                <div>
-                  <input
-                    ref={loginLogoRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFileSelect('loginLogo', e)}
-                    data-testid="input-upload-login-logo"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => loginLogoRef.current?.click()}
-                    disabled={uploadingLogo === 'loginLogo'}
-                    data-testid="button-upload-login-logo"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {uploadingLogo === 'loginLogo' ? 'Enviando...' : 'Enviar Logo de Login'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <LogoUploadCard
+              title="Logo da Tela de Login"
+              description="Logo exibida na tela de login"
+              logo={loginLogo}
+              inputRef={loginLogoRef}
+              logoType="login"
+              recommendedSize="400x200px"
+            />
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Logo do Sidebar (Expandido)</CardTitle>
-                <CardDescription>
-                  Logo exibida no sidebar quando expandido (recomendado: 200x100px)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {getLogoPreview('sidebarLogo') && (
-                  <div className="relative inline-block">
-                    <img
-                      src={getLogoPreview('sidebarLogo')!}
-                      alt="Sidebar Logo Preview"
-                      className="max-h-20 border rounded"
-                    />
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6"
-                      onClick={() => clearLogo('sidebarLogo')}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-                <div>
-                  <input
-                    ref={sidebarLogoRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFileSelect('sidebarLogo', e)}
-                    data-testid="input-upload-sidebar-logo"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => sidebarLogoRef.current?.click()}
-                    disabled={uploadingLogo === 'sidebarLogo'}
-                    data-testid="button-upload-sidebar-logo"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {uploadingLogo === 'sidebarLogo' ? 'Enviando...' : 'Enviar Logo do Sidebar'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <LogoUploadCard
+              title="Logo da Sidebar (Expandida)"
+              description="Logo exibida na barra lateral quando expandida"
+              logo={sidebarLogo}
+              inputRef={sidebarLogoRef}
+              logoType="sidebar"
+              recommendedSize="200x80px"
+            />
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Logo do Sidebar (Colapsado)</CardTitle>
-                <CardDescription>
-                  Logo exibida no sidebar quando colapsado (recomendado: 64x64px, ícone quadrado)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {getLogoPreview('sidebarLogoCollapsed') && (
-                  <div className="relative inline-block">
-                    <img
-                      src={getLogoPreview('sidebarLogoCollapsed')!}
-                      alt="Sidebar Collapsed Logo Preview"
-                      className="max-h-16 border rounded"
-                    />
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute -top-2 -right-2 h-6 w-6"
-                      onClick={() => clearLogo('sidebarLogoCollapsed')}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-                <div>
-                  <input
-                    ref={sidebarCollapsedRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFileSelect('sidebarLogoCollapsed', e)}
-                    data-testid="input-upload-sidebar-collapsed-logo"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => sidebarCollapsedRef.current?.click()}
-                    disabled={uploadingLogo === 'sidebarLogoCollapsed'}
-                    data-testid="button-upload-sidebar-collapsed-logo"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {uploadingLogo === 'sidebarLogoCollapsed' ? 'Enviando...' : 'Enviar Logo Colapsada'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <LogoUploadCard
+              title="Logo da Sidebar (Colapsada)"
+              description="Logo exibida na barra lateral quando colapsada"
+              logo={sidebarCollapsedLogo}
+              inputRef={sidebarCollapsedRef}
+              logoType="sidebarCollapsed"
+              recommendedSize="80x80px"
+            />
+
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handleSaveLogos}
+                disabled={!hasLogoChanges || isSavingLogos}
+                data-testid="button-save-logos"
+              >
+                <Check className="mr-2 h-4 w-4" />
+                {isSavingLogos ? 'Salvando...' : 'Confirmar Logos'}
+              </Button>
+            </div>
           </TabsContent>
 
-          <TabsContent value="colors" className="space-y-4">
-            {customer.modules?.includes('clean') && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Palette className="h-4 w-4" />
-                    Cores do Módulo Clean
-                  </CardTitle>
-                  <CardDescription>
-                    Cores personalizadas para o módulo de limpeza
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="clean-primary">Cor Primária</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="clean-primary"
-                          type="color"
-                          value={moduleColors.clean?.primary || '#3b82f6'}
-                          onChange={(e) => handleColorChange('clean', 'primary', e.target.value)}
-                          className="h-10"
-                          data-testid="input-clean-primary-color"
-                        />
-                        <Input
-                          type="text"
-                          value={moduleColors.clean?.primary || '#3b82f6'}
-                          onChange={(e) => handleColorChange('clean', 'primary', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clean-secondary">Cor Secundária</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="clean-secondary"
-                          type="color"
-                          value={moduleColors.clean?.secondary || '#60a5fa'}
-                          onChange={(e) => handleColorChange('clean', 'secondary', e.target.value)}
-                          className="h-10"
-                          data-testid="input-clean-secondary-color"
-                        />
-                        <Input
-                          type="text"
-                          value={moduleColors.clean?.secondary || '#60a5fa'}
-                          onChange={(e) => handleColorChange('clean', 'secondary', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="clean-accent">Cor de Destaque</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="clean-accent"
-                          type="color"
-                          value={moduleColors.clean?.accent || '#1e40af'}
-                          onChange={(e) => handleColorChange('clean', 'accent', e.target.value)}
-                          className="h-10"
-                          data-testid="input-clean-accent-color"
-                        />
-                        <Input
-                          type="text"
-                          value={moduleColors.clean?.accent || '#1e40af'}
-                          onChange={(e) => handleColorChange('clean', 'accent', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
+          <TabsContent value="colors" className="space-y-6">
+            {/* Módulo Clean */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5 text-blue-600" />
+                  Cores do Módulo Clean
+                </CardTitle>
+                <CardDescription>
+                  Cores personalizadas para o módulo de limpeza
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Cor Primária</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={moduleColors.clean?.primary || '#1e3a8a'}
+                        onChange={(e) => handleColorChange('clean', 'primary', e.target.value)}
+                        className="h-10 w-14"
+                        data-testid="input-clean-primary-color"
+                      />
+                      <Input
+                        type="text"
+                        value={moduleColors.clean?.primary || '#1e3a8a'}
+                        onChange={(e) => handleColorChange('clean', 'primary', e.target.value)}
+                        className="flex-1"
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
 
-            {customer.modules?.includes('maintenance') && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Palette className="h-4 w-4" />
-                    Cores do Módulo Manutenção
-                  </CardTitle>
-                  <CardDescription>
-                    Cores personalizadas para o módulo de manutenção
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="maintenance-primary">Cor Primária</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="maintenance-primary"
-                          type="color"
-                          value={moduleColors.maintenance?.primary || '#f97316'}
-                          onChange={(e) => handleColorChange('maintenance', 'primary', e.target.value)}
-                          className="h-10"
-                          data-testid="input-maintenance-primary-color"
-                        />
-                        <Input
-                          type="text"
-                          value={moduleColors.maintenance?.primary || '#f97316'}
-                          onChange={(e) => handleColorChange('maintenance', 'primary', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maintenance-secondary">Cor Secundária</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="maintenance-secondary"
-                          type="color"
-                          value={moduleColors.maintenance?.secondary || '#fb923c'}
-                          onChange={(e) => handleColorChange('maintenance', 'secondary', e.target.value)}
-                          className="h-10"
-                          data-testid="input-maintenance-secondary-color"
-                        />
-                        <Input
-                          type="text"
-                          value={moduleColors.maintenance?.secondary || '#fb923c'}
-                          onChange={(e) => handleColorChange('maintenance', 'secondary', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maintenance-accent">Cor de Destaque</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="maintenance-accent"
-                          type="color"
-                          value={moduleColors.maintenance?.accent || '#c2410c'}
-                          onChange={(e) => handleColorChange('maintenance', 'accent', e.target.value)}
-                          className="h-10"
-                          data-testid="input-maintenance-accent-color"
-                        />
-                        <Input
-                          type="text"
-                          value={moduleColors.maintenance?.accent || '#c2410c'}
-                          onChange={(e) => handleColorChange('maintenance', 'accent', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
+                  <div className="space-y-2">
+                    <Label>Cor Secundária</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={moduleColors.clean?.secondary || '#3b82f6'}
+                        onChange={(e) => handleColorChange('clean', 'secondary', e.target.value)}
+                        className="h-10 w-14"
+                        data-testid="input-clean-secondary-color"
+                      />
+                      <Input
+                        type="text"
+                        value={moduleColors.clean?.secondary || '#3b82f6'}
+                        onChange={(e) => handleColorChange('clean', 'secondary', e.target.value)}
+                        className="flex-1"
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
 
-            <div className="flex justify-end">
+                  <div className="space-y-2">
+                    <Label>Cor de Destaque</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={moduleColors.clean?.accent || '#60a5fa'}
+                        onChange={(e) => handleColorChange('clean', 'accent', e.target.value)}
+                        className="h-10 w-14"
+                        data-testid="input-clean-accent-color"
+                      />
+                      <Input
+                        type="text"
+                        value={moduleColors.clean?.accent || '#60a5fa'}
+                        onChange={(e) => handleColorChange('clean', 'accent', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Módulo Maintenance */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5 text-orange-600" />
+                  Cores do Módulo Manutenção
+                </CardTitle>
+                <CardDescription>
+                  Cores personalizadas para o módulo de manutenção
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Cor Primária</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={moduleColors.maintenance?.primary || '#FF9800'}
+                        onChange={(e) => handleColorChange('maintenance', 'primary', e.target.value)}
+                        className="h-10 w-14"
+                        data-testid="input-maintenance-primary-color"
+                      />
+                      <Input
+                        type="text"
+                        value={moduleColors.maintenance?.primary || '#FF9800'}
+                        onChange={(e) => handleColorChange('maintenance', 'primary', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Cor Secundária</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={moduleColors.maintenance?.secondary || '#FB8C00'}
+                        onChange={(e) => handleColorChange('maintenance', 'secondary', e.target.value)}
+                        className="h-10 w-14"
+                        data-testid="input-maintenance-secondary-color"
+                      />
+                      <Input
+                        type="text"
+                        value={moduleColors.maintenance?.secondary || '#FB8C00'}
+                        onChange={(e) => handleColorChange('maintenance', 'secondary', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Cor de Destaque</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="color"
+                        value={moduleColors.maintenance?.accent || '#FFB74D'}
+                        onChange={(e) => handleColorChange('maintenance', 'accent', e.target.value)}
+                        className="h-10 w-14"
+                        data-testid="input-maintenance-accent-color"
+                      />
+                      <Input
+                        type="text"
+                        value={moduleColors.maintenance?.accent || '#FFB74D'}
+                        onChange={(e) => handleColorChange('maintenance', 'accent', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end pt-4">
               <Button
                 onClick={handleSaveColors}
                 disabled={updateBrandingMutation.isPending}
-                data-testid="button-save-module-colors"
+                data-testid="button-save-colors"
               >
                 <Check className="mr-2 h-4 w-4" />
-                Salvar Cores
+                {updateBrandingMutation.isPending ? 'Salvando...' : 'Salvar Cores'}
               </Button>
             </div>
           </TabsContent>

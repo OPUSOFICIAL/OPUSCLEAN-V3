@@ -52,9 +52,7 @@
   --chart-1: hsl(215 84% 27%);
   --sidebar-primary: hsl(215 84% 27%);
   --sidebar-ring: hsl(215 84% 27%);
-  --module-primary: #1e3a8a;
-  --module-secondary: #3b82f6;
-  --module-accent: #60a5fa;
+  /* Cores do módulo agora são gerenciadas dinamicamente via JavaScript */
 }
 
 [data-module="maintenance"] {
@@ -63,9 +61,7 @@
   --chart-1: hsl(26 98% 50%);
   --sidebar-primary: hsl(26 100% 50%);
   --sidebar-ring: hsl(26 100% 50%);
-  --module-primary: #FF9800;
-  --module-secondary: #FB8C00;
-  --module-accent: #FFB74D;
+  /* Cores do módulo agora são gerenciadas dinamicamente via JavaScript */
 }
 
 .dark {
