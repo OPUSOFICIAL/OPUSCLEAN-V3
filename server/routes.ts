@@ -3003,15 +3003,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Monthly regeneration of maintenance work orders (called automatically)
+  // Monthly regeneration of ALL work orders (cleaning + maintenance) - called automatically
   app.post("/api/scheduler/regenerate-monthly-maintenance", async (req, res) => {
     try {
-      console.log(`[MONTHLY SCHEDULER] Iniciando regeneração mensal automática de OSs de manutenção`);
+      console.log(`[MONTHLY SCHEDULER] Iniciando regeneração mensal automática de OSs (LIMPEZA + MANUTENÇÃO)`);
       
       // Get all companies
       const allCompanies = await storage.getCompanies();
       
-      let totalGenerated = 0;
+      let totalCleaningGenerated = 0;
+      let totalMaintenanceGenerated = 0;
       
       for (const company of allCompanies) {
         try {
@@ -3023,20 +3024,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`[MONTHLY SCHEDULER] Gerando OSs para ${company.name} - período: ${startDate.toISOString()} até ${endDate.toISOString()}`);
           
-          const generatedOrders = await storage.generateMaintenanceWorkOrders(company.id, startDate, endDate);
-          totalGenerated += generatedOrders.length;
+          // Generate CLEANING work orders
+          const cleaningOrders = await storage.generateScheduledWorkOrders(company.id, startDate, endDate);
+          totalCleaningGenerated += cleaningOrders.length;
+          console.log(`[MONTHLY SCHEDULER] ✅ ${cleaningOrders.length} OSs de limpeza geradas para ${company.name}`);
           
-          console.log(`[MONTHLY SCHEDULER] ✅ ${generatedOrders.length} OSs geradas para ${company.name}`);
+          // Generate MAINTENANCE work orders
+          const maintenanceOrders = await storage.generateMaintenanceWorkOrders(company.id, startDate, endDate);
+          totalMaintenanceGenerated += maintenanceOrders.length;
+          console.log(`[MONTHLY SCHEDULER] ✅ ${maintenanceOrders.length} OSs de manutenção geradas para ${company.name}`);
+          
         } catch (companyError) {
           console.error(`[MONTHLY SCHEDULER] Erro ao gerar OSs para ${company.name}:`, companyError);
         }
       }
       
-      console.log(`[MONTHLY SCHEDULER] ✅ Total: ${totalGenerated} OSs de manutenção geradas para próximo mês`);
+      const totalGenerated = totalCleaningGenerated + totalMaintenanceGenerated;
+      console.log(`[MONTHLY SCHEDULER] ✅ Total: ${totalCleaningGenerated} OSs de limpeza + ${totalMaintenanceGenerated} OSs de manutenção = ${totalGenerated} OSs geradas para próximo mês`);
       
       res.json({
         message: `Monthly regeneration completed`,
         totalGenerated,
+        cleaningGenerated: totalCleaningGenerated,
+        maintenanceGenerated: totalMaintenanceGenerated,
         companiesProcessed: allCompanies.length
       });
     } catch (error) {

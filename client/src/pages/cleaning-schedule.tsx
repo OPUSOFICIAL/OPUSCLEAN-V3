@@ -1748,26 +1748,11 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       // windowStart = menor startDate das atividades criadas
       const windowStart = new Date(Math.min(...startDates.map((d: Date) => d.getTime())));
       
-      // windowEnd = menor limite aplicável:
-      // Para cada atividade, usar endDate se existir, senão startDate + 30 dias
-      // Pegar o MAIOR desses limites para cobrir todas as atividades
-      const activityLimits = activities.map((a: any) => {
-        const start = (a.startDate || a.start_date) ? new Date(a.startDate || a.start_date) : null;
-        if (!start) return null;
-        
-        const end = a.endDate || a.end_date;
-        if (end) {
-          return new Date(end);
-        } else {
-          const limit = new Date(start);
-          limit.setDate(limit.getDate() + 30);
-          return limit;
-        }
-      }).filter((d: any) => d !== null);
+      // windowEnd = final do mês atual (último dia do mês às 23:59:59)
+      const now = new Date();
+      const windowEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       
-      const windowEnd = new Date(Math.max(...activityLimits.map((d: Date) => d.getTime())));
-      
-      console.log(`[GERADOR OS] Janela: ${windowStart.toISOString()} até ${windowEnd.toISOString()}`);
+      console.log(`[GERADOR OS] Gerando OSs da data inicial até final do mês atual: ${windowStart.toISOString()} até ${windowEnd.toISOString()}`);
       
       try {
         const response = await apiRequest("POST", "/api/scheduler/generate-work-orders", {
