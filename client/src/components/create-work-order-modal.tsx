@@ -129,8 +129,8 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
         zoneId: data.zoneId,
         companyId: (customer as any)?.companyId || "company-opus-default",
         assignedUserId: data.assignedUserId === "unassigned" ? null : data.assignedUserId,
-        scheduledDate: data.scheduledDate || null,
-        dueDate: data.dueDate || null,
+        scheduledDate: data.scheduledDate ? new Date(data.scheduledDate + 'T00:00:00').toISOString() : null,
+        dueDate: data.dueDate ? new Date(data.dueDate + 'T00:00:00').toISOString() : null,
         scheduledStartAt: null,
         scheduledEndAt: null,
         module: currentModule, // Incluir o módulo atual
@@ -149,14 +149,14 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
       
       // Calcular scheduledStartAt e scheduledEndAt se tiver horários
       if (data.scheduledDate && data.startTime) {
-        const baseDate = new Date(data.scheduledDate);
+        const baseDate = new Date(data.scheduledDate + 'T00:00:00');
         const [hours, minutes] = data.startTime.split(':');
         baseDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         submitData.scheduledStartAt = baseDate.toISOString();
       }
       
       if (data.scheduledDate && data.endTime) {
-        const endDate = new Date(data.scheduledDate);
+        const endDate = new Date(data.scheduledDate + 'T00:00:00');
         const [hours, minutes] = data.endTime.split(':');
         endDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         submitData.scheduledEndAt = endDate.toISOString();
