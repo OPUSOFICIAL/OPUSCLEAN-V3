@@ -3064,20 +3064,27 @@ export class DatabaseStorage implements IStorage {
     // Get customerId from zone (zone -> site -> customerId)
     let customerId = workOrder.customerId;
     
+    console.log('[STORAGE DEBUG] createWorkOrder chamado com:', { zoneId: workOrder.zoneId, customerId });
+    
     if (!customerId && workOrder.zoneId) {
       const [zone] = await db.select().from(zones).where(eq(zones.id, workOrder.zoneId)).limit(1);
+      console.log('[STORAGE DEBUG] Zona encontrada:', zone);
       if (zone) {
         const [site] = await db.select().from(sites).where(eq(sites.id, zone.siteId)).limit(1);
+        console.log('[STORAGE DEBUG] Site encontrado:', site);
         if (site) {
           customerId = site.customerId;
+          console.log('[STORAGE DEBUG] CustomerId obtido do site:', customerId);
         }
       }
     }
     
     if (!customerId) {
+      console.error('[STORAGE DEBUG] CustomerId não encontrado! workOrder:', workOrder);
       throw new Error('CustomerId not found for work order');
     }
     
+    console.log('[STORAGE DEBUG] Chamando getNextWorkOrderNumber com customerId:', customerId);
     const number = await this.getNextWorkOrderNumber(customerId);
     const id = crypto.randomUUID();
     
