@@ -95,7 +95,7 @@ export default function Login() {
             <img 
               src={aceleraLogo} 
               alt="Acelera Full Facilities" 
-              className="h-[400px] mb-8 drop-shadow-2xl"
+              className="h-[400px] drop-shadow-2xl mt-[-40px] mb-[-40px]"
             />
             <h1 className="text-5xl font-bold text-white mb-4 leading-tight">
               Gestão Inteligente de Facilities
@@ -149,7 +149,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50">
         <div className="w-full max-w-md">
