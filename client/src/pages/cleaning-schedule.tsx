@@ -289,35 +289,27 @@ export default function CleaningSchedule() {
     if (!activities) return [];
     
     return (activities as any[]).filter((activity: any) => {
-      // Criar as datas para comparação (sem timezone issues)
-      const checkYear = currentDate.getFullYear();
-      const checkMonth = currentDate.getMonth();
-      const checkDay = day;
+      // Criar a data do dia que estamos verificando
+      const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      checkDate.setHours(0, 0, 0, 0);
       
       // Verificar se a atividade já começou (startDate)
       if (activity.startDate) {
-        const startDate = new Date(activity.startDate + 'T00:00:00'); // Force local timezone
-        const startYear = startDate.getFullYear();
-        const startMonth = startDate.getMonth();
-        const startDay = startDate.getDate();
+        // Parse startDate como string YYYY-MM-DD em timezone local
+        const [year, month, dayOfMonth] = activity.startDate.split('-').map(Number);
+        const startDate = new Date(year, month - 1, dayOfMonth);
+        startDate.setHours(0, 0, 0, 0);
         
-        // Compare year/month/day only
-        if (checkYear < startYear) return false;
-        if (checkYear === startYear && checkMonth < startMonth) return false;
-        if (checkYear === startYear && checkMonth === startMonth && checkDay < startDay) return false;
+        if (checkDate < startDate) return false;
       }
       
       // Verificar se a atividade já terminou (endDate)
       if (activity.endDate) {
-        const endDate = new Date(activity.endDate + 'T23:59:59'); // Force local timezone
-        const endYear = endDate.getFullYear();
-        const endMonth = endDate.getMonth();
-        const endDay = endDate.getDate();
+        const [year, month, dayOfMonth] = activity.endDate.split('-').map(Number);
+        const endDate = new Date(year, month - 1, dayOfMonth);
+        endDate.setHours(23, 59, 59, 999);
         
-        // Compare year/month/day only
-        if (checkYear > endYear) return false;
-        if (checkYear === endYear && checkMonth > endMonth) return false;
-        if (checkYear === endYear && checkMonth === endMonth && checkDay > endDay) return false;
+        if (checkDate > endDate) return false;
       }
       
       if (activity.frequency === 'diaria') return true;
