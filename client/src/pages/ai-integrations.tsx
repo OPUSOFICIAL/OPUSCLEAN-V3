@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { SiOpenai, SiGoogle } from "react-icons/si";
 
-type AiProvider = 'openai' | 'anthropic' | 'google' | 'azure_openai' | 'cohere' | 'huggingface' | 'custom';
+type AiProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'azure_openai' | 'cohere' | 'huggingface' | 'custom';
 type IntegrationStatus = 'ativa' | 'inativa' | 'erro';
 
 interface AiIntegration {
@@ -43,6 +43,7 @@ const providerOptions = [
   { value: 'openai', label: 'OpenAI', icon: SiOpenai, color: 'text-emerald-600' },
   { value: 'anthropic', label: 'Anthropic (Claude)', icon: Brain, color: 'text-orange-600' },
   { value: 'google', label: 'Google AI', icon: SiGoogle, color: 'text-blue-600' },
+  { value: 'groq', label: 'Groq (Llama 3 Grátis)', icon: Bot, color: 'text-indigo-600' },
   { value: 'azure_openai', label: 'Azure OpenAI', icon: Cloud, color: 'text-sky-600' },
   { value: 'cohere', label: 'Cohere', icon: Sparkles, color: 'text-purple-600' },
   { value: 'huggingface', label: 'HuggingFace', icon: Bot, color: 'text-yellow-600' },
@@ -96,6 +97,17 @@ const providerConfigs: Record<AiProvider, ProviderConfig> = {
     modelLabel: 'Modelo',
     modelPlaceholder: 'gemini-2.0-flash-exp, gemini-1.5-pro',
     modelHelp: 'Deixe vazio para usar o modelo padrão (gemini-2.0-flash)',
+    modelRequired: false
+  },
+  groq: {
+    keyLabel: 'Groq API Key (GRÁTIS)',
+    keyPlaceholder: 'gsk_...',
+    keyHelp: 'Chave de API gratuita do Groq - sem limites absurdos',
+    keyLink: 'https://console.groq.com/keys',
+    requiresEndpoint: false,
+    modelLabel: 'Modelo',
+    modelPlaceholder: 'llama-3.3-70b-versatile, llama-3-groq-8b-tool-use',
+    modelHelp: 'Deixe vazio para usar llama-3-groq-8b-tool-use (especializado em function calling)',
     modelRequired: false
   },
   azure_openai: {

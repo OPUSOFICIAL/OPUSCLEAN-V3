@@ -6526,6 +6526,279 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
         };
       }
 
+      case 'groq': {
+        // Groq uses OpenAI-compatible API with function calling
+        // Default model: llama-3-groq-8b-tool-use (specialized for function calling)
+        const tools = [{
+          type: 'function',
+          function: {
+            name: 'queryWorkOrdersCount',
+            description: 'QUANDO USAR: Sempre que o usuário perguntar "quantas", "qual o número de", "total de" O.S. EXEMPLO: "Quantas O.S foram concluídas esse mês?" → chame esta função com status="concluida", completedFrom=primeiro dia do mês, completedTo=último dia do mês.',
+            parameters: {
+              type: 'object',
+              properties: {
+                status: {
+                  type: 'string',
+                  description: 'Status: use "concluida" para O.S finalizadas, "aberta" para pendentes, "em_execucao" para em andamento, "vencida" para atrasadas'
+                },
+                type: {
+                  type: 'string',
+                  description: 'Tipo: "programada", "corretiva_interna", "corretiva_publica"',
+                  enum: ['programada', 'corretiva_interna', 'corretiva_publica']
+                },
+                priority: {
+                  type: 'string',
+                  description: 'Prioridade: "baixa", "media", "alta"',
+                  enum: ['baixa', 'media', 'alta']
+                },
+                dateFrom: {
+                  type: 'string',
+                  description: 'Início do agendamento YYYY-MM-DD'
+                },
+                dateTo: {
+                  type: 'string',
+                  description: 'Fim do agendamento YYYY-MM-DD'
+                },
+                completedFrom: {
+                  type: 'string',
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o primeiro dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
+                },
+                completedTo: {
+                  type: 'string',
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o último dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
+                }
+              }
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'queryWorkOrdersList',
+            description: 'QUANDO USAR: Sempre que o usuário pedir "liste", "quais são", "mostre as" O.S. EXEMPLO: "Liste as O.S concluídas hoje" → chame esta função com status="concluida", completedFrom=data de hoje, completedTo=data de hoje.',
+            parameters: {
+              type: 'object',
+              properties: {
+                status: {
+                  type: 'string',
+                  description: 'Status: use "concluida" para finalizadas, "aberta" para pendentes, "em_execucao" para em andamento, "vencida" para atrasadas'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Máximo de resultados (padrão: 20)'
+                },
+                completedFrom: {
+                  type: 'string',
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o primeiro dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
+                },
+                completedTo: {
+                  type: 'string',
+                  description: 'OBRIGATÓRIO para filtrar O.S concluídas. Para "esse mês" use o último dia do mês. Para "hoje" use a data atual. Formato: YYYY-MM-DD'
+                }
+              }
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'getWorkOrderDetails',
+            description: 'Obtém detalhes completos de uma O.S específica pelo número. Use quando o usuário perguntar sobre uma O.S específica (ex: "quando foi concluída a O.S 1213?", "detalhes da O.S 1213")',
+            parameters: {
+              type: 'object',
+              properties: {
+                number: {
+                  type: 'number',
+                  description: 'Número da O.S (ex: 1213)'
+                }
+              },
+              required: ['number']
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'updateWorkOrder',
+            description: 'Atualiza informações de uma O.S existente (status, prioridade, responsável). Use quando o usuário pedir para alterar/atualizar/mudar uma O.S.',
+            parameters: {
+              type: 'object',
+              properties: {
+                number: {
+                  type: 'number',
+                  description: 'Número da O.S a ser atualizada'
+                },
+                status: {
+                  type: 'string',
+                  description: 'Novo status: aberta, em_execucao, pausada, vencida, concluida, cancelada',
+                  enum: ['aberta', 'em_execucao', 'pausada', 'vencida', 'concluida', 'cancelada']
+                },
+                priority: {
+                  type: 'string',
+                  description: 'Nova prioridade: baixa, media, alta, urgente',
+                  enum: ['baixa', 'media', 'alta', 'urgente']
+                },
+                assignedUserId: {
+                  type: 'string',
+                  description: 'ID do novo responsável'
+                }
+              },
+              required: ['number']
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'createWorkOrder',
+            description: 'Cria uma nova ordem de serviço. Use quando o usuário pedir para criar/adicionar/registrar uma nova O.S.',
+            parameters: {
+              type: 'object',
+              properties: {
+                title: {
+                  type: 'string',
+                  description: 'Título/descrição curta da O.S'
+                },
+                description: {
+                  type: 'string',
+                  description: 'Descrição detalhada da O.S (opcional)'
+                },
+                zoneId: {
+                  type: 'string',
+                  description: 'ID da zona onde a O.S deve ser executada'
+                },
+                priority: {
+                  type: 'string',
+                  description: 'Prioridade: baixa, media, alta, urgente (padrão: media)',
+                  enum: ['baixa', 'media', 'alta', 'urgente']
+                },
+                type: {
+                  type: 'string',
+                  description: 'Tipo: programada, corretiva_interna, corretiva_publica (padrão: corretiva_interna)',
+                  enum: ['programada', 'corretiva_interna', 'corretiva_publica']
+                },
+                scheduledDate: {
+                  type: 'string',
+                  description: 'Data agendada (formato YYYY-MM-DD)'
+                },
+                assignedUserId: {
+                  type: 'string',
+                  description: 'ID do responsável (opcional)'
+                }
+              },
+              required: ['title', 'zoneId', 'scheduledDate']
+            }
+          }
+        }];
+
+        const groqMessages: any[] = [
+          { role: 'system', content: `${systemPrompt}\n\n${contextInfo}` }
+        ];
+
+        for (const msg of conversationHistory) {
+          if (msg.role === 'user' || msg.role === 'assistant') {
+            groqMessages.push({
+              role: msg.role,
+              content: msg.content
+            });
+          }
+        }
+
+        groqMessages.push({
+          role: 'user',
+          content: userMessage
+        });
+
+        for (let iteration = 0; iteration < maxIterations; iteration++) {
+          const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: integration.model || 'llama-3-groq-8b-tool-use',
+              messages: groqMessages,
+              tools,
+              tool_choice: 'auto',
+              max_tokens: integration.maxTokens || 1500,
+              temperature: parseFloat(integration.temperature || '0.7')
+            })
+          });
+
+          if (!groqResponse.ok) {
+            const errorData = await groqResponse.json().catch(() => ({}));
+            const errorMsg = errorData.error?.message || groqResponse.statusText;
+            throw new Error(`Groq: ${errorMsg} (Status: ${groqResponse.status})`);
+          }
+
+          const groqData = await groqResponse.json();
+          const choice = groqData.choices[0];
+          const assistantMessage = choice.message;
+
+          groqMessages.push(assistantMessage);
+
+          if (!assistantMessage.tool_calls || assistantMessage.tool_calls.length === 0) {
+            return {
+              content: assistantMessage.content || 'Desculpe, não consegui processar sua pergunta.',
+              tokensUsed: groqData.usage?.total_tokens
+            };
+          }
+
+          for (const toolCall of assistantMessage.tool_calls) {
+            const funcName = toolCall.function.name;
+            const funcArgs = JSON.parse(toolCall.function.arguments || '{}');
+
+            let funcResult: any;
+            try {
+              if (funcName === 'queryWorkOrdersCount') {
+                funcResult = await this.aiQueryWorkOrdersCount(
+                  context.customerId!,
+                  context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'queryWorkOrdersList') {
+                funcResult = await this.aiQueryWorkOrdersList(
+                  context.customerId!,
+                  context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'getWorkOrderDetails') {
+                funcResult = await this.aiGetWorkOrderDetails(
+                  context.customerId!,
+                  context.module,
+                  funcArgs.number
+                );
+              } else if (funcName === 'updateWorkOrder') {
+                funcResult = await this.aiUpdateWorkOrder(
+                  context.customerId!,
+                  context.module,
+                  funcArgs.number,
+                  funcArgs
+                );
+              } else if (funcName === 'createWorkOrder') {
+                funcResult = await this.aiCreateWorkOrder(
+                  context.customerId!,
+                  context.module,
+                  funcArgs
+                );
+              } else {
+                funcResult = { error: 'Função não implementada' };
+              }
+            } catch (error: any) {
+              console.error(`[AI FUNCTION CALL ERROR] ${funcName}:`, error);
+              funcResult = { error: error.message };
+            }
+
+            groqMessages.push({
+              role: 'tool',
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(funcResult)
+            });
+          }
+        }
+
+        return {
+          content: 'Desculpe, não consegui processar sua pergunta completamente.'
+        };
+      }
+
       case 'anthropic':
         const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
