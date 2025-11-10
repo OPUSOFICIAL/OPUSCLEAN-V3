@@ -2859,22 +2859,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const activity = await storage.createMaintenanceActivity(activityWithId as any);
       
-      // Generate work orders for current month immediately
-      if (activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0) {
+      // Generate work orders from start date until end of current month
+      if (activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0 && activity.startDate) {
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startDate = new Date(activity.startDate + 'T00:00:00');
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
         
-        try {
-          await storage.generateMaintenanceWorkOrders(
-            activity.companyId,
-            startOfMonth,
-            endOfMonth
-          );
-          console.log(`[PLAN CREATED] Generated work orders for current month for activity ${activity.id}`);
-        } catch (error) {
-          console.error(`[PLAN CREATED] Failed to generate work orders:`, error);
-          // Don't fail the request if work order generation fails
+        // Only generate if start date is in current month or past
+        if (startDate <= endOfMonth) {
+          // Use start date or today, whichever is later
+          const windowStart = startDate > now ? startDate : now;
+          
+          try {
+            await storage.generateMaintenanceWorkOrders(
+              activity.companyId,
+              windowStart,
+              endOfMonth
+            );
+            console.log(`[PLAN CREATED] Generated work orders from ${windowStart.toISOString()} to ${endOfMonth.toISOString()} for activity ${activity.id}`);
+          } catch (error) {
+            console.error(`[PLAN CREATED] Failed to generate work orders:`, error);
+            // Don't fail the request if work order generation fails
+          }
         }
       }
       

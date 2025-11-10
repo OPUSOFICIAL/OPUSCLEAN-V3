@@ -2911,7 +2911,7 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      // Generate work orders for each equipment and occurrence
+      // Build work orders (without numbers first)
       for (const equipItem of equipmentList) {
         for (const occ of occurrences) {
           const key = `${activity.id}|${equipItem.id}|${occ.date.toISOString()}`;
@@ -2933,12 +2933,9 @@ export class DatabaseStorage implements IStorage {
             title = `${activity.name} - ${equipItem.name} - ${occ.occurrence}ª/${occ.total}`;
           }
           
-          // Increment counter for each work order
-          const nextNumber = await this.incrementCustomerCounter(customerId, 'work_order');
-          
           workOrdersToCreate.push({
             id: crypto.randomUUID(),
-            number: nextNumber,
+            number: 0, // Will be assigned after counting
             companyId: companyId,
             customerId: customerId,
             equipmentId: equipItem.id,
@@ -2963,11 +2960,30 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[SCHEDULER BATCH] ${workOrdersToCreate.length} novas O.S de manutenção para criar`);
     
-    // Step 5: Insert in batches
+    // Step 5: Assign numbers to all work orders (group by customer)
     if (workOrdersToCreate.length === 0) {
       console.log(`[SCHEDULER BATCH] ✅ Nenhuma O.S nova de manutenção para criar`);
       return [];
     }
+    
+    // Group work orders by customerId to assign numbers
+    const woByCustomer = new Map<string, any[]>();
+    for (const wo of workOrdersToCreate) {
+      if (!woByCustomer.has(wo.customerId)) {
+        woByCustomer.set(wo.customerId, []);
+      }
+      woByCustomer.get(wo.customerId)!.push(wo);
+    }
+    
+    // Assign numbers for each customer
+    for (const [custId, customerWorkOrders] of woByCustomer.entries()) {
+      for (let i = 0; i < customerWorkOrders.length; i++) {
+        const nextNumber = await this.incrementCustomerCounter(custId, 'work_order');
+        customerWorkOrders[i].number = nextNumber;
+      }
+    }
+    
+    // Step 6: Insert in batches
     
     const batchSize = 500;
     const generatedOrders: WorkOrder[] = [];
