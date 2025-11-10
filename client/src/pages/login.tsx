@@ -95,7 +95,7 @@ export default function Login() {
             <img 
               src={aceleraLogo} 
               alt="Acelera Full Facilities" 
-              className="h-20 mb-8 drop-shadow-2xl"
+              className="h-[400px] mb-8 drop-shadow-2xl"
             />
             <h1 className="text-5xl font-bold text-white mb-4 leading-tight">
               Gestão Inteligente de Facilities
