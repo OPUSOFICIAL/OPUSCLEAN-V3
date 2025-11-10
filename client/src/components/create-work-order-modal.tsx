@@ -69,6 +69,19 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     enabled: !!customerId && currentModule === 'maintenance',
   });
 
+  // Filtrar equipamentos pela zona selecionada
+  const filteredEquipment = (equipmentList as any[] || []).filter((eq: any) => 
+    formData.zoneId ? eq.zoneId === formData.zoneId : true
+  );
+
+  // Filtrar checklists pelo equipamento selecionado
+  const filteredChecklists = (maintenanceChecklistTemplates as any[] || []).filter((template: any) => {
+    if (!formData.equipmentId) return true;
+    // Checklist deve ter o equipmentId no array de equipmentIds
+    return template.equipmentIds && Array.isArray(template.equipmentIds) && 
+           template.equipmentIds.includes(formData.equipmentId);
+  });
+
   // Buscar dados do customer para pegar o companyId
   const { data: customer } = useQuery({
     queryKey: ["/api/customers", customerId],
@@ -217,6 +230,27 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   };
 
   const handleChange = (field: string, value: string) => {
+    // Se mudar a zona, resetar equipamento e checklist
+    if (field === 'zoneId' && currentModule === 'maintenance') {
+      setFormData(prev => ({ 
+        ...prev, 
+        [field]: value,
+        equipmentId: "", // Resetar equipamento
+        maintenanceChecklistTemplateId: "" // Resetar checklist
+      }));
+      return;
+    }
+    
+    // Se mudar o equipamento, resetar checklist
+    if (field === 'equipmentId' && currentModule === 'maintenance') {
+      setFormData(prev => ({ 
+        ...prev, 
+        [field]: value,
+        maintenanceChecklistTemplateId: "" // Resetar checklist
+      }));
+      return;
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -381,15 +415,19 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="equipment">Equipamento *</Label>
-                    <Select value={formData.equipmentId} onValueChange={(value) => handleChange("equipmentId", value)}>
+                    <Select 
+                      value={formData.equipmentId} 
+                      onValueChange={(value) => handleChange("equipmentId", value)}
+                      disabled={!formData.zoneId}
+                    >
                       <SelectTrigger data-testid="select-equipment">
-                        <SelectValue placeholder="Selecione um equipamento" />
+                        <SelectValue placeholder={!formData.zoneId ? "Primeiro selecione um local" : "Selecione um equipamento"} />
                       </SelectTrigger>
                       <SelectContent>
                         {!equipmentList ? (
                           <SelectItem value="loading" disabled>Carregando equipamentos...</SelectItem>
-                        ) : Array.isArray(equipmentList) && equipmentList.length > 0 ? (
-                          (equipmentList as any[])
+                        ) : filteredEquipment.length > 0 ? (
+                          filteredEquipment
                             .filter((eq: any) => eq.status === 'operacional')
                             .map((equipment: any) => (
                               <SelectItem key={equipment.id} value={equipment.id}>
@@ -401,11 +439,16 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                                 </div>
                               </SelectItem>
                             ))
+                        ) : formData.zoneId ? (
+                          <SelectItem value="no-equipment" disabled>Nenhum equipamento neste local</SelectItem>
                         ) : (
-                          <SelectItem value="no-equipment" disabled>Nenhum equipamento cadastrado</SelectItem>
+                          <SelectItem value="no-zone" disabled>Selecione um local primeiro</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
+                    {formData.zoneId && filteredEquipment.length === 0 && (
+                      <p className="text-xs text-orange-600">Não há equipamentos cadastrados neste local</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -413,22 +456,30 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
                     <Select 
                       value={formData.maintenanceChecklistTemplateId || "none"} 
                       onValueChange={(value) => handleChange("maintenanceChecklistTemplateId", value === "none" ? "" : value)}
+                      disabled={!formData.equipmentId}
                     >
                       <SelectTrigger data-testid="select-maintenance-checklist">
-                        <SelectValue placeholder="Selecione um checklist" />
+                        <SelectValue placeholder={!formData.equipmentId ? "Primeiro selecione um equipamento" : "Selecione um checklist"} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Nenhum</SelectItem>
-                        {(maintenanceChecklistTemplates as any[] || []).map((template: any) => (
-                          <SelectItem key={template.id} value={template.id}>
-                            <div>
-                              <div className="font-medium">{template.name}</div>
-                              <div className="text-xs text-gray-500">{template.description}</div>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {filteredChecklists.length > 0 ? (
+                          filteredChecklists.map((template: any) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              <div>
+                                <div className="font-medium">{template.name}</div>
+                                <div className="text-xs text-gray-500">{template.description}</div>
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : formData.equipmentId ? (
+                          <SelectItem value="no-checklist" disabled>Nenhum checklist para este equipamento</SelectItem>
+                        ) : null}
                       </SelectContent>
                     </Select>
+                    {formData.equipmentId && filteredChecklists.length === 0 && (
+                      <p className="text-xs text-orange-600">Não há checklists disponíveis para este equipamento</p>
+                    )}
                   </div>
                 </>
               )}
