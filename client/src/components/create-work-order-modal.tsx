@@ -54,7 +54,7 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
 
   // Serviços para módulo Clean
   const { data: services } = useQuery({
-    queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }],
+    queryKey: ["/api/customers", customerId, "services"],
     enabled: !!customerId && currentModule === 'clean',
   });
 

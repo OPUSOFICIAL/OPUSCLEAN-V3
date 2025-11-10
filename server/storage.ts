@@ -3064,27 +3064,20 @@ export class DatabaseStorage implements IStorage {
     // Get customerId from zone (zone -> site -> customerId)
     let customerId = workOrder.customerId;
     
-    console.log('[STORAGE DEBUG] createWorkOrder chamado com:', { zoneId: workOrder.zoneId, customerId });
-    
     if (!customerId && workOrder.zoneId) {
       const [zone] = await db.select().from(zones).where(eq(zones.id, workOrder.zoneId)).limit(1);
-      console.log('[STORAGE DEBUG] Zona encontrada:', zone);
       if (zone) {
         const [site] = await db.select().from(sites).where(eq(sites.id, zone.siteId)).limit(1);
-        console.log('[STORAGE DEBUG] Site encontrado:', site);
         if (site) {
           customerId = site.customerId;
-          console.log('[STORAGE DEBUG] CustomerId obtido do site:', customerId);
         }
       }
     }
     
     if (!customerId) {
-      console.error('[STORAGE DEBUG] CustomerId não encontrado! workOrder:', workOrder);
       throw new Error('CustomerId not found for work order');
     }
     
-    console.log('[STORAGE DEBUG] Chamando getNextWorkOrderNumber com customerId:', customerId);
     const number = await this.getNextWorkOrderNumber(customerId);
     const id = crypto.randomUUID();
     
@@ -3119,32 +3112,20 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    console.log('[STORAGE DEBUG] Inserindo work order com:', {
-      id,
-      number,
-      customerId,
-      companyId: workOrder.companyId,
-      module: workOrder.module || 'clean',
-      zoneId: workOrder.zoneId,
-      serviceId: workOrder.serviceId
-    });
-    
-    try {
-      const [newWorkOrder] = await db.insert(workOrders)
-        .values({ 
-          ...workOrder,
-          id,
-          number,
-          customerId,
-          checklistTemplateId,
-          estimatedHours,
-          module: workOrder.module || 'clean' // Default to 'clean' if not specified
-        })
-        .returning();
+    const [newWorkOrder] = await db.insert(workOrders)
+      .values({ 
+        ...workOrder,
+        id,
+        number,
+        customerId,
+        checklistTemplateId,
+        estimatedHours,
+        module: workOrder.module || 'clean' // Default to 'clean' if not specified
+      })
+      .returning();
       
-      console.log('[STORAGE DEBUG] Work order criada com sucesso:', newWorkOrder.id);
-      
-      // Create audit log for work order creation
+    // Create audit log for work order creation
+    if (newWorkOrder) {
       try {
         await this.createAuditLog({
           companyId: newWorkOrder.companyId,
@@ -3158,17 +3139,9 @@ export class DatabaseStorage implements IStorage {
       } catch (logError) {
         console.error("Failed to create audit log:", logError);
       }
-      
-      return newWorkOrder;
-    } catch (error: any) {
-      console.error('[STORAGE DEBUG] Erro ao inserir work order:', {
-        message: error.message,
-        code: error.code,
-        constraint: error.constraint,
-        detail: error.detail
-      });
-      throw error;
     }
+    
+    return newWorkOrder;
   }
 
   async updateWorkOrder(id: string, workOrder: Partial<InsertWorkOrder>): Promise<WorkOrder> {

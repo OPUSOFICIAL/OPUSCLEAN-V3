@@ -1619,8 +1619,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         module: req.body.module || 'clean'
       };
       
-      console.log('[DEBUG CLEAN] Criando O.S:', JSON.stringify(dataWithModule, null, 2));
-      
       const workOrder = insertWorkOrderSchema.parse(dataWithModule);
       const newWorkOrder = await storage.createWorkOrder(workOrder);
       
