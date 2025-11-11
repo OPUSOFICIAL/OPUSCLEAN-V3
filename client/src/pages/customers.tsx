@@ -24,6 +24,11 @@ import { CustomerBrandingConfig } from "@/components/customer-branding-config";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  subdomain: z.string()
+    .min(3, "Subdomínio deve ter pelo menos 3 caracteres")
+    .regex(/^[a-z0-9-]+$/, "Use apenas letras minúsculas, números e hífens")
+    .optional()
+    .or(z.literal("")),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   document: z.string().optional(),
@@ -106,6 +111,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
       name: "",
+      subdomain: "",
       email: "",
       phone: "",
       document: "",
@@ -123,6 +129,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
       name: "",
+      subdomain: "",
       email: "",
       phone: "",
       document: "",
@@ -144,6 +151,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
     setEditingCustomer(customer);
     editForm.reset({
       name: customer.name,
+      subdomain: customer.subdomain || "",
       email: customer.email || "",
       phone: customer.phone || "",
       document: customer.document || "",
@@ -377,6 +385,37 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={createForm.control}
+                  name="subdomain"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Subdomínio</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="minha-empresa" 
+                          {...field} 
+                          data-testid="input-create-customer-subdomain"
+                          onChange={(e) => {
+                            // Converter para lowercase automaticamente
+                            const value = e.target.value.toLowerCase();
+                            field.onChange(value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Use apenas letras minúsculas, números e hífens. 
+                        {field.value && (
+                          <span className="block mt-1">
+                            URL: <strong>{field.value}.seudominio.com</strong>
+                          </span>
+                        )}
+                      </p>
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={createForm.control}
@@ -589,6 +628,37 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                         <Input placeholder="Nome do cliente" {...field} data-testid="input-edit-customer-name" />
                       </FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="subdomain"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Subdomínio</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="minha-empresa" 
+                          {...field} 
+                          data-testid="input-edit-customer-subdomain"
+                          onChange={(e) => {
+                            // Converter para lowercase automaticamente
+                            const value = e.target.value.toLowerCase();
+                            field.onChange(value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground">
+                        Use apenas letras minúsculas, números e hífens.
+                        {field.value && (
+                          <span className="block mt-1">
+                            URL: <strong>{field.value}.seudominio.com</strong>
+                          </span>
+                        )}
+                      </p>
                     </FormItem>
                   )}
                 />
