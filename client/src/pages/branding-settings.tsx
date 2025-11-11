@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2, Upload, Check, X } from 'lucide-react';
+import { Loader2, Upload, Check, X, Save } from 'lucide-react';
 
 export default function BrandingSettings() {
   const { activeClientId } = useClient();
@@ -16,7 +16,7 @@ export default function BrandingSettings() {
   const { toast } = useToast();
   
   const [subdomain, setSubdomain] = useState('');
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Estado para armazenar arquivos selecionados antes de salvar
   const [pendingLogos, setPendingLogos] = useState<Record<string, { file: File; preview: string } | null>>({
@@ -38,78 +38,6 @@ export default function BrandingSettings() {
       setSubdomain(customer.subdomain);
     }
   }, [customer]);
-
-  // Update branding mutation
-  const updateBrandingMutation = useMutation({
-    mutationFn: async (data: { subdomain?: string; moduleColors?: any }) => {
-      return await apiRequest('PUT', `/api/customers/${activeClientId}/branding`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers', activeClientId] });
-      refresh();
-      toast({ 
-        title: '✓ Configurações salvas!',
-        description: 'As alterações foram aplicadas com sucesso.'
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Erro ao salvar',
-        description: error.message || 'Tente novamente',
-        variant: 'destructive'
-      });
-    }
-  });
-
-  // Upload logo mutation
-  const uploadLogoMutation = useMutation({
-    mutationFn: async ({ logoType, file }: { logoType: string; file: File }) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const imageData = e.target?.result as string;
-            const uploadResponse = await apiRequest('POST', `/api/customers/${activeClientId}/upload-logo`, {
-              logoType,
-              imageData,
-              fileName: file.name
-            });
-            
-            const uploadResult = await uploadResponse.json();
-            
-            // Update branding with new logo path
-            await apiRequest('PUT', `/api/customers/${activeClientId}/branding`, {
-              [logoType]: uploadResult.path
-            });
-            
-            resolve(uploadResult);
-          } catch (error) {
-            reject(error);
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers', activeClientId] });
-      refresh();
-      setUploading(null);
-      setPendingLogos(prev => ({ ...prev, [variables.logoType]: null }));
-      toast({ 
-        title: '✓ Logo salva com sucesso!',
-        description: 'A nova logo foi enviada e aplicada ao sistema.'
-      });
-    },
-    onError: (error: any) => {
-      setUploading(null);
-      toast({
-        title: 'Erro ao fazer upload',
-        description: error.message || 'Tente novamente',
-        variant: 'destructive'
-      });
-    }
-  });
 
   const handleFileSelect = (logoType: string, file: File | null) => {
     if (!file) {
@@ -135,16 +63,74 @@ export default function BrandingSettings() {
     setPendingLogos(prev => ({ ...prev, [logoType]: null }));
   };
 
-  const handleSaveLogo = (logoType: string) => {
-    const pending = pendingLogos[logoType];
-    if (!pending) return;
-    
-    setUploading(logoType);
-    uploadLogoMutation.mutate({ logoType, file: pending.file });
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+
+    try {
+      // 1. Salvar subdomínio se mudou
+      if (subdomain !== customer?.subdomain) {
+        await apiRequest('PUT', `/api/customers/${activeClientId}/branding`, { subdomain });
+      }
+
+      // 2. Upload de cada logo pendente
+      const logoTypes = Object.keys(pendingLogos) as Array<keyof typeof pendingLogos>;
+      
+      for (const logoType of logoTypes) {
+        const pending = pendingLogos[logoType];
+        if (!pending) continue;
+
+        // Upload da imagem
+        const reader = new FileReader();
+        const imageData = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(pending.file);
+        });
+
+        const uploadResponse = await apiRequest('POST', `/api/customers/${activeClientId}/upload-logo`, {
+          logoType,
+          imageData,
+          fileName: pending.file.name
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        
+        // Atualizar branding com caminho da logo
+        await apiRequest('PUT', `/api/customers/${activeClientId}/branding`, {
+          [logoType]: uploadResult.path
+        });
+      }
+
+      // 3. Limpar logos pendentes e atualizar
+      setPendingLogos({
+        loginLogo: null,
+        sidebarLogo: null,
+        sidebarLogoCollapsed: null,
+        homeLogo: null
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ['/api/customers', activeClientId] });
+      refresh();
+
+      toast({ 
+        title: '✓ Configurações salvas!',
+        description: 'Todas as alterações foram aplicadas com sucesso.'
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao salvar',
+        description: error.message || 'Tente novamente',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSaveSubdomain = () => {
-    updateBrandingMutation.mutate({ subdomain });
+  const hasChanges = () => {
+    const hasSubdomainChange = subdomain !== customer?.subdomain;
+    const hasPendingLogos = Object.values(pendingLogos).some(logo => logo !== null);
+    return hasSubdomainChange || hasPendingLogos;
   };
 
   if (!activeClientId) {
@@ -188,14 +174,6 @@ export default function BrandingSettings() {
               Acesso será: <strong>{subdomain || 'seu-subdominio'}.opus.com</strong>
             </p>
           </div>
-          <Button
-            onClick={handleSaveSubdomain}
-            disabled={updateBrandingMutation.isPending}
-            data-testid="button-save-subdomain"
-          >
-            {updateBrandingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar Subdomínio
-          </Button>
         </CardContent>
       </Card>
 
@@ -204,7 +182,7 @@ export default function BrandingSettings() {
         <CardHeader>
           <CardTitle>Logos Personalizadas</CardTitle>
           <CardDescription>
-            Selecione as imagens e clique em "Salvar Logo" para aplicar
+            Selecione as imagens desejadas. Clique em "Salvar" no final para aplicar todas as mudanças.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -215,10 +193,8 @@ export default function BrandingSettings() {
             logoType="loginLogo"
             currentLogo={customer?.loginLogo}
             pendingLogo={pendingLogos.loginLogo}
-            uploading={uploading === 'loginLogo'}
             onFileSelect={(file) => handleFileSelect('loginLogo', file)}
             onRemovePending={() => handleRemovePending('loginLogo')}
-            onSave={() => handleSaveLogo('loginLogo')}
           />
 
           {/* Logo Sidebar */}
@@ -228,10 +204,8 @@ export default function BrandingSettings() {
             logoType="sidebarLogo"
             currentLogo={customer?.sidebarLogo}
             pendingLogo={pendingLogos.sidebarLogo}
-            uploading={uploading === 'sidebarLogo'}
             onFileSelect={(file) => handleFileSelect('sidebarLogo', file)}
             onRemovePending={() => handleRemovePending('sidebarLogo')}
-            onSave={() => handleSaveLogo('sidebarLogo')}
           />
 
           {/* Logo Sidebar Collapsed */}
@@ -241,10 +215,8 @@ export default function BrandingSettings() {
             logoType="sidebarLogoCollapsed"
             currentLogo={customer?.sidebarLogoCollapsed}
             pendingLogo={pendingLogos.sidebarLogoCollapsed}
-            uploading={uploading === 'sidebarLogoCollapsed'}
             onFileSelect={(file) => handleFileSelect('sidebarLogoCollapsed', file)}
             onRemovePending={() => handleRemovePending('sidebarLogoCollapsed')}
-            onSave={() => handleSaveLogo('sidebarLogoCollapsed')}
           />
 
           {/* Logo Home */}
@@ -254,10 +226,8 @@ export default function BrandingSettings() {
             logoType="homeLogo"
             currentLogo={customer?.homeLogo}
             pendingLogo={pendingLogos.homeLogo}
-            uploading={uploading === 'homeLogo'}
             onFileSelect={(file) => handleFileSelect('homeLogo', file)}
             onRemovePending={() => handleRemovePending('homeLogo')}
-            onSave={() => handleSaveLogo('homeLogo')}
           />
         </CardContent>
       </Card>
@@ -276,6 +246,28 @@ export default function BrandingSettings() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Botão Salvar no final */}
+      <div className="flex justify-end">
+        <Button
+          size="lg"
+          onClick={handleSaveAll}
+          disabled={!hasChanges() || isSaving}
+          data-testid="button-save-all"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-5 w-5" />
+              Salvar
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -287,20 +279,16 @@ function LogoUploader({
   logoType,
   currentLogo,
   pendingLogo,
-  uploading,
   onFileSelect,
-  onRemovePending,
-  onSave
+  onRemovePending
 }: {
   label: string;
   description: string;
   logoType: string;
   currentLogo?: string | null;
   pendingLogo: { file: File; preview: string } | null;
-  uploading: boolean;
   onFileSelect: (file: File | null) => void;
   onRemovePending: () => void;
-  onSave: () => void;
 }) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -315,7 +303,7 @@ function LogoUploader({
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         </div>
         
-        {!pendingLogo && !uploading && currentLogo && (
+        {!pendingLogo && currentLogo && (
           <div className="flex items-center gap-2 text-sm text-green-600">
             <Check className="h-4 w-4" />
             <span>Salva</span>
@@ -323,76 +311,47 @@ function LogoUploader({
         )}
       </div>
       
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
-            disabled={uploading}
-            onClick={() => document.getElementById(logoType)?.click()}
-            data-testid={`button-select-${logoType}`}
-            className="min-w-[140px]"
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            {currentLogo ? 'Trocar Arquivo' : 'Escolher Arquivo'}
-          </Button>
-          
-          <Input
-            id={logoType}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            disabled={uploading}
-            className="hidden"
-            data-testid={`input-upload-${logoType}`}
-          />
-        </div>
+      <div className="flex items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="default"
+          onClick={() => document.getElementById(logoType)?.click()}
+          data-testid={`button-select-${logoType}`}
+          className="min-w-[140px]"
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          {currentLogo || pendingLogo ? 'Trocar Logo' : 'Escolher Arquivo'}
+        </Button>
+        
+        <Input
+          id={logoType}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="hidden"
+          data-testid={`input-upload-${logoType}`}
+        />
         
         {pendingLogo && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+          <>
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md flex-1">
               <Check className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-blue-700 dark:text-blue-300 flex-1">
-                Arquivo selecionado: <strong>{pendingLogo.file.name}</strong>
+              <span className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>{pendingLogo.file.name}</strong> (não salvo)
               </span>
             </div>
             
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="default"
-                size="default"
-                disabled={uploading}
-                onClick={onSave}
-                data-testid={`button-save-${logoType}`}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Salvar Logo
-                  </>
-                )}
-              </Button>
-              
-              <Button
-                type="button"
-                variant="outline"
-                size="default"
-                disabled={uploading}
-                onClick={onRemovePending}
-                data-testid={`button-remove-${logoType}`}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancelar
-              </Button>
-            </div>
-          </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={onRemovePending}
+              data-testid={`button-remove-${logoType}`}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </>
         )}
       </div>
       
@@ -414,7 +373,7 @@ function LogoUploader({
       {/* Preview da logo atual salva */}
       {currentLogo && !pendingLogo && (
         <div className="mt-3 p-4 border rounded-md bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">Logo atual salva:</p>
+          <p className="text-xs text-muted-foreground mb-2 font-medium">Logo atual:</p>
           <img
             src={currentLogo}
             alt={label}
