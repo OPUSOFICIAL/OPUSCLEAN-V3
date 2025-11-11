@@ -290,9 +290,11 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     </Card>
   );
 
+  const [activeTab, setActiveTab] = useState('logos');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Configuração de Branding - {customer.name}</DialogTitle>
           <DialogDescription>
@@ -300,13 +302,13 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="logos" className="w-full">
+        <Tabs defaultValue="logos" value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="logos">Logos</TabsTrigger>
             <TabsTrigger value="colors">Cores dos Módulos</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="logos" className="space-y-4">
+          <TabsContent value="logos" className="space-y-4 overflow-y-auto flex-1">
             <LogoUploadCard
               title="Logo da Tela de Login"
               description="Logo exibida na tela de login"
@@ -342,20 +344,9 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
               logoType="home"
               recommendedSize="300x100px"
             />
-
-            <div className="flex justify-end pt-4">
-              <Button
-                onClick={handleSaveLogos}
-                disabled={!hasLogoChanges || isSavingLogos}
-                data-testid="button-save-logos"
-              >
-                <Check className="mr-2 h-4 w-4" />
-                {isSavingLogos ? 'Salvando...' : 'Confirmar Logos'}
-              </Button>
-            </div>
           </TabsContent>
 
-          <TabsContent value="colors" className="space-y-6">
+          <TabsContent value="colors" className="space-y-6 overflow-y-auto flex-1">
             {/* Módulo Clean */}
             <Card>
               <CardHeader>
@@ -501,19 +492,39 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
                 </div>
               </CardContent>
             </Card>
-
-            <div className="flex justify-end pt-4">
-              <Button
-                onClick={handleSaveColors}
-                disabled={updateBrandingMutation.isPending}
-                data-testid="button-save-colors"
-              >
-                <Check className="mr-2 h-4 w-4" />
-                {updateBrandingMutation.isPending ? 'Salvando...' : 'Salvar Cores'}
-              </Button>
-            </div>
           </TabsContent>
         </Tabs>
+
+        {/* Rodapé fixo com botões - sempre visível */}
+        <div className="flex justify-end gap-2 border-t pt-4 mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancelar
+          </Button>
+          
+          {activeTab === 'logos' ? (
+            <Button
+              onClick={handleSaveLogos}
+              disabled={!hasLogoChanges || isSavingLogos}
+              data-testid="button-save-logos"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              {isSavingLogos ? 'Salvando...' : 'Confirmar Logos'}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSaveColors}
+              disabled={updateBrandingMutation.isPending}
+              data-testid="button-save-colors"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              {updateBrandingMutation.isPending ? 'Salvando...' : 'Salvar Cores'}
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
