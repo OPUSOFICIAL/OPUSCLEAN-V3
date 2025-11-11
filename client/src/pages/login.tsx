@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { login, setAuthState } from "@/lib/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useBranding } from "@/contexts/BrandingContext";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
@@ -31,6 +32,7 @@ export default function Login() {
   });
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { branding } = useBranding();
 
   useEffect(() => {
     if (isMobile) {
@@ -152,9 +154,10 @@ export default function Login() {
             className="text-center mb-8"
           >
             <img 
-              src={aceleraLogo} 
-              alt="Acelera Full Facilities" 
+              src={branding?.loginLogo || aceleraLogo} 
+              alt={branding?.name || "Acelera Full Facilities"} 
               className="h-[200px] mx-auto mb-6"
+              data-testid="img-login-logo"
             />
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Bem-vindo de volta

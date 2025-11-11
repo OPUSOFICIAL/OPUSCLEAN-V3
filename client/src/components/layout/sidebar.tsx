@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useBranding } from "@/contexts/BrandingContext";
 import aceleraLogo from "@assets/imagem_2025-11-10_010501695-Photoroom_1762805733799.png";
 import { 
   Building, 
@@ -49,6 +50,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   const { can } = usePermissions();
   const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
   const { currentModule, setModule, moduleConfig, allowedModules, hasMultipleModules } = useModule();
+  const { branding } = useBranding();
   
   // Helper para obter cores de um módulo específico (com fallback para cores padrão)
   const getModulePalette = (moduleId: 'clean' | 'maintenance') => {
@@ -152,10 +154,11 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
             <img 
               src={
                 isCollapsed 
-                  ? (activeClient?.sidebarLogoCollapsed || activeClient?.sidebarLogo || aceleraLogo)
-                  : (activeClient?.sidebarLogo || aceleraLogo)
+                  ? (activeClient?.sidebarLogoCollapsed || branding?.sidebarLogoCollapsed || activeClient?.sidebarLogo || branding?.sidebarLogo || aceleraLogo)
+                  : (activeClient?.sidebarLogo || branding?.sidebarLogo || aceleraLogo)
               } 
-              alt={activeClient?.name || "Acelera Full Facilities"} 
+              alt={activeClient?.name || branding?.name || "Acelera Full Facilities"}
+              data-testid={isCollapsed ? "img-sidebar-logo-collapsed" : "img-sidebar-logo"} 
               className={`${
                 isCollapsed ? 'h-20 w-auto' : 'h-32 w-auto max-w-full'
               } object-contain transition-all duration-300`}
