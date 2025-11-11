@@ -32,6 +32,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
   const [activeClientId, setActiveClientId] = useState<string>(() => {
     return localStorage.getItem('opus:activeClientId') || "";
   });
+  const [subdomainDetected, setSubdomainDetected] = useState(false);
   const { user } = useAuth();
   
   // Usar o companyId do usuário logado ao invés de um valor fixo
@@ -43,6 +44,46 @@ export function ClientProvider({ children }: ClientProviderProps) {
   
   // Verificar se o usuário é admin (role admin ou gestor_cliente)
   const isAdmin = user?.role === 'admin' || user?.role === 'gestor_cliente';
+
+  // Detectar subdomínio e buscar cliente automaticamente
+  const detectSubdomain = () => {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    // Se houver pelo menos 3 partes (subdominio.dominio.com) e não for www
+    if (parts.length >= 3 && parts[0] !== 'www') {
+      return parts[0];
+    }
+    return null;
+  };
+
+  // Buscar cliente por subdomínio (executa apenas uma vez ao carregar)
+  useEffect(() => {
+    const fetchCustomerBySubdomain = async () => {
+      const subdomain = detectSubdomain();
+      
+      if (!subdomain || subdomainDetected) {
+        return; // Não há subdomínio ou já foi detectado
+      }
+
+      try {
+        const response = await fetch(`/api/public/customer-by-subdomain/${subdomain}`);
+        if (response.ok) {
+          const customer = await response.json();
+          console.log(`[CLIENT CONTEXT] Subdomínio detectado: ${subdomain}, cliente: ${customer.name}`);
+          setActiveClientId(customer.id);
+          setSubdomainDetected(true);
+          // Salvar no localStorage para manter mesmo depois
+          localStorage.setItem('opus:activeClientId', customer.id);
+        } else {
+          console.log(`[CLIENT CONTEXT] Subdomínio ${subdomain} não encontrado`);
+        }
+      } catch (error) {
+        console.error('[CLIENT CONTEXT] Erro ao buscar cliente por subdomínio:', error);
+      }
+    };
+
+    fetchCustomerBySubdomain();
+  }, []); // Executa apenas uma vez ao montar
 
   // Buscar todos os clientes da empresa do usuário (apenas para admin/opus users)
   const { data: allCustomers = [], isLoading: isLoadingCustomers } = useQuery({

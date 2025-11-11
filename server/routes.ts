@@ -2558,6 +2558,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public API - Get full customer data by subdomain (no auth required)
+  app.get("/api/public/customer-by-subdomain/:subdomain", async (req, res) => {
+    try {
+      const [customer] = await db
+        .select()
+        .from(customers)
+        .where(eq(customers.subdomain, req.params.subdomain))
+        .limit(1);
+      
+      if (!customer) {
+        return res.status(404).json({ message: 'Cliente não encontrado para este subdomínio' });
+      }
+      
+      res.json(customer);
+    } catch (error) {
+      console.error('Error fetching customer by subdomain:', error);
+      res.status(500).json({ message: 'Erro ao buscar cliente' });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/login", loginLimiter, async (req, res) => {
     try {

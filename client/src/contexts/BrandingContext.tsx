@@ -35,17 +35,20 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
   const loadBranding = async () => {
     try {
-      // Detectar subdomínio do hostname
+      // Detectar subdomínio do hostname (compatível com qualquer domínio)
       const hostname = window.location.hostname;
       const parts = hostname.split('.');
-      const subdomain = parts.length >= 3 ? parts[0] : null;
+      // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
+      const subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
 
-      if (subdomain && subdomain !== 'www') {
+      if (subdomain) {
+        console.log(`[BRANDING] Subdomínio detectado: ${subdomain} (domínio completo: ${hostname})`);
         // Buscar configurações do subdomínio
         const response = await fetch(`/api/public/branding/${subdomain}`);
         if (response.ok) {
           const data = await response.json();
           setBranding(data);
+          console.log(`[BRANDING] Branding aplicado para cliente: ${data.name}`);
 
           // Aplicar cores customizadas via CSS variables
           if (data.moduleColors?.clean) {
