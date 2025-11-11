@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2, Upload, Check } from 'lucide-react';
+import { Loader2, Upload, Check, X } from 'lucide-react';
 
 export default function BrandingSettings() {
   const { activeClientId } = useClient();
@@ -39,7 +39,10 @@ export default function BrandingSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', activeClientId] });
       refresh();
-      toast({ title: 'Configurações salvas com sucesso!' });
+      toast({ 
+        title: '✓ Configurações salvas!',
+        description: 'As alterações foram aplicadas com sucesso.'
+      });
     },
     onError: (error: any) => {
       toast({
@@ -84,7 +87,10 @@ export default function BrandingSettings() {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', activeClientId] });
       refresh();
       setUploading(null);
-      toast({ title: 'Logo atualizada com sucesso!' });
+      toast({ 
+        title: '✓ Logo salva com sucesso!',
+        description: 'A nova logo foi enviada e aplicada ao sistema.'
+      });
     },
     onError: (error: any) => {
       setUploading(null);
@@ -98,7 +104,13 @@ export default function BrandingSettings() {
 
   const handleLogoUpload = (logoType: string, file: File | null) => {
     if (!file) return;
+    
     setUploading(logoType);
+    toast({
+      title: '⏳ Enviando logo...',
+      description: 'Aguarde enquanto fazemos o upload da imagem.'
+    });
+    
     uploadLogoMutation.mutate({ logoType, file });
   };
 
@@ -163,7 +175,7 @@ export default function BrandingSettings() {
         <CardHeader>
           <CardTitle>Logos Personalizadas</CardTitle>
           <CardDescription>
-            Faça upload das logos que serão exibidas nas diferentes telas do sistema
+            Selecione as imagens para upload. A logo será salva automaticamente após seleção.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -189,8 +201,8 @@ export default function BrandingSettings() {
 
           {/* Logo Sidebar Collapsed */}
           <LogoUploader
-            label="Logo da Sidebar (Recolhida)"
-            description="Ícone exibido quando a barra está recolhida (recomendado: 40x40px)"
+            label="Logo da Sidebar (Colapsada)"
+            description="Logo exibida na barra lateral quando colapsada (recomendado: 80x80px)"
             logoType="sidebarLogoCollapsed"
             currentLogo={customer?.sidebarLogoCollapsed}
             uploading={uploading === 'sidebarLogoCollapsed'}
@@ -243,32 +255,78 @@ function LogoUploader({
   uploading: boolean;
   onUpload: (file: File | null) => void;
 }) {
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setSelectedFileName(file.name);
+      onUpload(file);
+    }
+  };
+
   return (
-    <div className="space-y-2" data-testid={`logo-uploader-${logoType}`}>
-      <Label htmlFor={logoType}>{label}</Label>
-      <p className="text-xs text-muted-foreground">{description}</p>
+    <div className="space-y-3" data-testid={`logo-uploader-${logoType}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <Label htmlFor={logoType} className="text-base font-medium">{label}</Label>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        </div>
+        
+        {uploading && (
+          <div className="flex items-center gap-2 text-sm text-blue-600">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Salvando...</span>
+          </div>
+        )}
+        
+        {!uploading && currentLogo && (
+          <div className="flex items-center gap-2 text-sm text-green-600">
+            <Check className="h-4 w-4" />
+            <span>Salva</span>
+          </div>
+        )}
+      </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="default"
+          disabled={uploading}
+          onClick={() => document.getElementById(logoType)?.click()}
+          data-testid={`button-upload-${logoType}`}
+          className="min-w-[140px]"
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          {uploading ? 'Enviando...' : currentLogo ? 'Trocar Logo' : 'Escolher Arquivo'}
+        </Button>
+        
         <Input
           id={logoType}
           type="file"
           accept="image/*"
-          onChange={(e) => onUpload(e.target.files?.[0] || null)}
+          onChange={handleFileChange}
           disabled={uploading}
-          className="flex-1"
+          className="hidden"
           data-testid={`input-upload-${logoType}`}
         />
-        {uploading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
-        {!uploading && currentLogo && <Check className="h-5 w-5 text-green-600" />}
+        
+        {selectedFileName && !uploading && (
+          <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <Check className="h-3 w-3 text-green-600" />
+            {selectedFileName}
+          </span>
+        )}
       </div>
       
       {currentLogo && (
-        <div className="mt-2 p-4 border rounded-md bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-2">Preview atual:</p>
+        <div className="mt-3 p-4 border rounded-md bg-muted/30">
+          <p className="text-xs text-muted-foreground mb-2 font-medium">Preview atual:</p>
           <img
             src={currentLogo}
             alt={label}
-            className="max-h-20 object-contain"
+            className="max-h-24 object-contain"
             data-testid={`img-preview-${logoType}`}
           />
         </div>
