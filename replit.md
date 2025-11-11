@@ -28,12 +28,11 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
 
 - **Login Page**: Minimalist corporate design
   - Simple top bar with only "Voltar" button (logo removed for cleaner design)
-  - Large centered Acelera Full Facilities logo (128px height) above form
+  - Large centered Acelera Full Facilities logo (200px height) above form
   - Clean white card with subtle shadows
-  - Microsoft SSO integration prominently displayed with colorful logo
-  - Traditional email/password login below SSO
+  - Direct email/password login (Microsoft SSO removed)
   - Professional form styling with icon-enhanced inputs
-  - Security messaging: "Plataforma Enterprise Segura | SSO Disponível"
+  - Security messaging: "Plataforma Enterprise Segura"
   - Minimal decorative elements (subtle gradient orbs)
 
 - **Module Selection**: Professional module cards with ROI emphasis
@@ -47,7 +46,7 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
 
 **Visual Elements**:
 - Acelera Full Facilities logo (attached_assets/acelera-full-facilities-logo.png) with triangular "A" symbol and blue detail
-- Logo sizes: Landing top bar (150px), Login center (128px), Module selection (128px)
+- Logo sizes: Landing top bar (150px), Login center (200px), Module selection (128px)
 - Icons from lucide-react representing facilities operations (Building2, Wrench, ClipboardCheck, Users, TrendingUp, Shield)
 - Custom Microsoft logo SVG for SSO
 - Framer Motion animations for professional, subtle transitions

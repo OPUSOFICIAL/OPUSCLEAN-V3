@@ -154,7 +154,7 @@ export default function Login() {
             <img 
               src={aceleraLogo} 
               alt="Acelera Full Facilities" 
-              className="h-32 mx-auto mb-6"
+              className="h-[200px] mx-auto mb-6"
             />
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Bem-vindo de volta
@@ -171,30 +171,6 @@ export default function Login() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8"
           >
-            {/* SSO Buttons */}
-            <div className="space-y-3 mb-6">
-              <Button
-                type="button"
-                onClick={handleMicrosoftLogin}
-                variant="outline"
-                className="w-full h-12 border-2 border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold"
-                data-testid="button-microsoft-login"
-              >
-                <MicrosoftIcon />
-                <span className="ml-3">Continuar com Microsoft</span>
-              </Button>
-            </div>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-slate-500 font-medium">Ou use seu email</span>
-              </div>
-            </div>
-
             {/* Login Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
