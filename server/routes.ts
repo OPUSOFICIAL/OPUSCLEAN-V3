@@ -3351,6 +3351,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === USER ALLOWED CUSTOMERS ===
+
+  // Buscar clientes permitidos para um usuário
+  app.get("/api/system-users/:userId/allowed-customers", async (req, res) => {
+    try {
+      const customers = await storage.getCustomersByUser(req.params.userId);
+      res.json(customers);
+    } catch (error) {
+      console.error("Error fetching user allowed customers:", error);
+      res.status(500).json({ message: "Failed to fetch allowed customers" });
+    }
+  });
+
+  // Definir clientes permitidos para um usuário (substitui lista completa)
+  app.put("/api/system-users/:userId/allowed-customers", async (req, res) => {
+    try {
+      const { customerIds } = req.body;
+      
+      if (!Array.isArray(customerIds)) {
+        return res.status(400).json({ message: "customerIds must be an array" });
+      }
+
+      await storage.setUserAllowedCustomers(req.params.userId, customerIds);
+      
+      // Retornar lista atualizada de clientes
+      const customers = await storage.getCustomersByUser(req.params.userId);
+      res.json(customers);
+    } catch (error) {
+      console.error("Error updating user allowed customers:", error);
+      res.status(500).json({ message: "Failed to update allowed customers" });
+    }
+  });
+
   // === USER SITE ASSIGNMENTS ===
   
   // Get sites assigned to a user
