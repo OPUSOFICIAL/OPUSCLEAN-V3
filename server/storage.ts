@@ -2738,7 +2738,10 @@ export class DatabaseStorage implements IStorage {
     
     // Create a Set for fast lookup of existing work orders (includes zoneId to avoid duplicates per zone)
     const existingSet = new Set(
-      existingWorkOrders.map(wo => `${wo.cleaningActivityId}|${wo.zoneId}|${wo.scheduledDate?.toISOString()}`)
+      existingWorkOrders.map(wo => {
+        const dateKey = wo.scheduledDate ? (wo.scheduledDate instanceof Date ? wo.scheduledDate.toISOString() : wo.scheduledDate) : '';
+        return `${wo.cleaningActivityId}|${wo.zoneId}|${dateKey}`;
+      })
     );
     
     // Step 2: Build all work orders to create in memory (no database queries)
@@ -2779,7 +2782,8 @@ export class DatabaseStorage implements IStorage {
         for (const occ of occurrences) {
           // Create one work order for EACH zone in the activity
           for (const zoneId of zoneIds) {
-            const key = `${activity.id}|${zoneId}|${occ.date.toISOString()}`;
+            const dateKey = occ.date instanceof Date ? occ.date.toISOString() : occ.date;
+            const key = `${activity.id}|${zoneId}|${dateKey}`;
             
             // Skip if already exists (in-memory check, very fast)
             if (existingSet.has(key)) {
@@ -2873,7 +2877,10 @@ export class DatabaseStorage implements IStorage {
     
     // Create a Set for fast lookup
     const existingSet = new Set(
-      existingWorkOrders.map(wo => `${wo.maintenanceActivityId}|${wo.equipmentId}|${wo.scheduledDate?.toISOString()}`)
+      existingWorkOrders.map(wo => {
+        const dateKey = wo.scheduledDate ? (wo.scheduledDate instanceof Date ? wo.scheduledDate.toISOString() : wo.scheduledDate) : '';
+        return `${wo.maintenanceActivityId}|${wo.equipmentId}|${dateKey}`;
+      })
     );
     
     // Collect all unique equipment IDs needed
@@ -2962,7 +2969,8 @@ export class DatabaseStorage implements IStorage {
       // Build work orders (without numbers first)
       for (const equipItem of equipmentList) {
         for (const occ of occurrences) {
-          const key = `${activity.id}|${equipItem.id}|${occ.date.toISOString()}`;
+          const dateKey = occ.date instanceof Date ? occ.date.toISOString() : occ.date;
+          const key = `${activity.id}|${equipItem.id}|${dateKey}`;
           
           // Skip if already exists (in-memory check)
           if (existingSet.has(key)) {
