@@ -182,7 +182,7 @@ export default function Login() {
                 <img 
                   src={aceleraLogo} 
                   alt="Acelera Full Facilities" 
-                  className="h-16 drop-shadow-lg"
+                  className="h-50 drop-shadow-lg"
                 />
               </motion.div>
 
