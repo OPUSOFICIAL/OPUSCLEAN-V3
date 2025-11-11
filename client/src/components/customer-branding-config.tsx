@@ -506,6 +506,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
           
           {activeTab === 'logos' ? (
             <Button
+              variant="outline"
               onClick={handleSaveLogos}
               disabled={!hasLogoChanges || isSavingLogos}
               data-testid="button-save-logos"
@@ -515,6 +516,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
             </Button>
           ) : (
             <Button
+              variant="outline"
               onClick={handleSaveColors}
               disabled={updateBrandingMutation.isPending}
               data-testid="button-save-colors"
