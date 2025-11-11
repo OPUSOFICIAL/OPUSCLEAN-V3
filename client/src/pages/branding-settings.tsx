@@ -26,6 +26,20 @@ export default function BrandingSettings() {
     homeLogo: null
   });
 
+  // Estado para cores personalizadas
+  const [moduleColors, setModuleColors] = useState({
+    clean: {
+      primary: '#1e3a8a',
+      secondary: '#3b82f6',
+      accent: '#60a5fa'
+    },
+    maintenance: {
+      primary: '#ea580c',
+      secondary: '#f97316',
+      accent: '#fb923c'
+    }
+  });
+
   // Query customer data
   const { data: customer } = useQuery<any>({
     queryKey: ['/api/customers', activeClientId],
@@ -36,6 +50,14 @@ export default function BrandingSettings() {
   useEffect(() => {
     if (customer?.subdomain) {
       setSubdomain(customer.subdomain);
+    }
+    
+    // Sync module colors with customer data
+    if (customer?.moduleColors) {
+      setModuleColors(prev => ({
+        clean: customer.moduleColors.clean || prev.clean,
+        maintenance: customer.moduleColors.maintenance || prev.maintenance
+      }));
     }
   }, [customer]);
 
@@ -67,9 +89,26 @@ export default function BrandingSettings() {
     setIsSaving(true);
 
     try {
-      // 1. Salvar subdomínio se mudou
+      // 1. Salvar subdomínio e cores se mudaram
+      const brandingUpdates: any = {};
+      
       if (subdomain !== customer?.subdomain) {
-        await apiRequest('PUT', `/api/customers/${activeClientId}/branding`, { subdomain });
+        brandingUpdates.subdomain = subdomain;
+      }
+      
+      // Verificar se cores mudaram
+      const colorsChanged = 
+        JSON.stringify(moduleColors) !== JSON.stringify(customer?.moduleColors || {
+          clean: { primary: '#1e3a8a', secondary: '#3b82f6', accent: '#60a5fa' },
+          maintenance: { primary: '#ea580c', secondary: '#f97316', accent: '#fb923c' }
+        });
+      
+      if (colorsChanged) {
+        brandingUpdates.moduleColors = moduleColors;
+      }
+      
+      if (Object.keys(brandingUpdates).length > 0) {
+        await apiRequest('PUT', `/api/customers/${activeClientId}/branding`, brandingUpdates);
       }
 
       // 2. Upload de cada logo pendente
@@ -130,7 +169,11 @@ export default function BrandingSettings() {
   const hasChanges = () => {
     const hasSubdomainChange = subdomain !== customer?.subdomain;
     const hasPendingLogos = Object.values(pendingLogos).some(logo => logo !== null);
-    return hasSubdomainChange || hasPendingLogos;
+    const hasColorsChange = JSON.stringify(moduleColors) !== JSON.stringify(customer?.moduleColors || {
+      clean: { primary: '#1e3a8a', secondary: '#3b82f6', accent: '#60a5fa' },
+      maintenance: { primary: '#ea580c', secondary: '#f97316', accent: '#fb923c' }
+    });
+    return hasSubdomainChange || hasPendingLogos || hasColorsChange;
   };
 
   if (!activeClientId) {
@@ -232,7 +275,7 @@ export default function BrandingSettings() {
         </CardContent>
       </Card>
 
-      {/* Cores (placeholder para futura implementação) */}
+      {/* Cores Personalizadas */}
       <Card>
         <CardHeader>
           <CardTitle>Cores Personalizadas</CardTitle>
@@ -240,10 +283,190 @@ export default function BrandingSettings() {
             Defina o esquema de cores para cada módulo do sistema
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Seletor de cores em desenvolvimento. Em breve você poderá personalizar as cores dos módulos Clean e Maintenance.
-          </p>
+        <CardContent className="space-y-6">
+          {/* Módulo Clean */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+              <h3 className="font-semibold text-base">Módulo Clean (Limpeza)</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clean-primary">Cor Primária</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="clean-primary"
+                    type="color"
+                    value={moduleColors.clean.primary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      clean: { ...prev.clean, primary: e.target.value }
+                    }))}
+                    className="w-16 h-10 cursor-pointer"
+                    data-testid="input-color-clean-primary"
+                  />
+                  <Input
+                    type="text"
+                    value={moduleColors.clean.primary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      clean: { ...prev.clean, primary: e.target.value }
+                    }))}
+                    className="flex-1 font-mono"
+                    placeholder="#1e3a8a"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="clean-secondary">Cor Secundária</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="clean-secondary"
+                    type="color"
+                    value={moduleColors.clean.secondary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      clean: { ...prev.clean, secondary: e.target.value }
+                    }))}
+                    className="w-16 h-10 cursor-pointer"
+                    data-testid="input-color-clean-secondary"
+                  />
+                  <Input
+                    type="text"
+                    value={moduleColors.clean.secondary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      clean: { ...prev.clean, secondary: e.target.value }
+                    }))}
+                    className="flex-1 font-mono"
+                    placeholder="#3b82f6"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="clean-accent">Cor de Destaque</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="clean-accent"
+                    type="color"
+                    value={moduleColors.clean.accent}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      clean: { ...prev.clean, accent: e.target.value }
+                    }))}
+                    className="w-16 h-10 cursor-pointer"
+                    data-testid="input-color-clean-accent"
+                  />
+                  <Input
+                    type="text"
+                    value={moduleColors.clean.accent}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      clean: { ...prev.clean, accent: e.target.value }
+                    }))}
+                    className="flex-1 font-mono"
+                    placeholder="#60a5fa"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-6"></div>
+
+          {/* Módulo Maintenance */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-orange-600"></div>
+              <h3 className="font-semibold text-base">Módulo Maintenance (Manutenção)</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="maintenance-primary">Cor Primária</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="maintenance-primary"
+                    type="color"
+                    value={moduleColors.maintenance.primary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      maintenance: { ...prev.maintenance, primary: e.target.value }
+                    }))}
+                    className="w-16 h-10 cursor-pointer"
+                    data-testid="input-color-maintenance-primary"
+                  />
+                  <Input
+                    type="text"
+                    value={moduleColors.maintenance.primary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      maintenance: { ...prev.maintenance, primary: e.target.value }
+                    }))}
+                    className="flex-1 font-mono"
+                    placeholder="#ea580c"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="maintenance-secondary">Cor Secundária</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="maintenance-secondary"
+                    type="color"
+                    value={moduleColors.maintenance.secondary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      maintenance: { ...prev.maintenance, secondary: e.target.value }
+                    }))}
+                    className="w-16 h-10 cursor-pointer"
+                    data-testid="input-color-maintenance-secondary"
+                  />
+                  <Input
+                    type="text"
+                    value={moduleColors.maintenance.secondary}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      maintenance: { ...prev.maintenance, secondary: e.target.value }
+                    }))}
+                    className="flex-1 font-mono"
+                    placeholder="#f97316"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="maintenance-accent">Cor de Destaque</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="maintenance-accent"
+                    type="color"
+                    value={moduleColors.maintenance.accent}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      maintenance: { ...prev.maintenance, accent: e.target.value }
+                    }))}
+                    className="w-16 h-10 cursor-pointer"
+                    data-testid="input-color-maintenance-accent"
+                  />
+                  <Input
+                    type="text"
+                    value={moduleColors.maintenance.accent}
+                    onChange={(e) => setModuleColors(prev => ({
+                      ...prev,
+                      maintenance: { ...prev.maintenance, accent: e.target.value }
+                    }))}
+                    className="flex-1 font-mono"
+                    placeholder="#fb923c"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
