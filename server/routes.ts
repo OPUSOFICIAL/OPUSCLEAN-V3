@@ -4089,6 +4089,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, module } = req.query;
 
+      console.log("[TV MODE] Request received with params:", { customerId, module });
+
       if (!customerId || !module) {
         return res.status(400).json({ message: "customerId and module are required" });
       }
@@ -4098,9 +4100,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         module as 'clean' | 'maintenance'
       );
 
+      console.log("[TV MODE] Stats fetched:", JSON.stringify(stats, null, 2));
+
       res.json(stats);
     } catch (error) {
-      console.error("Error fetching TV mode stats:", error);
+      console.error("[TV MODE] Error fetching TV mode stats:", error);
       res.status(500).json({ message: "Failed to fetch TV mode statistics" });
     }
   });

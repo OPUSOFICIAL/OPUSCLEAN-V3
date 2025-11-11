@@ -31,6 +31,18 @@ export default function TvMode() {
   // Fetch TV Mode stats
   const { data: stats, isLoading } = useQuery<TvModeStats>({
     queryKey: ["/api/tv-mode/stats", activeClientId, currentModule, refreshKey],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/tv-mode/stats?customerId=${activeClientId}&module=${currentModule}`,
+        {
+          credentials: 'include', // Include cookies for authentication
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch TV mode stats");
+      }
+      return response.json();
+    },
     enabled: !!activeClientId && !!currentModule,
     refetchInterval: 10000, // Auto-refresh every 10 seconds
   });
