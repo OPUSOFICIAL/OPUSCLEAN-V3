@@ -71,7 +71,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
       {/* Top Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-slate-200 shadow-sm z-50">
+      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-slate-200/50 shadow-sm z-50">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between py-4">
             <div className="flex-shrink-0">
