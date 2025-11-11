@@ -17,11 +17,14 @@ import {
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
   insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
   insertAiIntegrationSchema,
+  customers,
   type User, type InsertUser
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import crypto from "crypto";
+import { db } from "./db";
+import { eq, and, ne } from "drizzle-orm";
 import {
   requireAuth,
   requireAdmin,
@@ -2361,9 +2364,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/companies/:companyId/customers", requireManageClients, async (req, res) => {
     try {
+      // Generate subdomain from customer name if not provided
+      let subdomain = req.body.subdomain;
+      if (!subdomain && req.body.name) {
+        subdomain = req.body.name
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remove accents
+          .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+          .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+        
+        // Check if subdomain already exists
+        const existing = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.subdomain, subdomain))
+          .limit(1);
+        
+        if (existing.length > 0) {
+          // Append random suffix if exists
+          subdomain = `${subdomain}-${Math.floor(Math.random() * 1000)}`;
+        }
+      }
+      
       const customer = insertCustomerSchema.parse({
         ...req.body,
-        companyId: req.params.companyId
+        companyId: req.params.companyId,
+        subdomain
       });
       const newCustomer = await storage.createCustomer(customer);
       res.status(201).json(newCustomer);
@@ -2403,13 +2430,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customer branding configuration
   app.put("/api/customers/:id/branding", requireManageClients, async (req, res) => {
     try {
-      const { loginLogo, sidebarLogo, sidebarLogoCollapsed, moduleColors } = req.body;
+      const { loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, moduleColors, subdomain } = req.body;
       
       const brandingUpdate: any = {};
       if (loginLogo !== undefined) brandingUpdate.loginLogo = loginLogo;
       if (sidebarLogo !== undefined) brandingUpdate.sidebarLogo = sidebarLogo;
       if (sidebarLogoCollapsed !== undefined) brandingUpdate.sidebarLogoCollapsed = sidebarLogoCollapsed;
+      if (homeLogo !== undefined) brandingUpdate.homeLogo = homeLogo;
       if (moduleColors !== undefined) brandingUpdate.moduleColors = moduleColors;
+      
+      // Normalize and validate subdomain if provided
+      if (subdomain !== undefined) {
+        // Reject empty strings
+        if (subdomain === '') {
+          return res.status(400).json({ message: 'Subdomínio não pode ser vazio' });
+        }
+        
+        // Normalize subdomain: lowercase, remove accents, replace non-alphanumeric with hyphens
+        const normalizedSubdomain = subdomain
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        
+        // Validate format
+        if (!/^[a-z0-9-]+$/.test(normalizedSubdomain)) {
+          return res.status(400).json({ message: 'Subdomínio inválido. Use apenas letras, números e hífens.' });
+        }
+        
+        // Check uniqueness
+        const existing = await db
+          .select()
+          .from(customers)
+          .where(and(
+            eq(customers.subdomain, normalizedSubdomain),
+            ne(customers.id, req.params.id)
+          ))
+          .limit(1);
+        
+        if (existing.length > 0) {
+          return res.status(400).json({ message: 'Subdomínio já está em uso' });
+        }
+        
+        brandingUpdate.subdomain = normalizedSubdomain;
+      }
       
       const updatedCustomer = await storage.updateCustomer(req.params.id, brandingUpdate);
       res.json(updatedCustomer);
@@ -2428,8 +2493,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "logoType, imageData, and fileName are required" });
       }
       
-      if (!['loginLogo', 'sidebarLogo', 'sidebarLogoCollapsed'].includes(logoType)) {
-        return res.status(400).json({ message: "Invalid logoType. Must be one of: loginLogo, sidebarLogo, sidebarLogoCollapsed" });
+      if (!['loginLogo', 'sidebarLogo', 'sidebarLogoCollapsed', 'homeLogo'].includes(logoType)) {
+        return res.status(400).json({ message: "Invalid logoType. Must be one of: loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo" });
       }
       
       // Import fs promises
@@ -2462,6 +2527,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading customer logo:", error);
       res.status(500).json({ message: "Failed to upload logo" });
+    }
+  });
+
+  // Public API - Get customer branding by subdomain (no auth required)
+  app.get("/api/public/branding/:subdomain", async (req, res) => {
+    try {
+      const [customer] = await db
+        .select({
+          name: customers.name,
+          subdomain: customers.subdomain,
+          loginLogo: customers.loginLogo,
+          sidebarLogo: customers.sidebarLogo,
+          sidebarLogoCollapsed: customers.sidebarLogoCollapsed,
+          homeLogo: customers.homeLogo,
+          moduleColors: customers.moduleColors
+        })
+        .from(customers)
+        .where(eq(customers.subdomain, req.params.subdomain))
+        .limit(1);
+      
+      if (!customer) {
+        return res.status(404).json({ message: 'Cliente não encontrado' });
+      }
+      
+      res.json(customer);
+    } catch (error) {
+      console.error('Error fetching branding:', error);
+      res.status(500).json({ message: 'Erro ao buscar configurações' });
     }
   });
 

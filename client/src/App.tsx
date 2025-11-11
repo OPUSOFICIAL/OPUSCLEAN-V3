@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ClientProvider, useClient } from "@/contexts/ClientContext";
 import { ModuleProvider, useModule } from "@/contexts/ModuleContext";
+import { BrandingProvider } from "@/contexts/BrandingContext";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import WorkOrders from "@/pages/work-orders";
@@ -27,6 +28,7 @@ import MaintenanceChecklistTemplates from "@/pages/maintenance-checklist-templat
 import AssetReport from "@/pages/asset-report";
 import AiIntegrations from "@/pages/ai-integrations";
 import TvMode from "@/pages/tv-mode";
+import BrandingSettings from "@/pages/branding-settings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import QrExecution from "@/pages/qr-execution";
 import QrPublic from "@/pages/qr-public";
@@ -90,6 +92,7 @@ function AuthenticatedAdminRouter() {
           <Route path="/reports" component={() => <Reports />} />
           <Route path="/audit-logs" component={() => <AuditLogs companyId={companyId} />} />
           <Route path="/ai-integrations" component={() => <AiIntegrations />} />
+          <Route path="/branding-settings" component={() => <BrandingSettings />} />
           
           {/* Maintenance Module Routes */}
           <Route path="/equipment" component={() => <Equipment customerId={activeClientId} />} />
@@ -179,15 +182,17 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ClientProvider>
-          <ModuleProvider>
-            <TooltipProvider>
-              <ScrollToTop />
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </ModuleProvider>
-        </ClientProvider>
+        <BrandingProvider>
+          <ClientProvider>
+            <ModuleProvider>
+              <TooltipProvider>
+                <ScrollToTop />
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </ModuleProvider>
+          </ClientProvider>
+        </BrandingProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
