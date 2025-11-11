@@ -33,6 +33,7 @@ import {
   requireOpusUser
 } from "./middleware/auth";
 import { sanitizeUser, sanitizeUsers } from "./utils/security";
+import { serializeForAI } from "./utils/serialization";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kJsXXrXanldoNcZJG/iHeTEI8WdMch4PFWNIao1llTU=';
 
@@ -4032,11 +4033,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       if (!conversation) {
-        return res.json({ conversation: null, messages: [] });
+        return res.json(serializeForAI({ conversation: null, messages: [] }));
       }
 
       const messages = await storage.getConversationMessages(conversation.id);
-      res.json({ conversation, messages });
+      res.json(serializeForAI({ conversation, messages }));
     } catch (error) {
       console.error("Error fetching conversation:", error);
       res.status(500).json({ message: "Failed to fetch conversation" });
@@ -4075,7 +4076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message
       );
 
-      res.json(result);
+      res.json(serializeForAI(result));
     } catch (error) {
       console.error("Error processing message:", error);
       res.status(500).json({ message: "Failed to process message" });

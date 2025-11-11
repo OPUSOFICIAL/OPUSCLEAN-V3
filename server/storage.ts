@@ -40,6 +40,7 @@ import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne, gte, lte
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
+import { serializeForAI } from "./utils/serialization";
 
 // ============================================================================
 // Encryption helpers for AI Integration API keys
@@ -84,53 +85,6 @@ function decryptApiKey(encryptedData: string): string {
 function maskApiKey(apiKey: string): string {
   if (apiKey.length <= 8) return '****';
   return `****${apiKey.slice(-4)}`;
-}
-
-// ============================================================================
-// AI Data Serialization Helper
-// ============================================================================
-/**
- * Recursively converts Date objects and other non-JSON-safe types to JSON-safe values.
- * Prevents "toISOString is not a function" errors when serializing AI function results.
- * 
- * @param value - Any value (object, array, primitive, Date, etc.)
- * @param seen - Internal set to prevent circular references
- * @returns JSON-safe version of the value
- */
-function serializeForAI(value: any, seen = new WeakSet()): any {
-  // Handle null and undefined
-  if (value === null || value === undefined) {
-    return value;
-  }
-
-  // Handle primitives (string, number, boolean)
-  if (typeof value !== 'object') {
-    return value;
-  }
-
-  // Handle circular references
-  if (seen.has(value)) {
-    return '[Circular]';
-  }
-
-  // Handle Date objects
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  // Handle Arrays
-  if (Array.isArray(value)) {
-    seen.add(value); // Protect against circular references in arrays
-    return value.map(item => serializeForAI(item, seen));
-  }
-
-  // Handle Objects
-  seen.add(value);
-  const result: Record<string, any> = {};
-  for (const [key, val] of Object.entries(value)) {
-    result[key] = serializeForAI(val, seen);
-  }
-  return result;
 }
 
 export interface IStorage {
