@@ -105,7 +105,7 @@ export default function Login() {
               <ArrowRight className="w-4 h-4 rotate-180" />
               <span>Voltar</span>
             </Button>
-            <img src={aceleraLogo} alt="Acelera it" className="h-10" />
+            <img src={aceleraLogo} alt="Acelera it" className="h-20" />
             <div className="w-24"></div>
           </div>
         </div>
@@ -158,7 +158,7 @@ export default function Login() {
             <img 
               src={aceleraLogo} 
               alt="Acelera Full Facilities" 
-              className="h-16 mx-auto mb-6"
+              className="h-32 mx-auto mb-6"
             />
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Bem-vindo de volta

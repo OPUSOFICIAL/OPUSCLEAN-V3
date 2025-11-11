@@ -116,7 +116,7 @@ export default function ModuleSelection() {
             <img 
               src={aceleraLogo} 
               alt="Acelera Full Facilities" 
-              className="h-16 mx-auto mb-8"
+              className="h-32 mx-auto mb-8"
             />
             <h1 className="text-4xl font-bold text-slate-900 mb-3">
               Selecione o Módulo
