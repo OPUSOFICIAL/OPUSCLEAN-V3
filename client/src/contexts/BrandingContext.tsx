@@ -3,10 +3,20 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 interface BrandingConfig {
   name: string;
   subdomain: string | null;
+  
+  // Logos
   loginLogo: string | null;
   sidebarLogo: string | null;
   sidebarLogoCollapsed: string | null;
   homeLogo: string | null;
+  faviconUrl: string | null;
+  
+  // Global Colors
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  accentColor: string | null;
+  
+  // Module-specific colors (fallback)
   moduleColors: {
     clean?: {
       primary: string;
@@ -19,11 +29,21 @@ interface BrandingConfig {
       accent: string;
     };
   } | null;
+  
+  // Landing Page
+  landingTitle: string | null;
+  landingSubtitle: string | null;
+  landingHeroImage: string | null;
+  
+  // SEO
+  metaDescription: string | null;
+  updatedAt: Date | null;
 }
 
 interface BrandingContextType {
   branding: BrandingConfig | null;
   isLoading: boolean;
+  isReady: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -32,6 +52,7 @@ const BrandingContext = createContext<BrandingContextType | null>(null);
 export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<BrandingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
   const loadBranding = async () => {
     try {
@@ -53,38 +74,87 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
       if (subdomain) {
         console.log(`[BRANDING] Subdomínio detectado: ${subdomain} (domínio completo: ${hostname})`);
-        // Buscar configurações do subdomínio
+        // Buscar configurações do subdomínio via API pública
         const response = await fetch(`/api/public/branding/${subdomain}`);
         if (response.ok) {
           const data = await response.json();
           setBranding(data);
-          console.log(`[BRANDING] Branding aplicado para cliente: ${data.name}`);
+          console.log(`[BRANDING] ✓ Branding carregado para: ${data.name}`);
 
-          // Aplicar cores customizadas via CSS variables
-          if (data.moduleColors?.clean) {
-            const root = document.documentElement;
-            const colors = data.moduleColors.clean;
-            
-            // Converter HEX para HSL e aplicar
-            if (colors.primary) {
-              const hsl = hexToHSL(colors.primary);
-              root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-            }
-            if (colors.secondary) {
-              const hsl = hexToHSL(colors.secondary);
-              root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-            }
-            if (colors.accent) {
-              const hsl = hexToHSL(colors.accent);
-              root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-            }
+          // Aplicar cores globais via CSS variables (prioridade sobre module colors)
+          const root = document.documentElement;
+          
+          // Aplicar cada cor individualmente com fallback para module colors
+          // PRIMARY
+          if (data.primaryColor) {
+            const hsl = hexToHSL(data.primaryColor);
+            root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+          } else if (data.moduleColors?.clean?.primary) {
+            const hsl = hexToHSL(data.moduleColors.clean.primary);
+            root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+          } else {
+            // Resetar para valor padrão se nenhuma cor global ou module estiver definida
+            root.style.removeProperty('--primary');
           }
+
+          // SECONDARY
+          if (data.secondaryColor) {
+            const hsl = hexToHSL(data.secondaryColor);
+            root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+          } else if (data.moduleColors?.clean?.secondary) {
+            const hsl = hexToHSL(data.moduleColors.clean.secondary);
+            root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+          } else {
+            root.style.removeProperty('--secondary');
+          }
+
+          // ACCENT
+          if (data.accentColor) {
+            const hsl = hexToHSL(data.accentColor);
+            root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+          } else if (data.moduleColors?.clean?.accent) {
+            const hsl = hexToHSL(data.moduleColors.clean.accent);
+            root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+          } else {
+            root.style.removeProperty('--accent');
+          }
+
+          // Aplicar meta tags dinâmicas
+          if (data.metaDescription) {
+            let metaDesc = document.querySelector('meta[name="description"]');
+            if (!metaDesc) {
+              metaDesc = document.createElement('meta');
+              metaDesc.setAttribute('name', 'description');
+              document.head.appendChild(metaDesc);
+            }
+            metaDesc.setAttribute('content', data.metaDescription);
+          }
+
+          if (data.faviconUrl) {
+            let favicon = document.querySelector('link[rel="icon"]');
+            if (!favicon) {
+              favicon = document.createElement('link');
+              favicon.setAttribute('rel', 'icon');
+              document.head.appendChild(favicon);
+            }
+            favicon.setAttribute('href', data.faviconUrl);
+          }
+
+          // Aplicar título da página
+          if (data.landingTitle) {
+            document.title = data.landingTitle;
+          } else {
+            document.title = `${data.name} - Portal`;
+          }
+        } else if (response.status === 404) {
+          console.warn(`[BRANDING] ⚠️  Subdomínio "${subdomain}" não encontrado`);
         }
       }
     } catch (error) {
-      console.error('Error loading branding:', error);
+      console.error('[BRANDING] ❌ Erro ao carregar branding:', error);
     } finally {
       setIsLoading(false);
+      setIsReady(true);
     }
   };
 
@@ -93,7 +163,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <BrandingContext.Provider value={{ branding, isLoading, refresh: loadBranding }}>
+    <BrandingContext.Provider value={{ branding, isLoading, isReady, refresh: loadBranding }}>
       {children}
     </BrandingContext.Provider>
   );

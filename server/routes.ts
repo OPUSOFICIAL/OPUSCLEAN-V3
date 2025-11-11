@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
+import memoize from "memoizee";
 import { 
   insertCompanySchema, insertSiteSchema, insertZoneSchema, insertQrCodePointSchema,
   insertUserSchema, insertChecklistTemplateSchema, insertSlaConfigSchema,
@@ -2427,17 +2428,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper to validate HEX color
+  const isValidHexColor = (color: string): boolean => {
+    return /^#[0-9A-F]{6}$/i.test(color);
+  };
+  
+  // Reserved subdomains that cannot be used
+  const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'dashboard', 'portal', 'login', 'signup', 'auth', 'account', 'settings', 'help', 'support', 'docs', 'blog', 'status', 'cdn', 'static', 'assets', 'mail', 'email', 'ftp', 'ssh', 'vpn', 'test', 'staging', 'dev', 'demo'];
+  
   // Customer branding configuration
   app.put("/api/customers/:id/branding", requireManageClients, async (req, res) => {
     try {
-      const { loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, moduleColors, subdomain } = req.body;
+      const { 
+        loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, faviconUrl,
+        primaryColor, secondaryColor, accentColor, moduleColors,
+        landingTitle, landingSubtitle, landingHeroImage, metaDescription,
+        subdomain 
+      } = req.body;
       
       const brandingUpdate: any = {};
+      
+      // Logos
       if (loginLogo !== undefined) brandingUpdate.loginLogo = loginLogo;
       if (sidebarLogo !== undefined) brandingUpdate.sidebarLogo = sidebarLogo;
       if (sidebarLogoCollapsed !== undefined) brandingUpdate.sidebarLogoCollapsed = sidebarLogoCollapsed;
       if (homeLogo !== undefined) brandingUpdate.homeLogo = homeLogo;
+      if (faviconUrl !== undefined) brandingUpdate.faviconUrl = faviconUrl;
+      
+      // Validate and set global colors
+      if (primaryColor !== undefined) {
+        if (primaryColor && !isValidHexColor(primaryColor)) {
+          return res.status(400).json({ message: 'Cor primária inválida. Use formato HEX (#RRGGBB)' });
+        }
+        brandingUpdate.primaryColor = primaryColor;
+      }
+      if (secondaryColor !== undefined) {
+        if (secondaryColor && !isValidHexColor(secondaryColor)) {
+          return res.status(400).json({ message: 'Cor secundária inválida. Use formato HEX (#RRGGBB)' });
+        }
+        brandingUpdate.secondaryColor = secondaryColor;
+      }
+      if (accentColor !== undefined) {
+        if (accentColor && !isValidHexColor(accentColor)) {
+          return res.status(400).json({ message: 'Cor de destaque inválida. Use formato HEX (#RRGGBB)' });
+        }
+        brandingUpdate.accentColor = accentColor;
+      }
+      
+      // Module colors
       if (moduleColors !== undefined) brandingUpdate.moduleColors = moduleColors;
+      
+      // Landing page content
+      if (landingTitle !== undefined) brandingUpdate.landingTitle = landingTitle;
+      if (landingSubtitle !== undefined) brandingUpdate.landingSubtitle = landingSubtitle;
+      if (landingHeroImage !== undefined) brandingUpdate.landingHeroImage = landingHeroImage;
+      if (metaDescription !== undefined) brandingUpdate.metaDescription = metaDescription;
       
       // Normalize and validate subdomain if provided
       if (subdomain !== undefined) {
@@ -2453,6 +2498,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/[\u0300-\u036f]/g, '')
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '');
+        
+        // Check if subdomain is reserved
+        if (RESERVED_SUBDOMAINS.includes(normalizedSubdomain)) {
+          return res.status(400).json({ message: `Subdomínio '${normalizedSubdomain}' é reservado e não pode ser usado` });
+        }
         
         // Validate format
         if (!/^[a-z0-9-]+$/.test(normalizedSubdomain)) {
@@ -2477,6 +2527,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedCustomer = await storage.updateCustomer(req.params.id, brandingUpdate);
+      
+      // Invalidate branding cache after update
+      if (updatedCustomer.subdomain) {
+        brandingCache.delete(updatedCustomer.subdomain);
+      }
+      
       res.json(updatedCustomer);
     } catch (error) {
       console.error("Error updating customer branding:", error);
@@ -2530,9 +2586,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public API - Get customer branding by subdomain (no auth required)
-  app.get("/api/public/branding/:subdomain", async (req, res) => {
-    try {
+  // Public API - Get customer branding by subdomain (no auth required) with caching
+  const brandingCache = memoize(
+    async (subdomain: string) => {
       const [customer] = await db
         .select({
           name: customers.name,
@@ -2541,15 +2597,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sidebarLogo: customers.sidebarLogo,
           sidebarLogoCollapsed: customers.sidebarLogoCollapsed,
           homeLogo: customers.homeLogo,
-          moduleColors: customers.moduleColors
+          faviconUrl: customers.faviconUrl,
+          primaryColor: customers.primaryColor,
+          secondaryColor: customers.secondaryColor,
+          accentColor: customers.accentColor,
+          moduleColors: customers.moduleColors,
+          landingTitle: customers.landingTitle,
+          landingSubtitle: customers.landingSubtitle,
+          landingHeroImage: customers.landingHeroImage,
+          metaDescription: customers.metaDescription,
+          updatedAt: customers.updatedAt
         })
         .from(customers)
-        .where(eq(customers.subdomain, req.params.subdomain))
+        .where(eq(customers.subdomain, subdomain))
         .limit(1);
+      
+      return customer;
+    },
+    { 
+      maxAge: 3600000, // 1 hour cache
+      promise: true,
+      normalizer: (args: string[]) => args[0]
+    }
+  );
+  
+  app.get("/api/public/branding/:subdomain", async (req, res) => {
+    try {
+      const customer = await brandingCache(req.params.subdomain);
       
       if (!customer) {
         return res.status(404).json({ message: 'Cliente não encontrado' });
       }
+      
+      // Set HTTP cache headers
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
+      res.setHeader('ETag', `"${customer.updatedAt?.getTime()}"`);
       
       res.json(customer);
     } catch (error) {
