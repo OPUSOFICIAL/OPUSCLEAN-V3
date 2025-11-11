@@ -182,17 +182,17 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrandingProvider>
-          <ClientProvider>
-            <ModuleProvider>
+        <ClientProvider>
+          <ModuleProvider>
+            <BrandingProvider>
               <TooltipProvider>
                 <ScrollToTop />
                 <Toaster />
                 <Router />
               </TooltipProvider>
-            </ModuleProvider>
-          </ClientProvider>
-        </BrandingProvider>
+            </BrandingProvider>
+          </ModuleProvider>
+        </ClientProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
