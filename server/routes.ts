@@ -2432,6 +2432,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, moduleColors, subdomain } = req.body;
       
+      console.log(`[BRANDING UPDATE] Cliente ${req.params.id}:`, {
+        loginLogo,
+        sidebarLogo,
+        sidebarLogoCollapsed,
+        homeLogo,
+        hasModuleColors: !!moduleColors,
+        subdomain
+      });
+      
       const brandingUpdate: any = {};
       if (loginLogo !== undefined) brandingUpdate.loginLogo = loginLogo;
       if (sidebarLogo !== undefined) brandingUpdate.sidebarLogo = sidebarLogo;
@@ -2476,7 +2485,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         brandingUpdate.subdomain = normalizedSubdomain;
       }
       
+      console.log('[BRANDING UPDATE] Dados para atualizar:', brandingUpdate);
+      
       const updatedCustomer = await storage.updateCustomer(req.params.id, brandingUpdate);
+      
+      console.log('[BRANDING UPDATE] Cliente atualizado com sucesso:', {
+        id: updatedCustomer.id,
+        loginLogo: updatedCustomer.loginLogo,
+        sidebarLogo: updatedCustomer.sidebarLogo,
+        sidebarLogoCollapsed: updatedCustomer.sidebarLogoCollapsed
+      });
+      
       res.json(updatedCustomer);
     } catch (error) {
       console.error("Error updating customer branding:", error);
@@ -2488,6 +2507,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers/:id/upload-logo", requireManageClients, async (req, res) => {
     try {
       const { logoType, imageData, fileName } = req.body;
+      
+      console.log(`[LOGO UPLOAD] Cliente ${req.params.id}, tipo: ${logoType}, arquivo: ${fileName}`);
       
       if (!logoType || !imageData || !fileName) {
         return res.status(400).json({ message: "logoType, imageData, and fileName are required" });
@@ -2518,6 +2539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return relative path for storage
       const relativePath = `/attached_assets/customer_logos/${uniqueFileName}`;
+      
+      console.log(`[LOGO UPLOAD] Arquivo salvo com sucesso:`, relativePath);
       
       res.json({ 
         success: true, 
