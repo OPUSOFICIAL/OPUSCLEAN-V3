@@ -12,7 +12,41 @@ Preferred communication style: Simple, everyday language.
 
 ### UI/UX Decisions
 
-The system features a modern, predominantly white design with subtle blue gradients and elegant effects, utilizing `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Maintenance) are used for focal elements. The design is responsive, optimized for desktop and mobile, with touch-friendly elements. Pre-login pages (Landing, Login, Module Selection) feature white backgrounds with subtle blue/cyan gradients, animated gradient orbs, floating particles, and Framer Motion animations for a sophisticated, professional aesthetic.
+The system features an **enterprise-grade, corporate design** targeting B2B clients in the facilities management industry. The design emphasizes professionalism, trust, and measurable ROI, utilizing `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Maintenance) are used for focal elements. The design is responsive, optimized for desktop and mobile, with touch-friendly elements.
+
+**Pre-Login Pages Design Philosophy**:
+- **Landing Page**: Corporate SaaS aesthetic with facilities management focus
+  - Hero section with strong value proposition: "Transforme a Gestão de Facilities da sua Empresa"
+  - ROI-focused metrics (45% cost reduction, 3x productivity, 99% uptime, 24/7 support)
+  - Dashboard preview showing real facilities management metrics
+  - Business-focused benefits highlighting operational efficiency
+  - Features section with facilities-specific icons (Building2, Wrench, ClipboardCheck, TrendingUp)
+  - Professional color scheme: slate/gray with blue accents
+  - Clean gradient backgrounds (slate-50 to white)
+  - Trust-building elements and enterprise messaging
+
+- **Login Page**: Minimalist corporate design
+  - Clean white card with subtle shadows
+  - Microsoft SSO integration prominently displayed with colorful logo
+  - Traditional email/password login below SSO
+  - Professional form styling with icon-enhanced inputs
+  - Security messaging: "Plataforma Enterprise Segura | SSO Disponível"
+  - Minimal decorative elements (subtle gradient orbs)
+
+- **Module Selection**: Professional module cards with ROI emphasis
+  - Side-by-side cards for Clean and Maintenance modules
+  - Each card features: module icon, title, subtitle, ROI metrics, feature list
+  - Clean module: 45% cost reduction, 3x efficiency
+  - Maintenance module: 60% less downtime, 2.5x asset lifespan
+  - Feature lists with checkmarks highlighting operational benefits
+  - Gradient buttons matching module colors
+
+**Visual Elements**:
+- Icons from lucide-react representing facilities operations (Building2, Wrench, ClipboardCheck, Users, TrendingUp, Shield)
+- Custom Microsoft logo SVG for SSO
+- Framer Motion animations for professional, subtle transitions
+- Card-based layouts with hover effects
+- Gradient buttons: from-blue-600 to-blue-500 (Clean), from-orange-600 to-orange-500 (Maintenance)
 
 **Layout**: All internal pages use full-width layout (`w-full px-6`) instead of constrained max-width (`max-w-7xl`), allowing content to expand to the full available width between sidebar and screen edge, eliminating white space on larger displays.
 
