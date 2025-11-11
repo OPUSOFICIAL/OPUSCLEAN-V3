@@ -89,6 +89,18 @@ The frontend uses React and TypeScript, with Wouter for routing and TanStack Que
 
 The project is configured for the Replit cloud environment, with automated PostgreSQL provisioning, schema pushing, and dependency installation. It's designed to be modular, supporting new operational modules with distinct theming and data isolation. The term "Site" is presented as "Local" in the UI.
 
+**Adaptive Subdomain-Based Branding System** (November 2025):
+- Fully adaptive subdomain detection supporting any domain type (custom TLDs, localhost, multi-part public suffixes, Replit domains)
+- Automatic client branding application (logos + module colors) based on subdomain
+- Works in both production VM and development environments
+- Testing via `?test-subdomain=tenant` query parameter in development
+- Logos displayed: login page (loginLogo), sidebar (sidebarLogo/sidebarLogoCollapsed), module selection (homeLogo)
+- Module colors (clean/maintenance) applied dynamically via CSS variables
+- Robust tenant switching with automatic state reset to prevent branding bleed-through
+- Graceful fallback handling for missing or broken logos
+- Static assets served via Express from `/attached_assets/customer_logos/` with caching
+- Key files: `client/src/lib/subdomain-detector.ts`, `client/src/contexts/BrandingContext.tsx`, `client/src/components/logo-image.tsx`
+
 ## External Dependencies
 
 ### Database & Storage
