@@ -1082,22 +1082,60 @@ export default function Checklists() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {checklist.siteId ? (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            {(sites as any[])?.find(s => s.id === checklist.siteId)?.name || checklist.siteId}
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-400 text-xs">-</span>
-                        )}
+                        {(() => {
+                          const siteIds = checklist.siteIds || (checklist.siteId ? [checklist.siteId] : []);
+                          if (siteIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
+                          
+                          const siteNames = getSiteNames(siteIds);
+                          if (siteIds.length === 1) {
+                            return (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                {siteNames[0]}
+                              </Badge>
+                            );
+                          }
+                          
+                          return (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                {siteNames[0]}
+                              </Badge>
+                              {siteIds.length > 1 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{siteIds.length - 1}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
-                        {checklist.zoneId ? (
-                          <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
-                            {(allZones as any[])?.find(z => z.id === checklist.zoneId)?.name || checklist.zoneId}
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-400 text-xs">-</span>
-                        )}
+                        {(() => {
+                          const zoneIds = checklist.zoneIds || (checklist.zoneId ? [checklist.zoneId] : []);
+                          if (zoneIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
+                          
+                          const zoneNames = getZoneNames(zoneIds);
+                          if (zoneIds.length === 1) {
+                            return (
+                              <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
+                                {zoneNames[0]}
+                              </Badge>
+                            );
+                          }
+                          
+                          return (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
+                                {zoneNames[0]}
+                              </Badge>
+                              {zoneIds.length > 1 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{zoneIds.length - 1}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Badge className={cn("font-semibold", theme.backgrounds.primary, "text-white")}>
