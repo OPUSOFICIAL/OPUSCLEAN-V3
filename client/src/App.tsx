@@ -40,7 +40,6 @@ import MobileWorkOrderExecute from "@/pages/mobile-work-order-execute";
 import MobileWorkOrderDetails from "@/pages/mobile-work-order-details";
 import QrTest from "@/pages/qr-test";
 import Sidebar from "@/components/layout/sidebar";
-import { AIChat } from "@/components/ai-chat";
 import { useState } from "react";
 import { useAuth, getAuthState } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -115,7 +114,6 @@ function AuthenticatedAdminRouter() {
           </Route>
         </Switch>
       </div>
-      <AIChat />
     </div>
   );
 }

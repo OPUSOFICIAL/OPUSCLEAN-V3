@@ -75,7 +75,7 @@ The frontend uses React and TypeScript, with Wouter for routing and TanStack Que
 
 **Work Order Management**: Manages programmed, internal corrective, and public corrective work orders, tracking status, SLA, priority, assignments, comments with photo attachments, and multiple responsible collaborators. The Maintenance module uses a virtual calendar for future activity display and a monthly automated scheduler for work order creation. Work order numbering is customer-specific.
 
-**AI Integration (Chat Assistant)**: Comprehensive AI-powered chat assistant with function calling capabilities for administrative tasks. Supports multiple AI providers: Groq (Llama 3), Google Gemini, OpenAI, Azure OpenAI, and Cohere. The AI has access to 5 administrative functions: `search_work_orders`, `get_work_order_details`, `update_work_order_status`, `get_work_order_statistics`, and `create_work_order`. Date objects in AI function responses are serialized to ISO strings.
+**AI Integration**: AI integration configuration page allows OPUS users to configure AI providers (OpenAI, Google Gemini, Groq, Azure OpenAI, Cohere, etc.) for future use. The chat assistant functionality is currently in development and has been temporarily disabled. A development notice is displayed on the AI Integrations page informing users that the assistant will be available soon.
 
 **Authentication and Authorization**: Supports Microsoft SSO (Entra ID) and email/password authentication. Security includes JWT, Bcrypt, rate limiting, data sanitization, CORS, Helmet.js, and SQL injection prevention. A custom role system provides granular, permission-based access with strict module-based access control.
 

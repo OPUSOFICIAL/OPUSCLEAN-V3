@@ -376,6 +376,31 @@ export default function AiIntegrationsPage() {
       />
 
       <div className="w-full px-6 py-8">
+        {/* Development Notice */}
+        <ModernCard variant="glass" className="mb-6 border-l-4 border-l-amber-500">
+          <ModernCardContent className="py-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20">
+                <Info className="h-6 w-6 text-amber-600 dark:text-amber-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Funcionalidade em Desenvolvimento
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-3">
+                  O sistema de assistente AI está atualmente em desenvolvimento e será disponibilizado em breve.
+                </p>
+                <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Enquanto isso, você pode configurar as integrações AI que serão utilizadas quando a funcionalidade estiver disponível.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </ModernCardContent>
+        </ModernCard>
+
         {/* Header Actions */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-600">
