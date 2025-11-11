@@ -17,6 +17,14 @@ export default function BrandingSettings() {
   
   const [subdomain, setSubdomain] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
+  
+  // Estado para armazenar arquivos selecionados antes de salvar
+  const [pendingLogos, setPendingLogos] = useState<Record<string, { file: File; preview: string } | null>>({
+    loginLogo: null,
+    sidebarLogo: null,
+    sidebarLogoCollapsed: null,
+    homeLogo: null
+  });
 
   // Query customer data
   const { data: customer } = useQuery<any>({
@@ -83,10 +91,11 @@ export default function BrandingSettings() {
         reader.readAsDataURL(file);
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', activeClientId] });
       refresh();
       setUploading(null);
+      setPendingLogos(prev => ({ ...prev, [variables.logoType]: null }));
       toast({ 
         title: '✓ Logo salva com sucesso!',
         description: 'A nova logo foi enviada e aplicada ao sistema.'
@@ -102,16 +111,36 @@ export default function BrandingSettings() {
     }
   });
 
-  const handleLogoUpload = (logoType: string, file: File | null) => {
-    if (!file) return;
+  const handleFileSelect = (logoType: string, file: File | null) => {
+    if (!file) {
+      setPendingLogos(prev => ({ ...prev, [logoType]: null }));
+      return;
+    }
+
+    // Criar preview da imagem
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPendingLogos(prev => ({
+        ...prev,
+        [logoType]: {
+          file,
+          preview: e.target?.result as string
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePending = (logoType: string) => {
+    setPendingLogos(prev => ({ ...prev, [logoType]: null }));
+  };
+
+  const handleSaveLogo = (logoType: string) => {
+    const pending = pendingLogos[logoType];
+    if (!pending) return;
     
     setUploading(logoType);
-    toast({
-      title: '⏳ Enviando logo...',
-      description: 'Aguarde enquanto fazemos o upload da imagem.'
-    });
-    
-    uploadLogoMutation.mutate({ logoType, file });
+    uploadLogoMutation.mutate({ logoType, file: pending.file });
   };
 
   const handleSaveSubdomain = () => {
@@ -175,7 +204,7 @@ export default function BrandingSettings() {
         <CardHeader>
           <CardTitle>Logos Personalizadas</CardTitle>
           <CardDescription>
-            Selecione as imagens para upload. A logo será salva automaticamente após seleção.
+            Selecione as imagens e clique em "Salvar Logo" para aplicar
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -185,8 +214,11 @@ export default function BrandingSettings() {
             description="Exibida na tela de autenticação (recomendado: 200x60px)"
             logoType="loginLogo"
             currentLogo={customer?.loginLogo}
+            pendingLogo={pendingLogos.loginLogo}
             uploading={uploading === 'loginLogo'}
-            onUpload={(file) => handleLogoUpload('loginLogo', file)}
+            onFileSelect={(file) => handleFileSelect('loginLogo', file)}
+            onRemovePending={() => handleRemovePending('loginLogo')}
+            onSave={() => handleSaveLogo('loginLogo')}
           />
 
           {/* Logo Sidebar */}
@@ -195,8 +227,11 @@ export default function BrandingSettings() {
             description="Exibida quando a barra lateral está aberta (recomendado: 150x40px)"
             logoType="sidebarLogo"
             currentLogo={customer?.sidebarLogo}
+            pendingLogo={pendingLogos.sidebarLogo}
             uploading={uploading === 'sidebarLogo'}
-            onUpload={(file) => handleLogoUpload('sidebarLogo', file)}
+            onFileSelect={(file) => handleFileSelect('sidebarLogo', file)}
+            onRemovePending={() => handleRemovePending('sidebarLogo')}
+            onSave={() => handleSaveLogo('sidebarLogo')}
           />
 
           {/* Logo Sidebar Collapsed */}
@@ -205,8 +240,11 @@ export default function BrandingSettings() {
             description="Logo exibida na barra lateral quando colapsada (recomendado: 80x80px)"
             logoType="sidebarLogoCollapsed"
             currentLogo={customer?.sidebarLogoCollapsed}
+            pendingLogo={pendingLogos.sidebarLogoCollapsed}
             uploading={uploading === 'sidebarLogoCollapsed'}
-            onUpload={(file) => handleLogoUpload('sidebarLogoCollapsed', file)}
+            onFileSelect={(file) => handleFileSelect('sidebarLogoCollapsed', file)}
+            onRemovePending={() => handleRemovePending('sidebarLogoCollapsed')}
+            onSave={() => handleSaveLogo('sidebarLogoCollapsed')}
           />
 
           {/* Logo Home */}
@@ -215,8 +253,11 @@ export default function BrandingSettings() {
             description="Exibida na página principal do sistema (recomendado: 300x100px)"
             logoType="homeLogo"
             currentLogo={customer?.homeLogo}
+            pendingLogo={pendingLogos.homeLogo}
             uploading={uploading === 'homeLogo'}
-            onUpload={(file) => handleLogoUpload('homeLogo', file)}
+            onFileSelect={(file) => handleFileSelect('homeLogo', file)}
+            onRemovePending={() => handleRemovePending('homeLogo')}
+            onSave={() => handleSaveLogo('homeLogo')}
           />
         </CardContent>
       </Card>
@@ -245,42 +286,36 @@ function LogoUploader({
   description,
   logoType,
   currentLogo,
+  pendingLogo,
   uploading,
-  onUpload
+  onFileSelect,
+  onRemovePending,
+  onSave
 }: {
   label: string;
   description: string;
   logoType: string;
   currentLogo?: string | null;
+  pendingLogo: { file: File; preview: string } | null;
   uploading: boolean;
-  onUpload: (file: File | null) => void;
+  onFileSelect: (file: File | null) => void;
+  onRemovePending: () => void;
+  onSave: () => void;
 }) {
-  const [selectedFileName, setSelectedFileName] = useState<string>('');
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    if (file) {
-      setSelectedFileName(file.name);
-      onUpload(file);
-    }
+    onFileSelect(file);
   };
 
   return (
-    <div className="space-y-3" data-testid={`logo-uploader-${logoType}`}>
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 p-4 border rounded-lg" data-testid={`logo-uploader-${logoType}`}>
+      <div className="flex items-start justify-between">
         <div>
           <Label htmlFor={logoType} className="text-base font-medium">{label}</Label>
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         </div>
         
-        {uploading && (
-          <div className="flex items-center gap-2 text-sm text-blue-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Salvando...</span>
-          </div>
-        )}
-        
-        {!uploading && currentLogo && (
+        {!pendingLogo && !uploading && currentLogo && (
           <div className="flex items-center gap-2 text-sm text-green-600">
             <Check className="h-4 w-4" />
             <span>Salva</span>
@@ -288,18 +323,18 @@ function LogoUploader({
         )}
       </div>
       
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Button
           type="button"
           variant="outline"
           size="default"
           disabled={uploading}
           onClick={() => document.getElementById(logoType)?.click()}
-          data-testid={`button-upload-${logoType}`}
+          data-testid={`button-select-${logoType}`}
           className="min-w-[140px]"
         >
           <Upload className="mr-2 h-4 w-4" />
-          {uploading ? 'Enviando...' : currentLogo ? 'Trocar Logo' : 'Escolher Arquivo'}
+          {currentLogo ? 'Trocar Arquivo' : 'Escolher Arquivo'}
         </Button>
         
         <Input
@@ -312,17 +347,67 @@ function LogoUploader({
           data-testid={`input-upload-${logoType}`}
         />
         
-        {selectedFileName && !uploading && (
-          <span className="text-sm text-muted-foreground flex items-center gap-1">
-            <Check className="h-3 w-3 text-green-600" />
-            {selectedFileName}
-          </span>
+        {pendingLogo && (
+          <>
+            <Button
+              type="button"
+              variant="default"
+              size="default"
+              disabled={uploading}
+              onClick={onSave}
+              data-testid={`button-save-${logoType}`}
+              className="min-w-[120px]"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Salvar Logo
+                </>
+              )}
+            </Button>
+            
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={uploading}
+              onClick={onRemovePending}
+              data-testid={`button-remove-${logoType}`}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            
+            <span className="text-sm text-muted-foreground">
+              ✓ Novo arquivo selecionado: <strong>{pendingLogo.file.name}</strong>
+            </span>
+          </>
         )}
       </div>
       
-      {currentLogo && (
+      {/* Preview da nova imagem selecionada */}
+      {pendingLogo && (
+        <div className="mt-3 p-4 border-2 border-dashed border-blue-300 rounded-md bg-blue-50 dark:bg-blue-950/20">
+          <p className="text-xs text-blue-700 dark:text-blue-300 font-medium mb-2">
+            Nova imagem selecionada (não salva):
+          </p>
+          <img
+            src={pendingLogo.preview}
+            alt="Preview nova logo"
+            className="max-h-24 object-contain"
+            data-testid={`img-pending-preview-${logoType}`}
+          />
+        </div>
+      )}
+      
+      {/* Preview da logo atual salva */}
+      {currentLogo && !pendingLogo && (
         <div className="mt-3 p-4 border rounded-md bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">Preview atual:</p>
+          <p className="text-xs text-muted-foreground mb-2 font-medium">Logo atual salva:</p>
           <img
             src={currentLogo}
             alt={label}
