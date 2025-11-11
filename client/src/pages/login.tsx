@@ -82,15 +82,15 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-white">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-cyan-50" />
+      {/* Gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-100" />
 
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
           className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1, 1.2, 1],
@@ -108,7 +108,7 @@ export default function Login() {
         <motion.div
           className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1.2, 1, 1.2],

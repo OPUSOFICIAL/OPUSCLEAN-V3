@@ -85,15 +85,15 @@ export default function Landing() {
       className="relative min-h-screen w-full overflow-hidden bg-white"
       data-testid="landing-page"
     >
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-cyan-50" />
+      {/* Gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-100" />
 
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
           className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)",
             x: useTransform(mouseXSpring, [-0.5, 0.5], [-100, 100]),
             y: useTransform(mouseYSpring, [-0.5, 0.5], [-100, 100]),
           }}
@@ -111,7 +111,7 @@ export default function Landing() {
         <motion.div
           className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%)",
             x: useTransform(mouseXSpring, [-0.5, 0.5], [100, -100]),
             y: useTransform(mouseYSpring, [-0.5, 0.5], [100, -100]),
           }}
@@ -129,7 +129,7 @@ export default function Landing() {
         <motion.div
           className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(96, 165, 250, 0.12) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1, 1.3, 1],
