@@ -19,11 +19,14 @@ import {
   CalendarDays,
   AlertCircle
 } from "lucide-react";
+import { useBranding } from "@/contexts/BrandingContext";
+import { LogoImage } from "@/components/logo-image";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
   const [activeSlide, setActiveSlide] = useState(0);
+  const { branding, isLoading: isBrandingLoading } = useBranding();
 
   const stats = [
     { value: "45%", label: "Redução de Custos" },
@@ -253,6 +256,15 @@ export default function Landing() {
     return () => clearInterval(interval);
   }, []);
 
+  // Show loading state while branding is being detected
+  if (isBrandingLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-slate-600">Carregando...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
       {/* Top Navigation Bar */}
@@ -260,8 +272,9 @@ export default function Landing() {
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between py-2">
             <div className="flex-shrink-0">
-              <img 
-                src={aceleraLogo} 
+              <LogoImage 
+                type="home"
+                fallbackSrc={aceleraLogo}
                 alt="Acelera Full Facilities" 
                 className="h-[100px] my-[-10px]"
                 data-testid="img-logo"
