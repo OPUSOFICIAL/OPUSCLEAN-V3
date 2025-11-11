@@ -43,12 +43,14 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
   const [loginLogo, setLoginLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.loginLogo || null });
   const [sidebarLogo, setSidebarLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.sidebarLogo || null });
   const [sidebarCollapsedLogo, setSidebarCollapsedLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.sidebarLogoCollapsed || null });
+  const [homeLogo, setHomeLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.homeLogo || null });
   
   const [isSavingLogos, setIsSavingLogos] = useState(false);
   
   const loginLogoRef = useRef<HTMLInputElement>(null);
   const sidebarLogoRef = useRef<HTMLInputElement>(null);
   const sidebarCollapsedRef = useRef<HTMLInputElement>(null);
+  const homeLogoRef = useRef<HTMLInputElement>(null);
 
   // Resetar previews quando o diálogo abrir ou o cliente mudar
   useEffect(() => {
@@ -56,6 +58,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       setLoginLogo({ file: null, previewUrl: customer.loginLogo || null });
       setSidebarLogo({ file: null, previewUrl: customer.sidebarLogo || null });
       setSidebarCollapsedLogo({ file: null, previewUrl: customer.sidebarLogoCollapsed || null });
+      setHomeLogo({ file: null, previewUrl: customer.homeLogo || null });
       setModuleColors((customer.moduleColors as ModuleColors) || {});
     }
   }, [open, customer]);
@@ -66,6 +69,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       if (loginLogo.previewUrl && loginLogo.file) URL.revokeObjectURL(loginLogo.previewUrl);
       if (sidebarLogo.previewUrl && sidebarLogo.file) URL.revokeObjectURL(sidebarLogo.previewUrl);
       if (sidebarCollapsedLogo.previewUrl && sidebarCollapsedLogo.file) URL.revokeObjectURL(sidebarCollapsedLogo.previewUrl);
+      if (homeLogo.previewUrl && homeLogo.file) URL.revokeObjectURL(homeLogo.previewUrl);
     };
   }, []);
 
@@ -92,7 +96,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
   });
 
   const handleFileSelect = (
-    logoType: 'login' | 'sidebar' | 'sidebarCollapsed',
+    logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home',
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
@@ -112,19 +116,22 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     
     const setLogo = logoType === 'login' ? setLoginLogo : 
                     logoType === 'sidebar' ? setSidebarLogo : 
-                    setSidebarCollapsedLogo;
+                    logoType === 'sidebarCollapsed' ? setSidebarCollapsedLogo :
+                    setHomeLogo;
 
     setLogo({ file, previewUrl });
   };
 
-  const removeLogo = (logoType: 'login' | 'sidebar' | 'sidebarCollapsed') => {
+  const removeLogo = (logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home') => {
     const setLogo = logoType === 'login' ? setLoginLogo : 
                     logoType === 'sidebar' ? setSidebarLogo : 
-                    setSidebarCollapsedLogo;
+                    logoType === 'sidebarCollapsed' ? setSidebarCollapsedLogo :
+                    setHomeLogo;
     
     const logo = logoType === 'login' ? loginLogo :
                  logoType === 'sidebar' ? sidebarLogo :
-                 sidebarCollapsedLogo;
+                 logoType === 'sidebarCollapsed' ? sidebarCollapsedLogo :
+                 homeLogo;
     
     // Revogar URL de preview se for um arquivo local
     if (logo.previewUrl && logo.file) {
@@ -145,6 +152,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
         ['login', loginLogo, 'loginLogo'] as const,
         ['sidebar', sidebarLogo, 'sidebarLogo'] as const,
         ['sidebarCollapsed', sidebarCollapsedLogo, 'sidebarLogoCollapsed'] as const,
+        ['home', homeLogo, 'homeLogo'] as const,
       ]) {
         if (logo.file) {
           // Upload da logo
@@ -201,10 +209,11 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     updateBrandingMutation.mutate({ moduleColors });
   };
 
-  const hasLogoChanges = loginLogo.file !== null || sidebarLogo.file !== null || sidebarCollapsedLogo.file !== null ||
+  const hasLogoChanges = loginLogo.file !== null || sidebarLogo.file !== null || sidebarCollapsedLogo.file !== null || homeLogo.file !== null ||
                          (loginLogo.previewUrl === null && customer.loginLogo) ||
                          (sidebarLogo.previewUrl === null && customer.sidebarLogo) ||
-                         (sidebarCollapsedLogo.previewUrl === null && customer.sidebarLogoCollapsed);
+                         (sidebarCollapsedLogo.previewUrl === null && customer.sidebarLogoCollapsed) ||
+                         (homeLogo.previewUrl === null && customer.homeLogo);
 
   const LogoUploadCard = ({ 
     title, 
@@ -218,7 +227,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     description: string;
     logo: LogoPreview;
     inputRef: React.RefObject<HTMLInputElement>;
-    logoType: 'login' | 'sidebar' | 'sidebarCollapsed';
+    logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home';
     recommendedSize: string;
   }) => (
     <Card>
@@ -323,6 +332,15 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
               inputRef={sidebarCollapsedRef}
               logoType="sidebarCollapsed"
               recommendedSize="80x80px"
+            />
+
+            <LogoUploadCard
+              title="Logo da Tela Inicial (Home)"
+              description="Logo exibida na tela de seleção de módulos"
+              logo={homeLogo}
+              inputRef={homeLogoRef}
+              logoType="home"
+              recommendedSize="300x100px"
             />
 
             <div className="flex justify-end pt-4">
