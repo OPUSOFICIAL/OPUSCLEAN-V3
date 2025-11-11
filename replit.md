@@ -32,11 +32,13 @@ Preferred communication style: Simple, everyday language.
 
 ### UI/UX Decisions
 
-The system features a modern, predominantly white design with subtle gradients and glassmorphism effects for depth and sophistication. It utilizes `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Manutenção) are used for identification on focal elements like buttons and badges. The design is responsive, optimized for both desktop and mobile, with touch-friendly elements and streamlined navigation. The mobile dashboard highlights in-progress work orders with a distinct green-to-emerald gradient card and a dedicated statistics card.
+The system features a modern, **predominantly white design** with subtle blue gradients and elegant effects for depth and sophistication. It utilizes `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Manutenção) are used for identification on focal elements like buttons and badges. The design is responsive, optimized for both desktop and mobile, with touch-friendly elements and streamlined navigation. The mobile dashboard highlights in-progress work orders with a distinct green-to-emerald gradient card and a dedicated statistics card.
 
-**Landing Page**: Ultra-modern presentation page displayed before login, featuring dark glassmorphism aesthetics with elegant blue-themed gradients. The design includes animated gradient orbs (blue and cyan tones), mouse parallax effects, floating particles, smooth Framer Motion animations, and interactive feature cards. The landing showcases the "Acelera it - Full Facilities" brand with a sophisticated blue-to-cyan gradient text logo, maintaining elegance and modern aesthetics throughout the entire color scheme.
+**Landing Page**: Ultra-modern presentation page displayed before login, featuring **white background with subtle blue gradients** (from-blue-50 via-white to-cyan-50). The design includes animated gradient orbs (blue and cyan tones with 8% opacity), mouse parallax effects, 20 floating particles, smooth Framer Motion animations, and interactive feature cards with white backgrounds and blue borders. The landing showcases the "Acelera it - Full Facilities" brand with a sophisticated blue-to-cyan gradient text logo, maintaining elegance and modern aesthetics with a clean, professional appearance.
 
-**Login Page**: Redesigned to match the landing page aesthetic with centralized glassmorphism card on dark blue gradient background. Features the Acelera it logo at the top, "Bem-vindo de volta" welcome message, email/password fields with icons, remember me checkbox, forgot password link, white "Entrar" button, and Microsoft SSO integration. Includes animated gradient orbs (blue and cyan), floating particles, and smooth Framer Motion animations for card entrance. The design maintains the professional blue-focused color palette (from-slate-950 via-blue-950 to-indigo-950) for brand consistency.
+**Login Page**: Redesigned with **white background and subtle blue gradients** to match the landing page. Features a centralized white card with blue border (border-blue-100), Acelera it logo at 200px height, "Bem-vindo de volta" gradient title, email/password fields with light blue backgrounds (bg-blue-50/50), remember me checkbox, forgot password link, gradient blue "Entrar" button, and Microsoft SSO integration. Includes animated gradient orbs (blue and cyan with 8% opacity), 15 floating particles, and smooth Framer Motion animations. The design maintains professional blue-focused palette with white as predominant color.
+
+**Module Selection Page**: Features **white background with subtle gradients** (from-blue-50 via-white to-cyan-50) and animated blue/orange gradient orbs. Module cards have white backgrounds with colored borders (blue for Clean, orange for Maintenance), subtle gradient overlays on hover, large module icons with gradient circles, feature lists with colored checkmarks, and gradient action buttons. The page includes the Acelera it logo, animated particles, and maintains brand consistency with clean, modern white-based design.
 
 ### Technical Implementations
 
@@ -226,10 +228,14 @@ The project is configured for the Replit cloud environment, with automated Postg
 
 ## Recent Changes (November 2025)
 
+- ✅ **Complete redesign with white predominant color scheme and blue gradients**
+  - Landing page: White background with subtle blue gradients (8% opacity orbs)
+  - Login page: White card with blue accents, 200px logo, gradient elements
+  - Module selection: White cards with colored borders (blue/orange), modern layout
 - ✅ Redesigned login page with modern glassmorphism card and blue gradient aesthetics
-- ✅ Added Acelera it logo to login page with centralized layout
-- ✅ Implemented animated gradient orbs and floating particles on login
-- ✅ Added Framer Motion animations for smooth card entrance
+- ✅ Added Acelera it logo to login page with centralized layout (200px height)
+- ✅ Implemented animated gradient orbs and floating particles on all pre-login pages
+- ✅ Added Framer Motion animations for smooth transitions and interactions
 - ✅ Integrated Microsoft SSO button with Building2 icon
 - ✅ Implemented complete Groq (Llama 3) integration as free AI provider
 - ✅ Added AI provider configuration UI with test functionality
