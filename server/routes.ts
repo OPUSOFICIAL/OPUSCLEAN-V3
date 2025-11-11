@@ -346,14 +346,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Checklist template not found or access denied" });
       }
 
-      // Convert zoneIds array to zoneId (single value) for database compatibility
-      const { zoneIds, siteIds, ...restBody } = req.body;
+      // Keep arrays for multi-site/zone support
       const checklistData = { 
-        ...restBody, 
+        ...req.body, 
         companyId,
-        zoneId: zoneIds && zoneIds.length > 0 ? zoneIds[0] : null,
-        siteId: siteIds && siteIds.length > 0 ? siteIds[0] : null
       };
+      
+      console.log("[CHECKLIST UPDATE] Data:", JSON.stringify(checklistData, null, 2));
       
       const template = await storage.updateChecklistTemplate(req.params.id, checklistData);
       res.json(template);
