@@ -908,7 +908,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={updateCustomerMutation.isPending} data-testid="button-submit-edit-customer">
+                <Button type="submit" variant="outline" disabled={updateCustomerMutation.isPending} data-testid="button-submit-edit-customer">
                   {updateCustomerMutation.isPending ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </div>
