@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ClientProvider, useClient } from "@/contexts/ClientContext";
 import { ModuleProvider, useModule } from "@/contexts/ModuleContext";
-import { BrandingProvider } from "@/contexts/BrandingContext";
+import { BrandingProvider, useBranding } from "@/contexts/BrandingContext";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import WorkOrders from "@/pages/work-orders";
@@ -36,6 +36,7 @@ import Login from "@/pages/login";
 import LoginMobile from "@/pages/login-mobile";
 import ModuleSelection from "@/pages/module-selection";
 import Landing from "@/pages/landing";
+import CustomLanding from "@/pages/custom-landing";
 import MobileDashboard from "@/pages/mobile-dashboard";
 import MobileQrScanner from "@/pages/mobile-qr-scanner";
 import MobileWorkOrderExecute from "@/pages/mobile-work-order-execute";
@@ -139,9 +140,13 @@ function Router() {
   const { user, isAuthenticated } = useAuth();
   const { isMobileOnlyUser, isLoading } = usePermissions();
   const [location] = useLocation();
+  const { branding, isReady } = useBranding();
 
   // Se não está autenticado, mostrar landing/login
   if (!isAuthenticated || !user) {
+    // Usar CustomLanding se houver branding de tenant, senão Landing padrão
+    const LandingComponent = branding ? CustomLanding : Landing;
+    
     return (
       <Switch>
         <Route path="/qr-public/:code" component={QrPublic} />
@@ -149,8 +154,8 @@ function Router() {
         <Route path="/module-selection" component={ModuleSelection} />
         <Route path="/login-mobile" component={LoginMobile} />
         <Route path="/login" component={Login} />
-        <Route path="/" component={Landing} />
-        <Route component={Landing} />
+        <Route path="/" component={LandingComponent} />
+        <Route component={LandingComponent} />
       </Switch>
     );
   }
