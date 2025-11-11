@@ -16,6 +16,7 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
 
 **Pre-Login Pages Design Philosophy**:
 - **Landing Page**: Corporate SaaS aesthetic with facilities management focus
+  - Fixed transparent top bar (bg-white/70 backdrop-blur-sm) with Acelera Full Facilities logo (64px height) and "Acessar Sistema" button
   - Hero section with strong value proposition: "Transforme a Gestão de Facilities da sua Empresa"
   - ROI-focused metrics (45% cost reduction, 3x productivity, 99% uptime, 24/7 support)
   - Dashboard preview showing real facilities management metrics
@@ -26,6 +27,8 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
   - Trust-building elements and enterprise messaging
 
 - **Login Page**: Minimalist corporate design
+  - Simple top bar with only "Voltar" button (logo removed for cleaner design)
+  - Large centered Acelera Full Facilities logo (128px height) above form
   - Clean white card with subtle shadows
   - Microsoft SSO integration prominently displayed with colorful logo
   - Traditional email/password login below SSO
@@ -34,6 +37,7 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
   - Minimal decorative elements (subtle gradient orbs)
 
 - **Module Selection**: Professional module cards with ROI emphasis
+  - Large centered Acelera Full Facilities logo (128px height) at top
   - Side-by-side cards for Clean and Maintenance modules
   - Each card features: module icon, title, subtitle, ROI metrics, feature list
   - Clean module: 45% cost reduction, 3x efficiency
@@ -42,6 +46,8 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
   - Gradient buttons matching module colors
 
 **Visual Elements**:
+- Acelera Full Facilities logo (attached_assets/acelera-full-facilities-logo.png) with triangular "A" symbol and blue detail
+- Logo sizes: Landing top bar (64px), Login center (128px), Module selection (128px)
 - Icons from lucide-react representing facilities operations (Building2, Wrench, ClipboardCheck, Users, TrendingUp, Shield)
 - Custom Microsoft logo SVG for SSO
 - Framer Motion animations for professional, subtle transitions

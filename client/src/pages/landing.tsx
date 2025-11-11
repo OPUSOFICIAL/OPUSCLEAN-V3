@@ -71,10 +71,10 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mt-[-61px] mb-[-61px]">
-            <img src={aceleraLogo} alt="Acelera it" className="h-48" />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-sm border-b border-slate-200/50">
+        <div className="container mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <img src={aceleraLogo} alt="Acelera it" className="h-16" />
             <Button 
               onClick={() => setLocation("/login")}
               variant="outline"
@@ -87,7 +87,7 @@ export default function Landing() {
         </div>
       </header>
       {/* Hero Section */}
-      <section className="container mx-auto px-6 py-20">
+      <section className="container mx-auto px-6 py-20 pt-32">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Content */}
           <motion.div
