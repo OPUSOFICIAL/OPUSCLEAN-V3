@@ -6397,6 +6397,128 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
               required: ['title', 'zoneId', 'scheduledDate']
             }
           }
+        }, {
+          type: 'function',
+          function: {
+            name: 'queryCleaningActivitiesList',
+            description: 'Lista atividades de limpeza/manutenção programadas. Use quando o usuário pedir para listar/mostrar atividades, planos ou cronogramas.',
+            parameters: {
+              type: 'object',
+              properties: {
+                isActive: {
+                  type: 'boolean',
+                  description: 'Filtrar por status: true para atividades ativas, false para inativas'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Frequência: diaria, semanal, quinzenal, mensal, bimestral, trimestral, semestral, anual',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                siteId: {
+                  type: 'string',
+                  description: 'ID do local para filtrar atividades específicas'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Limite de resultados (padrão: 50)'
+                }
+              }
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'getCleaningActivityDetails',
+            description: 'Obtém detalhes completos de uma atividade específica. Use quando o usuário pedir informações detalhadas sobre uma atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                activityId: {
+                  type: 'string',
+                  description: 'ID da atividade'
+                }
+              },
+              required: ['activityId']
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'createCleaningActivity',
+            description: 'Cria uma nova atividade de limpeza/manutenção programada. Use quando o usuário pedir para criar/adicionar/programar uma nova atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Nome/descrição da atividade'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Frequência: diaria, semanal, quinzenal, mensal, bimestral, trimestral, semestral, anual',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                siteId: {
+                  type: 'string',
+                  description: 'ID do local onde a atividade será executada'
+                },
+                zoneId: {
+                  type: 'string',
+                  description: 'ID da zona onde a atividade será executada'
+                },
+                serviceId: {
+                  type: 'string',
+                  description: 'ID do serviço (opcional)'
+                },
+                startTime: {
+                  type: 'string',
+                  description: 'Horário de início (formato HH:MM, opcional)'
+                },
+                endTime: {
+                  type: 'string',
+                  description: 'Horário de término (formato HH:MM, opcional)'
+                }
+              },
+              required: ['name', 'frequency', 'siteId', 'zoneId']
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'updateCleaningActivity',
+            description: 'Atualiza uma atividade existente. Use quando o usuário pedir para modificar/alterar/atualizar uma atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                activityId: {
+                  type: 'string',
+                  description: 'ID da atividade a ser atualizada'
+                },
+                name: {
+                  type: 'string',
+                  description: 'Novo nome/descrição da atividade'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Nova frequência',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                isActive: {
+                  type: 'boolean',
+                  description: 'Status: true para ativar, false para desativar'
+                },
+                startTime: {
+                  type: 'string',
+                  description: 'Novo horário de início (formato HH:MM)'
+                },
+                endTime: {
+                  type: 'string',
+                  description: 'Novo horário de término (formato HH:MM)'
+                }
+              },
+              required: ['activityId']
+            }
+          }
         }];
 
         // Build conversation history for OpenAI
@@ -6496,6 +6618,31 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
                 funcResult = await this.aiCreateWorkOrder(
                   context.customerId!,
                   context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'queryCleaningActivitiesList') {
+                funcResult = await this.aiQueryCleaningActivitiesList(
+                  context.customerId!,
+                  context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'getCleaningActivityDetails') {
+                funcResult = await this.aiGetCleaningActivityDetails(
+                  context.customerId!,
+                  context.module,
+                  funcArgs.activityId
+                );
+              } else if (funcName === 'createCleaningActivity') {
+                funcResult = await this.aiCreateCleaningActivity(
+                  context.customerId!,
+                  context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'updateCleaningActivity') {
+                funcResult = await this.aiUpdateCleaningActivity(
+                  context.customerId!,
+                  context.module,
+                  funcArgs.activityId,
                   funcArgs
                 );
               } else {
@@ -6665,6 +6812,116 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
               },
               required: ['title', 'zoneId', 'scheduledDate']
             }
+          }, {
+            name: 'queryCleaningActivitiesList',
+            description: 'Lista atividades de limpeza/manutenção programadas. Use quando o usuário pedir para listar/mostrar atividades, planos ou cronogramas.',
+            parameters: {
+              type: 'object',
+              properties: {
+                isActive: {
+                  type: 'boolean',
+                  description: 'Filtrar por status: true para atividades ativas, false para inativas'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Frequência: diaria, semanal, quinzenal, mensal, bimestral, trimestral, semestral, anual',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                siteId: {
+                  type: 'string',
+                  description: 'ID do local para filtrar atividades específicas'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Limite de resultados (padrão: 50)'
+                }
+              }
+            }
+          }, {
+            name: 'getCleaningActivityDetails',
+            description: 'Obtém detalhes completos de uma atividade específica. Use quando o usuário pedir informações detalhadas sobre uma atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                activityId: {
+                  type: 'string',
+                  description: 'ID da atividade'
+                }
+              },
+              required: ['activityId']
+            }
+          }, {
+            name: 'createCleaningActivity',
+            description: 'Cria uma nova atividade de limpeza/manutenção programada. Use quando o usuário pedir para criar/adicionar/programar uma nova atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Nome/descrição da atividade'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Frequência: diaria, semanal, quinzenal, mensal, bimestral, trimestral, semestral, anual',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                siteId: {
+                  type: 'string',
+                  description: 'ID do local onde a atividade será executada'
+                },
+                zoneId: {
+                  type: 'string',
+                  description: 'ID da zona onde a atividade será executada'
+                },
+                serviceId: {
+                  type: 'string',
+                  description: 'ID do serviço (opcional)'
+                },
+                startTime: {
+                  type: 'string',
+                  description: 'Horário de início (formato HH:MM, opcional)'
+                },
+                endTime: {
+                  type: 'string',
+                  description: 'Horário de término (formato HH:MM, opcional)'
+                }
+              },
+              required: ['name', 'frequency', 'siteId', 'zoneId']
+            }
+          }, {
+            name: 'updateCleaningActivity',
+            description: 'Atualiza uma atividade existente. Use quando o usuário pedir para modificar/alterar/atualizar uma atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                activityId: {
+                  type: 'string',
+                  description: 'ID da atividade a ser atualizada'
+                },
+                name: {
+                  type: 'string',
+                  description: 'Novo nome/descrição da atividade'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Nova frequência',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                isActive: {
+                  type: 'boolean',
+                  description: 'Status: true para ativar, false para desativar'
+                },
+                startTime: {
+                  type: 'string',
+                  description: 'Novo horário de início (formato HH:MM)'
+                },
+                endTime: {
+                  type: 'string',
+                  description: 'Novo horário de término (formato HH:MM)'
+                }
+              },
+              required: ['activityId']
+            }
           }]
         }];
 
@@ -6772,6 +7029,31 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
                 context.module,
                 funcArgs
               );
+            } else if (funcName === 'queryCleaningActivitiesList') {
+              funcResult = await this.aiQueryCleaningActivitiesList(
+                context.customerId!,
+                context.module,
+                funcArgs
+              );
+            } else if (funcName === 'getCleaningActivityDetails') {
+              funcResult = await this.aiGetCleaningActivityDetails(
+                context.customerId!,
+                context.module,
+                funcArgs.activityId
+              );
+            } else if (funcName === 'createCleaningActivity') {
+              funcResult = await this.aiCreateCleaningActivity(
+                context.customerId!,
+                context.module,
+                funcArgs
+              );
+            } else if (funcName === 'updateCleaningActivity') {
+              funcResult = await this.aiUpdateCleaningActivity(
+                context.customerId!,
+                context.module,
+                funcArgs.activityId,
+                funcArgs
+              );
             } else {
               funcResult = { error: 'Função não implementada' };
             }
@@ -6787,12 +7069,12 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
           } as any);
           messages.push({
             role: 'user',
-            parts: [{
+            parts: [serializeForAI({
               functionResponse: {
                 name: funcName,
                 response: { result: funcResult }
               }
-            }]
+            })]
           } as any);
         }
 
@@ -6961,6 +7243,128 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
               required: ['title', 'zoneId', 'scheduledDate']
             }
           }
+        }, {
+          type: 'function',
+          function: {
+            name: 'queryCleaningActivitiesList',
+            description: 'Lista atividades de limpeza/manutenção programadas. Use quando o usuário pedir para listar/mostrar atividades, planos ou cronogramas.',
+            parameters: {
+              type: 'object',
+              properties: {
+                isActive: {
+                  type: 'boolean',
+                  description: 'Filtrar por status: true para atividades ativas, false para inativas'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Frequência: diaria, semanal, quinzenal, mensal, bimestral, trimestral, semestral, anual',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                siteId: {
+                  type: 'string',
+                  description: 'ID do local para filtrar atividades específicas'
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Limite de resultados (padrão: 50)'
+                }
+              }
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'getCleaningActivityDetails',
+            description: 'Obtém detalhes completos de uma atividade específica. Use quando o usuário pedir informações detalhadas sobre uma atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                activityId: {
+                  type: 'string',
+                  description: 'ID da atividade'
+                }
+              },
+              required: ['activityId']
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'createCleaningActivity',
+            description: 'Cria uma nova atividade de limpeza/manutenção programada. Use quando o usuário pedir para criar/adicionar/programar uma nova atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Nome/descrição da atividade'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Frequência: diaria, semanal, quinzenal, mensal, bimestral, trimestral, semestral, anual',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                siteId: {
+                  type: 'string',
+                  description: 'ID do local onde a atividade será executada'
+                },
+                zoneId: {
+                  type: 'string',
+                  description: 'ID da zona onde a atividade será executada'
+                },
+                serviceId: {
+                  type: 'string',
+                  description: 'ID do serviço (opcional)'
+                },
+                startTime: {
+                  type: 'string',
+                  description: 'Horário de início (formato HH:MM, opcional)'
+                },
+                endTime: {
+                  type: 'string',
+                  description: 'Horário de término (formato HH:MM, opcional)'
+                }
+              },
+              required: ['name', 'frequency', 'siteId', 'zoneId']
+            }
+          }
+        }, {
+          type: 'function',
+          function: {
+            name: 'updateCleaningActivity',
+            description: 'Atualiza uma atividade existente. Use quando o usuário pedir para modificar/alterar/atualizar uma atividade.',
+            parameters: {
+              type: 'object',
+              properties: {
+                activityId: {
+                  type: 'string',
+                  description: 'ID da atividade a ser atualizada'
+                },
+                name: {
+                  type: 'string',
+                  description: 'Novo nome/descrição da atividade'
+                },
+                frequency: {
+                  type: 'string',
+                  description: 'Nova frequência',
+                  enum: ['diaria', 'semanal', 'quinzenal', 'mensal', 'bimestral', 'trimestral', 'semestral', 'anual']
+                },
+                isActive: {
+                  type: 'boolean',
+                  description: 'Status: true para ativar, false para desativar'
+                },
+                startTime: {
+                  type: 'string',
+                  description: 'Novo horário de início (formato HH:MM)'
+                },
+                endTime: {
+                  type: 'string',
+                  description: 'Novo horário de término (formato HH:MM)'
+                }
+              },
+              required: ['activityId']
+            }
+          }
         }];
 
         const groqMessages: any[] = [
@@ -7052,6 +7456,31 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
                 funcResult = await this.aiCreateWorkOrder(
                   context.customerId!,
                   context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'queryCleaningActivitiesList') {
+                funcResult = await this.aiQueryCleaningActivitiesList(
+                  context.customerId!,
+                  context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'getCleaningActivityDetails') {
+                funcResult = await this.aiGetCleaningActivityDetails(
+                  context.customerId!,
+                  context.module,
+                  funcArgs.activityId
+                );
+              } else if (funcName === 'createCleaningActivity') {
+                funcResult = await this.aiCreateCleaningActivity(
+                  context.customerId!,
+                  context.module,
+                  funcArgs
+                );
+              } else if (funcName === 'updateCleaningActivity') {
+                funcResult = await this.aiUpdateCleaningActivity(
+                  context.customerId!,
+                  context.module,
+                  funcArgs.activityId,
                   funcArgs
                 );
               } else {
