@@ -635,7 +635,7 @@ export default function Dashboard() {
                   Performance por Local
                 </span>
               </CardTitle>
-              <Badge className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-700 hover:from-blue-500/20 hover:to-indigo-500/20 border-0 shadow-md backdrop-blur-sm px-3 py-1.5 font-semibold">
+              <Badge className="bg-white text-slate-700 border border-slate-200 shadow-sm px-3 py-1.5">
                 {(sites as any[] || []).length} {(sites as any[] || []).length === 1 ? 'Local' : 'Locais'}
               </Badge>
             </div>
