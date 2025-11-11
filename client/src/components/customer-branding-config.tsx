@@ -38,6 +38,7 @@ interface LogoPreview {
 export function CustomerBrandingConfig({ customer, open, onOpenChange }: CustomerBrandingConfigProps) {
   const { toast } = useToast();
   const [moduleColors, setModuleColors] = useState<ModuleColors>((customer.moduleColors as ModuleColors) || {});
+  const [subdomain, setSubdomain] = useState(customer.subdomain || '');
   
   // Estados para preview de logos
   const [loginLogo, setLoginLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.loginLogo || null });
@@ -57,6 +58,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       setSidebarLogo({ file: null, previewUrl: customer.sidebarLogo || null });
       setSidebarCollapsedLogo({ file: null, previewUrl: customer.sidebarLogoCollapsed || null });
       setModuleColors((customer.moduleColors as ModuleColors) || {});
+      setSubdomain(customer.subdomain || '');
     }
   }, [open, customer]);
 
@@ -200,6 +202,10 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     updateBrandingMutation.mutate({ moduleColors });
   };
 
+  const handleSaveSubdomain = () => {
+    updateBrandingMutation.mutate({ subdomain });
+  };
+
   const hasLogoChanges = loginLogo.file !== null || sidebarLogo.file !== null || sidebarCollapsedLogo.file !== null ||
                          (loginLogo.previewUrl === null && customer.loginLogo) ||
                          (sidebarLogo.previewUrl === null && customer.sidebarLogo) ||
@@ -291,9 +297,10 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
         </DialogHeader>
 
         <Tabs defaultValue="logos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="logos">Logos</TabsTrigger>
-            <TabsTrigger value="colors">Cores dos Módulos</TabsTrigger>
+            <TabsTrigger value="colors">Cores</TabsTrigger>
+            <TabsTrigger value="subdomain">Subdomínio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="logos" className="space-y-4">
@@ -493,6 +500,54 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
                 {updateBrandingMutation.isPending ? 'Salvando...' : 'Salvar Cores'}
               </Button>
             </div>
+          </TabsContent>
+
+          <TabsContent value="subdomain" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subdomínio Personalizado</CardTitle>
+                <CardDescription>
+                  Configure o endereço único para acesso ao sistema por este cliente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subdomain-input">Subdomínio</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="subdomain-input"
+                      value={subdomain}
+                      onChange={(e) => setSubdomain(e.target.value)}
+                      placeholder="minha-empresa"
+                      className="flex-1"
+                      data-testid="input-subdomain"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">
+                      .opus.com
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    URL de acesso: <strong className="text-foreground">
+                      {subdomain || 'seu-subdominio'}.opus.com
+                    </strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Use apenas letras minúsculas, números e hífens
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={handleSaveSubdomain}
+                    disabled={updateBrandingMutation.isPending || !subdomain}
+                    data-testid="button-save-subdomain"
+                  >
+                    <Check className="mr-2 h-4 w-4" />
+                    {updateBrandingMutation.isPending ? 'Salvando...' : 'Salvar Subdomínio'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </DialogContent>
