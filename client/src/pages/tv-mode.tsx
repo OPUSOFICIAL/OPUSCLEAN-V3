@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +6,7 @@ import { ApexOptions } from "apexcharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Medal, Award, TrendingUp, Activity } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TvModeStats {
   workOrdersStats: {
@@ -26,35 +25,25 @@ interface TvModeStats {
 export default function TvMode() {
   const { activeClientId } = useClient();
   const { currentModule } = useModule();
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch TV Mode stats
-  const { data: stats, isLoading } = useQuery<TvModeStats>({
-    queryKey: ["/api/tv-mode/stats", activeClientId, currentModule, refreshKey],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/tv-mode/stats?customerId=${activeClientId}&module=${currentModule}`,
-        {
-          credentials: 'include', // Include cookies for authentication
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch TV mode stats");
-      }
-      return response.json();
-    },
+  console.log("[TV MODE] activeClientId:", activeClientId);
+  console.log("[TV MODE] currentModule:", currentModule);
+
+  // Fetch TV Mode stats - using standard queryClient pattern
+  const { data: stats, isError, error } = useQuery<TvModeStats>({
+    queryKey: [
+      "/api/tv-mode/stats",
+      { customerId: activeClientId, module: currentModule },
+    ],
     enabled: !!activeClientId && !!currentModule,
     refetchInterval: 10000, // Auto-refresh every 10 seconds
+    refetchIntervalInBackground: true, // Continue refetching even when window is not focused
+    staleTime: 0, // Always consider data stale so it refetches
   });
 
-  // Auto-refresh key updater
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshKey((prev) => prev + 1);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
+  console.log("[TV MODE] stats:", stats);
+  console.log("[TV MODE] isError:", isError);
+  console.log("[TV MODE] error:", error);
 
   // Chart configuration for work orders
   const workOrdersChartOptions: ApexOptions = {
@@ -64,7 +53,7 @@ export default function TvMode() {
         enabled: true,
         dynamicAnimation: {
           enabled: true,
-          speed: 1000,
+          speed: 800,
         },
       },
     },
@@ -139,17 +128,6 @@ export default function TvMode() {
     return "from-blue-500 to-blue-600";
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="text-center">
-          <Activity className="w-16 h-16 text-primary animate-pulse mx-auto mb-4" />
-          <p className="text-xl text-white">Carregando dados em tempo real...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8">
       {/* Header */}
@@ -186,25 +164,47 @@ export default function TvMode() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ReactApexChart
-                options={workOrdersChartOptions}
-                series={workOrdersChartSeries}
-                type="donut"
-                height={400}
-              />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={stats?.workOrdersStats.total || 0}
+                  initial={{ opacity: 0.8 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ReactApexChart
+                    options={workOrdersChartOptions}
+                    series={workOrdersChartSeries}
+                    type="donut"
+                    height={400}
+                  />
+                </motion.div>
+              </AnimatePresence>
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <div className="bg-green-500/20 border border-green-500 rounded-lg p-4 text-center">
+                <motion.div
+                  key={`resolved-${stats?.workOrdersStats.resolved || 0}`}
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-green-500/20 border border-green-500 rounded-lg p-4 text-center"
+                >
                   <p className="text-green-400 text-sm font-medium mb-1">Resolvidas</p>
                   <p className="text-4xl font-bold text-white">
                     {stats?.workOrdersStats.resolved || 0}
                   </p>
-                </div>
-                <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 text-center">
+                </motion.div>
+                <motion.div
+                  key={`unresolved-${stats?.workOrdersStats.unresolved || 0}`}
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-red-500/20 border border-red-500 rounded-lg p-4 text-center"
+                >
                   <p className="text-red-400 text-sm font-medium mb-1">Não Resolvidas</p>
                   <p className="text-4xl font-bold text-white">
                     {stats?.workOrdersStats.unresolved || 0}
                   </p>
-                </div>
+                </motion.div>
               </div>
             </CardContent>
           </Card>
@@ -225,56 +225,64 @@ export default function TvMode() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {stats?.leaderboard && stats.leaderboard.length > 0 ? (
-                  stats.leaderboard.map((collaborator, index) => (
+                <AnimatePresence mode="wait">
+                  {stats?.leaderboard && stats.leaderboard.length > 0 ? (
                     <motion.div
-                      key={collaborator.userId}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className={`bg-gradient-to-r ${getRankColor(index + 1)} p-4 rounded-lg shadow-lg`}
-                      data-testid={`leaderboard-item-${index + 1}`}
+                      key={stats.leaderboard.map(c => c.userId).join('-')}
+                      initial={{ opacity: 0.8 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0.8 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-4"
                     >
-                      <div className="flex items-center gap-4">
-                        {/* Rank & Medal */}
-                        <div className="flex flex-col items-center justify-center">
-                          {getMedalIcon(index + 1)}
-                          <Badge
-                            variant="secondary"
-                            className="mt-1 text-xs font-bold bg-white/90 text-slate-900"
-                          >
-                            #{index + 1}
-                          </Badge>
-                        </div>
+                      {stats.leaderboard.map((collaborator, index) => (
+                        <div
+                          key={collaborator.userId}
+                          className={`bg-gradient-to-r ${getRankColor(index + 1)} p-4 rounded-lg shadow-lg`}
+                          data-testid={`leaderboard-item-${index + 1}`}
+                        >
+                          <div className="flex items-center gap-4">
+                            {/* Rank & Medal */}
+                            <div className="flex flex-col items-center justify-center">
+                              {getMedalIcon(index + 1)}
+                              <Badge
+                                variant="secondary"
+                                className="mt-1 text-xs font-bold bg-white/90 text-slate-900"
+                              >
+                                #{index + 1}
+                              </Badge>
+                            </div>
 
-                        {/* User Info */}
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white">
-                            {collaborator.userName}
-                          </h3>
-                          <p className="text-sm text-white/80">
-                            {collaborator.userEmail}
-                          </p>
-                        </div>
+                            {/* User Info */}
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-white">
+                                {collaborator.userName}
+                              </h3>
+                              <p className="text-sm text-white/80">
+                                {collaborator.userEmail}
+                              </p>
+                            </div>
 
-                        {/* Score */}
-                        <div className="text-right">
-                          <p className="text-4xl font-bold text-white">
-                            {collaborator.completedCount}
-                          </p>
-                          <p className="text-sm text-white/80">OSs Concluídas</p>
+                            {/* Score */}
+                            <div className="text-right">
+                              <p className="text-4xl font-bold text-white">
+                                {collaborator.completedCount}
+                              </p>
+                              <p className="text-sm text-white/80">OSs Concluídas</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </motion.div>
-                  ))
-                ) : (
-                  <div className="text-center py-12">
-                    <Trophy className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-400 text-lg">
-                      Nenhum colaborador com OSs concluídas ainda.
-                    </p>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-center py-12">
+                      <Trophy className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                      <p className="text-slate-400 text-lg">
+                        Nenhum colaborador com OSs concluídas ainda.
+                      </p>
+                    </div>
+                  )}
+                </AnimatePresence>
               </div>
             </CardContent>
           </Card>
