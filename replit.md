@@ -16,10 +16,16 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
 
 **Pre-Login Pages Design Philosophy**:
 - **Landing Page**: Corporate SaaS aesthetic with facilities management focus
-  - Fixed frosted glass top bar (bg-white/80 backdrop-blur-lg) with Acelera Full Facilities logo (150px height) and "Acessar Sistema" button
+  - Fixed frosted glass top bar (bg-white/80 backdrop-blur-lg) with Acelera Full Facilities logo (80px height) and "Acessar Sistema" button
   - Hero section with strong value proposition: "Transforme a Gestão de Facilities da sua Empresa"
   - ROI-focused metrics (45% cost reduction, 3x productivity, 99% uptime, 24/7 support)
-  - Dashboard preview showing real facilities management metrics
+  - **Interactive dashboard carousel** with auto-advancing slides (4 seconds) showing different system views:
+    - Dashboard Facilities (Overview with OSs and performance metrics)
+    - Manutenção (Work orders with status tracking)
+    - Analytics (Performance charts and SLA metrics)
+    - Calendário (Scheduled maintenance and activities)
+  - Clickable navigation dots for manual slide control
+  - Smooth AnimatePresence transitions between slides
   - Business-focused benefits highlighting operational efficiency
   - Features section with facilities-specific icons (Building2, Wrench, ClipboardCheck, TrendingUp)
   - Professional color scheme: slate/gray with blue accents
@@ -46,7 +52,7 @@ The system features an **enterprise-grade, corporate design** targeting B2B clie
 
 **Visual Elements**:
 - Acelera Full Facilities logo (attached_assets/acelera-full-facilities-logo.png) with triangular "A" symbol and blue detail
-- Logo sizes: Landing top bar (150px), Login center (200px), Module selection (128px)
+- Logo sizes: Landing top bar (80px), Login center (200px), Module selection (128px)
 - Icons from lucide-react representing facilities operations (Building2, Wrench, ClipboardCheck, Users, TrendingUp, Shield)
 - Custom Microsoft logo SVG for SSO
 - Framer Motion animations for professional, subtle transitions

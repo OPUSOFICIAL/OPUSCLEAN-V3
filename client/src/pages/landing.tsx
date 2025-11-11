@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { 
@@ -14,12 +15,15 @@ import {
   Clock,
   CheckCircle2,
   Zap,
-  MapPin
+  MapPin,
+  CalendarDays,
+  AlertCircle
 } from "lucide-react";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  const [activeSlide, setActiveSlide] = useState(0);
 
   const stats = [
     { value: "45%", label: "Redução de Custos" },
@@ -68,17 +72,198 @@ export default function Landing() {
     { icon: CheckCircle2, text: "Conformidade e auditoria garantidas" }
   ];
 
+  // Dashboard carousel slides
+  const dashboardSlides = [
+    {
+      title: "Dashboard Facilities",
+      subtitle: "Visão Geral",
+      icon: Building2,
+      content: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-lg p-4">
+              <div className="text-xs text-emerald-700 font-medium mb-1">OSs Concluídas</div>
+              <div className="text-2xl font-bold text-emerald-600">487</div>
+              <div className="text-xs text-emerald-600 mt-1">↑ 23% vs mês anterior</div>
+            </div>
+            <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg p-4">
+              <div className="text-xs text-blue-700 font-medium mb-1">Locais Ativos</div>
+              <div className="text-2xl font-bold text-blue-600">24</div>
+              <div className="text-xs text-blue-600 mt-1">100% cobertura</div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-slate-50/80 to-white rounded-lg p-4 border border-slate-200">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-xs font-semibold text-slate-700">Performance por Local</div>
+              <div className="text-xs text-slate-500">Este mês</div>
+            </div>
+            <div className="space-y-3">
+              {[
+                { name: 'Local 1', value: 85 },
+                { name: 'Local 2', value: 72 },
+                { name: 'Local 3', value: 93 }
+              ].map((local, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-medium text-slate-700">{local.name}</div>
+                    <div className="text-xs font-bold text-slate-900">{local.value}%</div>
+                  </div>
+                  <div className="relative h-2.5 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full overflow-hidden shadow-inner">
+                    <div 
+                      className={`absolute h-full rounded-full transition-all duration-700 ease-out ${
+                        local.value >= 80 ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600' :
+                        local.value >= 60 ? 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600' :
+                        'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600'
+                      }`}
+                      style={{ width: `${local.value}%` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Manutenção",
+      subtitle: "Ordens de Serviço",
+      icon: Wrench,
+      content: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-lg p-3">
+              <div className="text-xs text-amber-700 font-medium mb-1">Pendentes</div>
+              <div className="text-xl font-bold text-amber-600">12</div>
+            </div>
+            <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg p-3">
+              <div className="text-xs text-blue-700 font-medium mb-1">Em Andamento</div>
+              <div className="text-xl font-bold text-blue-600">8</div>
+            </div>
+            <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-lg p-3">
+              <div className="text-xs text-emerald-700 font-medium mb-1">Concluídas</div>
+              <div className="text-xl font-bold text-emerald-600">156</div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-slate-50/80 to-white rounded-lg p-4 border border-slate-200">
+            <div className="text-xs font-semibold text-slate-700 mb-3">OSs Recentes</div>
+            <div className="space-y-2">
+              {[
+                { id: 'OS-1234', local: 'Edifício A - Sala 301', priority: 'alta', status: 'Em andamento' },
+                { id: 'OS-1235', local: 'Edifício B - Corredor', priority: 'média', status: 'Pendente' },
+                { id: 'OS-1236', local: 'Edifício C - Entrada', priority: 'baixa', status: 'Concluída' }
+              ].map((os, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-900">{os.id}</div>
+                    <div className="text-xs text-slate-500">{os.local}</div>
+                  </div>
+                  <div className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    os.status === 'Concluída' ? 'bg-emerald-100 text-emerald-700' :
+                    os.status === 'Em andamento' ? 'bg-blue-100 text-blue-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>
+                    {os.status}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Analytics",
+      subtitle: "Performance",
+      icon: TrendingUp,
+      content: (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg p-4">
+            <div className="text-xs text-blue-700 font-medium mb-3">Tempo Médio de Conclusão</div>
+            <div className="flex items-end gap-1 mb-2">
+              {[45, 62, 38, 72, 55, 48, 65].map((height, i) => (
+                <div key={i} className="flex-1 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t" style={{ height: `${height}px` }}></div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-slate-500">Última semana</div>
+              <div className="text-lg font-bold text-blue-600">2.4h</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-lg p-3">
+              <div className="text-xs text-emerald-700 font-medium mb-1">SLA Cumprido</div>
+              <div className="text-2xl font-bold text-emerald-600">96%</div>
+              <div className="text-xs text-emerald-600 mt-1">↑ 4% este mês</div>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-200 rounded-lg p-3">
+              <div className="text-xs text-purple-700 font-medium mb-1">Equipes Ativas</div>
+              <div className="text-2xl font-bold text-purple-600">18</div>
+              <div className="text-xs text-purple-600 mt-1">6 locais</div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Calendário",
+      subtitle: "Programação",
+      icon: CalendarDays,
+      content: (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-slate-50/80 to-white rounded-lg p-4 border border-slate-200">
+            <div className="text-xs font-semibold text-slate-700 mb-3">Próximas Manutenções</div>
+            <div className="space-y-2">
+              {[
+                { dia: '15', mes: 'Jan', titulo: 'Manutenção Preventiva - Ar Condicionado', local: 'Ed. A' },
+                { dia: '18', mes: 'Jan', titulo: 'Inspeção de Segurança', local: 'Ed. B' },
+                { dia: '22', mes: 'Jan', titulo: 'Limpeza Técnica - Sistemas', local: 'Ed. C' }
+              ].map((evento, i) => (
+                <div key={i} className="flex gap-3 p-2 bg-white rounded-lg border border-slate-200">
+                  <div className="flex flex-col items-center justify-center bg-blue-50 rounded-lg px-3 py-2 min-w-[50px]">
+                    <div className="text-xl font-bold text-blue-600">{evento.dia}</div>
+                    <div className="text-xs text-blue-600">{evento.mes}</div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold text-slate-900">{evento.titulo}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{evento.local}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg p-3">
+            <div className="text-xs text-blue-700 font-medium mb-1">Atividades Programadas</div>
+            <div className="text-2xl font-bold text-blue-600">24</div>
+            <div className="text-xs text-blue-600 mt-1">Este mês</div>
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  // Auto-advance carousel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % dashboardSlides.length);
+    }, 4000); // Change slide every 4 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
       {/* Top Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-slate-200/50 shadow-sm z-50">
         <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between py-4">
+          <div className="flex items-center justify-between py-2">
             <div className="flex-shrink-0">
               <img 
                 src={aceleraLogo} 
                 alt="Acelera Full Facilities" 
-                className="h-[150px]"
+                className="h-20"
                 data-testid="img-logo"
               />
             </div>
@@ -94,7 +279,7 @@ export default function Landing() {
         </div>
       </nav>
       {/* Hero Section */}
-      <section className="container mx-auto px-6 py-20 pt-56">
+      <section className="container mx-auto px-6 py-20 pt-28">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Content */}
           <motion.div
@@ -149,78 +334,61 @@ export default function Landing() {
             </div>
           </motion.div>
 
-          {/* Right Content - Dashboard Preview */}
+          {/* Right Content - Interactive Dashboard Carousel */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative"
           >
-            <div className="relative rounded-2xl border-2 border-slate-200 bg-white shadow-2xl p-6 overflow-hidden">
-              {/* Mock Dashboard */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <Building2 className="w-5 h-5 text-blue-600" />
+            <div className="relative rounded-2xl border-2 border-slate-200 bg-white shadow-2xl p-6 overflow-hidden min-h-[400px]">
+              {/* Dashboard Header */}
+              <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    {(() => {
+                      const Icon = dashboardSlides[activeSlide].icon;
+                      return <Icon className="w-5 h-5 text-blue-600" />;
+                    })()}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">
+                      {dashboardSlides[activeSlide].title}
                     </div>
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">Dashboard Facilities</div>
-                      <div className="text-xs text-slate-500">Visão Geral</div>
+                    <div className="text-xs text-slate-500">
+                      {dashboardSlides[activeSlide].subtitle}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                  </div>
                 </div>
+                <div className="flex gap-2">
+                  {dashboardSlides.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveSlide(index)}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        index === activeSlide 
+                          ? 'bg-blue-500 w-6' 
+                          : 'bg-slate-300 hover:bg-slate-400'
+                      }`}
+                      data-testid={`button-slide-${index}`}
+                    />
+                  ))}
+                </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-lg p-4">
-                    <div className="text-xs text-emerald-700 font-medium mb-1">OSs Concluídas</div>
-                    <div className="text-2xl font-bold text-emerald-600">487</div>
-                    <div className="text-xs text-emerald-600 mt-1">↑ 23% vs mês anterior</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg p-4">
-                    <div className="text-xs text-blue-700 font-medium mb-1">Locais Ativos</div>
-                    <div className="text-2xl font-bold text-blue-600">24</div>
-                    <div className="text-xs text-blue-600 mt-1">100% cobertura</div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-slate-50/80 to-white rounded-lg p-4 border border-slate-200">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="text-xs font-semibold text-slate-700">Performance por Local</div>
-                    <div className="text-xs text-slate-500">Este mês</div>
-                  </div>
-                  <div className="space-y-3">
-                    {[
-                      { name: 'Local 1', value: 85 },
-                      { name: 'Local 2', value: 72 },
-                      { name: 'Local 3', value: 93 }
-                    ].map((local, i) => (
-                      <div key={i} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <div className="text-xs font-medium text-slate-700">{local.name}</div>
-                          <div className="text-xs font-bold text-slate-900">{local.value}%</div>
-                        </div>
-                        <div className="relative h-2.5 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full overflow-hidden shadow-inner">
-                          <div 
-                            className={`absolute h-full rounded-full transition-all duration-700 ease-out ${
-                              local.value >= 80 ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600' :
-                              local.value >= 60 ? 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600' :
-                              'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600'
-                            }`}
-                            style={{ width: `${local.value}%` }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {/* Carousel Content */}
+              <div className="relative">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeSlide}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {dashboardSlides[activeSlide].content}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
             
