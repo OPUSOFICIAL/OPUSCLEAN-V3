@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +49,7 @@ export default function SystemUsers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
 
   const form = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
@@ -87,6 +88,18 @@ export default function SystemUsers() {
   const OPUS_COMPANY_ID = "de722500-9ce3-4b13-8a1d-cddcb168551e";
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/system-users'],
+  });
+
+  // Buscar todos os clientes disponíveis
+  const { data: availableCustomers = [] } = useQuery({
+    queryKey: ['/api/companies', OPUS_COMPANY_ID, 'customers'],
+    enabled: isCreateDialogOpen,
+  });
+
+  // Buscar clientes permitidos do usuário em edição
+  const { data: allowedCustomers = [] } = useQuery({
+    queryKey: ['/api/system-users', editingUser?.id, 'allowed-customers'],
+    enabled: !!editingUser?.id && isCreateDialogOpen,
   });
 
   const createUserMutation = useMutation({
@@ -189,6 +202,25 @@ export default function SystemUsers() {
     },
   });
 
+  const updateAllowedCustomersMutation = useMutation({
+    mutationFn: async ({ userId, customerIds }: { userId: string; customerIds: string[] }) => {
+      await apiRequest('PUT', `/api/system-users/${userId}/allowed-customers`, { customerIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/system-users'] });
+    },
+  });
+
+  // Carregar clientes permitidos quando abrindo dialog de edição
+  useEffect(() => {
+    if (editingUser && allowedCustomers.length > 0) {
+      setSelectedCustomerIds((allowedCustomers as any[]).map((c: any) => c.id));
+    } else if (!editingUser && isCreateDialogOpen) {
+      // Ao criar novo usuário, selecionar todos os clientes por padrão
+      setSelectedCustomerIds((availableCustomers as any[]).map((c: any) => c.id));
+    }
+  }, [editingUser, allowedCustomers, isCreateDialogOpen, availableCustomers]);
+
   const filteredUsers = users.filter((user: User) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -208,13 +240,47 @@ export default function SystemUsers() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleSubmit = (data: CreateUserForm) => {
-    if (editingUser) {
-      // Remover password se estiver vazia na edição
-      const updateData = data.password ? data : { ...data, password: undefined };
-      updateUserMutation.mutate({ id: editingUser.id, data: updateData });
-    } else {
-      createUserMutation.mutate(data);
+  const handleSubmit = async (data: CreateUserForm) => {
+    try {
+      if (editingUser) {
+        // Remover password se estiver vazia na edição
+        const updateData = data.password ? data : { ...data, password: undefined };
+        await updateUserMutation.mutateAsync({ id: editingUser.id, data: updateData });
+        
+        // Salvar clientes permitidos apenas se não for admin
+        if (data.role !== 'admin' && data.role !== 'gestor_cliente') {
+          await updateAllowedCustomersMutation.mutateAsync({ 
+            userId: editingUser.id, 
+            customerIds: selectedCustomerIds 
+          });
+        }
+      } else {
+        // Criar usuário primeiro
+        const newUser = await createUserMutation.mutateAsync(data);
+        
+        // Salvar clientes permitidos apenas se não for admin
+        // Precisamos do ID do usuário criado
+        if (data.role !== 'admin' && data.role !== 'gestor_cliente') {
+          // Aguardar um pouco para garantir que o usuário foi criado
+          setTimeout(async () => {
+            const createdUsers = await queryClient.getQueryData(['/api/system-users']) as User[];
+            const createdUser = createdUsers?.find((u: User) => u.email === data.email);
+            if (createdUser) {
+              await updateAllowedCustomersMutation.mutateAsync({ 
+                userId: createdUser.id, 
+                customerIds: selectedCustomerIds 
+              });
+            }
+          }, 500);
+        }
+      }
+      
+      setIsCreateDialogOpen(false);
+      setEditingUser(null);
+      form.reset();
+      setSelectedCustomerIds([]);
+    } catch (error) {
+      // Erro já tratado pelas mutations
     }
   };
 
@@ -496,6 +562,45 @@ export default function SystemUsers() {
                     </FormItem>
                   )}
                 />
+
+                {/* Clientes Permitidos - só exibir para não-admins */}
+                {form.watch('role') !== 'admin' && form.watch('role') !== 'gestor_cliente' && (
+                  <div className="space-y-3 border-t pt-4">
+                    <div>
+                      <FormLabel>Clientes Permitidos</FormLabel>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Selecione quais clientes este usuário pode acessar
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                      {(availableCustomers as any[]).map((customer: any) => (
+                        <div key={customer.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={selectedCustomerIds.includes(customer.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedCustomerIds([...selectedCustomerIds, customer.id]);
+                              } else {
+                                setSelectedCustomerIds(selectedCustomerIds.filter(id => id !== customer.id));
+                              }
+                            }}
+                            data-testid={`checkbox-customer-${customer.id}`}
+                          />
+                          <label className="text-sm font-normal cursor-pointer flex-1">
+                            {customer.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {selectedCustomerIds.length === 0 && (
+                      <p className="text-sm text-destructive">
+                        Atenção: Selecione pelo menos um cliente
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-2">
                   <Button 
