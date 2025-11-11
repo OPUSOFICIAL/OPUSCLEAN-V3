@@ -116,7 +116,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/40 to-slate-100/20">
       {/* Modern Glassmorphic Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b border-slate-200/60 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
@@ -229,7 +229,7 @@ export default function Dashboard() {
         </div>
       </div>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4 space-y-3">
+      <div className="w-full px-6 py-4 space-y-3">
         {/* Modern KPI Cards with Glassmorphism */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Eficiência Operacional */}

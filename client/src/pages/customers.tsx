@@ -199,7 +199,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full px-6 py-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-muted rounded w-1/3"></div>
             <div className="h-64 bg-muted rounded"></div>
@@ -211,7 +211,7 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-50/30 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full px-6 py-6">
         <div className="space-y-3">
           {/* Header */}
           <ModernPageHeader 

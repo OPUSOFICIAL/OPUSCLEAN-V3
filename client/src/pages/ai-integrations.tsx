@@ -375,7 +375,7 @@ export default function AiIntegrationsPage() {
         icon={Brain}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full px-6 py-8">
         {/* Header Actions */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-600">

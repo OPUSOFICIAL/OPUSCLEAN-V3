@@ -14,6 +14,8 @@ Preferred communication style: Simple, everyday language.
 
 The system features a modern, predominantly white design with subtle blue gradients and elegant effects, utilizing `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Maintenance) are used for focal elements. The design is responsive, optimized for desktop and mobile, with touch-friendly elements. Pre-login pages (Landing, Login, Module Selection) feature white backgrounds with subtle blue/cyan gradients, animated gradient orbs, floating particles, and Framer Motion animations for a sophisticated, professional aesthetic.
 
+**Layout**: All internal pages use full-width layout (`w-full px-6`) instead of constrained max-width (`max-w-7xl`), allowing content to expand to the full available width between sidebar and screen edge, eliminating white space on larger displays.
+
 ### Technical Implementations
 
 The frontend uses React and TypeScript, with Wouter for routing and TanStack Query for data management, built with Vite. The backend is an Express.js server in TypeScript, following RESTful API principles with Drizzle ORM for type-safe PostgreSQL interactions.
