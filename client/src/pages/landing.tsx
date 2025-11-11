@@ -78,7 +78,7 @@ export default function Landing() {
               <img 
                 src={aceleraLogo} 
                 alt="Acelera Full Facilities" 
-                className="h-[200px]"
+                className="h-[200px] mt-[-50px] mb-[-50px]"
                 data-testid="img-logo"
               />
             </div>
@@ -93,7 +93,6 @@ export default function Landing() {
           </div>
         </div>
       </nav>
-
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20 pt-56">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
