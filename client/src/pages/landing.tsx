@@ -95,11 +95,6 @@ export default function Landing() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full mb-6">
-              <Building2 className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-700">Plataforma Enterprise de Facilities Management</span>
-            </div>
-
             <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
               Transforme a Gestão de <span className="text-blue-600">Facilities</span> da sua Empresa
             </h1>
