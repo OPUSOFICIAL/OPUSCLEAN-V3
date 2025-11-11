@@ -25,8 +25,6 @@ import {
   RefreshCw
 } from "lucide-react";
 import jsPDF from 'jspdf';
-import opusLogo from "@assets/ChatGPT Image 8 de set. de 2025, 18_10_10_1757366528566.png";
-import grupoOpusLogo from "@assets/logo-grupo-opus.png";
 import { cn } from "@/lib/utils";
 
 const QR_SIZES_CM = [3, 4, 5, 6, 7, 8, 10, 12, 15];
@@ -171,97 +169,43 @@ export default function QrCodes() {
     const pageWidth = 210;
     const pageHeight = 297;
     
-    // Cores baseadas no módulo
-    const moduleColor = currentModule === 'maintenance' 
-      ? { r: 249, g: 115, b: 22 }  // orange-500
-      : { r: 59, g: 130, b: 246 };  // blue-500
-    
-    const moduleName = currentModule === 'maintenance' ? 'OPUS Manutenção' : 'OPUS Clean';
-    
-    // Header com cor do módulo
-    const headerHeight = 40;
-    pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
-    pdf.rect(0, 0, pageWidth, headerHeight, 'F');
-    
-    try {
-      const logoResponse = await fetch(opusLogo);
-      const logoBlob = await logoResponse.blob();
-      const logoBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(logoBlob);
-      });
-      
-      const logoWidth = 60;
-      const logoHeight = 24;
-      const logoX = (pageWidth - logoWidth) / 2;
-      const logoY = (headerHeight - logoHeight) / 2;
-      
-      pdf.addImage(logoBase64, 'PNG', logoX, logoY, logoWidth, logoHeight);
-    } catch (error) {
-      pdf.setFontSize(24);
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(moduleName, pageWidth / 2, headerHeight / 2 + 4, { align: 'center' });
-    }
-    
-    // QR Code com borda colorida arredondada e logo
+    // QR Code padrão centralizado
     const qrSizeMM = sizeCm * 10;
-    const borderMM = 7;
-    const logoHeightMM = 20; // Espaço para a logo no topo
+    const borderMM = 5;
     const qrWithBorderMM = qrSizeMM + (borderMM * 2);
-    const totalBoxHeight = qrWithBorderMM + logoHeightMM; // Altura total incluindo logo
     const qrX = (pageWidth - qrWithBorderMM) / 2;
-    const qrY = headerHeight + 30;
+    const qrY = 50;
     
-    // Borda com cor do módulo expandida (inclui espaço para logo)
-    pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
-    pdf.roundedRect(qrX, qrY, qrWithBorderMM, totalBoxHeight, 5, 5, 'F');
+    // Borda simples cinza
+    pdf.setFillColor(240, 240, 240);
+    pdf.roundedRect(qrX, qrY, qrWithBorderMM, qrWithBorderMM, 3, 3, 'F');
     
-    // Logo Grupo OPUS no topo
-    const logoWidth = qrWithBorderMM * 0.7; // 70% da largura da caixa
-    const logoHeight = 15;
-    const logoX = qrX + (qrWithBorderMM - logoWidth) / 2;
-    const logoY = qrY + 3;
-    pdf.addImage(grupoOpusLogo, 'PNG', logoX, logoY, logoWidth, logoHeight);
-    
-    // Fundo branco para QR (abaixo da logo)
-    const qrStartY = qrY + logoHeightMM;
+    // Fundo branco para QR
     pdf.setFillColor(255, 255, 255);
-    pdf.rect(qrX + borderMM, qrStartY + borderMM, qrSizeMM, qrSizeMM, 'F');
+    pdf.rect(qrX + borderMM, qrY + borderMM, qrSizeMM, qrSizeMM, 'F');
     
     // QR Code
-    pdf.addImage(qrCodeDataUrl, 'PNG', qrX + borderMM, qrStartY + borderMM, qrSizeMM, qrSizeMM);
+    pdf.addImage(qrCodeDataUrl, 'PNG', qrX + borderMM, qrY + borderMM, qrSizeMM, qrSizeMM);
     
-    // Badge EXECUÇÃO com cor do módulo
-    const badgeY = qrY + totalBoxHeight + 10;
-    const badgeWidth = 60;
-    const badgeHeight = 12;
-    const badgeX = (pageWidth - badgeWidth) / 2;
-    
-    pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
-    pdf.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3, 3, 'F');
-    
-    pdf.setFontSize(12);
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('EXECUÇÃO', pageWidth / 2, badgeY + 8, { align: 'center' });
+    // Informações abaixo do QR code
+    const textStartY = qrY + qrWithBorderMM + 15;
     
     // Nome
     pdf.setTextColor(30, 41, 59);
-    pdf.setFontSize(16);
-    pdf.text(point.name, pageWidth / 2, badgeY + 25, { align: 'center' });
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(point.name, pageWidth / 2, textStartY, { align: 'center' });
     
     // Código
     pdf.setTextColor(100, 116, 139);
-    pdf.setFontSize(11);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Código: ${point.code}`, pageWidth / 2, badgeY + 35, { align: 'center' });
+    pdf.text(`Código: ${point.code}`, pageWidth / 2, textStartY + 8, { align: 'center' });
     
     // Local
     if (point.zoneName) {
-      pdf.setFontSize(10);
-      pdf.text(`Local: ${point.zoneName}`, pageWidth / 2, badgeY + 45, { align: 'center' });
+      pdf.setFontSize(9);
+      pdf.text(`Local: ${point.zoneName}`, pageWidth / 2, textStartY + 15, { align: 'center' });
     }
     
     pdf.save(`qr_${point.name.replace(/\s+/g, '_')}_${sizeCm}cm.pdf`);
@@ -277,31 +221,23 @@ export default function QrCodes() {
     const selectedPoints = (qrPoints as any[]).filter(point => selectedQrCodes.includes(point.id));
     const pdf = new jsPDF();
     
-    // Cores baseadas no módulo
-    const moduleColor = currentModule === 'maintenance' 
-      ? { r: 249, g: 115, b: 22 }  // orange-500
-      : { r: 59, g: 130, b: 246 };  // blue-500
-    
     const pageWidth = 210; // mm A4
     const pageHeight = 297; // mm A4
-    const margin = 8; // margem reduzida
-    const spacing = 5; // espaço menor entre QR codes
-    const usableWidth = pageWidth - (margin * 2);
+    const margin = 8;
+    const spacing = 5;
     
     let currentY = margin;
     let currentX = margin;
     let maxRowHeight = 0;
-    const borderMM = 5; // borda mais fina
-    const textHeight = 35; // espaço reduzido para texto
+    const borderMM = 5;
+    const textHeight = 25;
     
     for (let i = 0; i < selectedPoints.length; i++) {
       const point = selectedPoints[i];
       const sizeCm = point.sizeCm || 5;
       const qrSizeMM = sizeCm * 10;
-      const logoHeightMM = Math.min(15, qrSizeMM * 0.3); // Logo proporcional ao QR
       const qrWithBorderMM = qrSizeMM + (borderMM * 2);
-      const totalBoxHeight = qrWithBorderMM + logoHeightMM;
-      const totalItemHeight = totalBoxHeight + textHeight;
+      const totalItemHeight = qrWithBorderMM + textHeight;
       
       // Se não cabe na linha atual, vai para próxima linha
       if (currentX + qrWithBorderMM > pageWidth - margin && currentX > margin) {
@@ -321,51 +257,33 @@ export default function QrCodes() {
       const url = generateQrCodeUrl(point.type, point.code);
       const qrCodeDataUrl = await generateQrCodeImage(url, sizeCm);
       
-      // Borda com cor do módulo expandida (inclui logo)
-      pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
-      pdf.roundedRect(currentX, currentY, qrWithBorderMM, totalBoxHeight, 5, 5, 'F');
+      // Borda simples cinza
+      pdf.setFillColor(240, 240, 240);
+      pdf.roundedRect(currentX, currentY, qrWithBorderMM, qrWithBorderMM, 3, 3, 'F');
       
-      // Logo Grupo OPUS no topo (menor para múltiplos)
-      const logoWidth = qrWithBorderMM * 0.6;
-      const logoHeight = logoHeightMM * 0.7;
-      const logoX = currentX + (qrWithBorderMM - logoWidth) / 2;
-      const logoY = currentY + 2;
-      pdf.addImage(grupoOpusLogo, 'PNG', logoX, logoY, logoWidth, logoHeight);
-      
-      // Fundo branco para QR (abaixo da logo)
-      const qrStartY = currentY + logoHeightMM;
+      // Fundo branco para QR
       pdf.setFillColor(255, 255, 255);
-      pdf.rect(currentX + borderMM, qrStartY + borderMM, qrSizeMM, qrSizeMM, 'F');
+      pdf.rect(currentX + borderMM, currentY + borderMM, qrSizeMM, qrSizeMM, 'F');
       
       // QR Code
-      pdf.addImage(qrCodeDataUrl, 'PNG', currentX + borderMM, qrStartY + borderMM, qrSizeMM, qrSizeMM);
+      pdf.addImage(qrCodeDataUrl, 'PNG', currentX + borderMM, currentY + borderMM, qrSizeMM, qrSizeMM);
       
-      // Badge com cor do módulo
-      const badgeY = currentY + totalBoxHeight + 3;
-      const badgeWidth = Math.min(40, qrWithBorderMM - 4);
-      const badgeHeight = 6;
-      const badgeX = currentX + (qrWithBorderMM - badgeWidth) / 2;
-      
-      pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
-      pdf.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 2, 2, 'F');
-      
-      pdf.setFontSize(6);
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('EXECUÇÃO', currentX + qrWithBorderMM / 2, badgeY + 4, { align: 'center' });
+      // Texto abaixo do QR
+      const textY = currentY + qrWithBorderMM + 5;
       
       // Nome
       pdf.setTextColor(30, 41, 59);
       pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
       const maxNameWidth = qrWithBorderMM - 2;
       const nameParts = pdf.splitTextToSize(point.name, maxNameWidth);
-      pdf.text(nameParts[0], currentX + qrWithBorderMM / 2, badgeY + 12, { align: 'center' });
+      pdf.text(nameParts[0], currentX + qrWithBorderMM / 2, textY, { align: 'center' });
       
       // Código
       pdf.setTextColor(100, 116, 139);
       pdf.setFontSize(6);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${point.code}`, currentX + qrWithBorderMM / 2, badgeY + 18, { align: 'center' });
+      pdf.text(`${point.code}`, currentX + qrWithBorderMM / 2, textY + 6, { align: 'center' });
       
       // Atualiza posição X e altura máxima da linha
       currentX += qrWithBorderMM + spacing;
