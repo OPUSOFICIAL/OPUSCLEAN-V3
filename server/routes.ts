@@ -4082,6 +4082,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== TV MODE DASHBOARD ENDPOINTS =====
+
+  // Get TV Mode statistics (work orders and leaderboard)
+  app.get("/api/tv-mode/stats", requireAuth, async (req, res) => {
+    try {
+      const { customerId, module } = req.query;
+
+      if (!customerId || !module) {
+        return res.status(400).json({ message: "customerId and module are required" });
+      }
+
+      const stats = await storage.getTvModeStats(
+        customerId as string,
+        module as 'clean' | 'maintenance'
+      );
+
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching TV mode stats:", error);
+      res.status(500).json({ message: "Failed to fetch TV mode statistics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

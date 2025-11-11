@@ -6851,6 +6851,79 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
         throw new Error('Provedor não suportado');
     }
   }
+
+  // ===== TV MODE STATISTICS =====
+
+  async getTvModeStats(customerId: string, module: 'clean' | 'maintenance') {
+    // Get work orders stats (resolved vs unresolved)
+    const allWorkOrders = await this.db
+      .select({
+        id: workOrders.id,
+        status: workOrders.status,
+        assignedUserId: workOrders.assignedUserId,
+        completedAt: workOrders.completedAt,
+      })
+      .from(workOrders)
+      .where(
+        and(
+          eq(workOrders.customerId, customerId),
+          eq(workOrders.module, module)
+        )
+      );
+
+    // Count resolved (concluida) vs unresolved (others)
+    const resolved = allWorkOrders.filter(wo => wo.status === 'concluida').length;
+    const unresolved = allWorkOrders.filter(wo => wo.status !== 'concluida').length;
+
+    // Get leaderboard: top collaborators by completed work orders
+    const completedWorkOrders = await this.db
+      .select({
+        assignedUserId: workOrders.assignedUserId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(workOrders)
+      .where(
+        and(
+          eq(workOrders.customerId, customerId),
+          eq(workOrders.module, module),
+          eq(workOrders.status, 'concluida'),
+          isNotNull(workOrders.assignedUserId)
+        )
+      )
+      .groupBy(workOrders.assignedUserId)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+
+    // Get user details for leaderboard
+    const leaderboard = await Promise.all(
+      completedWorkOrders.map(async (item) => {
+        const user = await this.db.query.users.findFirst({
+          where: eq(users.id, item.assignedUserId!),
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        });
+
+        return {
+          userId: item.assignedUserId,
+          userName: user?.name || 'Usuário Desconhecido',
+          userEmail: user?.email || '',
+          completedCount: item.count,
+        };
+      })
+    );
+
+    return {
+      workOrdersStats: {
+        resolved,
+        unresolved,
+        total: resolved + unresolved,
+      },
+      leaderboard,
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
