@@ -213,11 +213,14 @@ export default function SystemUsers() {
 
   // Carregar clientes permitidos quando abrindo dialog de edição
   useEffect(() => {
-    if (editingUser && allowedCustomers.length > 0) {
-      setSelectedCustomerIds((allowedCustomers as any[]).map((c: any) => c.id));
+    const allowedCustomersArray = Array.isArray(allowedCustomers) ? allowedCustomers : [];
+    const availableCustomersArray = Array.isArray(availableCustomers) ? availableCustomers : [];
+    
+    if (editingUser && allowedCustomersArray.length > 0) {
+      setSelectedCustomerIds((allowedCustomersArray as any[]).map((c: any) => c.id));
     } else if (!editingUser && isCreateDialogOpen) {
       // Ao criar novo usuário, selecionar todos os clientes por padrão
-      setSelectedCustomerIds((availableCustomers as any[]).map((c: any) => c.id));
+      setSelectedCustomerIds((availableCustomersArray as any[]).map((c: any) => c.id));
     }
   }, [editingUser, allowedCustomers, isCreateDialogOpen, availableCustomers]);
 
