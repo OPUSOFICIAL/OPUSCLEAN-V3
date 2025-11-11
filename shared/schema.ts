@@ -164,6 +164,16 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
+// 5a. TABELA: user_allowed_customers (Controle de Acesso a Clientes)
+export const userAllowedCustomers = pgTable("user_allowed_customers", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  customerId: varchar("customer_id").notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").default(sql`now()`),
+}, (table) => ({
+  uniqueUserCustomer: unique().on(table.userId, table.customerId),
+}));
+
 // 6. TABELA: service_types (Tipos de Serviço)
 export const serviceTypes = pgTable("service_types", {
   id: varchar("id").primaryKey(),
@@ -1160,6 +1170,7 @@ export const insertZoneSchema = createInsertSchema(zones).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true }).extend({
   modules: z.array(z.enum(['clean', 'maintenance'])).min(1, 'Selecione pelo menos um módulo').default(['clean']),
 });
+export const insertUserAllowedCustomerSchema = createInsertSchema(userAllowedCustomers).omit({ id: true, createdAt: true });
 export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({ id: true });
 export const insertServiceCategorySchema = createInsertSchema(serviceCategories).omit({ id: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
@@ -1250,6 +1261,9 @@ export type InsertZone = z.infer<typeof insertZoneSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type UserAllowedCustomer = typeof userAllowedCustomers.$inferSelect;
+export type InsertUserAllowedCustomer = z.infer<typeof insertUserAllowedCustomerSchema>;
 
 export type ServiceType = typeof serviceTypes.$inferSelect;
 export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;

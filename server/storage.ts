@@ -2,7 +2,7 @@ import {
   companies, sites, zones, qrCodePoints, users, checklistTemplates, 
   slaConfigs, cleaningActivities, workOrders, bathroomCounters, webhookConfigs, services,
   serviceTypes, serviceCategories, serviceZones, dashboardGoals, auditLogs, customers,
-  userSiteAssignments, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters, customerCounters,
+  userSiteAssignments, userAllowedCustomers, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters, customerCounters,
   workOrderComments,
   equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
@@ -17,6 +17,7 @@ import {
   type ServiceZone, type InsertServiceZone, type DashboardGoal, type InsertDashboardGoal, 
   type AuditLog, type InsertAuditLog, type Customer, type InsertCustomer,
   type UserSiteAssignment, type InsertUserSiteAssignment,
+  type UserAllowedCustomer, type InsertUserAllowedCustomer,
   type PublicRequestLog, type InsertPublicRequestLog, 
   type SiteShift, type InsertSiteShift,
   type BathroomCounterLog, type InsertBathroomCounterLog,
@@ -334,6 +335,13 @@ export interface IStorage {
   getUsersBySite(siteId: string): Promise<User[]>;
   createUserSiteAssignment(assignment: InsertUserSiteAssignment): Promise<UserSiteAssignment>;
   deleteUserSiteAssignment(userId: string, siteId: string): Promise<void>;
+
+  // User Allowed Customers
+  getUserAllowedCustomers(userId: string): Promise<UserAllowedCustomer[]>;
+  getCustomersByUser(userId: string): Promise<Customer[]>;
+  addUserAllowedCustomer(data: InsertUserAllowedCustomer): Promise<UserAllowedCustomer>;
+  removeUserAllowedCustomer(userId: string, customerId: string): Promise<void>;
+  setUserAllowedCustomers(userId: string, customerIds: string[]): Promise<void>;
 
   // Public Request Logs (spam control)
   createPublicRequestLog(log: InsertPublicRequestLog): Promise<PublicRequestLog>;
@@ -4320,6 +4328,62 @@ export class DatabaseStorage implements IStorage {
         eq(userSiteAssignments.userId, userId),
         eq(userSiteAssignments.siteId, siteId)
       ));
+  }
+
+  // User Allowed Customers
+  async getUserAllowedCustomers(userId: string): Promise<UserAllowedCustomer[]> {
+    return await db.select()
+      .from(userAllowedCustomers)
+      .where(eq(userAllowedCustomers.userId, userId));
+  }
+
+  async getCustomersByUser(userId: string): Promise<Customer[]> {
+    const allowedCustomers = await db.select({
+      customerId: userAllowedCustomers.customerId
+    })
+      .from(userAllowedCustomers)
+      .where(eq(userAllowedCustomers.userId, userId));
+
+    if (allowedCustomers.length === 0) {
+      return [];
+    }
+
+    const customerIds = allowedCustomers.map(ac => ac.customerId);
+    return await db.select()
+      .from(customers)
+      .where(inArray(customers.id, customerIds))
+      .orderBy(customers.name);
+  }
+
+  async addUserAllowedCustomer(data: InsertUserAllowedCustomer): Promise<UserAllowedCustomer> {
+    const [newAllowedCustomer] = await db.insert(userAllowedCustomers)
+      .values(data)
+      .returning();
+    return newAllowedCustomer;
+  }
+
+  async removeUserAllowedCustomer(userId: string, customerId: string): Promise<void> {
+    await db.delete(userAllowedCustomers)
+      .where(and(
+        eq(userAllowedCustomers.userId, userId),
+        eq(userAllowedCustomers.customerId, customerId)
+      ));
+  }
+
+  async setUserAllowedCustomers(userId: string, customerIds: string[]): Promise<void> {
+    // Remove todas as associações existentes
+    await db.delete(userAllowedCustomers)
+      .where(eq(userAllowedCustomers.userId, userId));
+
+    // Adiciona as novas associações
+    if (customerIds.length > 0) {
+      await db.insert(userAllowedCustomers)
+        .values(customerIds.map(customerId => ({
+          id: `user-allowed-customer-${userId}-${customerId}-${Date.now()}`,
+          userId,
+          customerId
+        })));
+    }
   }
 
   // Public Request Logs (spam control)

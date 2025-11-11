@@ -129,8 +129,8 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     // Relatórios
     ...(can.viewReports(activeClientId) ? [{ path: "/reports", label: "Relatórios", icon: ChartBar }] : []),
     
-    // Usuários OPUS (apenas para quem tem permissão)
-    ...(can.viewOpusUsers() ? [{ path: "/users", label: "Usuários OPUS", icon: Users }] : []),
+    // Usuários do Sistema (apenas para quem tem permissão)
+    ...(can.viewOpusUsers() ? [{ path: "/users", label: "Usuários do Sistema", icon: Users }] : []),
     
     // Clientes (apenas admin)
     ...(can.viewCustomers() ? [{ path: "/customers", label: "Clientes", icon: Building }] : []),

@@ -304,10 +304,10 @@ export default function SystemUsers() {
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
             <Building2 className="h-8 w-8" />
-            Usuários do Sistema OPUS
+            Usuários do Sistema
           </h1>
           <p className="text-muted-foreground mt-2">
-            Gerenciar funcionários da empresa {MODULE_CONFIGS[currentModule].displayName}
+            Gerenciar usuários com acesso ao sistema de gerenciamento
           </p>
         </div>
 
@@ -321,16 +321,16 @@ export default function SystemUsers() {
               data-testid="button-create-system-user"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Novo Usuário OPUS
+              Novo Usuário do Sistema
             </Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingUser ? 'Editar Usuário OPUS' : 'Novo Usuário OPUS'}
+                {editingUser ? 'Editar Usuário do Sistema' : 'Novo Usuário do Sistema'}
               </DialogTitle>
               <DialogDescription>
-                {editingUser ? 'Edite os dados do usuário' : `Crie um novo funcionário da ${MODULE_CONFIGS[currentModule].displayName}`}
+                {editingUser ? 'Edite os dados do usuário' : 'Crie um novo usuário com acesso ao sistema'}
               </DialogDescription>
             </DialogHeader>
 
@@ -459,7 +459,7 @@ export default function SystemUsers() {
                                 />
                               </FormControl>
                               <FormLabel className="font-normal cursor-pointer">
-                                OPUS Clean (Limpeza)
+                                Clean (Limpeza)
                               </FormLabel>
                             </FormItem>
                           )}
@@ -484,7 +484,7 @@ export default function SystemUsers() {
                                 />
                               </FormControl>
                               <FormLabel className="font-normal cursor-pointer">
-                                OPUS Manutenção
+                                Manutenção
                               </FormLabel>
                             </FormItem>
                           )}
@@ -524,9 +524,9 @@ export default function SystemUsers() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Usuários OPUS Cadastrados</CardTitle>
+              <CardTitle>Usuários do Sistema Cadastrados</CardTitle>
               <CardDescription>
-                Total de {filteredUsers.length} funcionário(s) OPUS
+                Total de {filteredUsers.length} usuário(s) do sistema
               </CardDescription>
             </div>
             <Input
@@ -544,7 +544,7 @@ export default function SystemUsers() {
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nenhum usuário encontrado</h3>
               <p className="text-muted-foreground">
-                {searchTerm ? 'Tente ajustar sua busca' : 'Crie o primeiro usuário OPUS'}
+                {searchTerm ? 'Tente ajustar sua busca' : 'Crie o primeiro usuário do sistema'}
               </p>
             </div>
           ) : (
@@ -577,12 +577,12 @@ export default function SystemUsers() {
                               <div className="flex gap-1 mt-2">
                                 {user.modules.includes('clean') && (
                                   <Badge variant="secondary" className="text-xs">
-                                    OPUS Clean
+                                    Clean
                                   </Badge>
                                 )}
                                 {user.modules.includes('maintenance') && (
                                   <Badge variant="secondary" className="text-xs">
-                                    OPUS Manutenção
+                                    Manutenção
                                   </Badge>
                                 )}
                               </div>
