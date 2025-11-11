@@ -3,20 +3,10 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 interface BrandingConfig {
   name: string;
   subdomain: string | null;
-  
-  // Logos
   loginLogo: string | null;
   sidebarLogo: string | null;
   sidebarLogoCollapsed: string | null;
   homeLogo: string | null;
-  faviconUrl: string | null;
-  
-  // Global Colors
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  accentColor: string | null;
-  
-  // Module-specific colors (fallback)
   moduleColors: {
     clean?: {
       primary: string;
@@ -29,22 +19,11 @@ interface BrandingConfig {
       accent: string;
     };
   } | null;
-  
-  // Landing Page
-  landingTitle: string | null;
-  landingSubtitle: string | null;
-  landingHeroImage: string | null;
-  
-  // SEO
-  metaDescription: string | null;
-  updatedAt: Date | null;
 }
 
 interface BrandingContextType {
   branding: BrandingConfig | null;
   isLoading: boolean;
-  isReady: boolean;
-  brandingNotFound: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -53,8 +32,6 @@ const BrandingContext = createContext<BrandingContextType | null>(null);
 export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<BrandingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isReady, setIsReady] = useState(false);
-  const [brandingNotFound, setBrandingNotFound] = useState(false);
 
   const loadBranding = async () => {
     try {
@@ -69,128 +46,45 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         subdomain = testSubdomain;
       } else {
         // MODO NORMAL: Detectar subdomínio do hostname (compatível com qualquer domínio)
-        
-        // CASO ESPECIAL: Localhost / IP
-        // localhost, 127.0.0.1, 0.0.0.0, etc → sem subdomain
-        if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
-          subdomain = null;
-          console.log(`[BRANDING] 🔧 Localhost/IP detectado: sem tenant subdomain`);
-        }
-        // CASO ESPECIAL: Replit
-        // URLs Replit: <instance-id>.janeway.replit.dev ou tenant.<instance-id>.janeway.replit.dev
-        // Instance ID tem padrão: <uuid>-00-<hash>
-        else if (hostname.endsWith('.replit.dev')) {
-          const parts = hostname.split('.');
-          // Verificar se temos um tenant subdomain ANTES do instance ID
-          // Exemplo: tecnofibra.0f28...-00-hash.janeway.replit.dev
-          // parts = ['tecnofibra', '0f28...-00-hash', 'janeway', 'replit', 'dev']
-          // O instance ID sempre contém '-00-'
-          const instanceIdIndex = parts.findIndex(part => part.includes('-00-'));
-          
-          if (instanceIdIndex > 0) {
-            // Há algo antes do instance ID - é o tenant subdomain
-            subdomain = parts[0];
-            console.log(`[BRANDING] 🔧 Replit: Tenant detectado antes do instance ID: ${subdomain}`);
-          } else {
-            // Só temos instance ID - sem tenant subdomain
-            subdomain = null;
-            console.log(`[BRANDING] 🔧 Replit: Sem tenant subdomain (apenas instance ID)`);
-          }
-        } else {
-          // CASO GERAL: Domínios customizados
-          // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
-          const parts = hostname.split('.');
-          subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
-        }
+        const parts = hostname.split('.');
+        // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
+        subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
       }
 
       if (subdomain) {
         console.log(`[BRANDING] Subdomínio detectado: ${subdomain} (domínio completo: ${hostname})`);
-        // Buscar configurações do subdomínio via API pública
+        // Buscar configurações do subdomínio
         const response = await fetch(`/api/public/branding/${subdomain}`);
         if (response.ok) {
           const data = await response.json();
           setBranding(data);
-          console.log(`[BRANDING] ✓ Branding carregado para: ${data.name}`);
+          console.log(`[BRANDING] Branding aplicado para cliente: ${data.name}`);
 
-          // Aplicar cores globais via CSS variables (prioridade sobre module colors)
-          const root = document.documentElement;
-          
-          // Aplicar cada cor individualmente com fallback para module colors
-          // PRIMARY
-          if (data.primaryColor) {
-            const hsl = hexToHSL(data.primaryColor);
-            root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-          } else if (data.moduleColors?.clean?.primary) {
-            const hsl = hexToHSL(data.moduleColors.clean.primary);
-            root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-          } else {
-            // Resetar para valor padrão se nenhuma cor global ou module estiver definida
-            root.style.removeProperty('--primary');
-          }
-
-          // SECONDARY
-          if (data.secondaryColor) {
-            const hsl = hexToHSL(data.secondaryColor);
-            root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-          } else if (data.moduleColors?.clean?.secondary) {
-            const hsl = hexToHSL(data.moduleColors.clean.secondary);
-            root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-          } else {
-            root.style.removeProperty('--secondary');
-          }
-
-          // ACCENT
-          if (data.accentColor) {
-            const hsl = hexToHSL(data.accentColor);
-            root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-          } else if (data.moduleColors?.clean?.accent) {
-            const hsl = hexToHSL(data.moduleColors.clean.accent);
-            root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-          } else {
-            root.style.removeProperty('--accent');
-          }
-
-          // Aplicar meta tags dinâmicas
-          if (data.metaDescription) {
-            let metaDesc = document.querySelector('meta[name="description"]');
-            if (!metaDesc) {
-              metaDesc = document.createElement('meta');
-              metaDesc.setAttribute('name', 'description');
-              document.head.appendChild(metaDesc);
+          // Aplicar cores customizadas via CSS variables
+          if (data.moduleColors?.clean) {
+            const root = document.documentElement;
+            const colors = data.moduleColors.clean;
+            
+            // Converter HEX para HSL e aplicar
+            if (colors.primary) {
+              const hsl = hexToHSL(colors.primary);
+              root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
             }
-            metaDesc.setAttribute('content', data.metaDescription);
-          }
-
-          if (data.faviconUrl) {
-            let favicon = document.querySelector('link[rel="icon"]');
-            if (!favicon) {
-              favicon = document.createElement('link');
-              favicon.setAttribute('rel', 'icon');
-              document.head.appendChild(favicon);
+            if (colors.secondary) {
+              const hsl = hexToHSL(colors.secondary);
+              root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
             }
-            favicon.setAttribute('href', data.faviconUrl);
+            if (colors.accent) {
+              const hsl = hexToHSL(colors.accent);
+              root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+            }
           }
-
-          // Aplicar título da página
-          if (data.landingTitle) {
-            document.title = data.landingTitle;
-          } else {
-            document.title = `${data.name} - Portal`;
-          }
-        } else if (response.status === 404) {
-          console.warn(`[BRANDING] ⚠️  Subdomínio "${subdomain}" não encontrado`);
-          setBrandingNotFound(true);
         }
-      } else {
-        // Não há subdomínio, ambiente padrão
-        setBrandingNotFound(false);
       }
     } catch (error) {
-      console.error('[BRANDING] ❌ Erro ao carregar branding:', error);
+      console.error('Error loading branding:', error);
     } finally {
       setIsLoading(false);
-      setIsReady(true);
     }
   };
 
@@ -199,7 +93,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <BrandingContext.Provider value={{ branding, isLoading, isReady, brandingNotFound, refresh: loadBranding }}>
+    <BrandingContext.Provider value={{ branding, isLoading, refresh: loadBranding }}>
       {children}
     </BrandingContext.Provider>
   );

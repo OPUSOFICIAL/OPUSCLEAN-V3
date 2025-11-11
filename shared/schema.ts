@@ -99,28 +99,11 @@ export const customers = pgTable("customers", {
   contactPerson: varchar("contact_person"),
   notes: text("notes"),
   modules: text("modules").array().notNull().default(sql`ARRAY['clean']::text[]`),
-  
-  // Branding: Logos
   loginLogo: text("login_logo"),
   sidebarLogo: text("sidebar_logo"),
   sidebarLogoCollapsed: text("sidebar_logo_collapsed"),
   homeLogo: text("home_logo"),
-  faviconUrl: text("favicon_url"),
-  
-  // Branding: Cores Globais
-  primaryColor: varchar("primary_color", { length: 7 }),
-  secondaryColor: varchar("secondary_color", { length: 7 }),
-  accentColor: varchar("accent_color", { length: 7 }),
   moduleColors: jsonb("module_colors"),
-  
-  // Branding: Landing Page
-  landingTitle: varchar("landing_title", { length: 200 }),
-  landingSubtitle: varchar("landing_subtitle", { length: 500 }),
-  landingHeroImage: text("landing_hero_image"),
-  
-  // SEO
-  metaDescription: varchar("meta_description", { length: 300 }),
-  
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
