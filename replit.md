@@ -81,6 +81,8 @@ The frontend uses React and TypeScript, with Wouter for routing and TanStack Que
 
 **Dashboard**: Provides analytical charts for work orders, including distribution by priority and location, average completion time, and activity trends.
 
+**TV Mode Dashboard**: Real-time dashboard specifically designed for public display (TV screens) showing live metrics and gamified leaderboards. Features auto-refresh every 10 seconds, displaying work order statistics (resolved vs unresolved) via donut chart and a top 10 collaborators leaderboard ranked by completed work orders. Filtered by active client and module. Accessible at `/tv-mode`.
+
 **User Management**: Offers full CRUD operations for users, including client user creation and custom role assignment.
 
 ### System Design Choices
