@@ -39,16 +39,24 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       // Adaptive subdomain detection
       const detection = detectSubdomain();
       const subdomain = detection.subdomain;
+      
+      console.log('[BRANDING] 🔍 Detecção:', detection);
+      console.log('[BRANDING] 📍 Subdomain:', subdomain);
+      console.log('[BRANDING] ✅ Válido?', subdomain ? isValidSubdomain(subdomain) : false);
 
       // Reset branding state first (to clear previous tenant data)
       setBranding(null);
       resetCSSVariables();
 
       if (subdomain && isValidSubdomain(subdomain)) {
+        console.log('[BRANDING] 🌐 Buscando branding para:', subdomain);
         // Fetch customer branding via public API
         const response = await fetch(`/api/public/customer-by-subdomain/${subdomain}`);
+        console.log('[BRANDING] 📡 Resposta API:', response.status);
+        
         if (response.ok) {
           const customerData = await response.json();
+          console.log('[BRANDING] ✨ Dados recebidos:', customerData);
           
           // Build branding config
           const brandingConfig: BrandingConfig = {
@@ -62,6 +70,15 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
           };
           
           setBranding(brandingConfig);
+          console.log('[BRANDING] 🎨 Branding configurado:', {
+            logos: {
+              login: brandingConfig.loginLogo,
+              sidebar: brandingConfig.sidebarLogo,
+              sidebarCollapsed: brandingConfig.sidebarLogoCollapsed,
+              home: brandingConfig.homeLogo
+            },
+            colors: brandingConfig.moduleColors
+          });
 
           // Apply module colors dynamically via CSS variables
           if (customerData.moduleColors) {
