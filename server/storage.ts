@@ -6856,7 +6856,7 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
 
   async getTvModeStats(customerId: string, module: 'clean' | 'maintenance') {
     // Get work orders stats (resolved vs unresolved)
-    const allWorkOrders = await this.db
+    const allWorkOrders = await db
       .select({
         id: workOrders.id,
         status: workOrders.status,
@@ -6876,7 +6876,7 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
     const unresolved = allWorkOrders.filter(wo => wo.status !== 'concluida').length;
 
     // Get leaderboard: top collaborators by completed work orders
-    const completedWorkOrders = await this.db
+    const completedWorkOrders = await db
       .select({
         assignedUserId: workOrders.assignedUserId,
         count: sql<number>`count(*)::int`,
@@ -6897,7 +6897,7 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
     // Get user details for leaderboard
     const leaderboard = await Promise.all(
       completedWorkOrders.map(async (item) => {
-        const user = await this.db.query.users.findFirst({
+        const user = await db.query.users.findFirst({
           where: eq(users.id, item.assignedUserId!),
           columns: {
             id: true,
