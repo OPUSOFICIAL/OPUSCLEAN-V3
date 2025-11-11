@@ -37,6 +37,7 @@ import LoginMobile from "@/pages/login-mobile";
 import ModuleSelection from "@/pages/module-selection";
 import Landing from "@/pages/landing";
 import CustomLanding from "@/pages/custom-landing";
+import SubdomainNotFound from "@/pages/subdomain-not-found";
 import MobileDashboard from "@/pages/mobile-dashboard";
 import MobileQrScanner from "@/pages/mobile-qr-scanner";
 import MobileWorkOrderExecute from "@/pages/mobile-work-order-execute";
@@ -140,7 +141,13 @@ function Router() {
   const { user, isAuthenticated } = useAuth();
   const { isMobileOnlyUser, isLoading } = usePermissions();
   const [location] = useLocation();
-  const { branding, isReady } = useBranding();
+  const { branding, isReady, brandingNotFound } = useBranding();
+
+  // CRÍTICO: Se branding não foi encontrado (subdomínio inválido), bloquear TODOS
+  // Independente de estar autenticado ou não - previne acesso em tenant inválido
+  if (brandingNotFound) {
+    return <SubdomainNotFound />;
+  }
 
   // Se não está autenticado, mostrar landing/login
   if (!isAuthenticated || !user) {

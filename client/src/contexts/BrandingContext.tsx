@@ -44,6 +44,7 @@ interface BrandingContextType {
   branding: BrandingConfig | null;
   isLoading: boolean;
   isReady: boolean;
+  brandingNotFound: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -53,6 +54,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<BrandingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReady, setIsReady] = useState(false);
+  const [brandingNotFound, setBrandingNotFound] = useState(false);
 
   const loadBranding = async () => {
     try {
@@ -148,7 +150,11 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
           }
         } else if (response.status === 404) {
           console.warn(`[BRANDING] ⚠️  Subdomínio "${subdomain}" não encontrado`);
+          setBrandingNotFound(true);
         }
+      } else {
+        // Não há subdomínio, ambiente padrão
+        setBrandingNotFound(false);
       }
     } catch (error) {
       console.error('[BRANDING] ❌ Erro ao carregar branding:', error);
@@ -163,7 +169,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <BrandingContext.Provider value={{ branding, isLoading, isReady, refresh: loadBranding }}>
+    <BrandingContext.Provider value={{ branding, isLoading, isReady, brandingNotFound, refresh: loadBranding }}>
       {children}
     </BrandingContext.Provider>
   );
