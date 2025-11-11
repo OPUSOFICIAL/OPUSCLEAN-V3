@@ -323,69 +323,76 @@ function LogoUploader({
         )}
       </div>
       
-      <div className="flex items-center gap-3 flex-wrap">
-        <Button
-          type="button"
-          variant="outline"
-          size="default"
-          disabled={uploading}
-          onClick={() => document.getElementById(logoType)?.click()}
-          data-testid={`button-select-${logoType}`}
-          className="min-w-[140px]"
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          {currentLogo ? 'Trocar Arquivo' : 'Escolher Arquivo'}
-        </Button>
-        
-        <Input
-          id={logoType}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          disabled={uploading}
-          className="hidden"
-          data-testid={`input-upload-${logoType}`}
-        />
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            disabled={uploading}
+            onClick={() => document.getElementById(logoType)?.click()}
+            data-testid={`button-select-${logoType}`}
+            className="min-w-[140px]"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {currentLogo ? 'Trocar Arquivo' : 'Escolher Arquivo'}
+          </Button>
+          
+          <Input
+            id={logoType}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="hidden"
+            data-testid={`input-upload-${logoType}`}
+          />
+        </div>
         
         {pendingLogo && (
-          <>
-            <Button
-              type="button"
-              variant="default"
-              size="default"
-              disabled={uploading}
-              onClick={onSave}
-              data-testid={`button-save-${logoType}`}
-              className="min-w-[120px]"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Salvar Logo
-                </>
-              )}
-            </Button>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+              <Check className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-blue-700 dark:text-blue-300 flex-1">
+                Arquivo selecionado: <strong>{pendingLogo.file.name}</strong>
+              </span>
+            </div>
             
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              disabled={uploading}
-              onClick={onRemovePending}
-              data-testid={`button-remove-${logoType}`}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            
-            <span className="text-sm text-muted-foreground">
-              ✓ Novo arquivo selecionado: <strong>{pendingLogo.file.name}</strong>
-            </span>
-          </>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="default"
+                size="default"
+                disabled={uploading}
+                onClick={onSave}
+                data-testid={`button-save-${logoType}`}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Salvar Logo
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="default"
+                disabled={uploading}
+                onClick={onRemovePending}
+                data-testid={`button-remove-${logoType}`}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancelar
+              </Button>
+            </div>
+          </div>
         )}
       </div>
       
