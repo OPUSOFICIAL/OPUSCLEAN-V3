@@ -81,17 +81,20 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950">
+    <div className="min-h-screen w-full relative overflow-hidden bg-white">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-cyan-50" />
+
       {/* Animated gradient orbs */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] rounded-full opacity-20"
+          className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.2, 0.3, 0.2],
+            opacity: [0.3, 0.5, 0.3],
             x: [0, 50, 0],
             y: [0, 30, 0],
           }}
@@ -103,13 +106,13 @@ export default function Login() {
         />
         
         <motion.div
-          className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
+          className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(34, 211, 238, 0.6) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.3, 0.2],
+            opacity: [0.3, 0.5, 0.3],
             x: [0, -50, 0],
             y: [0, -30, 0],
           }}
@@ -121,13 +124,13 @@ export default function Login() {
         />
 
         <motion.div
-          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full opacity-10"
+          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full"
           style={{
-            background: "radial-gradient(circle, rgba(96, 165, 250, 0.6) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1, 1.3, 1],
-            opacity: [0.1, 0.2, 0.1],
+            opacity: [0.2, 0.4, 0.2],
           }}
           transition={{
             duration: 8,
@@ -148,7 +151,7 @@ export default function Login() {
           }}
           animate={{
             y: [0, -30, 0],
-            opacity: [0, 1, 0],
+            opacity: [0, 0.6, 0],
           }}
           transition={{
             duration: 3 + Math.random() * 2,
@@ -167,9 +170,9 @@ export default function Login() {
           className="w-full max-w-md"
         >
           {/* Login Card */}
-          <div className="relative backdrop-blur-2xl bg-slate-900/40 border border-white/10 rounded-3xl p-8 shadow-2xl">
+          <div className="relative bg-white border border-blue-100 rounded-3xl p-8 shadow-2xl shadow-blue-200/20">
             {/* Subtle glow effect */}
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/5 to-cyan-500/5 pointer-events-none" />
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-50/50 to-cyan-50/50 pointer-events-none" />
             
             <div className="relative z-10">
               {/* Logo */}
@@ -182,7 +185,7 @@ export default function Login() {
                 <img 
                   src={aceleraLogo} 
                   alt="Acelera Full Facilities" 
-                  className="h-50 drop-shadow-lg"
+                  className="h-50 drop-shadow-md"
                 />
               </motion.div>
 
@@ -193,10 +196,10 @@ export default function Login() {
                 transition={{ delay: 0.3, duration: 0.5 }}
                 className="text-center mb-8"
               >
-                <h1 className="text-3xl font-bold text-white mb-2">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent mb-2">
                   Bem-vindo de volta
                 </h1>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-600 text-sm">
                   Entre para continuar no sistema
                 </p>
               </motion.div>
@@ -216,7 +219,7 @@ export default function Login() {
                       placeholder="Email ou usuário"
                       value={credentials.username}
                       onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                      className="pl-11 h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
+                      className="pl-11 h-12 bg-blue-50/50 border-blue-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:ring-blue-200"
                       required
                       data-testid="input-email"
                     />
@@ -236,14 +239,14 @@ export default function Login() {
                       placeholder="Senha"
                       value={credentials.password}
                       onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                      className="pl-11 pr-11 h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
+                      className="pl-11 pr-11 h-12 bg-blue-50/50 border-blue-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:ring-blue-200"
                       required
                       data-testid="input-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5" />
@@ -266,15 +269,15 @@ export default function Login() {
                       id="remember"
                       checked={rememberMe}
                       onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                      className="border-slate-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      className="border-blue-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                     />
-                    <label htmlFor="remember" className="text-slate-300 cursor-pointer">
+                    <label htmlFor="remember" className="text-slate-600 cursor-pointer">
                       Lembrar-me
                     </label>
                   </div>
                   <button
                     type="button"
-                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                    className="text-blue-600 hover:text-blue-700 transition-colors font-medium"
                   >
                     Esqueceu a senha?
                   </button>
@@ -289,7 +292,7 @@ export default function Login() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl group"
+                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold rounded-xl group shadow-lg shadow-blue-200"
                     data-testid="button-signin"
                   >
                     {isLoading ? (
@@ -311,9 +314,9 @@ export default function Login() {
                   className="relative flex items-center justify-center my-6"
                 >
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-700/50"></div>
+                    <div className="w-full border-t border-blue-200"></div>
                   </div>
-                  <div className="relative px-4 bg-slate-900/40 text-slate-400 text-sm">
+                  <div className="relative px-4 bg-white text-slate-500 text-sm">
                     ou
                   </div>
                 </motion.div>
@@ -328,10 +331,10 @@ export default function Login() {
                     type="button"
                     onClick={handleMicrosoftLogin}
                     variant="outline"
-                    className="w-full h-12 bg-slate-800/50 hover:bg-slate-800 border-slate-700/50 text-white rounded-xl"
+                    className="w-full h-12 bg-blue-50/50 hover:bg-blue-100/50 border-blue-200 text-slate-700 rounded-xl"
                     data-testid="button-microsoft-login"
                   >
-                    <Building2 className="w-5 h-5 mr-2" />
+                    <Building2 className="w-5 h-5 mr-2 text-blue-600" />
                     Entrar com Microsoft
                   </Button>
                 </motion.div>
@@ -342,10 +345,10 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1, duration: 0.5 }}
-                className="mt-6 text-center text-sm text-slate-400"
+                className="mt-6 text-center text-sm text-slate-600"
               >
                 Não tem uma conta?{" "}
-                <button className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                <button className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
                   Cadastre-se
                 </button>
               </motion.div>
@@ -363,18 +366,6 @@ export default function Login() {
           </motion.p>
         </motion.div>
       </div>
-
-      {/* Mesh gradient overlay */}
-      <div 
-        className="absolute inset-0 opacity-20 pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px'
-        }}
-      />
     </div>
   );
 }
