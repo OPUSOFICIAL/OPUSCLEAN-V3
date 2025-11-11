@@ -160,12 +160,13 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
             reader.readAsDataURL(logo.file!);
           });
 
-          const uploadResponse: any = await apiRequest("POST", `/api/customers/${customer.id}/upload-logo`, {
+          const uploadResponseRaw = await apiRequest("POST", `/api/customers/${customer.id}/upload-logo`, {
             logoType: apiKey,
             imageData: base64Data,
             fileName: logo.file.name,
           });
 
+          const uploadResponse = await uploadResponseRaw.json();
           console.log(`[FRONTEND] Upload de ${apiKey} retornou:`, uploadResponse);
           brandingData[apiKey] = uploadResponse.path;
         } else if (logo.previewUrl === null) {
