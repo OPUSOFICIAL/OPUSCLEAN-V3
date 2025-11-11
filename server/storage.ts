@@ -86,6 +86,53 @@ function maskApiKey(apiKey: string): string {
   return `****${apiKey.slice(-4)}`;
 }
 
+// ============================================================================
+// AI Data Serialization Helper
+// ============================================================================
+/**
+ * Recursively converts Date objects and other non-JSON-safe types to JSON-safe values.
+ * Prevents "toISOString is not a function" errors when serializing AI function results.
+ * 
+ * @param value - Any value (object, array, primitive, Date, etc.)
+ * @param seen - Internal set to prevent circular references
+ * @returns JSON-safe version of the value
+ */
+function serializeForAI(value: any, seen = new WeakSet()): any {
+  // Handle null and undefined
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  // Handle primitives (string, number, boolean)
+  if (typeof value !== 'object') {
+    return value;
+  }
+
+  // Handle circular references
+  if (seen.has(value)) {
+    return '[Circular]';
+  }
+
+  // Handle Date objects
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  // Handle Arrays
+  if (Array.isArray(value)) {
+    seen.add(value); // Protect against circular references in arrays
+    return value.map(item => serializeForAI(item, seen));
+  }
+
+  // Handle Objects
+  seen.add(value);
+  const result: Record<string, any> = {};
+  for (const [key, val] of Object.entries(value)) {
+    result[key] = serializeForAI(val, seen);
+  }
+  return result;
+}
+
 export interface IStorage {
   // Companies
   getCompanies(): Promise<Company[]>;
@@ -5942,6 +5989,215 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // ============================================================================
+  // AI-Accessible Cleaning/Maintenance Activity Functions
+  // ============================================================================
+
+  private async aiQueryCleaningActivitiesList(
+    customerId: string,
+    module: 'clean' | 'maintenance',
+    filters?: {
+      isActive?: boolean;
+      frequency?: string;
+      siteId?: string;
+      limit?: number;
+    }
+  ): Promise<any[]> {
+    let conditions = [
+      eq(cleaningActivities.customerId, customerId),
+      eq(cleaningActivities.module, module)
+    ];
+
+    if (filters?.isActive !== undefined) {
+      conditions.push(eq(cleaningActivities.isActive, filters.isActive));
+    }
+    if (filters?.frequency) {
+      conditions.push(eq(cleaningActivities.frequency, filters.frequency as any));
+    }
+    if (filters?.siteId) {
+      conditions.push(eq(cleaningActivities.siteId, filters.siteId));
+    }
+
+    const activities = await db.select({
+      id: cleaningActivities.id,
+      name: cleaningActivities.name,
+      frequency: cleaningActivities.frequency,
+      isActive: cleaningActivities.isActive,
+      siteId: cleaningActivities.siteId,
+      zoneId: cleaningActivities.zoneId,
+      serviceId: cleaningActivities.serviceId,
+      siteName: sites.name,
+      zoneName: zones.name
+    })
+    .from(cleaningActivities)
+    .leftJoin(sites, eq(cleaningActivities.siteId, sites.id))
+    .leftJoin(zones, eq(cleaningActivities.zoneId, zones.id))
+    .where(and(...conditions))
+    .orderBy(cleaningActivities.name)
+    .limit(filters?.limit || 50);
+
+    return activities;
+  }
+
+  private async aiGetCleaningActivityDetails(
+    customerId: string,
+    module: 'clean' | 'maintenance',
+    activityId: string
+  ): Promise<any> {
+    const [activity] = await db.select({
+      id: cleaningActivities.id,
+      name: cleaningActivities.name,
+      frequency: cleaningActivities.frequency,
+      frequencyConfig: cleaningActivities.frequencyConfig,
+      isActive: cleaningActivities.isActive,
+      siteId: cleaningActivities.siteId,
+      zoneId: cleaningActivities.zoneId,
+      serviceId: cleaningActivities.serviceId,
+      checklistTemplateId: cleaningActivities.checklistTemplateId,
+      startTime: cleaningActivities.startTime,
+      endTime: cleaningActivities.endTime,
+      siteName: sites.name,
+      zoneName: zones.name,
+      serviceName: services.name
+    })
+    .from(cleaningActivities)
+    .leftJoin(sites, eq(cleaningActivities.siteId, sites.id))
+    .leftJoin(zones, eq(cleaningActivities.zoneId, zones.id))
+    .leftJoin(services, eq(cleaningActivities.serviceId, services.id))
+    .where(and(
+      eq(cleaningActivities.id, activityId),
+      eq(cleaningActivities.customerId, customerId),
+      eq(cleaningActivities.module, module)
+    ))
+    .limit(1);
+
+    if (!activity) {
+      return null;
+    }
+
+    return activity;
+  }
+
+  private async aiCreateCleaningActivity(
+    customerId: string,
+    module: 'clean' | 'maintenance',
+    data: {
+      name: string;
+      frequency: string;
+      siteId: string;
+      zoneId: string;
+      serviceId?: string;
+      startTime?: string;
+      endTime?: string;
+    }
+  ): Promise<any> {
+    // Verify site belongs to customer
+    const [site] = await db.select()
+      .from(sites)
+      .where(and(
+        eq(sites.id, data.siteId),
+        eq(sites.customerId, customerId),
+        eq(sites.module, module)
+      ))
+      .limit(1);
+
+    if (!site) {
+      return {
+        success: false,
+        error: 'Local não encontrado ou não pertence ao cliente/módulo atual.'
+      };
+    }
+
+    // Verify zone belongs to the site
+    const [zone] = await db.select()
+      .from(zones)
+      .where(and(
+        eq(zones.id, data.zoneId),
+        eq(zones.siteId, data.siteId),
+        eq(zones.module, module)
+      ))
+      .limit(1);
+
+    if (!zone) {
+      return {
+        success: false,
+        error: 'Zona não encontrada ou não pertence ao local especificado.'
+      };
+    }
+
+    // Create the activity
+    const newActivity = await this.createCleaningActivity({
+      customerId,
+      siteId: data.siteId,
+      zoneId: data.zoneId,
+      serviceId: data.serviceId || null,
+      name: data.name,
+      frequency: data.frequency as any,
+      frequencyConfig: null,
+      checklistTemplateId: null,
+      maintenanceChecklistTemplateId: null,
+      startTime: data.startTime || null,
+      endTime: data.endTime || null,
+      isActive: true,
+      module
+    });
+
+    return {
+      success: true,
+      activity: {
+        id: newActivity.id,
+        name: newActivity.name,
+        frequency: newActivity.frequency,
+        siteId: newActivity.siteId,
+        zoneId: newActivity.zoneId
+      }
+    };
+  }
+
+  private async aiUpdateCleaningActivity(
+    customerId: string,
+    module: 'clean' | 'maintenance',
+    activityId: string,
+    updates: {
+      name?: string;
+      frequency?: string;
+      isActive?: boolean;
+      startTime?: string;
+      endTime?: string;
+    }
+  ): Promise<any> {
+    // Verify activity belongs to customer
+    const activity = await this.aiGetCleaningActivityDetails(customerId, module, activityId);
+
+    if (!activity) {
+      return {
+        success: false,
+        error: 'Atividade não encontrada ou não pertence ao cliente/módulo atual.'
+      };
+    }
+
+    // Build update object
+    const updateData: any = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.frequency) updateData.frequency = updates.frequency;
+    if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
+    if (updates.startTime !== undefined) updateData.startTime = updates.startTime;
+    if (updates.endTime !== undefined) updateData.endTime = updates.endTime;
+
+    // Update the activity
+    const updated = await this.updateCleaningActivity(activityId, updateData);
+
+    return {
+      success: true,
+      activity: {
+        id: updated.id,
+        name: updated.name,
+        frequency: updated.frequency,
+        isActive: updated.isActive
+      }
+    };
+  }
+
   private async callAI(
     integration: AiIntegration, 
     userMessage: string, 
@@ -6250,11 +6506,11 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
               funcResult = { error: error.message };
             }
 
-            // Add tool response to messages
+            // Add tool response to messages (with safe serialization)
             messages.push({
               role: 'tool',
               tool_call_id: toolCall.id,
-              content: JSON.stringify(funcResult)
+              content: JSON.stringify(serializeForAI(funcResult))
             });
           }
         }
@@ -6809,7 +7065,7 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
             groqMessages.push({
               role: 'tool',
               tool_call_id: toolCall.id,
-              content: JSON.stringify(funcResult)
+              content: JSON.stringify(serializeForAI(funcResult))
             });
           }
         }
