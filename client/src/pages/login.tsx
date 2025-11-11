@@ -92,8 +92,27 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={() => setLocation("/")}
+              variant="ghost"
+              className="text-slate-700 hover:text-slate-900 gap-2"
+              data-testid="button-back-landing"
+            >
+              <ArrowRight className="w-4 h-4 rotate-180" />
+              <span>Voltar</span>
+            </Button>
+            <img src={aceleraLogo} alt="Acelera it" className="h-10" />
+            <div className="w-24"></div>
+          </div>
+        </div>
+      </header>
+
       {/* Decorative Elements */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10"
           style={{
@@ -127,7 +146,7 @@ export default function Login() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6 pt-24">
         <div className="w-full max-w-md">
           {/* Logo and Title */}
           <motion.div
