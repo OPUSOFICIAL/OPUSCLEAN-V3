@@ -188,19 +188,34 @@ export default function Landing() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div className="flex justify-between items-center mb-3">
+                <div className="bg-gradient-to-br from-slate-50/80 to-white rounded-lg p-4 border border-slate-200">
+                  <div className="flex justify-between items-center mb-4">
                     <div className="text-xs font-semibold text-slate-700">Performance por Local</div>
                     <div className="text-xs text-slate-500">Este mês</div>
                   </div>
-                  <div className="space-y-2">
-                    {[85, 72, 93].map((value, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div className="w-16 text-xs text-slate-600">Local {i + 1}</div>
-                        <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${value}%` }}></div>
+                  <div className="space-y-3">
+                    {[
+                      { name: 'Local 1', value: 85 },
+                      { name: 'Local 2', value: 72 },
+                      { name: 'Local 3', value: 93 }
+                    ].map((local, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-medium text-slate-700">{local.name}</div>
+                          <div className="text-xs font-bold text-slate-900">{local.value}%</div>
                         </div>
-                        <div className="w-10 text-xs font-medium text-slate-700">{value}%</div>
+                        <div className="relative h-2.5 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full overflow-hidden shadow-inner">
+                          <div 
+                            className={`absolute h-full rounded-full transition-all duration-700 ease-out ${
+                              local.value >= 80 ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600' :
+                              local.value >= 60 ? 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600' :
+                              'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600'
+                            }`}
+                            style={{ width: `${local.value}%` }}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
