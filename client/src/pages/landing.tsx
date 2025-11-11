@@ -70,24 +70,32 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <img src={aceleraLogo} alt="Acelera it" className="h-16" />
+      {/* Top Navigation Bar */}
+      <nav className="fixed top-0 left-0 right-0 bg-white border-b border-slate-200 shadow-sm z-50">
+        <div className="container mx-auto px-6">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex-shrink-0">
+              <img 
+                src={aceleraLogo} 
+                alt="Acelera Full Facilities" 
+                className="h-[200px]"
+                data-testid="img-logo"
+              />
+            </div>
             <Button 
               onClick={() => setLocation("/login")}
               variant="outline"
-              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              className="border-slate-300 text-slate-700 hover:bg-slate-50 font-medium"
               data-testid="button-login-header"
             >
               Acessar Sistema
             </Button>
           </div>
         </div>
-      </header>
+      </nav>
+
       {/* Hero Section */}
-      <section className="container mx-auto px-6 py-20 pt-32">
+      <section className="container mx-auto px-6 py-20 pt-56">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Content */}
           <motion.div
