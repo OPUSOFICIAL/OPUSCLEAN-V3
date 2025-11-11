@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 
 The system features a modern, predominantly white design with subtle gradients and glassmorphism effects for depth and sophistication. It utilizes `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Manutenção) are used for identification on focal elements like buttons and badges. The design is responsive, optimized for both desktop and mobile, with touch-friendly elements and streamlined navigation. The mobile dashboard highlights in-progress work orders with a distinct green-to-emerald gradient card and a dedicated statistics card.
 
-**Landing Page**: Ultra-modern presentation page displayed before login, featuring dark glassmorphism aesthetics with animated gradient orbs (blue, purple, cyan), mouse parallax effects, floating particles, smooth Framer Motion animations, and interactive feature cards. The landing showcases the "Acelera it - Full Facilities" brand with a gradient text logo and provides an elegant entry point to the system.
+**Landing Page**: Ultra-modern presentation page displayed before login, featuring dark glassmorphism aesthetics with elegant blue-themed gradients. The design includes animated gradient orbs (blue and cyan tones), mouse parallax effects, floating particles, smooth Framer Motion animations, and interactive feature cards. The landing showcases the "Acelera it - Full Facilities" brand with a sophisticated blue-to-cyan gradient text logo, maintaining elegance and modern aesthetics throughout the entire color scheme.
 
 ### Technical Implementations
 

@@ -107,7 +107,7 @@ export default function Landing() {
         <motion.div
           className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
           style={{
-            background: "radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(56, 189, 248, 0.5) 0%, transparent 70%)",
             x: useTransform(mouseXSpring, [-0.5, 0.5], [100, -100]),
             y: useTransform(mouseYSpring, [-0.5, 0.5], [100, -100]),
           }}
@@ -181,13 +181,13 @@ export default function Landing() {
                 animate={{
                   background: [
                     "radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, transparent 70%)",
-                    "radial-gradient(circle, rgba(168, 85, 247, 0.8) 0%, transparent 70%)",
+                    "radial-gradient(circle, rgba(34, 211, 238, 0.8) 0%, transparent 70%)",
                     "radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, transparent 70%)",
                   ]
                 }}
                 transition={{ duration: 4, repeat: Infinity }}
               />
-              <h1 className="relative text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+              <h1 className="relative text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-blue-500 to-cyan-400">
                 Acelera it
               </h1>
             </div>
@@ -212,7 +212,7 @@ export default function Landing() {
         >
           <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
             Transforme a Gestão de
-            <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
+            <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500">
               Facilities em Excelência
             </span>
           </h2>
@@ -236,7 +236,7 @@ export default function Landing() {
             <Button
               size="lg"
               onClick={() => setLocation("/login")}
-              className="group relative px-8 py-6 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 border-0 shadow-2xl shadow-blue-500/50"
+              className="group relative px-8 py-6 text-lg font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-2xl shadow-blue-500/50"
               data-testid="button-login"
             >
               <span className="relative z-10 flex items-center gap-2">
@@ -284,13 +284,13 @@ export default function Landing() {
               whileHover={{ scale: 1.05, y: -5 }}
               className="group relative"
             >
-              <div className="relative h-full p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all duration-300">
+              <div className="relative h-full p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-blue-400/30 transition-all duration-300">
                 {/* Glow effect on hover */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/10 group-hover:to-purple-500/10 transition-all duration-300" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 to-cyan-500/0 group-hover:from-blue-500/10 group-hover:to-cyan-500/10 transition-all duration-300" />
                 
                 <div className="relative z-10">
-                  <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <feature.icon className="w-6 h-6 text-blue-300" />
+                  <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="w-6 h-6 text-cyan-300" />
                   </div>
                   
                   <h3 className="text-xl font-semibold text-white mb-2">
