@@ -7,8 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { login, setAuthState } from "@/lib/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
-import { SiMicrosoft } from "react-icons/si";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
 import aceleraLogo from "@assets/acelera-logo.png";
 
 export default function Login() {
@@ -332,7 +331,7 @@ export default function Login() {
                     className="w-full h-12 bg-slate-800/50 hover:bg-slate-800 border-slate-700/50 text-white rounded-xl"
                     data-testid="button-microsoft-login"
                   >
-                    <SiMicrosoft className="w-5 h-5 mr-2" />
+                    <Building2 className="w-5 h-5 mr-2" />
                     Entrar com Microsoft
                   </Button>
                 </motion.div>
