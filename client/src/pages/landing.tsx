@@ -78,7 +78,7 @@ export default function Landing() {
               <img 
                 src={aceleraLogo} 
                 alt="Acelera Full Facilities" 
-                className="h-[200px] mt-[-50px] mb-[-50px]"
+                className="h-[150px]"
                 data-testid="img-logo"
               />
             </div>
