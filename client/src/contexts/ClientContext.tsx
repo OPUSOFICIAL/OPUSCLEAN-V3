@@ -47,6 +47,15 @@ export function ClientProvider({ children }: ClientProviderProps) {
 
   // Detectar subdomínio e buscar cliente automaticamente
   const detectSubdomain = () => {
+    // MODO DE TESTE: Permitir simular subdomínio via query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const testSubdomain = urlParams.get('test-subdomain');
+    if (testSubdomain) {
+      console.log(`[CLIENT CONTEXT] 🧪 MODO DE TESTE: Simulando subdomínio "${testSubdomain}"`);
+      return testSubdomain;
+    }
+
+    // MODO NORMAL: Detectar do hostname
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
     // Se houver pelo menos 3 partes (subdominio.dominio.com) e não for www

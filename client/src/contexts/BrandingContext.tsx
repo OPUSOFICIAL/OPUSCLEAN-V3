@@ -35,11 +35,21 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
   const loadBranding = async () => {
     try {
-      // Detectar subdomínio do hostname (compatível com qualquer domínio)
+      // MODO DE TESTE: Permitir simular subdomínio via query string
+      const urlParams = new URLSearchParams(window.location.search);
+      const testSubdomain = urlParams.get('test-subdomain');
       const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
-      const subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
+      let subdomain: string | null = null;
+
+      if (testSubdomain) {
+        console.log(`[BRANDING] 🧪 MODO DE TESTE: Simulando subdomínio "${testSubdomain}"`);
+        subdomain = testSubdomain;
+      } else {
+        // MODO NORMAL: Detectar subdomínio do hostname (compatível com qualquer domínio)
+        const parts = hostname.split('.');
+        // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
+        subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
+      }
 
       if (subdomain) {
         console.log(`[BRANDING] Subdomínio detectado: ${subdomain} (domínio completo: ${hostname})`);

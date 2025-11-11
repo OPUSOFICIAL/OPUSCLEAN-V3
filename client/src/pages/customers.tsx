@@ -192,9 +192,28 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
       const response = await fetch(`/api/public/customer-by-subdomain/${customer.subdomain}`);
       if (response.ok) {
         const data = await response.json();
+        
+        // Gerar URL de teste
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('test-subdomain', customer.subdomain);
+        const testUrl = currentUrl.toString();
+        
+        // Copiar para clipboard
+        navigator.clipboard.writeText(testUrl);
+        
         toast({
-          title: "✅ Subdomínio funcionando!",
-          description: `Subdomínio "${customer.subdomain}" está configurado corretamente e retorna: ${data.name}`,
+          title: "🧪 URL de Teste Gerada!",
+          description: (
+            <div className="space-y-2">
+              <p>Subdomínio "{customer.subdomain}" configurado corretamente!</p>
+              <p className="text-sm font-mono bg-muted p-2 rounded">
+                {testUrl}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                URL copiada! Abra em uma nova aba para ver a logo/cores customizadas
+              </p>
+            </div>
+          ),
         });
       } else {
         toast({
