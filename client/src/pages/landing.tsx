@@ -73,7 +73,7 @@ export default function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-[-61px] mb-[-61px]">
             <img src={aceleraLogo} alt="Acelera it" className="h-48" />
             <Button 
               onClick={() => setLocation("/login")}
@@ -86,7 +86,6 @@ export default function Landing() {
           </div>
         </div>
       </header>
-
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -228,7 +227,6 @@ export default function Landing() {
           </motion.div>
         </div>
       </section>
-
       {/* Benefits Bar */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-500 py-12">
         <div className="container mx-auto px-6">
@@ -251,7 +249,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* Features Section */}
       <section className="container mx-auto px-6 py-24">
         <motion.div
@@ -288,7 +285,6 @@ export default function Landing() {
           ))}
         </div>
       </section>
-
       {/* CTA Final */}
       <section className="bg-gradient-to-br from-slate-900 to-slate-800 py-20">
         <div className="container mx-auto px-6 text-center">
@@ -314,7 +310,6 @@ export default function Landing() {
           </motion.div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8">
         <div className="container mx-auto px-6 text-center">
