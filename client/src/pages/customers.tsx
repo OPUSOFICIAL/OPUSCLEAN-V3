@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit, Trash2, Search, Users, Building2, Palette } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users, Building2, Palette, TestTube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -177,6 +177,41 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
     }
   };
 
+  const handleTestSubdomain = async (customer: Customer) => {
+    if (!customer.subdomain) {
+      toast({
+        title: "Subdomínio não configurado",
+        description: "Configure um subdomínio antes de testar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Testar busca por subdomínio
+      const response = await fetch(`/api/public/customer-by-subdomain/${customer.subdomain}`);
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "✅ Subdomínio funcionando!",
+          description: `Subdomínio "${customer.subdomain}" está configurado corretamente e retorna: ${data.name}`,
+        });
+      } else {
+        toast({
+          title: "❌ Subdomínio não encontrado",
+          description: `O subdomínio "${customer.subdomain}" não foi encontrado no banco de dados`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao testar",
+        description: "Ocorreu um erro ao testar o subdomínio",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getModulesBadges = (customer: Customer) => {
     const modules = customer.modules || [];
     
@@ -342,6 +377,17 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                         >
                           <Palette className="w-4 h-4" />
                         </Button>
+                        {customer.subdomain && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleTestSubdomain(customer)}
+                            data-testid={`button-test-subdomain-${customer.id}`}
+                            title="Testar subdomínio"
+                          >
+                            <TestTube className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm"
