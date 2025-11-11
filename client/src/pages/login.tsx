@@ -24,7 +24,7 @@ const MicrosoftIcon = () => (
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [credentials, setCredentials] = useState({
@@ -33,7 +33,7 @@ export default function Login() {
   });
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { branding } = useBranding();
+  const { branding, isLoading: isBrandingLoading } = useBranding();
 
   useEffect(() => {
     if (isMobile) {
@@ -43,7 +43,7 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       const { user, token } = await login(credentials);
@@ -85,13 +85,22 @@ export default function Login() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleMicrosoftLogin = () => {
     window.location.href = "/api/auth/microsoft";
   };
+
+  // Show loading state while branding is being detected
+  if (isBrandingLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-slate-600">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -248,11 +257,11 @@ export default function Login() {
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isSubmitting}
                 className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold text-base shadow-lg shadow-blue-200 hover:shadow-xl transition-all"
                 data-testid="button-login"
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     Entrando...
