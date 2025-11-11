@@ -375,10 +375,19 @@ async function importDump() {
       frequencyConfig = {};
     }
     
+    // Get customer_id from site
+    let customerId = null;
+    if (activity.site_id) {
+      const site = await db.query.sites.findFirst({
+        where: (sites, { eq }) => eq(sites.id, activity.site_id)
+      });
+      customerId = site?.customerId || null;
+    }
+    
     await db.insert(cleaningActivities).values({
       id: activity.id,
       companyId: 'company-admin-default',
-      customerId: null, // Will be set based on site
+      customerId,
       serviceId: activity.service_id || null,
       siteId: activity.site_id || null,
       zoneId: activity.zone_id || null,
