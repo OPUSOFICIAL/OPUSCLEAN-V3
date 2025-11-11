@@ -38,6 +38,7 @@ interface LogoPreview {
 export function CustomerBrandingConfig({ customer, open, onOpenChange }: CustomerBrandingConfigProps) {
   const { toast } = useToast();
   const [moduleColors, setModuleColors] = useState<ModuleColors>((customer.moduleColors as ModuleColors) || {});
+  const [activeTab, setActiveTab] = useState('logos');
   
   // Estados para preview de logos
   const [loginLogo, setLoginLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.loginLogo || null });
@@ -289,8 +290,6 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       </CardContent>
     </Card>
   );
-
-  const [activeTab, setActiveTab] = useState('logos');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
