@@ -244,11 +244,15 @@ export default function Landing() {
               <Button 
                 onClick={() => setLocation("/login")}
                 size="lg"
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-6 text-lg group shadow-lg shadow-blue-200"
+                className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 hover:from-blue-600 hover:via-blue-700 hover:to-cyan-700 text-white px-8 py-6 text-lg font-semibold group shadow-xl shadow-blue-300/50 border-0 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-400/60 hover:scale-105"
                 data-testid="button-start"
               >
-                Começar Agora
-                <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                <span className="relative z-10 flex items-center">
+                  Começar Agora
+                  <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </span>
+                {/* Shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               </Button>
             </motion.div>
           </motion.div>
