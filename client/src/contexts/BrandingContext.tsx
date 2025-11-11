@@ -69,9 +69,39 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         subdomain = testSubdomain;
       } else {
         // MODO NORMAL: Detectar subdomínio do hostname (compatível com qualquer domínio)
-        const parts = hostname.split('.');
-        // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
-        subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
+        
+        // CASO ESPECIAL: Localhost / IP
+        // localhost, 127.0.0.1, 0.0.0.0, etc → sem subdomain
+        if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+          subdomain = null;
+          console.log(`[BRANDING] 🔧 Localhost/IP detectado: sem tenant subdomain`);
+        }
+        // CASO ESPECIAL: Replit
+        // URLs Replit: <instance-id>.janeway.replit.dev ou tenant.<instance-id>.janeway.replit.dev
+        // Instance ID tem padrão: <uuid>-00-<hash>
+        else if (hostname.endsWith('.replit.dev')) {
+          const parts = hostname.split('.');
+          // Verificar se temos um tenant subdomain ANTES do instance ID
+          // Exemplo: tecnofibra.0f28...-00-hash.janeway.replit.dev
+          // parts = ['tecnofibra', '0f28...-00-hash', 'janeway', 'replit', 'dev']
+          // O instance ID sempre contém '-00-'
+          const instanceIdIndex = parts.findIndex(part => part.includes('-00-'));
+          
+          if (instanceIdIndex > 0) {
+            // Há algo antes do instance ID - é o tenant subdomain
+            subdomain = parts[0];
+            console.log(`[BRANDING] 🔧 Replit: Tenant detectado antes do instance ID: ${subdomain}`);
+          } else {
+            // Só temos instance ID - sem tenant subdomain
+            subdomain = null;
+            console.log(`[BRANDING] 🔧 Replit: Sem tenant subdomain (apenas instance ID)`);
+          }
+        } else {
+          // CASO GERAL: Domínios customizados
+          // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
+          const parts = hostname.split('.');
+          subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
+        }
       }
 
       if (subdomain) {

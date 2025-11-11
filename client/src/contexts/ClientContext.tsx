@@ -57,8 +57,34 @@ export function ClientProvider({ children }: ClientProviderProps) {
 
     // MODO NORMAL: Detectar do hostname
     const hostname = window.location.hostname;
+    
+    // CASO ESPECIAL: Localhost / IP
+    // localhost, 127.0.0.1, 0.0.0.0, etc → sem subdomain
+    if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+      return null;
+    }
+    
+    // CASO ESPECIAL: Replit
+    // URLs Replit: <instance-id>.janeway.replit.dev ou tenant.<instance-id>.janeway.replit.dev
+    // Instance ID tem padrão: <uuid>-00-<hash>
+    if (hostname.endsWith('.replit.dev')) {
+      const parts = hostname.split('.');
+      // Verificar se temos um tenant subdomain ANTES do instance ID
+      // O instance ID sempre contém '-00-'
+      const instanceIdIndex = parts.findIndex(part => part.includes('-00-'));
+      
+      if (instanceIdIndex > 0) {
+        // Há algo antes do instance ID - é o tenant subdomain
+        return parts[0];
+      } else {
+        // Só temos instance ID - sem tenant subdomain
+        return null;
+      }
+    }
+    
+    // CASO GERAL: Domínios customizados
+    // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
     const parts = hostname.split('.');
-    // Se houver pelo menos 3 partes (subdominio.dominio.com) e não for www
     if (parts.length >= 3 && parts[0] !== 'www') {
       return parts[0];
     }
