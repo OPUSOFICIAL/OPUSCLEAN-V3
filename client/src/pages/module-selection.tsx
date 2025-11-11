@@ -7,6 +7,8 @@ import { Building2, Wrench, Loader2, ArrowRight, CheckCircle2, TrendingUp } from
 import { useQuery } from "@tanstack/react-query";
 import { useModule } from "@/contexts/ModuleContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranding } from "@/contexts/BrandingContext";
+import { LogoImage } from "@/components/logo-image";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 interface Customer {
@@ -21,6 +23,7 @@ export default function ModuleSelection() {
   const { setModule } = useModule();
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const { branding } = useBranding();
 
   const companyId = user?.companyId || "company-opus-default";
   const isCustomerUser = user?.userType === 'customer_user';
@@ -113,10 +116,12 @@ export default function ModuleSelection() {
             className="text-center mb-12"
             data-testid="header-module-selection"
           >
-            <img 
-              src={aceleraLogo} 
-              alt="Acelera Full Facilities" 
+            <LogoImage
+              src={branding?.homeLogo}
+              fallbackSrc={aceleraLogo}
+              alt={branding?.name || "Acelera Full Facilities"}
               className="h-32 mx-auto mb-8"
+              data-testid="img-module-selection-logo"
             />
             <h1 className="text-4xl font-bold text-slate-900 mb-3">
               Selecione o Módulo

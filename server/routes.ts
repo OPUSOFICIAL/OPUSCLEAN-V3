@@ -2571,7 +2571,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Cliente não encontrado para este subdomínio' });
       }
       
-      res.json(customer);
+      // Return complete branding data
+      res.json({
+        id: customer.id,
+        name: customer.name,
+        subdomain: customer.subdomain,
+        loginLogo: customer.loginLogo,
+        sidebarLogo: customer.sidebarLogo,
+        sidebarLogoCollapsed: customer.sidebarLogoCollapsed,
+        homeLogo: customer.homeLogo,
+        moduleColors: customer.moduleColors,
+      });
     } catch (error) {
       console.error('Error fetching customer by subdomain:', error);
       res.status(500).json({ message: 'Erro ao buscar cliente' });

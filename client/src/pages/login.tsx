@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { login, setAuthState } from "@/lib/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBranding } from "@/contexts/BrandingContext";
+import { LogoImage } from "@/components/logo-image";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
@@ -153,9 +154,10 @@ export default function Login() {
             transition={{ duration: 0.6 }}
             className="text-center mb-8"
           >
-            <img 
-              src={branding?.loginLogo || aceleraLogo} 
-              alt={branding?.name || "Acelera Full Facilities"} 
+            <LogoImage
+              src={branding?.loginLogo}
+              fallbackSrc={aceleraLogo}
+              alt={branding?.name || "Acelera Full Facilities"}
               className="h-[200px] mx-auto mb-6"
               data-testid="img-login-logo"
             />

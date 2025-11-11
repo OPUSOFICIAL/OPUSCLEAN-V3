@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { detectSubdomain, isValidSubdomain } from '@/lib/subdomain-detector';
 
 interface BrandingConfig {
   name: string;
@@ -35,57 +36,93 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
   const loadBranding = async () => {
     try {
-      // MODO DE TESTE: Permitir simular subdomínio via query string
-      const urlParams = new URLSearchParams(window.location.search);
-      const testSubdomain = urlParams.get('test-subdomain');
-      const hostname = window.location.hostname;
-      let subdomain: string | null = null;
+      // Adaptive subdomain detection
+      const detection = detectSubdomain();
+      const subdomain = detection.subdomain;
 
-      if (testSubdomain) {
-        console.log(`[BRANDING] 🧪 MODO DE TESTE: Simulando subdomínio "${testSubdomain}"`);
-        subdomain = testSubdomain;
-      } else {
-        // MODO NORMAL: Detectar subdomínio do hostname (compatível com qualquer domínio)
-        const parts = hostname.split('.');
-        // Detectar se há subdomínio (3+ partes: subdominio.dominio.com)
-        subdomain = parts.length >= 3 && parts[0] !== 'www' ? parts[0] : null;
-      }
+      // Reset branding state first (to clear previous tenant data)
+      setBranding(null);
+      resetCSSVariables();
 
-      if (subdomain) {
-        console.log(`[BRANDING] Subdomínio detectado: ${subdomain} (domínio completo: ${hostname})`);
-        // Buscar configurações do subdomínio
-        const response = await fetch(`/api/public/branding/${subdomain}`);
+      if (subdomain && isValidSubdomain(subdomain)) {
+        // Fetch customer branding via public API
+        const response = await fetch(`/api/public/customer-by-subdomain/${subdomain}`);
         if (response.ok) {
-          const data = await response.json();
-          setBranding(data);
-          console.log(`[BRANDING] Branding aplicado para cliente: ${data.name}`);
+          const customerData = await response.json();
+          
+          // Build branding config
+          const brandingConfig: BrandingConfig = {
+            name: customerData.name,
+            subdomain: customerData.subdomain,
+            loginLogo: customerData.loginLogo,
+            sidebarLogo: customerData.sidebarLogo,
+            sidebarLogoCollapsed: customerData.sidebarLogoCollapsed,
+            homeLogo: customerData.homeLogo,
+            moduleColors: customerData.moduleColors,
+          };
+          
+          setBranding(brandingConfig);
 
-          // Aplicar cores customizadas via CSS variables
-          if (data.moduleColors?.clean) {
+          // Apply module colors dynamically via CSS variables
+          if (customerData.moduleColors) {
             const root = document.documentElement;
-            const colors = data.moduleColors.clean;
             
-            // Converter HEX para HSL e aplicar
-            if (colors.primary) {
-              const hsl = hexToHSL(colors.primary);
-              root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+            // Apply clean module colors if available
+            if (customerData.moduleColors.clean) {
+              const colors = customerData.moduleColors.clean;
+              if (colors.primary) {
+                const hsl = hexToHSL(colors.primary);
+                root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+              }
+              if (colors.secondary) {
+                const hsl = hexToHSL(colors.secondary);
+                root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+              }
+              if (colors.accent) {
+                const hsl = hexToHSL(colors.accent);
+                root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+              }
             }
-            if (colors.secondary) {
-              const hsl = hexToHSL(colors.secondary);
-              root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-            }
-            if (colors.accent) {
-              const hsl = hexToHSL(colors.accent);
-              root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+            
+            // Apply maintenance module colors if available
+            if (customerData.moduleColors.maintenance) {
+              const colors = customerData.moduleColors.maintenance;
+              if (colors.primary) {
+                const hsl = hexToHSL(colors.primary);
+                root.style.setProperty('--maintenance-primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+              }
+              if (colors.secondary) {
+                const hsl = hexToHSL(colors.secondary);
+                root.style.setProperty('--maintenance-secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+              }
+              if (colors.accent) {
+                const hsl = hexToHSL(colors.accent);
+                root.style.setProperty('--maintenance-accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+              }
             }
           }
+        } else if (response.status === 404) {
+          // No branding found for this subdomain - reset to defaults
+          console.warn(`[BRANDING] No branding found for subdomain: ${subdomain}`);
         }
       }
     } catch (error) {
-      console.error('Error loading branding:', error);
+      console.error('[BRANDING] Error loading branding:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Reset CSS variables to defaults (to prevent mixed branding)
+  const resetCSSVariables = () => {
+    const root = document.documentElement;
+    // Remove any custom color overrides
+    root.style.removeProperty('--primary');
+    root.style.removeProperty('--secondary');
+    root.style.removeProperty('--accent');
+    root.style.removeProperty('--maintenance-primary');
+    root.style.removeProperty('--maintenance-secondary');
+    root.style.removeProperty('--maintenance-accent');
   };
 
   useEffect(() => {
