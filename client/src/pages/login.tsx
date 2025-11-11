@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { login, setAuthState } from "@/lib/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
-import aceleraLogo from "@assets/acelera-logo.png";
+import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 // Microsoft logo SVG component
 const MicrosoftIcon = () => (

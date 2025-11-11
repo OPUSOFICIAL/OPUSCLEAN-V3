@@ -16,7 +16,7 @@ import {
   Zap,
   MapPin
 } from "lucide-react";
-import aceleraLogo from "@assets/acelera-logo.png";
+import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();

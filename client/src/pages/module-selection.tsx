@@ -7,7 +7,7 @@ import { Building2, Wrench, Loader2, ArrowRight, CheckCircle2, TrendingUp } from
 import { useQuery } from "@tanstack/react-query";
 import { useModule } from "@/contexts/ModuleContext";
 import { useAuth } from "@/hooks/useAuth";
-import aceleraLogo from "@assets/acelera-logo.png";
+import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 interface Customer {
   id: string;
