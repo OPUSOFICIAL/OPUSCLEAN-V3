@@ -640,8 +640,8 @@ export default function Dashboard() {
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="bg-gradient-to-br from-transparent to-slate-50/20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CardContent className="p-6 bg-gradient-to-br from-transparent to-slate-50/20">
+            <div className="space-y-4">
               {(sites as any[] || []).map((site: any) => {
                 // Get all zone IDs for this site
                 const siteZoneIds = (zones as any[] || [])
@@ -655,55 +655,21 @@ export default function Dashboard() {
                 
                 const totalOS = siteWorkOrders.length;
                 const concluidas = siteWorkOrders.filter((wo: any) => wo.status === 'concluida').length;
-                const abertas = siteWorkOrders.filter((wo: any) => wo.status === 'aberta').length;
-                const vencidas = siteWorkOrders.filter((wo: any) => wo.status === 'vencida').length;
                 const taxaConclusao = totalOS > 0 ? Math.round((concluidas / totalOS) * 100) : 0;
                 
                 return (
                   <div 
                     key={site.id}
-                    className="group relative p-4 rounded-2xl border-2 border-slate-200/60 hover:border-blue-400/60 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer bg-white/90 backdrop-blur-md overflow-hidden hover:-translate-y-1"
-                    onClick={() => {
-                      setSelectedSite(site.id);
-                      queryClient.invalidateQueries({ 
-                        queryKey: [`/api/customers/${activeClientId}/dashboard-stats`] 
-                      });
-                    }}
-                    data-testid={`site-card-${site.id}`}
+                    className="space-y-2"
+                    data-testid={`site-progress-${site.id}`}
                   >
-                    {/* Decorative gradient blob */}
-                    <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-400/20 via-indigo-400/20 to-purple-400/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
-                    {/* Header with title and percentage */}
-                    <div className="flex items-start justify-between mb-4 relative z-10">
-                      <div className="flex-1 pr-2">
-                        <h4 className="font-bold text-base text-slate-900 mb-2 group-hover:text-blue-600 transition-colors leading-tight">{site.name}</h4>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="font-medium">{(zones as any[] || []).filter((z: any) => z.siteId === site.id).length} zonas</span>
-                        </div>
-                      </div>
-                      <div className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl shadow-lg backdrop-blur-md ${
-                        taxaConclusao >= 80 ? 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 ring-2 ring-emerald-200/50' :
-                        taxaConclusao >= 60 ? 'bg-gradient-to-br from-blue-500/15 to-blue-600/10 ring-2 ring-blue-200/50' :
-                        taxaConclusao >= 40 ? 'bg-gradient-to-br from-amber-500/15 to-amber-600/10 ring-2 ring-amber-200/50' : 
-                        'bg-gradient-to-br from-red-500/15 to-red-600/10 ring-2 ring-red-200/50'
-                      }`}>
-                        <span className={`text-2xl font-black leading-none ${
-                          taxaConclusao >= 80 ? 'text-emerald-600' :
-                          taxaConclusao >= 60 ? 'text-blue-600' :
-                          taxaConclusao >= 40 ? 'text-amber-600' : 'text-red-600'
-                        }`}>
-                          {taxaConclusao}%
-                        </span>
-                        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wide">Taxa</span>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium text-slate-700">{site.name}</div>
+                      <div className="text-sm font-bold text-slate-900">{taxaConclusao}%</div>
                     </div>
-                    
-                    {/* Animated progress bar */}
-                    <div className="relative h-3 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full overflow-hidden mb-5 shadow-inner ring-1 ring-slate-200/50">
+                    <div className="relative h-3 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full overflow-hidden shadow-inner">
                       <div 
-                        className={`absolute h-full rounded-full transition-all duration-700 ease-out shadow-md ${
+                        className={`absolute h-full rounded-full transition-all duration-700 ease-out ${
                           taxaConclusao >= 80 ? 'bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600' :
                           taxaConclusao >= 60 ? 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600' :
                           taxaConclusao >= 40 ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600' : 
@@ -714,31 +680,15 @@ export default function Dashboard() {
                         <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"></div>
                       </div>
                     </div>
-                    
-                    {/* Stats grid with enhanced styling */}
-                    <div className="grid grid-cols-3 gap-3 relative z-10 pointer-events-none">
-                      <div className="text-center bg-gradient-to-br from-emerald-50 via-emerald-50/80 to-white rounded-xl p-3 border-2 border-emerald-200/60 shadow-md">
-                        <div className="text-2xl font-black bg-gradient-to-br from-emerald-600 to-emerald-700 bg-clip-text text-transparent mb-0.5">{concluidas}</div>
-                        <div className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">OK</div>
-                      </div>
-                      <div className="text-center bg-gradient-to-br from-amber-50 via-amber-50/80 to-white rounded-xl p-3 border-2 border-amber-200/60 shadow-md">
-                        <div className="text-2xl font-black bg-gradient-to-br from-amber-600 to-amber-700 bg-clip-text text-transparent mb-0.5">{abertas}</div>
-                        <div className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Abertas</div>
-                      </div>
-                      <div className="text-center bg-gradient-to-br from-red-50 via-red-50/80 to-white rounded-xl p-3 border-2 border-red-200/60 shadow-md">
-                        <div className="text-2xl font-black bg-gradient-to-br from-red-600 to-red-700 bg-clip-text text-transparent mb-0.5">{vencidas}</div>
-                        <div className="text-[10px] text-red-700 font-bold uppercase tracking-wider">Venc.</div>
-                      </div>
-                    </div>
                   </div>
                 );
               })}
               
               {(sites as any[] || []).length === 0 && (
-                <div className="col-span-full text-center py-20 bg-gradient-to-br from-slate-50/80 to-white rounded-2xl backdrop-blur-sm border-2 border-dashed border-slate-200">
-                  <Building className="w-20 h-20 text-slate-300 mx-auto mb-4 opacity-50" />
-                  <p className="text-slate-600 text-base font-semibold">Nenhum local cadastrado</p>
-                  <p className="text-slate-400 text-sm mt-2">Adicione locais para visualizar métricas de performance</p>
+                <div className="text-center py-12 bg-gradient-to-br from-slate-50/80 to-white rounded-2xl backdrop-blur-sm border-2 border-dashed border-slate-200">
+                  <Building className="w-16 h-16 text-slate-300 mx-auto mb-3 opacity-50" />
+                  <p className="text-slate-600 text-sm font-semibold">Nenhum local cadastrado</p>
+                  <p className="text-slate-400 text-xs mt-1">Adicione locais para visualizar métricas de performance</p>
                 </div>
               )}
             </div>
