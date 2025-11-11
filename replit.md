@@ -36,6 +36,8 @@ The system features a modern, predominantly white design with subtle gradients a
 
 **Landing Page**: Ultra-modern presentation page displayed before login, featuring dark glassmorphism aesthetics with elegant blue-themed gradients. The design includes animated gradient orbs (blue and cyan tones), mouse parallax effects, floating particles, smooth Framer Motion animations, and interactive feature cards. The landing showcases the "Acelera it - Full Facilities" brand with a sophisticated blue-to-cyan gradient text logo, maintaining elegance and modern aesthetics throughout the entire color scheme.
 
+**Login Page**: Redesigned to match the landing page aesthetic with centralized glassmorphism card on dark blue gradient background. Features the Acelera it logo at the top, "Bem-vindo de volta" welcome message, email/password fields with icons, remember me checkbox, forgot password link, white "Entrar" button, and Microsoft SSO integration. Includes animated gradient orbs (blue and cyan), floating particles, and smooth Framer Motion animations for card entrance. The design maintains the professional blue-focused color palette (from-slate-950 via-blue-950 to-indigo-950) for brand consistency.
+
 ### Technical Implementations
 
 The frontend is built with React and TypeScript, using Wouter for routing and TanStack Query for data management, all powered by Vite. The backend is an Express.js server in TypeScript, following RESTful API principles with a layered architecture, utilizing Drizzle ORM for type-safe PostgreSQL interactions.
@@ -224,6 +226,11 @@ The project is configured for the Replit cloud environment, with automated Postg
 
 ## Recent Changes (November 2025)
 
+- ✅ Redesigned login page with modern glassmorphism card and blue gradient aesthetics
+- ✅ Added Acelera it logo to login page with centralized layout
+- ✅ Implemented animated gradient orbs and floating particles on login
+- ✅ Added Framer Motion animations for smooth card entrance
+- ✅ Integrated Microsoft SSO button with Building2 icon
 - ✅ Implemented complete Groq (Llama 3) integration as free AI provider
 - ✅ Added AI provider configuration UI with test functionality
 - ✅ Fixed Date serialization bug in AI function responses
