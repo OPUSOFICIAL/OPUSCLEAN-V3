@@ -95,19 +95,15 @@ export default function Login() {
       {/* Top Bar */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Button
-              onClick={() => setLocation("/")}
-              variant="ghost"
-              className="text-slate-700 hover:text-slate-900 gap-2"
-              data-testid="button-back-landing"
-            >
-              <ArrowRight className="w-4 h-4 rotate-180" />
-              <span>Voltar</span>
-            </Button>
-            <img src={aceleraLogo} alt="Acelera it" className="h-20" />
-            <div className="w-24"></div>
-          </div>
+          <Button
+            onClick={() => setLocation("/")}
+            variant="ghost"
+            className="text-slate-700 hover:text-slate-900 gap-2"
+            data-testid="button-back-landing"
+          >
+            <ArrowRight className="w-4 h-4 rotate-180" />
+            <span>Voltar</span>
+          </Button>
         </div>
       </header>
 
