@@ -1,318 +1,311 @@
-import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { 
   ArrowRight, 
-  Sparkles, 
+  Building2, 
+  Wrench,
+  ClipboardCheck, 
+  TrendingUp, 
   Shield, 
-  Zap, 
+  Users,
   BarChart3,
   Clock,
-  Users,
-  CheckCircle2
+  CheckCircle2,
+  Zap,
+  MapPin
 } from "lucide-react";
 import aceleraLogo from "@assets/acelera-logo.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const springConfig = { damping: 25, stiffness: 150 };
-  const mouseXSpring = useSpring(mouseX, springConfig);
-  const mouseYSpring = useSpring(mouseY, springConfig);
-
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["2deg", "-2deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-2deg", "2deg"]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top) / rect.height;
-      
-      setMousePosition({ x: e.clientX, y: e.clientY });
-      mouseX.set(x - 0.5);
-      mouseY.set(y - 0.5);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
+  const stats = [
+    { value: "45%", label: "Redução de Custos" },
+    { value: "3x", label: "Mais Produtividade" },
+    { value: "99%", label: "Uptime Garantido" },
+    { value: "24/7", label: "Suporte Enterprise" }
+  ];
 
   const features = [
     {
-      icon: Shield,
-      title: "Gestão Segura",
-      description: "Controle total e segurança em todas as operações"
+      icon: Building2,
+      title: "Gestão de Facilities",
+      description: "Controle completo de múltiplos locais, zonas e equipamentos em uma única plataforma"
     },
     {
-      icon: Zap,
-      title: "Extremamente Rápido",
-      description: "Performance otimizada para alta produtividade"
+      icon: Wrench,
+      title: "Manutenção Inteligente",
+      description: "Preventiva e corretiva automatizada com notificações e SLA tracking"
     },
     {
-      icon: BarChart3,
-      title: "Analytics Avançado",
-      description: "Insights em tempo real para decisões inteligentes"
+      icon: ClipboardCheck,
+      title: "Ordens de Serviço",
+      description: "Gestão end-to-end com QR codes, fotos, assinaturas e histórico completo"
     },
     {
-      icon: Clock,
-      title: "Economia de Tempo",
-      description: "Automatize processos e ganhe eficiência"
+      icon: TrendingUp,
+      title: "Analytics em Tempo Real",
+      description: "Dashboards personalizados com métricas de desempenho e ROI"
     },
     {
       icon: Users,
-      title: "Multi-Equipes",
-      description: "Gerencie múltiplas equipes e locais"
+      title: "Gestão de Equipes",
+      description: "Controle de colaboradores, turnos, permissões e produtividade"
     },
     {
-      icon: CheckCircle2,
-      title: "Qualidade Garantida",
-      description: "Checklists e validações inteligentes"
+      icon: Shield,
+      title: "Segurança Enterprise",
+      description: "SSO, autenticação multi-fator e controle granular de acessos"
     }
   ];
 
+  const benefits = [
+    { icon: Clock, text: "Reduza tempo de resposta em até 60%" },
+    { icon: BarChart3, text: "Aumente eficiência operacional em 45%" },
+    { icon: Zap, text: "Automatize 80% dos processos manuais" },
+    { icon: CheckCircle2, text: "Conformidade e auditoria garantidas" }
+  ];
+
   return (
-    <div 
-      ref={containerRef}
-      className="relative min-h-screen w-full overflow-hidden bg-white"
-      data-testid="landing-page"
-    >
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-100" />
-
-      {/* Animated gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)",
-            x: useTransform(mouseXSpring, [-0.5, 0.5], [-100, 100]),
-            y: useTransform(mouseYSpring, [-0.5, 0.5], [-100, 100]),
-          }}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        
-        <motion.div
-          className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%)",
-            x: useTransform(mouseXSpring, [-0.5, 0.5], [100, -100]),
-            y: useTransform(mouseYSpring, [-0.5, 0.5], [100, -100]),
-          }}
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(96, 165, 250, 0.12) 0%, transparent 70%)",
-          }}
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 7,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-      </div>
-
-      {/* Floating particles */}
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 bg-blue-400 rounded-full"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0, 0.6, 0],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 2,
-            repeat: Infinity,
-            delay: Math.random() * 2,
-          }}
-        />
-      ))}
-
-      {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Header */}
-        <motion.header
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="container mx-auto px-6 py-6 flex justify-between items-center"
-        >
-          <div className="flex items-center gap-3">
-            <img src={aceleraLogo} alt="Acelera" className="h-10" />
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <img src={aceleraLogo} alt="Acelera it" className="h-12" />
+            <Button 
+              onClick={() => setLocation("/login")}
+              variant="outline"
+              className="border-slate-300 text-slate-700 hover:bg-slate-50"
+              data-testid="button-login-header"
+            >
+              Acessar Sistema
+            </Button>
           </div>
-          <Button 
-            onClick={() => setLocation("/login")}
-            variant="outline"
-            className="border-blue-200 text-blue-700 hover:bg-blue-50"
-            data-testid="button-login-header"
-          >
-            Entrar
-          </Button>
-        </motion.header>
+        </div>
+      </header>
 
-        {/* Hero Section */}
-        <div className="flex-1 container mx-auto px-6 py-20 flex flex-col items-center justify-center text-center">
+      {/* Hero Section */}
+      <section className="container mx-auto px-6 py-20">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left Content */}
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="max-w-4xl mx-auto"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
           >
-            {/* Badge */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 border border-blue-200 mb-8"
-            >
-              <Sparkles className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-700">Plataforma Premium de Gestão</span>
-            </motion.div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full mb-6">
+              <Building2 className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-700">Plataforma Enterprise de Facilities Management</span>
+            </div>
 
-            {/* Main Title */}
-            <motion.h1
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-6xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent leading-tight"
-            >
-              Acelera it
-            </motion.h1>
-            
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="text-2xl font-semibold text-slate-700 mb-4"
-            >
-              Full Facilities
-            </motion.p>
+            <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+              Transforme a Gestão de <span className="text-blue-600">Facilities</span> da sua Empresa
+            </h1>
 
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="text-xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed"
-            >
-              Transforme a gestão de facilities com tecnologia de ponta. 
-              Automatize processos, monitore em tempo real e eleve a excelência operacional.
-            </motion.p>
+            <p className="text-xl text-slate-600 mb-8 leading-relaxed">
+              Plataforma completa para gerenciamento de limpeza, manutenção e facilities. 
+              Automatize processos, reduza custos e aumente a eficiência operacional.
+            </p>
 
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              className="flex flex-wrap gap-4 justify-center"
-            >
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="text-3xl font-bold text-blue-600 mb-1">{stat.value}</div>
+                  <div className="text-sm text-slate-600 font-medium">{stat.label}</div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <div className="flex flex-wrap gap-4">
               <Button 
                 onClick={() => setLocation("/login")}
                 size="lg"
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold px-8 py-7 text-lg rounded-2xl shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all duration-500 group"
+                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold px-8 py-7 text-lg rounded-xl shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all duration-300 group"
                 data-testid="button-start"
               >
                 Começar Agora
                 <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
-            </motion.div>
-          </motion.div>
-
-          {/* Features Grid */}
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.9 }}
-            className="mt-24 w-full max-w-6xl"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.9 + index * 0.1 }}
-                  whileHover={{ 
-                    scale: 1.03,
-                    transition: { duration: 0.2 }
-                  }}
-                  style={{
-                    rotateX,
-                    rotateY,
-                  }}
-                  className="group relative overflow-hidden"
-                >
-                  {/* Card */}
-                  <div className="relative h-full p-8 rounded-2xl bg-white border border-blue-100 shadow-lg shadow-blue-100/20 transition-all duration-500 hover:shadow-xl hover:shadow-blue-200/30">
-                    {/* Gradient overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" />
-                    
-                    <div className="relative z-10">
-                      {/* Icon */}
-                      <div className="mb-4 inline-flex p-3 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 text-blue-600 group-hover:scale-110 transition-transform duration-500">
-                        <feature.icon className="w-6 h-6" />
-                      </div>
-                      
-                      {/* Content */}
-                      <h3 className="text-xl font-semibold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors duration-300">
-                        {feature.title}
-                      </h3>
-                      <p className="text-slate-600 leading-relaxed">
-                        {feature.description}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+              <Button 
+                onClick={() => setLocation("/login")}
+                size="lg"
+                variant="outline"
+                className="border-2 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold px-8 py-7 text-lg rounded-xl"
+              >
+                Ver Demonstração
+              </Button>
             </div>
           </motion.div>
-        </div>
 
-        {/* Footer */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 1.2 }}
-          className="container mx-auto px-6 py-8 text-center text-slate-500 text-sm border-t border-blue-100"
+          {/* Right Content - Dashboard Preview */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="relative"
+          >
+            <div className="relative rounded-2xl border-2 border-slate-200 bg-white shadow-2xl p-6 overflow-hidden">
+              {/* Mock Dashboard */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">Dashboard Facilities</div>
+                      <div className="text-xs text-slate-500">Visão Geral</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-lg p-4">
+                    <div className="text-xs text-emerald-700 font-medium mb-1">OSs Concluídas</div>
+                    <div className="text-2xl font-bold text-emerald-600">487</div>
+                    <div className="text-xs text-emerald-600 mt-1">↑ 23% vs mês anterior</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-lg p-4">
+                    <div className="text-xs text-blue-700 font-medium mb-1">Locais Ativos</div>
+                    <div className="text-2xl font-bold text-blue-600">24</div>
+                    <div className="text-xs text-blue-600 mt-1">100% cobertura</div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="text-xs font-semibold text-slate-700">Performance por Local</div>
+                    <div className="text-xs text-slate-500">Este mês</div>
+                  </div>
+                  <div className="space-y-2">
+                    {[85, 72, 93].map((value, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="w-16 text-xs text-slate-600">Local {i + 1}</div>
+                        <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${value}%` }}></div>
+                        </div>
+                        <div className="w-10 text-xs font-medium text-slate-700">{value}%</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Decorative Element */}
+            <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl"></div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Benefits Bar */}
+      <section className="bg-gradient-to-r from-blue-600 to-blue-500 py-12">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {benefits.map((benefit, index) => (
+              <motion.div
+                key={benefit.text}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="flex items-center gap-4"
+              >
+                <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <benefit.icon className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-white font-medium text-sm leading-tight">{benefit.text}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-6 py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
         >
-          © 2025 Acelera it. Todos os direitos reservados.
-        </motion.footer>
-      </div>
+          <h2 className="text-4xl font-bold text-slate-900 mb-4">
+            Tudo que você precisa para gerenciar suas Facilities
+          </h2>
+          <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+            Solução completa e integrada para gestão de facilities, manutenção e limpeza em ambientes corporativos
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="p-8 h-full border-2 border-slate-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 bg-white">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-6 shadow-lg shadow-blue-200">
+                  <feature.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
+                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Final */}
+      <section className="bg-gradient-to-br from-slate-900 to-slate-800 py-20">
+        <div className="container mx-auto px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-6">
+              Pronto para transformar sua gestão de facilities?
+            </h2>
+            <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+              Junte-se a centenas de empresas que já otimizaram suas operações com o Acelera it Full Facilities
+            </p>
+            <Button 
+              onClick={() => setLocation("/login")}
+              size="lg"
+              className="bg-white text-blue-600 hover:bg-slate-100 font-bold px-10 py-7 text-lg rounded-xl shadow-2xl"
+            >
+              Começar Gratuitamente
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-8">
+        <div className="container mx-auto px-6 text-center">
+          <p className="text-slate-600">© 2025 Acelera it Full Facilities. Todos os direitos reservados.</p>
+        </div>
+      </footer>
     </div>
   );
 }

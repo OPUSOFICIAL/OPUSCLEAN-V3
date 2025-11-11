@@ -10,6 +10,16 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
 import aceleraLogo from "@assets/acelera-logo.png";
 
+// Microsoft logo SVG component
+const MicrosoftIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 23 23" fill="currentColor">
+    <path d="M0 0h11v11H0z" fill="#f25022"/>
+    <path d="M12 0h11v11H12z" fill="#00a4ef"/>
+    <path d="M0 12h11v11H0z" fill="#ffb900"/>
+    <path d="M12 12h11v11H12z" fill="#7fba00"/>
+  </svg>
+);
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -81,56 +91,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-white">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-100" />
-
-      {/* Animated gradient orbs */}
+    <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] rounded-full"
+          className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10"
           style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-            x: [0, 50, 0],
-            y: [0, 30, 0],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        
-        <motion.div
-          className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%)",
-          }}
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.3, 0.5, 0.3],
-            x: [0, -50, 0],
-            y: [0, -30, 0],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-
-        <motion.div
-          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 70%)",
-          }}
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
+            opacity: [0.1, 0.15, 0.1],
           }}
           transition={{
             duration: 8,
@@ -138,233 +109,195 @@ export default function Login() {
             ease: "easeInOut"
           }}
         />
-      </div>
-
-      {/* Floating particles */}
-      {[...Array(15)].map((_, i) => (
         <motion.div
-          key={i}
-          className="absolute w-1 h-1 bg-blue-400 rounded-full"
+          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-10"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
           }}
           animate={{
-            y: [0, -30, 0],
-            opacity: [0, 0.6, 0],
+            scale: [1.2, 1, 1.2],
+            opacity: [0.1, 0.15, 0.1],
           }}
           transition={{
-            duration: 3 + Math.random() * 2,
+            duration: 10,
             repeat: Infinity,
-            delay: Math.random() * 2,
+            ease: "easeInOut"
           }}
         />
-      ))}
+      </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md"
-        >
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          {/* Logo and Title */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-8"
+          >
+            <img 
+              src={aceleraLogo} 
+              alt="Acelera Full Facilities" 
+              className="h-16 mx-auto mb-6"
+            />
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Bem-vindo de volta
+            </h1>
+            <p className="text-slate-600">
+              Acesse sua plataforma de facilities management
+            </p>
+          </motion.div>
+
           {/* Login Card */}
-          <div className="relative bg-white border border-blue-100 rounded-3xl p-8 shadow-2xl shadow-blue-200/20">
-            {/* Subtle glow effect */}
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-50/50 to-cyan-50/50 pointer-events-none" />
-            
-            <div className="relative z-10">
-              {/* Logo */}
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="flex justify-center mb-6"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8"
+          >
+            {/* SSO Buttons */}
+            <div className="space-y-3 mb-6">
+              <Button
+                type="button"
+                onClick={handleMicrosoftLogin}
+                variant="outline"
+                className="w-full h-12 border-2 border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold"
+                data-testid="button-microsoft-login"
               >
-                <img 
-                  src={aceleraLogo} 
-                  alt="Acelera Full Facilities" 
-                  className="h-50 drop-shadow-md"
-                />
-              </motion.div>
+                <MicrosoftIcon />
+                <span className="ml-3">Continuar com Microsoft</span>
+              </Button>
+            </div>
 
-              {/* Welcome Text */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="text-center mb-8"
-              >
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent mb-2">
-                  Bem-vindo de volta
-                </h1>
-                <p className="text-slate-600 text-sm">
-                  Entre para continuar no sistema
-                </p>
-              </motion.div>
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-slate-500 font-medium">Ou use seu email</span>
+              </div>
+            </div>
 
-              {/* Login Form */}
-              <form onSubmit={handleLogin} className="space-y-5">
-                {/* Email Input */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <Input
-                      type="text"
-                      placeholder="Email ou usuário"
-                      value={credentials.username}
-                      onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                      className="pl-11 h-12 bg-blue-50/50 border-blue-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:ring-blue-200"
-                      required
-                      data-testid="input-email"
-                    />
-                  </div>
-                </motion.div>
+            {/* Login Form */}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Email ou Usuário
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Input
+                    type="text"
+                    value={credentials.username}
+                    onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                    className="pl-11 h-12 border-2 border-slate-300 focus:border-blue-500"
+                    placeholder="seu@email.com"
+                    required
+                    data-testid="input-username"
+                  />
+                </div>
+              </div>
 
-                {/* Password Input */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                >
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Senha"
-                      value={credentials.password}
-                      onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                      className="pl-11 pr-11 h-12 bg-blue-50/50 border-blue-200 text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:ring-blue-200"
-                      required
-                      data-testid="input-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
-                  </div>
-                </motion.div>
-
-                {/* Remember Me & Forgot Password */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                      className="border-blue-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                    />
-                    <label htmlFor="remember" className="text-slate-600 cursor-pointer">
-                      Lembrar-me
-                    </label>
-                  </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Senha
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={credentials.password}
+                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                    className="pl-11 pr-11 h-12 border-2 border-slate-300 focus:border-blue-500"
+                    placeholder="••••••••"
+                    required
+                    data-testid="input-password"
+                  />
                   <button
                     type="button"
-                    className="text-blue-600 hover:text-blue-700 transition-colors font-medium"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    data-testid="button-toggle-password"
                   >
-                    Esqueceu a senha?
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
-                </motion.div>
+                </div>
+              </div>
 
-                {/* Sign In Button */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7, duration: 0.5 }}
-                >
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold rounded-xl group shadow-lg shadow-blue-200"
-                    data-testid="button-signin"
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    data-testid="checkbox-remember"
+                  />
+                  <label 
+                    htmlFor="remember" 
+                    className="text-sm text-slate-600 cursor-pointer select-none"
                   >
-                    {isLoading ? (
-                      "Entrando..."
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        Entrar
-                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                      </span>
-                    )}
-                  </Button>
-                </motion.div>
-
-                {/* Divider */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8, duration: 0.5 }}
-                  className="relative flex items-center justify-center my-6"
+                    Lembrar de mim
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+                  data-testid="link-forgot-password"
                 >
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-blue-200"></div>
-                  </div>
-                  <div className="relative px-4 bg-white text-slate-500 text-sm">
-                    ou
-                  </div>
-                </motion.div>
-
-                {/* Microsoft Login Button */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.9, duration: 0.5 }}
-                >
-                  <Button
-                    type="button"
-                    onClick={handleMicrosoftLogin}
-                    variant="outline"
-                    className="w-full h-12 bg-blue-50/50 hover:bg-blue-100/50 border-blue-200 text-slate-700 rounded-xl"
-                    data-testid="button-microsoft-login"
-                  >
-                    <Building2 className="w-5 h-5 mr-2 text-blue-600" />
-                    Entrar com Microsoft
-                  </Button>
-                </motion.div>
-              </form>
-
-              {/* Sign Up Link */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1, duration: 0.5 }}
-                className="mt-6 text-center text-sm text-slate-600"
-              >
-                Não tem uma conta?{" "}
-                <button className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                  Cadastre-se
+                  Esqueci minha senha
                 </button>
-              </motion.div>
-            </div>
-          </div>
+              </div>
 
-          {/* Bottom Text */}
-          <motion.p
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold text-base shadow-lg shadow-blue-200 hover:shadow-xl transition-all"
+                data-testid="button-login"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Entrando...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    Acessar Plataforma
+                    <ArrowRight className="w-5 h-5" />
+                  </div>
+                )}
+              </Button>
+            </form>
+
+            {/* Footer Links */}
+            <div className="mt-6 pt-6 border-t border-slate-200 text-center">
+              <p className="text-sm text-slate-600">
+                Não tem uma conta?{" "}
+                <button 
+                  className="text-blue-600 hover:text-blue-700 font-semibold"
+                  onClick={() => toast({ title: "Entre em contato com o administrador" })}
+                  data-testid="link-signup"
+                >
+                  Solicite acesso
+                </button>
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Security Badge */}
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.1, duration: 0.5 }}
-            className="text-center mt-8 text-slate-500 text-sm"
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-6 text-center"
           >
-            © 2025 Acelera it. Plataforma de gestão de facilities.
-          </motion.p>
-        </motion.div>
+            <div className="inline-flex items-center gap-2 text-sm text-slate-500">
+              <Building2 className="w-4 h-4" />
+              <span>Plataforma Enterprise Segura | SSO Disponível</span>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
