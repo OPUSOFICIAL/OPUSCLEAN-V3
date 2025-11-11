@@ -1,18 +1,21 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { login, setAuthState } from "@/lib/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { User, Lock, Eye, EyeOff, Building2, Settings, TrendingUp, Shield, CheckCircle2 } from "lucide-react";
-import aceleraLogo from "@assets/imagem_2025-11-10_010501695-Photoroom_1762805733799.png";
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { SiMicrosoft } from "react-icons/si";
+import aceleraLogo from "@assets/acelera-logo.png";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [credentials, setCredentials] = useState({
     username: "",
     password: ""
@@ -74,214 +77,305 @@ export default function Login() {
     }
   };
 
+  const handleMicrosoftLogin = () => {
+    window.location.href = "/api/auth/microsoft";
+  };
+
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Branding & Visual */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0">
-          {/* Grid Pattern */}
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
-          
-          {/* Gradient Orbs */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
-        </div>
+    <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950">
+      {/* Animated gradient orbs */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          className="absolute top-1/4 -left-1/4 w-[800px] h-[800px] rounded-full opacity-20"
+          style={{
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, transparent 70%)",
+          }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.2, 0.3, 0.2],
+            x: [0, 50, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        
+        <motion.div
+          className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] rounded-full opacity-20"
+          style={{
+            background: "radial-gradient(circle, rgba(34, 211, 238, 0.6) 0%, transparent 70%)",
+          }}
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.3, 0.2],
+            x: [0, -50, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-16 w-full">
-          {/* Logo */}
-          <div className="mb-12">
-            <img 
-              src={aceleraLogo} 
-              alt="Acelera Full Facilities" 
-              className="h-[400px] drop-shadow-2xl mt-[-40px] mb-[-40px]"
-            />
-            <h1 className="text-5xl font-bold text-white mb-4 leading-tight">
-              Gestão Inteligente de Facilities
-            </h1>
-            <p className="text-xl text-blue-100 leading-relaxed">
-              Plataforma completa para otimizar operações, reduzir custos e elevar a excelência na gestão de facilities e infraestrutura corporativa
-            </p>
-          </div>
-
-          {/* Features */}
-          <div className="space-y-6">
-            <div className="flex items-start space-x-4 group">
-              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-lg group-hover:bg-white/20 transition-all duration-300">
-                <Building2 className="w-6 h-6 text-blue-200" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">Multi-Site Management</h3>
-                <p className="text-blue-100 text-sm">Gerencie múltiplos locais, zonas e equipes em uma única plataforma integrada</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4 group">
-              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-lg group-hover:bg-white/20 transition-all duration-300">
-                <TrendingUp className="w-6 h-6 text-blue-200" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">Analytics em Tempo Real</h3>
-                <p className="text-blue-100 text-sm">Dashboards inteligentes com métricas e KPIs para decisões estratégicas</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4 group">
-              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-lg group-hover:bg-white/20 transition-all duration-300">
-                <Settings className="w-6 h-6 text-blue-200" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">Manutenção Inteligente</h3>
-                <p className="text-blue-100 text-sm">Planejamento preventivo e corretivo com gestão completa de ordens de serviço</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4 group">
-              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-lg group-hover:bg-white/20 transition-all duration-300">
-                <Shield className="w-6 h-6 text-blue-200" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold mb-1">Segurança & Compliance</h3>
-                <p className="text-blue-100 text-sm">Controles de acesso, auditoria e conformidade com padrões internacionais</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <motion.div
+          className="absolute top-1/2 left-1/2 w-[400px] h-[400px] rounded-full opacity-10"
+          style={{
+            background: "radial-gradient(circle, rgba(96, 165, 250, 0.6) 0%, transparent 70%)",
+          }}
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.1, 0.2, 0.1],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
       </div>
-      {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden mb-8 text-center">
-            <img 
-              src={aceleraLogo} 
-              alt="Acelera Full Facilities" 
-              className="h-12 mx-auto mb-4"
-            />
-          </div>
 
-          <Card className="border-0 shadow-2xl">
-            <CardContent className="p-8">
-              {/* Header */}
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-slate-900 mb-2">Bem-vindo</h2>
-                <p className="text-slate-600">Acesse sua conta para continuar</p>
-              </div>
+      {/* Floating particles */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-blue-400 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0, 1, 0],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+
+      {/* Main Content */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md"
+        >
+          {/* Login Card */}
+          <div className="relative backdrop-blur-2xl bg-slate-900/40 border border-white/10 rounded-3xl p-8 shadow-2xl">
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/5 to-cyan-500/5 pointer-events-none" />
+            
+            <div className="relative z-10">
+              {/* Logo */}
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="flex justify-center mb-6"
+              >
+                <img 
+                  src={aceleraLogo} 
+                  alt="Acelera Full Facilities" 
+                  className="h-16 drop-shadow-lg"
+                />
+              </motion.div>
+
+              {/* Welcome Text */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="text-center mb-8"
+              >
+                <h1 className="text-3xl font-bold text-white mb-2">
+                  Bem-vindo de volta
+                </h1>
+                <p className="text-slate-400 text-sm">
+                  Entre para continuar no sistema
+                </p>
+              </motion.div>
 
               {/* Login Form */}
-              <form onSubmit={handleLogin} className="space-y-6">
-                {/* Username Field */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Usuário
-                  </label>
+              <form onSubmit={handleLogin} className="space-y-5">
+                {/* Email Input */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                       type="text"
-                      data-testid="input-username"
-                      placeholder="Digite seu usuário"
+                      placeholder="Email ou usuário"
                       value={credentials.username}
                       onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                      className="pl-10 h-12 bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-11 h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
                       required
+                      data-testid="input-email"
                     />
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Password Field */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Senha
-                  </label>
+                {/* Password Input */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                >
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                       type={showPassword ? "text" : "password"}
-                      data-testid="input-password"
-                      placeholder="Digite sua senha"
+                      placeholder="Senha"
                       value={credentials.password}
                       onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                      className="pl-10 pr-12 h-12 bg-white border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-11 pr-11 h-12 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
                       required
+                      data-testid="input-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                      tabIndex={-1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Remember me & Forgot password */}
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-2 cursor-pointer group">
-                    <input 
-                      type="checkbox" 
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
-                    />
-                    <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">Lembrar-me</span>
-                  </label>
-                  <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                    Esqueceu a senha?
-                  </a>
-                </div>
-
-                {/* Login Button */}
-                <Button 
-                  type="submit" 
-                  data-testid="button-login"
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200" 
-                  disabled={isLoading}
+                {/* Remember Me & Forgot Password */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                  className="flex items-center justify-between text-sm"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Entrando...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>Entrar</span>
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                  )}
-                </Button>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      className="border-slate-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <label htmlFor="remember" className="text-slate-300 cursor-pointer">
+                      Lembrar-me
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </motion.div>
+
+                {/* Sign In Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7, duration: 0.5 }}
+                >
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-12 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl group"
+                    data-testid="button-signin"
+                  >
+                    {isLoading ? (
+                      "Entrando..."
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        Entrar
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    )}
+                  </Button>
+                </motion.div>
+
+                {/* Divider */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="relative flex items-center justify-center my-6"
+                >
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-700/50"></div>
+                  </div>
+                  <div className="relative px-4 bg-slate-900/40 text-slate-400 text-sm">
+                    ou
+                  </div>
+                </motion.div>
+
+                {/* Microsoft Login Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9, duration: 0.5 }}
+                >
+                  <Button
+                    type="button"
+                    onClick={handleMicrosoftLogin}
+                    variant="outline"
+                    className="w-full h-12 bg-slate-800/50 hover:bg-slate-800 border-slate-700/50 text-white rounded-xl"
+                    data-testid="button-microsoft-login"
+                  >
+                    <SiMicrosoft className="w-5 h-5 mr-2" />
+                    Entrar com Microsoft
+                  </Button>
+                </motion.div>
               </form>
 
-              {/* Divider */}
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-slate-500">Precisa de ajuda?</span>
-                </div>
-              </div>
-
-              {/* Support */}
-              <div className="text-center">
-                <p className="text-sm text-slate-600">
-                  Entre em contato com o{" "}
-                  <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                    suporte técnico
-                  </a>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Footer */}
-          <div className="text-center mt-8">
-            <p className="text-xs text-slate-500">
-              © 2025 Acelera Full Facilities. Todos os direitos reservados.
-            </p>
+              {/* Sign Up Link */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1, duration: 0.5 }}
+                className="mt-6 text-center text-sm text-slate-400"
+              >
+                Não tem uma conta?{" "}
+                <button className="text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                  Cadastre-se
+                </button>
+              </motion.div>
+            </div>
           </div>
-        </div>
+
+          {/* Bottom Text */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1, duration: 0.5 }}
+            className="text-center mt-8 text-slate-500 text-sm"
+          >
+            © 2025 Acelera it. Plataforma de gestão de facilities.
+          </motion.p>
+        </motion.div>
       </div>
+
+      {/* Mesh gradient overlay */}
+      <div 
+        className="absolute inset-0 opacity-20 pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px'
+        }}
+      />
     </div>
   );
 }
