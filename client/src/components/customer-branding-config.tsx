@@ -140,19 +140,14 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     try {
       const brandingData: any = {};
 
-      console.log('[FRONTEND] Iniciando salvamento de logos...');
-
       // Fazer upload das logos selecionadas
       for (const [logoType, logo, apiKey] of [
         ['login', loginLogo, 'loginLogo'] as const,
         ['sidebar', sidebarLogo, 'sidebarLogo'] as const,
         ['sidebarCollapsed', sidebarCollapsedLogo, 'sidebarLogoCollapsed'] as const,
       ]) {
-        console.log(`[FRONTEND] Processando ${apiKey}:`, { hasFile: !!logo.file, previewUrl: logo.previewUrl });
-        
         if (logo.file) {
           // Upload da logo
-          console.log(`[FRONTEND] Fazendo upload de ${apiKey}...`);
           const reader = new FileReader();
           const base64Data = await new Promise<string>((resolve, reject) => {
             reader.onloadend = () => resolve(reader.result as string);
@@ -167,16 +162,12 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
           });
 
           const uploadResponse = await uploadResponseRaw.json();
-          console.log(`[FRONTEND] Upload de ${apiKey} retornou:`, uploadResponse);
           brandingData[apiKey] = uploadResponse.path;
         } else if (logo.previewUrl === null) {
           // Logo foi removida
-          console.log(`[FRONTEND] Removendo ${apiKey}`);
           brandingData[apiKey] = null;
         }
       }
-
-      console.log('[FRONTEND] Dados de branding a serem salvos:', brandingData);
 
       // Salvar branding data
       if (Object.keys(brandingData).length > 0) {
