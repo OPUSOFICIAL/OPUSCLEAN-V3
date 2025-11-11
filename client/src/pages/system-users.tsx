@@ -16,6 +16,7 @@ import { Users, Plus, Edit, Trash2, Shield, Building2, KeyRound } from 'lucide-r
 import usePermissions from '@/hooks/usePermissions';
 import { useModule, MODULE_CONFIGS } from '@/contexts/ModuleContext';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/hooks/useAuth';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username é obrigatório'),
@@ -46,6 +47,7 @@ export default function SystemUsers() {
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const { currentModule } = useModule();
+  const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -85,14 +87,15 @@ export default function SystemUsers() {
   }
 
   // Buscar apenas usuários OPUS (tipo opus_user)
-  const OPUS_COMPANY_ID = "de722500-9ce3-4b13-8a1d-cddcb168551e";
+  const userCompanyId = currentUser?.companyId || "company-admin-default";
+  
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/system-users'],
   });
 
   // Buscar todos os clientes disponíveis
   const { data: availableCustomers = [] } = useQuery({
-    queryKey: ['/api/companies', OPUS_COMPANY_ID, 'customers'],
+    queryKey: ['/api/companies', userCompanyId, 'customers'],
     enabled: isCreateDialogOpen,
   });
 
@@ -107,7 +110,7 @@ export default function SystemUsers() {
       await apiRequest('POST', '/api/system-users', {
         ...data,
         userType: 'opus_user',
-        companyId: OPUS_COMPANY_ID,
+        companyId: userCompanyId,
       });
     },
     onSuccess: () => {
