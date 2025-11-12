@@ -1114,14 +1114,21 @@ export default function Checklists() {
                           if (siteIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
                           
                           const siteNames = getSiteNames(siteIds);
+                          const displayNames = siteNames.slice(0, 2);
+                          const remainingCount = siteNames.length - 2;
                           
                           return (
                             <div className="flex items-center gap-1 flex-wrap">
-                              {siteNames.map((siteName, idx) => (
+                              {displayNames.map((siteName, idx) => (
                                 <Badge key={idx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                   {siteName}
                                 </Badge>
                               ))}
+                              {remainingCount > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{remainingCount}
+                                </Badge>
+                              )}
                             </div>
                           );
                         })()}
@@ -1132,14 +1139,21 @@ export default function Checklists() {
                           if (zoneIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
                           
                           const zoneNames = getZoneNames(zoneIds);
+                          const displayNames = zoneNames.slice(0, 2);
+                          const remainingCount = zoneNames.length - 2;
                           
                           return (
                             <div className="flex items-center gap-1 flex-wrap">
-                              {zoneNames.map((zoneName, idx) => (
+                              {displayNames.map((zoneName, idx) => (
                                 <Badge key={idx} variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
                                   {zoneName}
                                 </Badge>
                               ))}
+                              {remainingCount > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{remainingCount}
+                                </Badge>
+                              )}
                             </div>
                           );
                         })()}
