@@ -364,11 +364,23 @@ export default function Checklists() {
 
   const handleEdit = (checklist: any) => {
     setEditingChecklist(checklist);
+    
+    // Filtrar apenas sites e zonas válidos do cliente atual
+    const allSiteIds = checklist.siteIds || (checklist.siteId ? [String(checklist.siteId)] : []);
+    const validSiteIds = allSiteIds.filter((id: string) => 
+      (sites as any[])?.some(s => s.id === id)
+    );
+    
+    const allZoneIds = checklist.zoneIds || (checklist.zoneId ? [String(checklist.zoneId)] : []);
+    const validZoneIds = allZoneIds.filter((id: string) => 
+      (allZones as any[])?.some(z => z.id === id)
+    );
+    
     setChecklistForm({
       name: checklist.name,
       description: checklist.description,
-      siteIds: checklist.siteIds || (checklist.siteId ? [String(checklist.siteId)] : []),
-      zoneIds: checklist.zoneIds || (checklist.zoneId ? [String(checklist.zoneId)] : []),
+      siteIds: validSiteIds,
+      zoneIds: validZoneIds,
       serviceId: checklist.serviceId || "",
       items: checklist.items
     });
@@ -451,18 +463,22 @@ export default function Checklists() {
   // Helper functions to get names for table display
   const getSiteNames = (siteIds: string[]) => {
     if (!siteIds || siteIds.length === 0) return [];
-    return siteIds.map(id => {
-      const site = (sites as any[])?.find(s => s.id === id);
-      return site ? site.name : id;
-    });
+    return siteIds
+      .map(id => {
+        const site = (sites as any[])?.find(s => s.id === id);
+        return site ? site.name : null;
+      })
+      .filter(Boolean); // Remove sites inválidos (de outros clientes)
   };
 
   const getZoneNames = (zoneIds: string[]) => {
     if (!zoneIds || zoneIds.length === 0) return [];
-    return zoneIds.map(id => {
-      const zone = (allZones as any[])?.find(z => z.id === id);
-      return zone ? zone.name : id;
-    });
+    return zoneIds
+      .map(id => {
+        const zone = (allZones as any[])?.find(z => z.id === id);
+        return zone ? zone.name : null;
+      })
+      .filter(Boolean); // Remove zonas inválidas (de outros clientes)
   };
 
   const getServiceName = (serviceId: string | null) => {
