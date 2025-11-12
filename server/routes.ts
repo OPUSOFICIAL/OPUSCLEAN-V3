@@ -2981,12 +2981,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create cleaning activity
-  app.post("/api/cleaning-activities", async (req, res) => {
+  // Create cleaning activity (SECURE - requires customerId in URL)
+  app.post("/api/customers/:customerId/cleaning-activities", async (req, res) => {
     try {
+      // Validate customer exists
+      const customerSites = await storage.getSitesByCustomer(req.params.customerId);
+      if (customerSites.length === 0) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+
+      const companyId = customerSites[0].companyId;
+
       // Limpar campos que podem ter valores inválidos
       const cleanedData = { 
         ...req.body,
+        customerId: req.params.customerId, // FORCE customerId from URL
+        companyId, // Ensure companyId is set
         module: req.body.module || 'clean'
       };
       
