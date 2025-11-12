@@ -2427,10 +2427,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCleaningActivity(id: string): Promise<void> {
-    // Primeiro, deletar as work orders relacionadas
+    // Passo 1: Buscar IDs das work orders relacionadas
+    const relatedWorkOrders = await db.select({ id: workOrders.id })
+      .from(workOrders)
+      .where(eq(workOrders.cleaningActivityId, id));
+    
+    const workOrderIds = relatedWorkOrders.map(wo => wo.id);
+    
+    // Passo 2: Deletar comentários das work orders (se houver)
+    if (workOrderIds.length > 0) {
+      await db.delete(workOrderComments)
+        .where(sql`${workOrderComments.workOrderId} = ANY(${workOrderIds})`);
+    }
+    
+    // Passo 3: Deletar as work orders relacionadas
     await db.delete(workOrders).where(eq(workOrders.cleaningActivityId, id));
     
-    // Depois deletar a cleaning activity
+    // Passo 4: Deletar a cleaning activity
     await db.delete(cleaningActivities).where(eq(cleaningActivities.id, id));
   }
 
@@ -2470,6 +2483,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMaintenanceActivity(id: string): Promise<void> {
+    // Passo 1: Buscar IDs das work orders relacionadas
+    const relatedWorkOrders = await db.select({ id: workOrders.id })
+      .from(workOrders)
+      .where(eq(workOrders.maintenanceActivityId, id));
+    
+    const workOrderIds = relatedWorkOrders.map(wo => wo.id);
+    
+    // Passo 2: Deletar comentários das work orders (se houver)
+    if (workOrderIds.length > 0) {
+      await db.delete(workOrderComments)
+        .where(sql`${workOrderComments.workOrderId} = ANY(${workOrderIds})`);
+    }
+    
+    // Passo 3: Deletar as work orders relacionadas
+    await db.delete(workOrders).where(eq(workOrders.maintenanceActivityId, id));
+    
+    // Passo 4: Deletar a maintenance activity
     await db.delete(maintenanceActivities).where(eq(maintenanceActivities.id, id));
   }
 
