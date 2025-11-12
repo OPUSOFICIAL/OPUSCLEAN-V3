@@ -1704,7 +1704,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
         module: currentModule,
       };
       
-      const response = await apiRequest("POST", "/api/cleaning-activities", submitData);
+      const response = await apiRequest("POST", `/api/customers/${activeClientId}/cleaning-activities`, submitData);
       const created = await response.json();
       
       return { 
