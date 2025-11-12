@@ -388,10 +388,13 @@ export default function SystemUsers() {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button 
+              variant="default"
               onClick={() => {
                 setEditingUser(null);
                 form.reset();
               }}
+              className={theme.buttons.primary}
+              style={theme.buttons.primaryStyle}
               data-testid="button-create-system-user"
             >
               <Plus className="h-4 w-4 mr-2" />

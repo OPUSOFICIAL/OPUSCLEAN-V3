@@ -389,3 +389,10 @@
 [x] 329. Found 50+ additional buttons across pages that need standardization (cleaning-schedule, customers, services, etc)
 [x] 330. Prioritized and fixed main header/action buttons first for immediate visual consistency
 [x] 331. Restarted application - All priority button colors now standardized and visible
+
+## UI FIX - System Users Button (12/11/2025 10:35 PM)
+[x] 332. User reported: "Novo Usuário do Sistema" button is invisible on system-users.tsx page
+[x] 333. Fixed: Added variant="default" to button (line 394)
+[x] 334. Fixed: Added className={theme.buttons.primary} (line 399)
+[x] 335. Fixed: Added style={theme.buttons.primaryStyle} (line 400)
+[x] 336. Restarted application - System users button now visible with correct theme colors
