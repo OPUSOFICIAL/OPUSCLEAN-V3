@@ -8,5 +8,13 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Pool de conexões PostgreSQL
+// Configurável via variáveis de ambiente para otimização em VM
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: parseInt(process.env.PGPOOL_MAX || '10'),
+  idleTimeoutMillis: parseInt(process.env.PGPOOL_IDLE_TIMEOUT || '30000'),
+  connectionTimeoutMillis: parseInt(process.env.PGPOOL_CONNECTION_TIMEOUT || '10000'),
+});
+
 export const db = drizzle({ client: pool, schema });

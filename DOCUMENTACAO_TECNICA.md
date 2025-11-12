@@ -43,12 +43,12 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                        BACKEND                               │
 │     Express.js + TypeScript + Passport.js + JWT            │
-│     ORM: Drizzle + Database: PostgreSQL (Neon)             │
+│     ORM: Drizzle + Database: PostgreSQL (VM)               │
 └─────────────────────────────────────────────────────────────┘
                               ↕
 ┌─────────────────────────────────────────────────────────────┐
 │                    BANCO DE DADOS                            │
-│              PostgreSQL (hospedado no Neon)                  │
+│              PostgreSQL (self-hosted em VM)                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,7 +70,8 @@
 - **Framework:** Express.js
 - **Linguagem:** TypeScript
 - **ORM:** Drizzle ORM
-- **Database:** PostgreSQL (Neon)
+- **Database:** PostgreSQL (self-hosted em VM)
+- **Driver:** pg (node-postgres)
 - **Autenticação:** Passport.js (Local + Microsoft SSO)
 - **Tokens:** JWT (jsonwebtoken)
 - **Hash de Senhas:** Bcrypt.js
@@ -1060,47 +1061,221 @@ app.get('/api/customers', async (req, res) => {
 
 ### 3.6 Configuração do Banco de Dados
 
+**Stack de Banco de Dados:** PostgreSQL puro (self-hosted em VM)
+
 **Localização:** `server/db.ts`
 
 ```typescript
-import { drizzle } from 'drizzle-orm/neon-http';
-import { neon } from '@neondatabase/serverless';
-import * as schema from '../shared/schema';
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as schema from "@shared/schema";
 
-// Conexão com Neon PostgreSQL
-const sql = neon(process.env.DATABASE_URL!);
+// Validação da DATABASE_URL
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
+}
 
-// Cliente Drizzle
-export const db = drizzle(sql, { schema });
+// Pool de conexões PostgreSQL
+// Configurável via variáveis de ambiente para otimização em VM
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: parseInt(process.env.PGPOOL_MAX || '10'),
+  idleTimeoutMillis: parseInt(process.env.PGPOOL_IDLE_TIMEOUT || '30000'),
+  connectionTimeoutMillis: parseInt(process.env.PGPOOL_CONNECTION_TIMEOUT || '10000'),
+});
+
+// Cliente Drizzle ORM
+export const db = drizzle({ client: pool, schema });
+```
+
+**Configuração de Pool (Variáveis de Ambiente):**
+
+| Variável | Descrição | Default | Recomendado VM |
+|----------|-----------|---------|----------------|
+| `PGPOOL_MAX` | Máximo de conexões simultâneas | 10 | 10-20 |
+| `PGPOOL_IDLE_TIMEOUT` | Tempo de inatividade antes de fechar (ms) | 30000 | 30000 |
+| `PGPOOL_CONNECTION_TIMEOUT` | Timeout para criar conexão (ms) | 10000 | 10000 |
+
+**Formato DATABASE_URL:**
+```bash
+# Formato padrão PostgreSQL
+postgres://username:password@host:5432/database_name
+
+# Exemplo de desenvolvimento
+postgres://postgres:postgres@localhost:5432/acelera_dev
+
+# Exemplo de produção VM
+postgres://acelera_user:senha_forte@10.0.0.5:5432/acelera_prod
 ```
 
 **Drizzle Config:** `drizzle.config.ts`
 ```typescript
 import { defineConfig } from 'drizzle-kit';
 
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL, ensure the database is provisioned");
+}
+
 export default defineConfig({
-  schema: './shared/schema.ts',
-  out: './drizzle',
-  dialect: 'postgresql',
+  out: "./migrations",
+  schema: "./shared/schema.ts",
+  dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: process.env.DATABASE_URL,
   },
 });
 ```
 
 **Comandos Drizzle:**
 ```bash
-# Gerar migrations
-npm run db:generate
-
-# Aplicar migrations (push direto)
+# Push schema direto (desenvolvimento)
 npm run db:push
 
-# Aplicar migrations com força (sobrescreve)
+# Push schema com força (sobrescreve)
 npm run db:push --force
 
-# Studio (UI visual)
-npm run db:studio
+# Popular banco com dados iniciais
+npm run db:seed
+
+# Importar dump SQL
+npm run db:import
+```
+
+---
+
+### 3.7 Deployment em VM (PostgreSQL Puro)
+
+#### Pré-requisitos da VM
+
+1. **PostgreSQL 12+** instalado e rodando
+2. **Extensões necessárias:**
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+   ```
+3. **Usuário e database criados:**
+   ```sql
+   CREATE USER acelera_user WITH PASSWORD 'senha_forte';
+   CREATE DATABASE acelera_prod OWNER acelera_user;
+   GRANT ALL PRIVILEGES ON DATABASE acelera_prod TO acelera_user;
+   ```
+
+#### Variáveis de Ambiente (.env)
+
+```bash
+# Database
+DATABASE_URL=postgres://acelera_user:senha_forte@localhost:5432/acelera_prod
+
+# Pool Configuration (opcional - ajustar para carga esperada)
+PGPOOL_MAX=20
+PGPOOL_IDLE_TIMEOUT=30000
+PGPOOL_CONNECTION_TIMEOUT=10000
+
+# Encryption
+ENCRYPTION_KEY=<chave_secreta_32_caracteres>
+
+# Session
+SESSION_SECRET=<chave_secreta_sessao>
+
+# Environment
+NODE_ENV=production
+PORT=5000
+```
+
+#### Passos de Deploy
+
+1. **Clonar repositório e instalar dependências:**
+   ```bash
+   git clone <repo_url>
+   cd acelera-full-facilities
+   npm install
+   npm run build
+   ```
+
+2. **Configurar variáveis de ambiente:**
+   ```bash
+   cp .env.example .env
+   nano .env  # Configurar DATABASE_URL e outras variáveis
+   ```
+
+3. **Restaurar backup do banco (se migração):**
+   ```bash
+   # Ver seção 3.7.1 abaixo
+   ```
+
+4. **Aplicar schema Drizzle:**
+   ```bash
+   npm run db:push
+   ```
+
+5. **Popular dados iniciais (se novo banco):**
+   ```bash
+   npm run db:seed
+   ```
+
+6. **Iniciar aplicação:**
+   ```bash
+   npm start
+   ```
+
+#### 3.7.1 Backup & Restore
+
+**Dump Atual Disponível:**
+- **Arquivo:** `attached_assets/database-dump-vm-20251112.sql` (555KB)
+- **Formato:** SQL puro (--format=plain)
+- **Características:** Sem owner/privileges (portável)
+
+**Criar novo dump:**
+```bash
+# Dump completo
+pg_dump --file=backup-$(date +%Y%m%d).sql \
+        --format=plain \
+        --no-owner \
+        --no-privileges \
+        "$DATABASE_URL"
+
+# Verificar tamanho
+ls -lh backup-*.sql
+```
+
+**Restaurar dump em novo banco:**
+```bash
+# 1. Criar database vazio
+createdb -U postgres acelera_prod
+
+# 2. Restaurar dump
+psql "$DATABASE_URL" < attached_assets/database-dump-vm-20251112.sql
+
+# 3. Validar schema com Drizzle
+npm run db:push
+
+# 4. Verificar dados
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM customers;"
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM users;"
+```
+
+**Validação Pós-Restore:**
+```bash
+# Verificar tabelas criadas
+psql "$DATABASE_URL" -c "\dt"
+
+# Verificar extensões
+psql "$DATABASE_URL" -c "\dx"
+
+# Testar aplicação
+npm start
+# Acessar http://localhost:5000 e fazer login
+```
+
+**Backup Automático (Recomendado):**
+```bash
+# Adicionar ao crontab para backup diário às 2h
+0 2 * * * pg_dump --file=/backups/acelera-$(date +\%Y\%m\%d).sql \
+                  --format=plain \
+                  --no-owner \
+                  --no-privileges \
+                  "postgres://acelera_user:senha@localhost:5432/acelera_prod"
 ```
 
 ---
@@ -2704,14 +2879,20 @@ npm run build
 #### Criação Inicial
 
 ```bash
-# 1. Criar database no Replit (PostgreSQL via Neon)
-# Automaticamente cria variáveis DATABASE_URL, PGHOST, etc.
+# 1. Criar database PostgreSQL na VM
+# Ver seção 3.7 para instruções detalhadas de setup
 
-# 2. Aplicar schema
+# 2. Configurar DATABASE_URL no .env
+# Exemplo: postgres://user:pass@localhost:5432/acelera_prod
+
+# 3. Aplicar schema
 npm run db:push
 
-# 3. (Opcional) Importar dados
-npm run db:import
+# 4. (Opcional) Importar dump existente
+psql $DATABASE_URL < attached_assets/database-dump-vm-20251112.sql
+
+# 5. (Opcional) Popular dados iniciais
+npm run db:seed
 ```
 
 #### Migrations
