@@ -755,21 +755,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get zones by multiple sites for a specific customer (with validation)
+  // Get zones for a customer (all zones or filtered by sites)
   app.get("/api/customers/:customerId/zones", async (req, res) => {
     try {
       const { customerId } = req.params;
       const { siteIds, module } = req.query;
-      
-      if (!siteIds) {
-        return res.status(400).json({ message: "siteIds parameter is required" });
-      }
-      
-      const siteIdArray = typeof siteIds === 'string' ? siteIds.split(',') : [];
       const moduleParam = module as 'clean' | 'maintenance' | undefined;
       
-      // Validate that all sites belong to the customer
+      // Get all customer sites first
       const customerSites = await storage.getSitesByCustomer(customerId, moduleParam);
+      
+      // If no siteIds provided, return zones from ALL customer sites
+      if (!siteIds) {
+        const allZones = [];
+        for (const site of customerSites) {
+          const zones = await storage.getZonesBySite(site.id, moduleParam);
+          allZones.push(...zones);
+        }
+        return res.json(allZones);
+      }
+      
+      // If siteIds provided, validate and return zones from specified sites only
+      const siteIdArray = typeof siteIds === 'string' ? siteIds.split(',') : [];
       const validSiteIds = new Set(customerSites.map(site => site.id));
       
       const invalidSites = siteIdArray.filter(siteId => !validSiteIds.has(siteId.trim()));
