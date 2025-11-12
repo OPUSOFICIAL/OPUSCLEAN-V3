@@ -249,6 +249,7 @@ export const cleaningActivities = pgTable("cleaning_activities", {
 export const checklistTemplates = pgTable("checklist_templates", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").references(() => customers.id),
   serviceId: varchar("service_id").references(() => services.id),
   siteId: varchar("site_id").references(() => sites.id),
   name: varchar("name").notNull(),
