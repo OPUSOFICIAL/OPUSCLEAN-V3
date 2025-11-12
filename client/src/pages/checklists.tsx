@@ -58,27 +58,28 @@ function MultiSelect({
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Label className="text-slate-700 font-medium">{label}</Label>
+      <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
+            type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between"
+            className="w-full justify-between bg-white hover:bg-slate-50 border-slate-300 text-slate-900"
             disabled={disabled}
             data-testid={dataTestId}
           >
-            <span className="truncate">
-              {selectedLabels || placeholder || "Selecione..."}
+            <span className="truncate text-left">
+              {selectedLabels || <span className="text-slate-500">{placeholder || "Selecione..."}</span>}
             </span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-white border border-slate-200 shadow-lg z-[100]" align="start" sideOffset={4}>
           <div className="max-h-64 overflow-auto p-2">
             {options.length === 0 ? (
-              <div className="p-2 text-sm text-muted-foreground">
+              <div className="p-2 text-sm text-slate-500">
                 {placeholder || "Sem opções"}
               </div>
             ) : (
@@ -86,14 +87,15 @@ function MultiSelect({
                 {options.map((option) => (
                   <div
                     key={option.value}
-                    className="flex items-center space-x-2 p-2 hover:bg-accent rounded-sm cursor-pointer"
+                    className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-sm cursor-pointer transition-colors"
                     onClick={() => toggleOption(option.value)}
                   >
                     <Checkbox
                       checked={value.includes(option.value)}
                       onCheckedChange={() => toggleOption(option.value)}
+                      className="border-slate-300"
                     />
-                    <label className="flex-1 cursor-pointer text-sm">
+                    <label className="flex-1 cursor-pointer text-sm text-slate-700">
                       {option.label}
                     </label>
                   </div>
