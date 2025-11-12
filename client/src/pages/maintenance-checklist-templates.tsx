@@ -189,16 +189,16 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
   // Fetch zones based on selected sites
   const { data: zones = [] } = useQuery({
-    queryKey: ["/api/zones", (templateForm.siteIds || []).join(","), { module: currentModule }],
-    enabled: Array.isArray(templateForm.siteIds) && templateForm.siteIds.length > 0,
+    queryKey: ["/api/customers", customerId, "zones", (templateForm.siteIds || []).join(","), { module: currentModule }],
+    enabled: !!customerId && Array.isArray(templateForm.siteIds) && templateForm.siteIds.length > 0,
     refetchOnMount: true,
     queryFn: async () => {
       const ids = templateForm.siteIds;
-      if (!ids || ids.length === 0) return [];
+      if (!ids || ids.length === 0 || !customerId) return [];
       const qs = new URLSearchParams();
       qs.set("siteIds", ids.join(","));
       qs.set("module", currentModule);
-      const res = await fetch(`/api/zones?${qs.toString()}`);
+      const res = await fetch(`/api/customers/${customerId}/zones?${qs.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch zones');
       return res.json();
     },

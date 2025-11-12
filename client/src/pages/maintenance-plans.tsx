@@ -1736,16 +1736,16 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
 
   // Fetch zones based on selected sites
   const { data: zones = [] } = useQuery({
-    queryKey: ["/api/zones", (formData.siteIds || []).join(","), { module: currentModule }],
-    enabled: Array.isArray(formData.siteIds) && formData.siteIds.length > 0,
+    queryKey: ["/api/customers", activeClientId, "zones", (formData.siteIds || []).join(","), { module: currentModule }],
+    enabled: !!activeClientId && Array.isArray(formData.siteIds) && formData.siteIds.length > 0,
     refetchOnMount: true,
     queryFn: async () => {
       const ids = formData.siteIds;
-      if (!ids || ids.length === 0) return [];
+      if (!ids || ids.length === 0 || !activeClientId) return [];
       const qs = new URLSearchParams();
       qs.set("siteIds", ids.join(","));
       qs.set("module", currentModule);
-      const res = await fetch(`/api/zones?${qs.toString()}`);
+      const res = await fetch(`/api/customers/${activeClientId}/zones?${qs.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch zones');
       return res.json();
     },

@@ -755,7 +755,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get zones by multiple sites
+  // Get zones by multiple sites for a specific customer (with validation)
+  app.get("/api/customers/:customerId/zones", async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const { siteIds, module } = req.query;
+      
+      if (!siteIds) {
+        return res.status(400).json({ message: "siteIds parameter is required" });
+      }
+      
+      const siteIdArray = typeof siteIds === 'string' ? siteIds.split(',') : [];
+      const moduleParam = module as 'clean' | 'maintenance' | undefined;
+      
+      // Validate that all sites belong to the customer
+      const customerSites = await storage.getSitesByCustomer(customerId, moduleParam);
+      const validSiteIds = new Set(customerSites.map(site => site.id));
+      
+      const invalidSites = siteIdArray.filter(siteId => !validSiteIds.has(siteId.trim()));
+      if (invalidSites.length > 0) {
+        return res.status(403).json({ 
+          message: "One or more sites do not belong to this customer",
+          invalidSites 
+        });
+      }
+      
+      const allZones = [];
+      for (const siteId of siteIdArray) {
+        const zones = await storage.getZonesBySite(siteId.trim(), moduleParam);
+        allZones.push(...zones);
+      }
+      
+      res.json(allZones);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get zones" });
+    }
+  });
+
+  // Get zones by multiple sites (DEPRECATED - use /api/customers/:customerId/zones instead)
   app.get("/api/zones", async (req, res) => {
     try {
       const { siteIds, module } = req.query;

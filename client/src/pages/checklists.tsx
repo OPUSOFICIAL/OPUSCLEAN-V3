@@ -185,11 +185,12 @@ export default function Checklists() {
 
   // Buscar zonas quando um site é selecionado
   const { data: zones = [] } = useQuery({
-    queryKey: ["/api/zones", (checklistForm.siteIds || []).join(","), { module: currentModule }],
-    enabled: Array.isArray(checklistForm.siteIds) && checklistForm.siteIds.length > 0,
+    queryKey: ["/api/customers", activeClientId, "zones", (checklistForm.siteIds || []).join(","), { module: currentModule }],
+    enabled: !!activeClientId && Array.isArray(checklistForm.siteIds) && checklistForm.siteIds.length > 0,
     queryFn: async () => {
       const ids = checklistForm.siteIds;
-      if (!ids?.length) return [];
+      if (!ids?.length || !activeClientId) return [];
+      
       if (ids.length === 1) {
         const qs = new URLSearchParams();
         qs.set("module", currentModule);
@@ -197,10 +198,12 @@ export default function Checklists() {
         if (!r.ok) throw new Error("Falha ao carregar zonas");
         return r.json();
       }
+      
+      // Use the secure endpoint with customer validation
       const qs = new URLSearchParams();
       qs.set("siteIds", ids.join(","));
       qs.set("module", currentModule);
-      const r = await fetch(`/api/zones?${qs.toString()}`);
+      const r = await fetch(`/api/customers/${activeClientId}/zones?${qs.toString()}`);
       if (!r.ok) throw new Error("Falha ao carregar zonas");
       return r.json();
     }
