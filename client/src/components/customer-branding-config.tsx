@@ -45,6 +45,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
   const [sidebarLogo, setSidebarLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.sidebarLogo || null });
   const [sidebarCollapsedLogo, setSidebarCollapsedLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.sidebarLogoCollapsed || null });
   const [homeLogo, setHomeLogo] = useState<LogoPreview>({ file: null, previewUrl: customer.homeLogo || null });
+  const [favicon, setFavicon] = useState<LogoPreview>({ file: null, previewUrl: (customer as any).favicon || null });
   
   const [isSavingLogos, setIsSavingLogos] = useState(false);
   
@@ -52,6 +53,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
   const sidebarLogoRef = useRef<HTMLInputElement>(null);
   const sidebarCollapsedRef = useRef<HTMLInputElement>(null);
   const homeLogoRef = useRef<HTMLInputElement>(null);
+  const faviconRef = useRef<HTMLInputElement>(null);
 
   // Resetar previews quando o diálogo abrir ou o cliente mudar
   useEffect(() => {
@@ -60,6 +62,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       setSidebarLogo({ file: null, previewUrl: customer.sidebarLogo || null });
       setSidebarCollapsedLogo({ file: null, previewUrl: customer.sidebarLogoCollapsed || null });
       setHomeLogo({ file: null, previewUrl: customer.homeLogo || null });
+      setFavicon({ file: null, previewUrl: (customer as any).favicon || null });
       setModuleColors((customer.moduleColors as ModuleColors) || {});
     }
   }, [open, customer]);
@@ -71,6 +74,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
       if (sidebarLogo.previewUrl && sidebarLogo.file) URL.revokeObjectURL(sidebarLogo.previewUrl);
       if (sidebarCollapsedLogo.previewUrl && sidebarCollapsedLogo.file) URL.revokeObjectURL(sidebarCollapsedLogo.previewUrl);
       if (homeLogo.previewUrl && homeLogo.file) URL.revokeObjectURL(homeLogo.previewUrl);
+      if (favicon.previewUrl && favicon.file) URL.revokeObjectURL(favicon.previewUrl);
     };
   }, []);
 
@@ -97,7 +101,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
   });
 
   const handleFileSelect = (
-    logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home',
+    logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home' | 'favicon',
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
@@ -118,20 +122,23 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     const setLogo = logoType === 'login' ? setLoginLogo : 
                     logoType === 'sidebar' ? setSidebarLogo : 
                     logoType === 'sidebarCollapsed' ? setSidebarCollapsedLogo :
+                    logoType === 'favicon' ? setFavicon :
                     setHomeLogo;
 
     setLogo({ file, previewUrl });
   };
 
-  const removeLogo = (logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home') => {
+  const removeLogo = (logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home' | 'favicon') => {
     const setLogo = logoType === 'login' ? setLoginLogo : 
                     logoType === 'sidebar' ? setSidebarLogo : 
                     logoType === 'sidebarCollapsed' ? setSidebarCollapsedLogo :
+                    logoType === 'favicon' ? setFavicon :
                     setHomeLogo;
     
     const logo = logoType === 'login' ? loginLogo :
                  logoType === 'sidebar' ? sidebarLogo :
                  logoType === 'sidebarCollapsed' ? sidebarCollapsedLogo :
+                 logoType === 'favicon' ? favicon :
                  homeLogo;
     
     // Revogar URL de preview se for um arquivo local
@@ -154,6 +161,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
         ['sidebar', sidebarLogo, 'sidebarLogo'] as const,
         ['sidebarCollapsed', sidebarCollapsedLogo, 'sidebarLogoCollapsed'] as const,
         ['home', homeLogo, 'homeLogo'] as const,
+        ['favicon', favicon, 'favicon'] as const,
       ]) {
         if (logo.file) {
           // Upload da logo
@@ -210,11 +218,12 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     updateBrandingMutation.mutate({ moduleColors });
   };
 
-  const hasLogoChanges = loginLogo.file !== null || sidebarLogo.file !== null || sidebarCollapsedLogo.file !== null || homeLogo.file !== null ||
+  const hasLogoChanges = loginLogo.file !== null || sidebarLogo.file !== null || sidebarCollapsedLogo.file !== null || homeLogo.file !== null || favicon.file !== null ||
                          (loginLogo.previewUrl === null && customer.loginLogo) ||
                          (sidebarLogo.previewUrl === null && customer.sidebarLogo) ||
                          (sidebarCollapsedLogo.previewUrl === null && customer.sidebarLogoCollapsed) ||
-                         (homeLogo.previewUrl === null && customer.homeLogo);
+                         (homeLogo.previewUrl === null && customer.homeLogo) ||
+                         (favicon.previewUrl === null && (customer as any).favicon);
 
   const LogoUploadCard = ({ 
     title, 
@@ -228,7 +237,7 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
     description: string;
     logo: LogoPreview;
     inputRef: React.RefObject<HTMLInputElement>;
-    logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home';
+    logoType: 'login' | 'sidebar' | 'sidebarCollapsed' | 'home' | 'favicon';
     recommendedSize: string;
   }) => (
     <Card>
@@ -342,6 +351,15 @@ export function CustomerBrandingConfig({ customer, open, onOpenChange }: Custome
               inputRef={homeLogoRef}
               logoType="home"
               recommendedSize="300x100px"
+            />
+
+            <LogoUploadCard
+              title="Favicon"
+              description="Ícone exibido na aba do navegador"
+              logo={favicon}
+              inputRef={faviconRef}
+              logoType="favicon"
+              recommendedSize="32x32px ou 16x16px (formato .ico, .png)"
             />
           </TabsContent>
 

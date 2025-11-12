@@ -103,6 +103,7 @@ export const customers = pgTable("customers", {
   sidebarLogo: text("sidebar_logo"),
   sidebarLogoCollapsed: text("sidebar_logo_collapsed"),
   homeLogo: text("home_logo"),
+  favicon: text("favicon"),
   moduleColors: jsonb("module_colors"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),

@@ -2539,8 +2539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "logoType, imageData, and fileName are required" });
       }
       
-      if (!['loginLogo', 'sidebarLogo', 'sidebarLogoCollapsed', 'homeLogo'].includes(logoType)) {
-        return res.status(400).json({ message: "Invalid logoType. Must be one of: loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo" });
+      if (!['loginLogo', 'sidebarLogo', 'sidebarLogoCollapsed', 'homeLogo', 'favicon'].includes(logoType)) {
+        return res.status(400).json({ message: "Invalid logoType. Must be one of: loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, favicon" });
       }
       
       // Import fs promises
@@ -2587,6 +2587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sidebarLogo: customers.sidebarLogo,
           sidebarLogoCollapsed: customers.sidebarLogoCollapsed,
           homeLogo: customers.homeLogo,
+          favicon: customers.favicon,
           moduleColors: customers.moduleColors
         })
         .from(customers)
@@ -2626,6 +2627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sidebarLogo: customer.sidebarLogo,
         sidebarLogoCollapsed: customer.sidebarLogoCollapsed,
         homeLogo: customer.homeLogo,
+        favicon: customer.favicon,
         moduleColors: customer.moduleColors,
       });
     } catch (error) {

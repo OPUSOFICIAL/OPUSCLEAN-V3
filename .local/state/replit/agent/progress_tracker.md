@@ -396,3 +396,14 @@
 [x] 334. Fixed: Added className={theme.buttons.primary} (line 399)
 [x] 335. Fixed: Added style={theme.buttons.primaryStyle} (line 400)
 [x] 336. Restarted application - System users button now visible with correct theme colors
+
+## FEATURE - Favicon Upload Functionality (12/11/2025 11:07 PM)
+[x] 337. User requested: Add favicon upload functionality to customer logos management section
+[x] 338. Added favicon field to customers schema (shared/schema.ts line 109)
+[x] 339. Created favicon column in database using SQL: ALTER TABLE customers ADD COLUMN IF NOT EXISTS favicon TEXT
+[x] 340. Updated /api/customers/:id/upload-logo route to accept 'favicon' as valid logoType (server/routes.ts line 2545)
+[x] 341. Updated public branding routes to include favicon in response (/api/public/branding/:subdomain and /api/public/customer-by-subdomain/:subdomain)
+[x] 342. Added favicon state, ref, and handlers to customer-branding-config.tsx component
+[x] 343. Added LogoUploadCard for favicon in UI with recommended size 32x32px or 16x16px
+[x] 344. Integrated favicon into upload/remove/save logo workflows
+[x] 345. Restarted application - Favicon upload feature now fully functional
