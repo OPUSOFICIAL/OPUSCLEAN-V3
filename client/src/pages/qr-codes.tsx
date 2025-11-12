@@ -518,9 +518,12 @@ export default function QrCodes() {
                     Limpar
                   </Button>
                   <Button 
+                    variant="default"
                     size="sm" 
                     onClick={downloadMultiplePDF}
                     disabled={isGeneratingPDF}
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                   >
                     {isGeneratingPDF ? (
                       <>
@@ -651,7 +654,9 @@ export default function QrCodes() {
 
                         {/* Botões */}
                         <Button 
-                          className="w-full"
+                          variant="default"
+                          className={cn("w-full", theme.buttons.primary)}
+                          style={theme.buttons.primaryStyle}
                           size="sm"
                           onClick={() => downloadPDF(point)}
                         >
