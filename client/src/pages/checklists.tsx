@@ -484,6 +484,13 @@ export default function Checklists() {
           : 'Gerencie checklists para padronizar ordens de serviço'
         }
         icon={List}
+        stats={[
+          {
+            label: "Total de Checklists",
+            value: Array.isArray(checklists) ? checklists.length : 0,
+            icon: FileText
+          }
+        ]}
         actions={
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
@@ -1010,7 +1017,7 @@ export default function Checklists() {
                 <FileText className={cn("w-6 h-6", theme.text.primary)} />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-600">Total de Checklists</p>
+                <p className="text-sm font-medium text-slate-600">Total de Templates</p>
                 <p className={cn("text-3xl font-bold", theme.text.primary)}>
                   {Array.isArray(checklists) ? checklists.length : 0}
                 </p>
