@@ -70,48 +70,6 @@ export function ModernPageHeader({
               </div>
             )}
           </div>
-          
-          {/* Stats cards */}
-          {stats && stats.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.map((stat, idx) => {
-                const StatIcon = stat.icon;
-                return (
-                  <div
-                    key={idx}
-                    className={cn(
-                      "backdrop-blur-xl bg-white/80 rounded-xl p-4 border",
-                      theme.borders.light,
-                      theme.shadows.card,
-                      "transition-all duration-300 hover:scale-105"
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-slate-600 font-medium">
-                        {stat.label}
-                      </span>
-                      {StatIcon && (
-                        <StatIcon className="w-4 h-4" style={theme.text.primaryStyle} />
-                      )}
-                    </div>
-                    <div className="flex items-end gap-2">
-                      <span className="text-2xl font-bold text-slate-700">
-                        {stat.value}
-                      </span>
-                      {stat.trend && (
-                        <span className={cn(
-                          "text-xs font-medium",
-                          stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                        )}>
-                          {stat.trend === 'up' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
     </div>
