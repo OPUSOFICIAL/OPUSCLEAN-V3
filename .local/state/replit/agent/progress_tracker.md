@@ -376,3 +376,10 @@
 [x] 318. Restarted workflow - Express server running on port 5000
 [x] 319. Verified monthly scheduler activated
 [x] 320. ✅ DATABASE IMPORT COMPLETED SUCCESSFULLY - System ready with complete production dataset
+
+## UI FIX - Equipment Page Button Colors (12/11/2025 10:25 PM)
+[x] 321. User reported: "Atualizar" button has invisible colors on Equipment page
+[x] 322. Fixed: Added variant="default" to refresh button (line 293)
+[x] 323. Fixed: Added style={theme.buttons.primaryStyle} to refresh button (line 296)
+[x] 324. Button now matches other buttons with correct theme colors
+[x] 325. Restarted application - Equipment page button colors fixed

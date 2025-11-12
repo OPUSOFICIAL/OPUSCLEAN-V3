@@ -287,8 +287,10 @@ export default function Equipment({ customerId }: EquipmentProps) {
         ]}
         actions={
           <Button 
+            variant="default"
             onClick={handleRefresh}
             className={cn("flex items-center gap-2", theme.buttons.primary)}
+            style={theme.buttons.primaryStyle}
             size="sm"
             disabled={isRefreshing}
             data-testid="button-refresh-equipment"
