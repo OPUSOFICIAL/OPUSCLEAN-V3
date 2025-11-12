@@ -87,15 +87,18 @@ function MultiSelect({
                 {options.map((option) => (
                   <div
                     key={option.value}
-                    className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-sm cursor-pointer transition-colors"
-                    onClick={() => toggleOption(option.value)}
+                    className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-sm transition-colors"
                   >
                     <Checkbox
+                      id={`checkbox-${option.value}`}
                       checked={value.includes(option.value)}
                       onCheckedChange={() => toggleOption(option.value)}
-                      className="border-slate-300"
+                      className="border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                     />
-                    <label className="flex-1 cursor-pointer text-sm text-slate-700">
+                    <label 
+                      htmlFor={`checkbox-${option.value}`}
+                      className="flex-1 cursor-pointer text-sm text-slate-700 select-none"
+                    >
                       {option.label}
                     </label>
                   </div>
