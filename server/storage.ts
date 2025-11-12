@@ -1765,25 +1765,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]> {
-    // Get customer sites to determine their company
-    const customerSites = await db.select().from(sites).where(eq(sites.customerId, customerId));
-    
-    if (customerSites.length === 0) {
-      return [];
-    }
-
-    const companyId = customerSites[0].companyId;
-    const siteIds = customerSites.map(site => site.id);
-    
-    // Return checklist templates that are either:
-    // 1. Global to the company (siteId is null) 
-    // 2. Specific to this customer's sites
+    // Filter checklists by customerId for proper multi-tenant isolation
     const conditions = [
-      eq(checklistTemplates.companyId, companyId),
-      or(
-        isNull(checklistTemplates.siteId),
-        inArray(checklistTemplates.siteId, siteIds)
-      )
+      eq(checklistTemplates.customerId, customerId)
     ];
     
     if (module) {

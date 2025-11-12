@@ -316,10 +316,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the first site's company for the checklist template
       const companyId = customerSites[0].companyId;
       
-      // Keep arrays for multi-site/zone support
+      // Keep arrays for multi-site/zone support + ADD customerId for multi-tenant security
       const checklistData = { 
         ...req.body, 
         companyId,
+        customerId: req.params.customerId,
       };
       
       console.log("[CHECKLIST CREATE] Data:", JSON.stringify(checklistData, null, 2));
@@ -343,16 +344,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const companyId = customerSites[0].companyId;
       
-      // Verify the template belongs to this customer's company
+      // Verify the template belongs to this customer (multi-tenant security)
       const existingTemplate = await storage.getChecklistTemplate(req.params.id);
-      if (!existingTemplate || existingTemplate.companyId !== companyId) {
+      if (!existingTemplate || existingTemplate.customerId !== req.params.customerId) {
         return res.status(403).json({ message: "Checklist template not found or access denied" });
       }
 
-      // Keep arrays for multi-site/zone support
+      // Keep arrays for multi-site/zone support + ensure customerId stays correct
       const checklistData = { 
         ...req.body, 
         companyId,
+        customerId: req.params.customerId,
       };
       
       console.log("[CHECKLIST UPDATE] Data:", JSON.stringify(checklistData, null, 2));
@@ -366,17 +368,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/customers/:customerId/checklist-templates/:id", async (req, res) => {
     try {
-      // Validate that the customer exists and get their company
+      // Validate that the customer exists
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);
       if (customerSites.length === 0) {
         return res.status(404).json({ message: "Customer not found" });
       }
-
-      const companyId = customerSites[0].companyId;
       
-      // Verify the template belongs to this customer's company
+      // Verify the template belongs to this customer (multi-tenant security)
       const existingTemplate = await storage.getChecklistTemplate(req.params.id);
-      if (!existingTemplate || existingTemplate.companyId !== companyId) {
+      if (!existingTemplate || existingTemplate.customerId !== req.params.customerId) {
         return res.status(403).json({ message: "Checklist template not found or access denied" });
       }
 
