@@ -407,3 +407,12 @@
 [x] 343. Added LogoUploadCard for favicon in UI with recommended size 32x32px or 16x16px
 [x] 344. Integrated favicon into upload/remove/save logo workflows
 [x] 345. Restarted application - Favicon upload feature now fully functional
+
+## BUG FIX - Favicon Not Saving (12/11/2025 11:20 PM)
+[x] 346. User reported: Favicon uploads but doesn't save - not visible when reopening branding config
+[x] 347. Investigated: Verified favicon upload endpoint working (200 status)
+[x] 348. Debugged: Query showed favicon field empty in database despite successful upload
+[x] 349. Root cause: PUT /api/customers/:id/branding route missing favicon in req.body destructuring
+[x] 350. Fixed: Added favicon to destructured fields (server/routes.ts line 2482)
+[x] 351. Fixed: Added favicon to brandingUpdate object (server/routes.ts line 2489)
+[x] 352. Restarted application - Favicon now saves correctly to database
