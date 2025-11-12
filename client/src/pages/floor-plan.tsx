@@ -861,7 +861,14 @@ export default function FloorPlanPage() {
                   <Button variant="outline" onClick={() => setEditingZone(null)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleSaveZone} disabled={updateZoneMutation.isPending} data-testid="button-save-zone">
+                  <Button 
+                    variant="default"
+                    onClick={handleSaveZone} 
+                    disabled={updateZoneMutation.isPending} 
+                    data-testid="button-save-zone"
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
+                  >
                     {updateZoneMutation.isPending ? "Salvando..." : "Salvar"}
                   </Button>
                 </div>

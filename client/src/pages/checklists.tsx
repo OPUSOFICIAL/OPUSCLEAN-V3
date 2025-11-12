@@ -1019,9 +1019,12 @@ export default function Checklists() {
                       Cancelar
                     </Button>
                     <Button 
+                      variant="default"
                       onClick={handleSubmit}
                       disabled={createChecklistMutation.isPending || updateChecklistMutation.isPending}
                       data-testid="button-save-checklist"
+                      className={theme.buttons.primary}
+                      style={theme.buttons.primaryStyle}
                     >
                       {createChecklistMutation.isPending || updateChecklistMutation.isPending 
                         ? "Salvando..." 
