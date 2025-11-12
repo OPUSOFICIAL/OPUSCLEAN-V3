@@ -2476,13 +2476,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customer branding configuration
   app.put("/api/customers/:id/branding", requireManageClients, async (req, res) => {
     try {
-      const { loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, moduleColors, subdomain } = req.body;
+      const { loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, favicon, moduleColors, subdomain } = req.body;
       
       const brandingUpdate: any = {};
       if (loginLogo !== undefined) brandingUpdate.loginLogo = loginLogo;
       if (sidebarLogo !== undefined) brandingUpdate.sidebarLogo = sidebarLogo;
       if (sidebarLogoCollapsed !== undefined) brandingUpdate.sidebarLogoCollapsed = sidebarLogoCollapsed;
       if (homeLogo !== undefined) brandingUpdate.homeLogo = homeLogo;
+      if (favicon !== undefined) brandingUpdate.favicon = favicon;
       if (moduleColors !== undefined) brandingUpdate.moduleColors = moduleColors;
       
       // Normalize and validate subdomain if provided
