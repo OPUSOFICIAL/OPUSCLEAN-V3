@@ -2709,7 +2709,13 @@ export class DatabaseStorage implements IStorage {
     
     // Process each customer's activities separately with their own counter
     for (const [customerId, customerActivities] of Array.from(activitiesByCustomer.entries())) {
-      let currentNumber = await this.getNextWorkOrderNumber(customerId);
+      // CRITICAL FIX: Always get the real MAX number from database to avoid duplicates
+      const [maxResult] = await db.select({ maxNumber: sql<number>`COALESCE(MAX(${workOrders.number}), 0)` })
+        .from(workOrders)
+        .where(eq(workOrders.customerId, customerId));
+      
+      let currentNumber = (maxResult?.maxNumber || 0) + 1;
+      console.log(`[SCHEDULER] Cliente ${customerId}: Próximo número de OS será ${currentNumber}`);
       
       for (const activity of customerActivities) {
         const occurrences = this.expandOccurrences(activity, windowStart, windowEnd);
@@ -2979,9 +2985,16 @@ export class DatabaseStorage implements IStorage {
     
     // Assign numbers for each customer
     for (const [custId, customerWorkOrders] of woByCustomer.entries()) {
+      // CRITICAL FIX: Always get the real MAX number from database to avoid duplicates
+      const [maxResult] = await db.select({ maxNumber: sql<number>`COALESCE(MAX(${workOrders.number}), 0)` })
+        .from(workOrders)
+        .where(eq(workOrders.customerId, custId));
+      
+      let currentNumber = (maxResult?.maxNumber || 0) + 1;
+      console.log(`[SCHEDULER MAINTENANCE] Cliente ${custId}: Próximo número de OS será ${currentNumber}`);
+      
       for (let i = 0; i < customerWorkOrders.length; i++) {
-        const nextNumber = await this.incrementCustomerCounter(custId, 'work_order');
-        customerWorkOrders[i].number = nextNumber;
+        customerWorkOrders[i].number = currentNumber++;
       }
     }
     
