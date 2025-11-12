@@ -712,6 +712,7 @@ export default function Users({ customerId }: UsersProps) {
                     <TableHead>Usuário</TableHead>
                     <TableHead>Perfil</TableHead>
                     <TableHead>Módulos</TableHead>
+                    <TableHead>Locais</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Último Acesso</TableHead>
                     <TableHead>Ações</TableHead>
@@ -725,6 +726,28 @@ export default function Users({ customerId }: UsersProps) {
                       <TableCell className="font-mono">{user.username}</TableCell>
                       <TableCell>{getRoleBadge(user)}</TableCell>
                       <TableCell>{getModulesBadges(user)}</TableCell>
+                      <TableCell>
+                        {user.siteAssignments && user.siteAssignments.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {user.siteAssignments.slice(0, 2).map((assignment: any) => (
+                              <Badge 
+                                key={assignment.id} 
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {assignment.site?.name || 'Local'}
+                              </Badge>
+                            ))}
+                            {user.siteAssignments.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{user.siteAssignments.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {user.isActive ? (
                           <Badge className="bg-chart-2/10 text-chart-2">Ativo</Badge>
