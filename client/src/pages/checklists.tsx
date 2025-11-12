@@ -1009,23 +1009,6 @@ export default function Checklists() {
           </DialogContent>
         </Dialog>
 
-        {/* Statistics Card */}
-        <ModernCard variant="gradient" className="mb-6">
-          <ModernCardContent className="flex items-center justify-between p-6">
-            <div className="flex items-center space-x-4">
-              <div className={cn("p-3 rounded-lg", theme.backgrounds.light)}>
-                <FileText className={cn("w-6 h-6", theme.text.primary)} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total de Templates</p>
-                <p className={cn("text-3xl font-bold", theme.text.primary)}>
-                  {Array.isArray(checklists) ? checklists.length : 0}
-                </p>
-              </div>
-            </div>
-          </ModernCardContent>
-        </ModernCard>
-
         {/* Content */}
         {!Array.isArray(checklists) || checklists.length === 0 ? (
           <ModernCard variant="glass">
