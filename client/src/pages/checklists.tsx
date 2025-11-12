@@ -1125,7 +1125,7 @@ export default function Checklists() {
                                 </Badge>
                               ))}
                               {remainingCount > 0 && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300 font-medium">
                                   +{remainingCount}
                                 </Badge>
                               )}
@@ -1156,7 +1156,7 @@ export default function Checklists() {
                                 );
                               })}
                               {remainingCount > 0 && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300 font-medium">
                                   +{remainingCount}
                                 </Badge>
                               )}
