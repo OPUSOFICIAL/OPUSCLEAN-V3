@@ -1114,24 +1114,14 @@ export default function Checklists() {
                           if (siteIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
                           
                           const siteNames = getSiteNames(siteIds);
-                          if (siteIds.length === 1) {
-                            return (
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                {siteNames[0]}
-                              </Badge>
-                            );
-                          }
                           
                           return (
                             <div className="flex items-center gap-1 flex-wrap">
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                {siteNames[0]}
-                              </Badge>
-                              {siteIds.length > 1 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{siteIds.length - 1}
+                              {siteNames.map((siteName, idx) => (
+                                <Badge key={idx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  {siteName}
                                 </Badge>
-                              )}
+                              ))}
                             </div>
                           );
                         })()}
@@ -1142,31 +1132,21 @@ export default function Checklists() {
                           if (zoneIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
                           
                           const zoneNames = getZoneNames(zoneIds);
-                          if (zoneIds.length === 1) {
-                            return (
-                              <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
-                                {zoneNames[0]}
-                              </Badge>
-                            );
-                          }
                           
                           return (
                             <div className="flex items-center gap-1 flex-wrap">
-                              <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
-                                {zoneNames[0]}
-                              </Badge>
-                              {zoneIds.length > 1 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{zoneIds.length - 1}
+                              {zoneNames.map((zoneName, idx) => (
+                                <Badge key={idx} variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
+                                  {zoneName}
                                 </Badge>
-                              )}
+                              ))}
                             </div>
                           );
                         })()}
                       </TableCell>
                       <TableCell>
                         <Badge className={cn("font-semibold", theme.backgrounds.primary, "text-white")}>
-                          {Array.isArray(checklist.items) ? checklist.items.length : 0}
+                          {checklist.items && Array.isArray(checklist.items) ? checklist.items.length : 0}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
