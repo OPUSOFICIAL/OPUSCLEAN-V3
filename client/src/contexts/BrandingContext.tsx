@@ -9,6 +9,7 @@ interface BrandingConfig {
   sidebarLogo: string | null;
   sidebarLogoCollapsed: string | null;
   homeLogo: string | null;
+  favicon: string | null;
   moduleColors: {
     clean?: {
       primary: string;
@@ -70,6 +71,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
             sidebarLogo: customerData.sidebarLogo,
             sidebarLogoCollapsed: customerData.sidebarLogoCollapsed,
             homeLogo: customerData.homeLogo,
+            favicon: customerData.favicon,
             moduleColors: customerData.moduleColors,
           };
           
@@ -158,6 +160,28 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
   }, [activeClient?.id]); // React when client ID changes
 
+  // Apply favicon dynamically when branding changes
+  useEffect(() => {
+    if (branding?.favicon) {
+      console.log('[BRANDING] 🎨 Aplicando favicon:', branding.favicon);
+      
+      // Remove existing favicon link tags
+      const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+      existingFavicons.forEach(favicon => favicon.remove());
+      
+      // Create new favicon link element
+      const link = document.createElement('link');
+      link.rel = 'icon';
+      link.type = 'image/png';
+      link.href = branding.favicon;
+      
+      // Append to head
+      document.head.appendChild(link);
+    } else {
+      console.log('[BRANDING] ℹ️ Nenhum favicon personalizado, mantendo padrão');
+    }
+  }, [branding?.favicon]);
+
   // Apply branding from activeClient data (for dropdown changes)
   const applyClientBranding = (client: any) => {
     // Build branding config from client data
@@ -168,6 +192,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       sidebarLogo: client.sidebarLogo || null,
       sidebarLogoCollapsed: client.sidebarLogoCollapsed || null,
       homeLogo: client.homeLogo || null,
+      favicon: client.favicon || null,
       moduleColors: client.moduleColors || null,
     };
     
@@ -177,7 +202,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         login: brandingConfig.loginLogo,
         sidebar: brandingConfig.sidebarLogo,
         sidebarCollapsed: brandingConfig.sidebarLogoCollapsed,
-        home: brandingConfig.homeLogo
+        home: brandingConfig.homeLogo,
+        favicon: brandingConfig.favicon
       },
       colors: brandingConfig.moduleColors
     });
