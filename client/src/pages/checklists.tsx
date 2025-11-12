@@ -1139,7 +1139,7 @@ export default function Checklists() {
                           if (zoneIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
                           
                           // Use IDs únicos, não nomes (que podem duplicar)
-                          const uniqueZoneIds = [...new Set(zoneIds)];
+                          const uniqueZoneIds = Array.from(new Set(zoneIds)) as string[];
                           const totalZones = uniqueZoneIds.length;
                           const displayIds = uniqueZoneIds.slice(0, 2);
                           const remainingCount = totalZones - 2;

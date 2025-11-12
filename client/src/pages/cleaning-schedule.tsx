@@ -1738,7 +1738,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
           const date = a.startDate || a.start_date;
           return date ? new Date(date) : null;
         })
-        .filter((d: any) => d !== null);
+        .filter((d: any): d is Date => d !== null);
       
       // Validar que há pelo menos uma startDate válida
       if (startDates.length === 0) {
@@ -1752,7 +1752,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       }
       
       // windowStart = menor startDate das atividades criadas
-      const windowStart = new Date(Math.min(...startDates.map((d: Date) => d.getTime())));
+      const windowStart = new Date(Math.min(...startDates.map(d => d.getTime())));
       
       // windowEnd = final do mês atual (último dia do mês às 23:59:59)
       const now = new Date();
