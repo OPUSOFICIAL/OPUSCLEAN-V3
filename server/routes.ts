@@ -3348,14 +3348,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getOpusUsers();
       
-      // Para cada usuário, buscar seus roles customizados e remover senha
+      // Para cada usuário, buscar seus roles customizados, clientes permitidos e remover senha
       const usersWithRoles = await Promise.all(
         users.map(async (user) => {
           const roleAssignments = await storage.getUserRoleAssignments(user.id);
+          const allowedCustomers = await storage.getCustomersByUser(user.id);
           const sanitized = sanitizeUser(user);
           return {
             ...sanitized,
-            customRoles: roleAssignments
+            customRoles: roleAssignments,
+            allowedCustomers: allowedCustomers
           };
         })
       );

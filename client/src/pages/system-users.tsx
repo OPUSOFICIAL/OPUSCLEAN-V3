@@ -698,6 +698,22 @@ export default function SystemUsers() {
                                 )}
                               </div>
                             )}
+                            {(user as any).allowedCustomers && (user as any).allowedCustomers.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-xs text-muted-foreground mb-1">Clientes com acesso:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {(user as any).allowedCustomers.map((customer: any) => (
+                                    <Badge 
+                                      key={customer.id} 
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {customer.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </CardDescription>
                       </div>
