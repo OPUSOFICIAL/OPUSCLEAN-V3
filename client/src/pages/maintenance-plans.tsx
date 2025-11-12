@@ -447,8 +447,10 @@ export default function MaintenancePlans() {
               <span className="sm:hidden">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar'}</span>
             </Button>
             <Button 
+              variant="default"
               onClick={() => setShowCreateModal(true)}
               className={cn(theme.buttons.primary, "px-4")}
+              style={theme.buttons.primaryStyle}
               data-testid="button-create-activity"
             >
               <Plus className="w-4 h-4 sm:mr-2" />

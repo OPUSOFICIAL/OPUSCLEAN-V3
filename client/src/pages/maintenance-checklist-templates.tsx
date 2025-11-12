@@ -523,7 +523,9 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
         ]}
         actions={
           <Button 
+            variant="default"
             className={cn(theme.buttons.primary)}
+            style={theme.buttons.primaryStyle}
             onClick={() => setIsCreateDialogOpen(true)}
             data-testid="button-create-template"
           >
@@ -1019,8 +1021,10 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                 Crie seu primeiro template de checklist de manutenção
               </p>
               <Button 
+                variant="default"
                 onClick={() => setIsCreateDialogOpen(true)}
                 className={cn(theme.buttons.primary)}
+                style={theme.buttons.primaryStyle}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Primeiro Checklist
