@@ -832,6 +832,10 @@ export default function Users({ customerId }: UsersProps) {
                 </div>
               </div>
               <div>
+                <label className="text-xs text-muted-foreground">Módulos</label>
+                <div className="mt-1">{getModulesBadges(selectedUser)}</div>
+              </div>
+              <div>
                 <label className="text-xs text-muted-foreground">Último Acesso</label>
                 <p className="text-sm">
                   {selectedUser.lastLogin 
