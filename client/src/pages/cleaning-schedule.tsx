@@ -1781,9 +1781,20 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
         });
       } catch (error) {
         console.error("Erro ao gerar ordens:", error);
+        console.error("Detalhes do erro:", {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          stringified: JSON.stringify(error, Object.getOwnPropertyNames(error))
+        });
+        
+        let errorMessage = "As OSs precisarão ser geradas manualmente";
+        if (error instanceof Error && error.message) {
+          errorMessage = error.message;
+        }
+        
         toast({
           title: "Erro ao gerar OSs automáticas",
-          description: "As OSs precisarão ser geradas manualmente",
+          description: errorMessage,
           variant: "destructive"
         });
       }
