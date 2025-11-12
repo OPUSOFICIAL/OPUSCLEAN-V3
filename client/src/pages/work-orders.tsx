@@ -414,9 +414,19 @@ export default function WorkOrders() {
           {/* Estatísticas e Filtros Integrados */}
           <ModernCard variant="gradient">
             <ModernCardContent>
-              {/* Cards de Estatísticas */}
+              {/* Cards de Estatísticas - Clicáveis para filtrar */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setStatusFilter(statusFilter.includes('aberta') ? [] : ['aberta']);
+                  }}
+                  className={cn(
+                    "flex items-center gap-4 p-3 rounded-lg transition-all hover-elevate active-elevate-2 cursor-pointer",
+                    statusFilter.includes('aberta') && "ring-2 ring-offset-2",
+                    currentModule === 'maintenance' ? 'ring-orange-500' : 'ring-blue-500'
+                  )}
+                  data-testid="button-filter-abertas"
+                >
                   <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center", 
                     currentModule === 'maintenance' ? 'bg-orange-50' : 'bg-blue-50'
                   )}>
@@ -424,7 +434,7 @@ export default function WorkOrders() {
                       currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
                     )} />
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="text-sm text-muted-foreground font-medium">Abertas</p>
                     <p className={cn("text-3xl font-bold", 
                       currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
@@ -432,21 +442,40 @@ export default function WorkOrders() {
                       {totalAbertas}
                     </p>
                   </div>
-                </div>
+                </button>
 
-                <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setStatusFilter(statusFilter.includes('vencida') ? [] : ['vencida']);
+                  }}
+                  className={cn(
+                    "flex items-center gap-4 p-3 rounded-lg transition-all hover-elevate active-elevate-2 cursor-pointer",
+                    statusFilter.includes('vencida') && "ring-2 ring-red-500 ring-offset-2"
+                  )}
+                  data-testid="button-filter-vencidas"
+                >
                   <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center">
                     <AlertTriangle className="w-7 h-7 text-red-600" />
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="text-sm text-muted-foreground font-medium">Vencidas</p>
                     <p className="text-3xl font-bold text-red-600">
                       {totalVencidas}
                     </p>
                   </div>
-                </div>
+                </button>
 
-                <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setStatusFilter(statusFilter.includes('pausada') ? [] : ['pausada']);
+                  }}
+                  className={cn(
+                    "flex items-center gap-4 p-3 rounded-lg transition-all hover-elevate active-elevate-2 cursor-pointer",
+                    statusFilter.includes('pausada') && "ring-2 ring-offset-2",
+                    currentModule === 'maintenance' ? 'ring-orange-500' : 'ring-blue-500'
+                  )}
+                  data-testid="button-filter-pausadas"
+                >
                   <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center",
                     currentModule === 'maintenance' ? 'bg-orange-50' : 'bg-blue-50'
                   )}>
@@ -454,25 +483,34 @@ export default function WorkOrders() {
                       currentModule === 'maintenance' ? 'text-orange-600' : 'text-blue-600'
                     )} />
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="text-sm text-muted-foreground font-medium">Pausadas</p>
                     <p className="text-3xl font-bold text-foreground">
                       {totalPausadas}
                     </p>
                   </div>
-                </div>
+                </button>
 
-                <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setStatusFilter(statusFilter.includes('concluida') ? [] : ['concluida']);
+                  }}
+                  className={cn(
+                    "flex items-center gap-4 p-3 rounded-lg transition-all hover-elevate active-elevate-2 cursor-pointer",
+                    statusFilter.includes('concluida') && "ring-2 ring-green-500 ring-offset-2"
+                  )}
+                  data-testid="button-filter-concluidas"
+                >
                   <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center">
                     <CheckCircle2 className="w-7 h-7 text-green-600" />
                   </div>
-                  <div>
+                  <div className="text-left">
                     <p className="text-sm text-muted-foreground font-medium">Concluídas</p>
                     <p className="text-3xl font-bold text-green-600">
                       {totalConcluidas}
                     </p>
                   </div>
-                </div>
+                </button>
               </div>
 
               {/* Filters Row */}
