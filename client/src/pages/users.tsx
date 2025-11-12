@@ -571,9 +571,12 @@ export default function Users({ customerId }: UsersProps) {
                   Cancelar
                 </Button>
                 <Button 
+                  variant="default"
                   onClick={handleCreateUser}
                   disabled={createUserMutation.isPending}
                   data-testid="button-save-user"
+                  className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                 >
                   {createUserMutation.isPending ? "Criando..." : "Criar Usuário"}
                 </Button>
@@ -977,9 +980,12 @@ export default function Users({ customerId }: UsersProps) {
                   Cancelar
                 </Button>
                 <Button 
+                  variant="default"
                   onClick={handleUpdateUser}
                   disabled={updateUserMutation.isPending}
                   data-testid="button-save-edit"
+                  className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                 >
                   {updateUserMutation.isPending ? "Salvando..." : "Salvar Alterações"}
                 </Button>
@@ -1045,9 +1051,12 @@ export default function Users({ customerId }: UsersProps) {
                   Cancelar
                 </Button>
                 <Button 
+                  variant="default"
                   onClick={handleChangePassword}
                   disabled={resetPasswordMutation.isPending}
                   data-testid="button-save-password"
+                  className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
                 >
                   {resetPasswordMutation.isPending ? "Alterando..." : "Alterar Senha"}
                 </Button>

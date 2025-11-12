@@ -662,7 +662,14 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={createCustomerMutation.isPending} data-testid="button-submit-create-customer">
+                <Button 
+                  type="submit" 
+                  variant="default"
+                  disabled={createCustomerMutation.isPending} 
+                  data-testid="button-submit-create-customer"
+                  className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
+                >
                   {createCustomerMutation.isPending ? "Criando..." : "Criar Cliente"}
                 </Button>
               </div>
@@ -908,7 +915,14 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" variant="outline" disabled={updateCustomerMutation.isPending} data-testid="button-submit-edit-customer">
+                <Button 
+                  type="submit" 
+                  variant="default"
+                  disabled={updateCustomerMutation.isPending} 
+                  data-testid="button-submit-edit-customer"
+                  className={theme.buttons.primary}
+                  style={theme.buttons.primaryStyle}
+                >
                   {updateCustomerMutation.isPending ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </div>

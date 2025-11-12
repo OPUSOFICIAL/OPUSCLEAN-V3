@@ -326,8 +326,11 @@ export default function Roles() {
                     </Button>
                     <Button 
                       type="submit" 
+                      variant="default"
                       disabled={createRoleMutation.isPending || updateRoleMutation.isPending}
                       data-testid="button-save-role"
+                      className={theme.buttons.primary}
+                      style={theme.buttons.primaryStyle}
                     >
                       {(createRoleMutation.isPending || updateRoleMutation.isPending) ? 'Salvando...' : 'Salvar'}
                     </Button>

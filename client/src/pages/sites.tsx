@@ -427,6 +427,7 @@ export default function Sites({ customerId }: SitesProps) {
                     Cancelar
                   </Button>
                   <Button 
+                    variant="default"
                     className={theme.buttons.primary}
                     style={theme.buttons.primaryStyle}
                     onClick={handleCreateSite}
@@ -639,6 +640,7 @@ export default function Sites({ customerId }: SitesProps) {
                           Cancelar
                         </Button>
                         <Button 
+                          variant="default"
                           className={theme.buttons.primary}
                           style={theme.buttons.primaryStyle}
                           onClick={handleCreateZone}
@@ -780,6 +782,7 @@ export default function Sites({ customerId }: SitesProps) {
                   Cancelar
                 </Button>
                 <Button 
+                  variant="default"
                   className={theme.buttons.primary}
                   style={theme.buttons.primaryStyle}
                   onClick={handleUpdateSite}
@@ -876,6 +879,7 @@ export default function Sites({ customerId }: SitesProps) {
                   Cancelar
                 </Button>
                 <Button 
+                  variant="default"
                   className={theme.buttons.primary}
                   style={theme.buttons.primaryStyle}
                   onClick={handleUpdateZone}

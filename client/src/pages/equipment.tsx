@@ -503,9 +503,12 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     Cancelar
                   </Button>
                   <Button
+                    variant="default"
                     onClick={handleCreate}
                     disabled={createEquipmentMutation.isPending}
                     data-testid="button-save"
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                   >
                     {createEquipmentMutation.isPending ? "Criando..." : "Criar Equipamento"}
                   </Button>

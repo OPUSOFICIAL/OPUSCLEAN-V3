@@ -318,8 +318,11 @@ export default function Services({ customerId }: ServicesProps) {
                 <div className="flex gap-2 pt-4">
                   <Button 
                     type="submit" 
+                    variant="default"
                     data-testid="button-save-service"
                     disabled={createMutation.isPending || updateMutation.isPending}
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                   >
                     {createMutation.isPending || updateMutation.isPending ? "Salvando..." : "Salvar"}
                   </Button>
