@@ -315,7 +315,14 @@ export default function Services({ customerId }: ServicesProps) {
                   )}
                 />
 
-                <div className="flex gap-2 pt-4">
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
                   <Button 
                     type="submit" 
                     variant="default"
@@ -325,13 +332,6 @@ export default function Services({ customerId }: ServicesProps) {
                     style={theme.buttons.primaryStyle}
                   >
                     {createMutation.isPending || updateMutation.isPending ? "Salvando..." : "Salvar"}
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancelar
                   </Button>
                 </div>
               </form>
