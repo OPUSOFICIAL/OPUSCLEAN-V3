@@ -1138,17 +1138,23 @@ export default function Checklists() {
                           const zoneIds = checklist.zoneIds || (checklist.zoneId ? [checklist.zoneId] : []);
                           if (zoneIds.length === 0) return <span className="text-slate-400 text-xs">-</span>;
                           
-                          const zoneNames = getZoneNames(zoneIds);
-                          const displayNames = zoneNames.slice(0, 2);
-                          const remainingCount = zoneNames.length - 2;
+                          // Use IDs únicos, não nomes (que podem duplicar)
+                          const uniqueZoneIds = [...new Set(zoneIds)];
+                          const totalZones = uniqueZoneIds.length;
+                          const displayIds = uniqueZoneIds.slice(0, 2);
+                          const remainingCount = totalZones - 2;
                           
                           return (
                             <div className="flex items-center gap-1 flex-wrap">
-                              {displayNames.map((zoneName, idx) => (
-                                <Badge key={idx} variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
-                                  {zoneName}
-                                </Badge>
-                              ))}
+                              {displayIds.map((zoneId) => {
+                                const zone = (allZones as any[])?.find(z => z.id === zoneId);
+                                const zoneName = zone?.name || 'N/A';
+                                return (
+                                  <Badge key={zoneId} variant="outline" className="bg-sky-50 text-sky-700 border-sky-200">
+                                    {zoneName}
+                                  </Badge>
+                                );
+                              })}
                               {remainingCount > 0 && (
                                 <Badge variant="secondary" className="text-xs">
                                   +{remainingCount}
