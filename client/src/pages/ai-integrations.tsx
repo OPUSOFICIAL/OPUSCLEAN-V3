@@ -712,8 +712,11 @@ export default function AiIntegrationsPage() {
               </Button>
               <Button 
                 type="submit" 
+                variant="default"
                 disabled={createMutation.isPending || updateMutation.isPending}
                 data-testid="button-submit"
+                className={theme.buttons.primary}
+                style={theme.buttons.primaryStyle}
               >
                 {(createMutation.isPending || updateMutation.isPending) ? (
                   <>

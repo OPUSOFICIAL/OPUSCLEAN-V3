@@ -1687,6 +1687,7 @@ interface CreateMaintenanceActivityModalProps {
 
 function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: CreateMaintenanceActivityModalProps) {
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -2269,8 +2270,11 @@ function CreateMaintenanceActivityModal({ activeClientId, onClose, onSuccess }: 
             </Button>
             <Button 
               type="submit" 
+              variant="default"
               disabled={createActivityMutation.isPending}
               data-testid="button-submit"
+              className={theme.buttons.primary}
+              style={theme.buttons.primaryStyle}
             >
               {createActivityMutation.isPending ? (
                 <>

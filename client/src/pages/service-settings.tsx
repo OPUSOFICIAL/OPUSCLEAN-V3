@@ -483,8 +483,11 @@ export default function Settings() {
                             </Button>
                             <Button 
                               type="submit" 
+                              variant="default"
                               disabled={createTypeMutation.isPending || updateTypeMutation.isPending}
                               data-testid="button-save-type"
+                              className={theme.buttons.primary}
+                              style={theme.buttons.primaryStyle}
                             >
                               {editingType ? "Atualizar" : "Criar"}
                             </Button>
@@ -661,8 +664,11 @@ export default function Settings() {
                             </Button>
                             <Button 
                               type="submit" 
+                              variant="default"
                               disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}
                               data-testid="button-save-category"
+                              className={theme.buttons.primary}
+                              style={theme.buttons.primaryStyle}
                             >
                               {editingCategory ? "Atualizar" : "Criar"}
                             </Button>
@@ -875,8 +881,11 @@ export default function Settings() {
                             </Button>
                             <Button 
                               type="submit" 
+                              variant="default"
                               disabled={createGoalMutation.isPending || updateGoalMutation.isPending}
                               data-testid="button-save-goal"
+                              className={theme.buttons.primary}
+                              style={theme.buttons.primaryStyle}
                             >
                               {editingGoal ? "Atualizar" : "Criar"}
                             </Button>

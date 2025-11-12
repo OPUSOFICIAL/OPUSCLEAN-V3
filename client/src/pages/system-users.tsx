@@ -15,6 +15,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Users, Plus, Edit, Trash2, Shield, Building2, KeyRound } from 'lucide-react';
 import usePermissions from '@/hooks/usePermissions';
 import { useModule, MODULE_CONFIGS } from '@/contexts/ModuleContext';
+import { useModuleTheme } from '@/hooks/use-module-theme';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -47,6 +48,7 @@ export default function SystemUsers() {
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -619,8 +621,11 @@ export default function SystemUsers() {
                   </Button>
                   <Button 
                     type="submit" 
+                    variant="default"
                     disabled={createUserMutation.isPending || updateUserMutation.isPending}
                     data-testid="button-save"
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                   >
                     {(createUserMutation.isPending || updateUserMutation.isPending) ? 'Salvando...' : 'Salvar'}
                   </Button>
