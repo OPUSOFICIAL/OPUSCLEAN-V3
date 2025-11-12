@@ -835,6 +835,22 @@ export default function Users({ customerId }: UsersProps) {
                 <label className="text-xs text-muted-foreground">Módulos</label>
                 <div className="mt-1">{getModulesBadges(selectedUser)}</div>
               </div>
+              {selectedUser.siteAssignments && selectedUser.siteAssignments.length > 0 && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Locais de Atuação</label>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {selectedUser.siteAssignments.map((assignment: any) => (
+                      <Badge 
+                        key={assignment.id} 
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        {assignment.site?.name || 'Local'}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="text-xs text-muted-foreground">Último Acesso</label>
                 <p className="text-sm">
