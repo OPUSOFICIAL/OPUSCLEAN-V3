@@ -1445,3 +1445,52 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+// ============================================================================
+// Offline Sync Types
+// ============================================================================
+
+// Sync batch request - dados vindos do dispositivo offline
+export const syncBatchRequestSchema = z.object({
+  workOrders: z.array(insertWorkOrderSchema.extend({
+    localId: z.string(),
+    syncStatus: z.enum(['pending', 'syncing', 'synced', 'failed']).optional(),
+    createdOffline: z.boolean().optional(),
+  })).optional(),
+  checklistExecutions: z.array(insertMaintenanceChecklistExecutionSchema.extend({
+    localId: z.string(),
+    syncStatus: z.enum(['pending', 'syncing', 'synced', 'failed']).optional(),
+    createdOffline: z.boolean().optional(),
+  })).optional(),
+  attachments: z.array(insertWorkOrderAttachmentSchema.extend({
+    localId: z.string(),
+    syncStatus: z.enum(['pending', 'syncing', 'synced', 'failed']).optional(),
+    createdOffline: z.boolean().optional(),
+  })).optional(),
+});
+
+export type SyncBatchRequest = z.infer<typeof syncBatchRequestSchema>;
+
+// Sync batch response - mapeamento de IDs locais para IDs do servidor
+export type SyncBatchResponse = {
+  success: boolean;
+  workOrders: {
+    localId: string;
+    serverId: string;
+    status: 'synced' | 'failed';
+    error?: string;
+  }[];
+  checklistExecutions: {
+    localId: string;
+    serverId: string;
+    status: 'synced' | 'failed';
+    error?: string;
+  }[];
+  attachments: {
+    localId: string;
+    serverId: string;
+    status: 'synced' | 'failed';
+    error?: string;
+  }[];
+  timestamp: string;
+};

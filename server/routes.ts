@@ -17,6 +17,7 @@ import {
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
   insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
   insertAiIntegrationSchema,
+  syncBatchRequestSchema,
   customers,
   type User, type InsertUser
 } from "@shared/schema";
@@ -4319,6 +4320,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[TV MODE] Error fetching TV mode stats:", error);
       res.status(500).json({ message: "Failed to fetch TV mode statistics" });
+    }
+  });
+
+  // ===== OFFLINE SYNC ENDPOINTS =====
+
+  // Batch sync endpoint - receives offline data from mobile app
+  app.post("/api/sync/batch", requireAuth, async (req, res) => {
+    try {
+      if (!req.user?.id || !req.user?.customerId) {
+        return res.status(401).json({ message: "User not authenticated or missing customer" });
+      }
+
+      console.log("[SYNC] Batch sync request received from user:", req.user.id, "customer:", req.user.customerId);
+      
+      // Validate request body
+      const validatedData = syncBatchRequestSchema.parse(req.body);
+      
+      // SECURITY: Validate that all data belongs to user's customer
+      const userCustomerId = req.user.customerId;
+      
+      // Check all work orders belong to user's customer
+      if (validatedData.workOrders) {
+        const invalidWOs = validatedData.workOrders.filter(wo => wo.customerId !== userCustomerId);
+        if (invalidWOs.length > 0) {
+          console.warn("[SYNC] Security violation: User attempted to sync work orders for different customer");
+          return res.status(403).json({ 
+            message: "Forbidden: Cannot sync data for different customer",
+            details: `${invalidWOs.length} work orders rejected`
+          });
+        }
+      }
+
+      // Check all checklist executions belong to user's customer (via work order)
+      if (validatedData.checklistExecutions) {
+        for (const exec of validatedData.checklistExecutions) {
+          if (exec.workOrderId) {
+            const wo = await storage.getWorkOrder(exec.workOrderId);
+            if (wo && wo.customerId !== userCustomerId) {
+              console.warn("[SYNC] Security violation: User attempted to sync checklist for different customer");
+              return res.status(403).json({ 
+                message: "Forbidden: Cannot sync data for different customer"
+              });
+            }
+          }
+        }
+      }
+
+      // Check all attachments belong to user's customer (via work order)
+      if (validatedData.attachments) {
+        for (const att of validatedData.attachments) {
+          if (att.workOrderId) {
+            const wo = await storage.getWorkOrder(att.workOrderId);
+            if (wo && wo.customerId !== userCustomerId) {
+              console.warn("[SYNC] Security violation: User attempted to sync attachment for different customer");
+              return res.status(403).json({ 
+                message: "Forbidden: Cannot sync data for different customer"
+              });
+            }
+          }
+        }
+      }
+      
+      // Log sync stats
+      const stats = {
+        workOrders: validatedData.workOrders?.length || 0,
+        checklistExecutions: validatedData.checklistExecutions?.length || 0,
+        attachments: validatedData.attachments?.length || 0,
+      };
+      console.log("[SYNC] Processing batch:", stats);
+
+      // Execute sync
+      const result = await storage.syncBatch(validatedData);
+
+      console.log("[SYNC] Batch sync completed:", {
+        success: result.success,
+        workOrders: result.workOrders.length,
+        checklistExecutions: result.checklistExecutions.length,
+        attachments: result.attachments.length,
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("[SYNC] Batch sync error:", error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid sync data", 
+          errors: error.errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to sync batch",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 

@@ -3,7 +3,7 @@ import {
   slaConfigs, cleaningActivities, workOrders, bathroomCounters, webhookConfigs, services,
   serviceTypes, serviceCategories, serviceZones, dashboardGoals, auditLogs, customers,
   userSiteAssignments, userAllowedCustomers, publicRequestLogs, siteShifts, bathroomCounterLogs, companyCounters, customerCounters,
-  workOrderComments,
+  workOrderComments, workOrderAttachments,
   equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
   aiIntegrations, chatConversations, chatMessages,
@@ -23,6 +23,7 @@ import {
   type BathroomCounterLog, type InsertBathroomCounterLog,
   type CompanyCounter, type InsertCompanyCounter,
   type WorkOrderComment, type InsertWorkOrderComment,
+  type WorkOrderAttachment, type InsertWorkOrderAttachment,
   customRoles, rolePermissions, userRoleAssignments,
   type CustomRole, type CustomRoleWithPermissions, type InsertCustomRole, type RolePermission, type InsertRolePermission,
   type UserRoleAssignment, type InsertUserRoleAssignment,
@@ -34,7 +35,8 @@ import {
   type MaintenanceActivity, type InsertMaintenanceActivity,
   type AiIntegration, type InsertAiIntegration,
   type ChatConversation, type InsertChatConversation,
-  type ChatMessage, type InsertChatMessage
+  type ChatMessage, type InsertChatMessage,
+  type SyncBatchRequest, type SyncBatchResponse
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, count, inArray, isNull, isNotNull, ne, gte, lte, lt } from "drizzle-orm";
@@ -456,6 +458,9 @@ export interface IStorage {
   getConversationMessages(conversationId: string): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   processUserMessage(userId: string, companyId: string, customerId: string | null, module: 'clean' | 'maintenance', userMessage: string): Promise<{ conversationId: string; messages: ChatMessage[] }>;
+
+  // Offline sync
+  syncBatch(data: SyncBatchRequest): Promise<SyncBatchResponse>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -7719,6 +7724,176 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
       },
       leaderboard,
     };
+  }
+
+  // ============================================================================
+  // OFFLINE SYNC
+  // ============================================================================
+  async syncBatch(data: SyncBatchRequest): Promise<SyncBatchResponse> {
+    const response: SyncBatchResponse = {
+      success: true,
+      workOrders: [],
+      checklistExecutions: [],
+      attachments: [],
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      // 1. Sync Work Orders
+      if (data.workOrders && data.workOrders.length > 0) {
+        for (const wo of data.workOrders) {
+          try {
+            // Use transaction to prevent race condition on duplicate localId
+            await db.transaction(async (tx) => {
+              // Check if work order with this localId already exists
+              const existing = wo.localId
+                ? await tx.query.workOrders.findFirst({
+                    where: eq(workOrders.localId, wo.localId),
+                  })
+                : null;
+
+              if (existing) {
+                // Already synced, return existing serverId
+                response.workOrders.push({
+                  localId: wo.localId!,
+                  serverId: existing.id,
+                  status: 'synced',
+                });
+              } else {
+                // Create new work order
+                const newId = nanoid();
+                await tx.insert(workOrders).values({
+                  id: newId,
+                  ...wo,
+                  localId: wo.localId,
+                  syncStatus: 'synced',
+                  createdOffline: true,
+                  syncedAt: new Date(),
+                });
+
+                response.workOrders.push({
+                  localId: wo.localId!,
+                  serverId: newId,
+                  status: 'synced',
+                });
+              }
+            });
+          } catch (error: any) {
+            response.workOrders.push({
+              localId: wo.localId!,
+              serverId: '',
+              status: 'failed',
+              error: error.message || 'Unknown error',
+            });
+          }
+        }
+      }
+
+      // 2. Sync Checklist Executions
+      if (data.checklistExecutions && data.checklistExecutions.length > 0) {
+        for (const exec of data.checklistExecutions) {
+          try {
+            // Use transaction to prevent race condition
+            await db.transaction(async (tx) => {
+              // Check if execution with this localId already exists
+              const existing = exec.localId
+                ? await tx.query.maintenanceChecklistExecutions.findFirst({
+                    where: eq(maintenanceChecklistExecutions.localId, exec.localId),
+                  })
+                : null;
+
+              if (existing) {
+                // Already synced
+                response.checklistExecutions.push({
+                  localId: exec.localId!,
+                  serverId: existing.id,
+                  status: 'synced',
+                });
+              } else {
+                // Create new execution
+                const newId = nanoid();
+                await tx.insert(maintenanceChecklistExecutions).values({
+                  id: newId,
+                  ...exec,
+                  localId: exec.localId,
+                  syncStatus: 'synced',
+                  createdOffline: true,
+                  syncedAt: new Date(),
+                });
+
+                response.checklistExecutions.push({
+                  localId: exec.localId!,
+                  serverId: newId,
+                  status: 'synced',
+                });
+              }
+            });
+          } catch (error: any) {
+            response.checklistExecutions.push({
+              localId: exec.localId!,
+              serverId: '',
+              status: 'failed',
+              error: error.message || 'Unknown error',
+            });
+          }
+        }
+      }
+
+      // 3. Sync Attachments
+      if (data.attachments && data.attachments.length > 0) {
+        for (const att of data.attachments) {
+          try {
+            // Use transaction to prevent race condition
+            await db.transaction(async (tx) => {
+              // Check if attachment with this localId already exists
+              const existing = att.localId
+                ? await tx.query.workOrderAttachments.findFirst({
+                    where: eq(workOrderAttachments.localId, att.localId),
+                  })
+                : null;
+
+              if (existing) {
+                // Already synced
+                response.attachments.push({
+                  localId: att.localId!,
+                  serverId: existing.id,
+                  status: 'synced',
+                });
+              } else {
+                // Create new attachment
+                const newId = nanoid();
+                await tx.insert(workOrderAttachments).values({
+                  id: newId,
+                  ...att,
+                  localId: att.localId,
+                  syncStatus: 'synced',
+                  createdOffline: true,
+                  syncedAt: new Date(),
+                });
+
+                response.attachments.push({
+                  localId: att.localId!,
+                  serverId: newId,
+                  status: 'synced',
+                });
+              }
+            });
+          } catch (error: any) {
+            response.attachments.push({
+              localId: att.localId!,
+              serverId: '',
+              status: 'failed',
+              error: error.message || 'Unknown error',
+            });
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('[SYNC] Batch sync error:', error);
+      response.success = false;
+    }
+
+    return response;
   }
 }
 
