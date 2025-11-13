@@ -286,10 +286,10 @@ class SyncQueueManager {
         localId: att.localId,
         workOrderId: att.workOrderId, // May be localId or serverId
         fileName: att.fileName,
-        fileType: att.fileType,
-        fileData: att.fileData, // Base64 encoded
+        fileType: att.mimeType ?? (att.type === 'photo' ? 'image/jpeg' : 'application/octet-stream'),
+        fileData: att.url, // Map url → fileData (base64)
         uploadedBy: att.uploadedBy,
-        comment: att.comment,
+        comment: att.comment || '',
       })),
     };
 

@@ -9,6 +9,9 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useLocation } from "wouter";
 import { useModule } from "@/contexts/ModuleContext";
+import { useNetwork } from "@/contexts/NetworkContext";
+import { useOfflineStorage } from "@/hooks/use-offline-storage";
+import { nanoid } from "nanoid";
 import { 
   QrCode, 
   Camera, 
@@ -19,7 +22,8 @@ import {
   ArrowLeft,
   User,
   MapPin,
-  FileText
+  FileText,
+  WifiOff
 } from "lucide-react";
 
 export default function QrExecution() {
@@ -32,6 +36,12 @@ export default function QrExecution() {
   const [isCompleting, setIsCompleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isOnline } = useNetwork();
+  const { 
+    createOfflineWorkOrder,
+    createOfflineChecklistExecution,
+    createOfflineAttachment 
+  } = useOfflineStorage();
 
   // Get QR point data and check for scheduled activities
   const { data: qrData, isLoading, error } = useQuery({
@@ -97,32 +107,173 @@ export default function QrExecution() {
     setPhotos(prev => [...prev, ...files]);
   };
 
-  const handleCreateCorrectiveOrder = () => {
+  const handleCreateCorrectiveOrder = async () => {
     if (!zone || !(qrData as any)?.point) return;
 
-    createWorkOrderMutation.mutate({
-      companyId: (qrData as any)?.company?.id || 'company-opus-default', // Use company ID from QR context
+    const workOrderData = {
+      companyId: (qrData as any)?.company?.id || 'company-opus-default',
+      customerId: (qrData as any)?.customer?.id || (qrData as any)?.point?.customerId,
       zoneId: zone?.id,
-      type: "corretiva_interna",
-      priority: "media",
+      type: "internal_corrective" as const, // Canonical enum key
+      priority: "media" as const,
       title: `Limpeza Corretiva - ${zone?.name || 'Local'}`,
       description: observations || "Solicitação via QR Code de execução",
       assignedUserId: currentUser.id,
-      origin: "QR Execução"
-    });
+      origin: "QR Execução",
+      module: currentModule,
+      status: "pendente" as const,
+    };
+
+    if (isOnline) {
+      // Online: Use mutation normal
+      createWorkOrderMutation.mutate(workOrderData);
+    } else {
+      // Offline: Save to IndexedDB
+      // Validate required fields
+      if (!workOrderData.customerId) {
+        toast({
+          title: "Erro de validação",
+          description: "Cliente não identificado. Não é possível criar OS offline.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const localId = nanoid();
+        await createOfflineWorkOrder({
+          localId,
+          ...workOrderData,
+          syncStatus: 'pending',
+          createdOffline: true,
+          syncRetryCount: 0,
+        });
+
+        // Save photos as attachments if any
+        if (photos.length > 0) {
+          const photoPromises = photos.map(async (file, index) => {
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(file);
+            });
+
+            await createOfflineAttachment({
+              workOrderId: localId, // Use localId
+              type: 'photo',
+              url: base64,
+              fileName: file.name || `photo_${Date.now()}_${index}.jpg`,
+              mimeType: file.type || 'image/jpeg',
+              uploadedBy: currentUser.id,
+              syncStatus: 'pending',
+              createdOffline: true,
+              syncRetryCount: 0,
+            });
+          });
+
+          await Promise.all(photoPromises);
+        }
+
+        toast({
+          title: "📥 OS Salva Offline",
+          description: "Será sincronizada automaticamente quando houver conexão",
+        });
+
+        // Clear form and redirect
+        setObservations("");
+        setPhotos([]);
+        setTimeout(() => setLocation("/mobile"), 500);
+      } catch (error) {
+        console.error('[QR EXECUTION] Erro ao salvar OS offline:', error);
+        toast({
+          title: "Erro ao salvar offline",
+          description: "Não foi possível salvar a OS localmente",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
-  const handleCompleteWorkOrder = () => {
+  const handleCompleteWorkOrder = async () => {
     if (!(qrData as any)?.scheduledWorkOrder) return;
+    const workOrder = (qrData as any).scheduledWorkOrder;
 
     setIsCompleting(true);
-    updateWorkOrderMutation.mutate({
-      id: (qrData as any).scheduledWorkOrder.id,
-      status: "concluida",
-      completedAt: new Date().toISOString(),
-      checklistData: checklistItems,
-      attachments: photos.map(p => p.name) // In real app, upload photos first
-    });
+
+    if (isOnline) {
+      // Online: Use mutation normal
+      updateWorkOrderMutation.mutate({
+        id: workOrder.id,
+        status: "concluida",
+        completedAt: new Date().toISOString(),
+        checklistData: checklistItems,
+        attachments: photos.map(p => p.name)
+      });
+    } else {
+      // Offline: Save checklist execution + attachments
+      try {
+        const completedAt = new Date().toISOString();
+
+        // 1. Create checklist execution
+        await createOfflineChecklistExecution({
+          workOrderId: workOrder.id, // serverId
+          checklistTemplateId: workOrder.checklistTemplateId || 'manual',
+          executedBy: currentUser.id,
+          status: 'completed',
+          itemsData: checklistItems,
+          executedAt: completedAt,
+          syncStatus: 'pending',
+          createdOffline: true,
+          syncRetryCount: 0,
+        });
+
+        // 2. Save photos as attachments
+        if (photos.length > 0) {
+          const photoPromises = photos.map(async (file, index) => {
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(file);
+            });
+
+            await createOfflineAttachment({
+              workOrderId: workOrder.id, // serverId
+              type: 'photo',
+              url: base64,
+              fileName: file.name || `qr_photo_${Date.now()}_${index}.jpg`,
+              mimeType: file.type || 'image/jpeg',
+              uploadedBy: currentUser.id,
+              syncStatus: 'pending',
+              createdOffline: true,
+              syncRetryCount: 0,
+            });
+          });
+
+          await Promise.all(photoPromises);
+        }
+
+        console.log('[QR EXECUTION] OS salva offline, aguardando sync para marcar como concluída');
+
+        toast({
+          title: "📥 OS Salva Offline",
+          description: "Será sincronizada automaticamente quando houver conexão",
+        });
+
+        // Clear form and redirect
+        setChecklistItems({});
+        setPhotos([]);
+        setIsCompleting(false);
+        setTimeout(() => setLocation("/mobile"), 500);
+      } catch (error) {
+        console.error('[QR EXECUTION] Erro ao salvar execução offline:', error);
+        toast({
+          title: "Erro ao salvar offline",
+          description: "Não foi possível salvar a execução localmente",
+          variant: "destructive",
+        });
+        setIsCompleting(false);
+      }
+    }
   };
 
   useEffect(() => {
