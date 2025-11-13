@@ -384,6 +384,7 @@ export default function MobileWorkOrderExecute() {
     try {
       // Converter fotos para base64 para salvar
       const checklistAnswers: Record<string, any> = {};
+      const allPhotos: string[] = [];
       
       if (checklist?.items) {
         for (const item of checklist.items) {
@@ -395,6 +396,7 @@ export default function MobileWorkOrderExecute() {
               photos: base64Photos,
               count: base64Photos.length
             };
+            allPhotos.push(...base64Photos);
           } else {
             // Outros tipos de resposta
             checklistAnswers[item.id] = answers[item.id];
@@ -402,87 +404,135 @@ export default function MobileWorkOrderExecute() {
         }
       }
 
-      // Atualizar work order para concluída
-      console.log('[FINISH] Enviando PATCH para finalizar OS:', workOrder.id);
-      console.log('[FINISH] Dados do checklist:', checklistAnswers);
-      
-      const response = await authenticatedFetch(`/api/work-orders/${workOrder.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'concluida',
-          completedAt: new Date().toISOString(),
-          checklistData: checklist ? checklistAnswers : null,
-        }),
-      });
+      const completedAt = new Date().toISOString();
 
-      console.log('[FINISH] Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[FINISH] Erro na resposta:', errorText);
-        throw new Error(`Erro ao finalizar: ${response.status} - ${errorText}`);
-      }
-
-      // Criar comentário automático com resumo da finalização e fotos
-      try {
-        // Coletar todas as fotos do checklist
-        const allPhotos: string[] = [];
-        let checklistSummary = '✅ OS Finalizada!\n\n📋 Checklist:\n';
+      // ============================================================================
+      // MODO ONLINE: Enviar diretamente para o servidor
+      // ============================================================================
+      if (isOnline) {
+        console.log('[FINISH ONLINE] Enviando PATCH para finalizar OS:', workOrder.id);
+        console.log('[FINISH ONLINE] Dados do checklist:', checklistAnswers);
         
-        if (checklist?.items) {
-          for (const item of checklist.items) {
-            if (item.type === 'photo' && checklistAnswers[item.id]?.photos) {
-              allPhotos.push(...checklistAnswers[item.id].photos);
-              checklistSummary += `• ${item.label}: ${checklistAnswers[item.id].count} foto(s) anexada(s)\n`;
-            } else if (item.type === 'checkbox') {
-              const selectedOptions = checklistAnswers[item.id] || [];
-              if (selectedOptions.length > 0) {
-                checklistSummary += `✓ ${item.label}: ${selectedOptions.join(', ')}\n`;
-              } else {
-                checklistSummary += `○ ${item.label}: Nenhuma opção selecionada\n`;
-              }
-            } else if (item.type === 'boolean') {
-              const answer = checklistAnswers[item.id];
-              const symbol = answer === true ? '✓' : answer === false ? '✗' : '○';
-              const text = answer === true ? 'SIM' : answer === false ? 'NÃO' : 'Não respondido';
-              checklistSummary += `${symbol} ${item.label}: ${text}\n`;
-            } else if (item.type === 'text' && checklistAnswers[item.id]) {
-              checklistSummary += `• ${item.label}: ${checklistAnswers[item.id]}\n`;
-            }
-          }
-        }
-
-        // Criar comentário com o resumo e fotos
-        await authenticatedFetch(`/api/work-orders/${workOrder.id}/comments`, {
-          method: 'POST',
+        const response = await authenticatedFetch(`/api/work-orders/${workOrder.id}`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: currentUser?.id,
-            comment: checklistSummary,
-            attachments: allPhotos,
+            status: 'concluida',
+            completedAt,
+            checklistData: checklist ? checklistAnswers : null,
           }),
         });
-      } catch (commentError) {
-        console.error('Erro ao criar comentário de finalização:', commentError);
-        // Não bloquear a finalização se comentário falhar
-      }
 
-      toast({
-        title: "✅ OS Finalizada!",
-        description: `OS #${workOrder.number} foi concluída com sucesso. Fotos e dados salvos.`,
-      });
+        console.log('[FINISH ONLINE] Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[FINISH ONLINE] Erro na resposta:', errorText);
+          throw new Error(`Erro ao finalizar: ${response.status} - ${errorText}`);
+        }
+
+        // Criar comentário automático com resumo da finalização e fotos
+        try {
+          let checklistSummary = '✅ OS Finalizada!\n\n📋 Checklist:\n';
+          
+          if (checklist?.items) {
+            for (const item of checklist.items) {
+              if (item.type === 'photo' && checklistAnswers[item.id]?.photos) {
+                checklistSummary += `• ${item.label}: ${checklistAnswers[item.id].count} foto(s) anexada(s)\n`;
+              } else if (item.type === 'checkbox') {
+                const selectedOptions = checklistAnswers[item.id] || [];
+                if (selectedOptions.length > 0) {
+                  checklistSummary += `✓ ${item.label}: ${selectedOptions.join(', ')}\n`;
+                } else {
+                  checklistSummary += `○ ${item.label}: Nenhuma opção selecionada\n`;
+                }
+              } else if (item.type === 'boolean') {
+                const answer = checklistAnswers[item.id];
+                const symbol = answer === true ? '✓' : answer === false ? '✗' : '○';
+                const text = answer === true ? 'SIM' : answer === false ? 'NÃO' : 'Não respondido';
+                checklistSummary += `${symbol} ${item.label}: ${text}\n`;
+              } else if (item.type === 'text' && checklistAnswers[item.id]) {
+                checklistSummary += `• ${item.label}: ${checklistAnswers[item.id]}\n`;
+              }
+            }
+          }
+
+          await authenticatedFetch(`/api/work-orders/${workOrder.id}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser?.id,
+              comment: checklistSummary,
+              attachments: allPhotos,
+            }),
+          });
+        } catch (commentError) {
+          console.error('[FINISH ONLINE] Erro ao criar comentário:', commentError);
+          // Não bloquear a finalização se comentário falhar
+        }
+
+        toast({
+          title: "✅ OS Finalizada!",
+          description: `OS #${workOrder.number} foi concluída com sucesso.`,
+        });
+      } 
+      // ============================================================================
+      // MODO OFFLINE: Salvar localmente para sincronização posterior
+      // ============================================================================
+      else {
+        console.log('[FINISH OFFLINE] Salvando execução localmente');
+        
+        // 1. Criar checklist execution offline
+        const executionLocalId = await createOfflineChecklistExecution({
+          workOrderId: workOrder.id, // Pode ser serverId ou localId
+          checklistTemplateId: checklist?.id || 'manual',
+          executedBy: currentUser?.id,
+          status: 'completed',
+          itemsData: checklistAnswers, // Salvar todas as respostas
+          executedAt: completedAt,
+          syncStatus: 'pending',
+          createdOffline: true,
+          syncRetryCount: 0,
+        });
+
+        console.log('[FINISH OFFLINE] Checklist execution salva:', executionLocalId);
+
+        // 2. Criar attachments separados para cada foto
+        for (let i = 0; i < allPhotos.length; i++) {
+          const photo = allPhotos[i];
+          await createOfflineAttachment({
+            workOrderId: workOrder.id,
+            type: 'photo',
+            url: photo, // base64 data URL
+            fileName: `checklist_photo_${Date.now()}_${i}.jpg`,
+            mimeType: 'image/jpeg',
+            uploadedBy: currentUser?.id,
+            syncStatus: 'pending',
+            createdOffline: true,
+            syncRetryCount: 0,
+          });
+        }
+
+        console.log('[FINISH OFFLINE] Attachments salvos:', allPhotos.length);
+
+        // 3. Marcar como concluída localmente (apenas log - sync handle status update)
+        console.log('[FINISH OFFLINE] Execução salva - sync vai atualizar status da OS no servidor');
+
+        toast({
+          title: "📥 OS Salva Offline",
+          description: `OS #${workOrder.number} será sincronizada automaticamente quando houver conexão.`,
+        });
+      }
 
       // Voltar para a página inicial do colaborador
       setTimeout(() => {
         setLocation('/mobile');
       }, 1500);
     } catch (error) {
-      console.error('Erro ao finalizar work order:', error);
-      console.error('Tipo do erro:', typeof error);
-      console.error('Erro stringified:', JSON.stringify(error));
-      console.error('Erro message:', error instanceof Error ? error.message : 'Sem mensagem');
-      console.error('Erro stack:', error instanceof Error ? error.stack : 'Sem stack');
+      console.error('[FINISH] Erro ao finalizar work order:', error);
+      console.error('[FINISH] Tipo do erro:', typeof error);
+      console.error('[FINISH] Erro message:', error instanceof Error ? error.message : 'Sem mensagem');
+      console.error('[FINISH] Erro stack:', error instanceof Error ? error.stack : 'Sem stack');
       
       toast({
         title: "Erro",
