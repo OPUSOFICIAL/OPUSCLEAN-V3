@@ -105,7 +105,24 @@ The frontend uses React and TypeScript, with Wouter for routing and TanStack Que
   - Composite indexes on sync columns for efficient conflict detection
   - Single batch query for FK validation instead of per-item lookups
   - Transaction-level deduplication to prevent rollbacks
-- **Key Files:** `shared/schema.ts` (sync types), `server/storage.ts` (batch logic), `server/routes.ts` (batch endpoint)
+- **Frontend Offline Storage (November 2025):**
+  - IndexedDB-based OfflineStorageManager with 4 object stores: workOrders, checklistExecutions, attachments, syncQueue
+  - Indexes on syncStatus, customerId, workOrderId, serverId, createdAt for efficient queries
+  - CRUD operations for all entity types with automatic sync queue management
+  - **Sync Queue Management:**
+    - Priority-based queue (work orders: 10, executions: 8, attachments: 5)
+    - Exponential backoff retry logic (max 5 retries, decreasing priority each retry)
+    - Automatic re-enqueuing of failed items until max retries reached
+    - Queue-based statistics for accurate pending counts
+  - **Parent-Child ID Linkage:**
+    - Automatic dependent record updates when parent work order syncs
+    - executions/attachments initially reference work order by localId
+    - Upon sync, updateDependentRecords() updates all children to reference serverId
+    - Prevents orphaned records and enables seamless sync reconciliation
+  - NetworkContext for online/offline detection with automatic sync triggering on reconnection
+  - SyncStatusIndicator component with visual feedback (badge, colors, tooltips)
+  - React hook (useOfflineStorage) with toast notifications and state management
+- **Key Files:** `shared/schema.ts`, `server/storage.ts`, `server/routes.ts` (backend), `client/src/lib/offline-storage.ts`, `client/src/hooks/use-offline-storage.ts`, `client/src/contexts/NetworkContext.tsx`, `client/src/components/sync-status-indicator.tsx` (frontend)
 
 ### System Design Choices
 
