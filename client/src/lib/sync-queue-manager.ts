@@ -1,5 +1,6 @@
 import { offlineStorage, type SyncQueueItem } from './offline-storage';
 import { apiRequest } from './queryClient';
+import { Network } from '@capacitor/network';
 
 interface SyncResult {
   success: boolean;
@@ -348,6 +349,40 @@ class SyncQueueManager {
         errors: [],
       };
     }
+  }
+
+  async isOnline(): Promise<boolean> {
+    try {
+      const status = await Network.getStatus();
+      return status.connected;
+    } catch (error) {
+      console.warn('[SYNC QUEUE] Network plugin not available, using navigator.onLine', error);
+      return navigator.onLine;
+    }
+  }
+
+  setupAutoSync(): () => void {
+    console.log('[SYNC QUEUE] Setting up auto-sync on network reconnection...');
+    
+    const listenerPromise = Network.addListener('networkStatusChange', async (status) => {
+      if (status.connected) {
+        console.log('[SYNC QUEUE] Network reconnected - triggering auto-sync...');
+        try {
+          await this.processSyncQueue();
+        } catch (error) {
+          console.error('[SYNC QUEUE] Auto-sync failed:', error);
+        }
+      } else {
+        console.log('[SYNC QUEUE] Network disconnected - pausing sync');
+      }
+    });
+
+    return () => {
+      console.log('[SYNC QUEUE] Cleaning up auto-sync listener...');
+      listenerPromise.then(handler => handler.remove()).catch(err => {
+        console.error('[SYNC QUEUE] Error removing network listener:', err);
+      });
+    };
   }
 }
 
