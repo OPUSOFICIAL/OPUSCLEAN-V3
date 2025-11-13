@@ -1516,8 +1516,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error deleting service type:", error);
       
-      // Verificar se é o erro de atividades concluídas
-      if (error.message === 'Não foi possível deletar as atividades') {
+      // Verificar se é o erro de atividades concluídas (a mensagem já vem formatada com os números das OSs)
+      if (error.message?.includes('OSs concluídas vinculadas')) {
         return res.status(400).json({ 
           message: error.message
         });

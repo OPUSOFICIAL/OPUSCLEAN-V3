@@ -176,9 +176,8 @@ export default function Settings() {
       toast({ title: "Tipo de serviço excluído com sucesso!" });
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "Erro ao excluir tipo de serviço";
+      const errorMessage = error?.message || error?.toString() || "Erro ao excluir tipo de serviço";
       toast({ 
-        title: "Erro ao excluir tipo de serviço", 
         description: errorMessage,
         variant: "destructive" 
       });

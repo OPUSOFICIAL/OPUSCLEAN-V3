@@ -2273,6 +2273,8 @@ export class DatabaseStorage implements IStorage {
       .where(eq(serviceCategories.typeId, id));
     
     // 2. Para cada categoria, buscar serviços e verificar work orders concluídas
+    const allCompletedWorkOrders: any[] = [];
+    
     for (const category of categories) {
       const servicesInCategory = await db.select().from(services)
         .where(eq(services.categoryId, category.id));
@@ -2288,10 +2290,22 @@ export class DatabaseStorage implements IStorage {
             )
           );
         
-        if (completedWorkOrders.length > 0) {
-          throw new Error('Não foi possível deletar as atividades');
-        }
+        allCompletedWorkOrders.push(...completedWorkOrders);
       }
+    }
+    
+    // Se houver work orders concluídas, listar os números
+    if (allCompletedWorkOrders.length > 0) {
+      const woNumbers = allCompletedWorkOrders
+        .map(wo => `#${wo.number}`)
+        .slice(0, 5) // Limitar a 5 primeiros
+        .join(', ');
+      
+      const moreCount = allCompletedWorkOrders.length > 5 
+        ? ` e mais ${allCompletedWorkOrders.length - 5}` 
+        : '';
+      
+      throw new Error(`Não é possível excluir porque existem OSs concluídas vinculadas: ${woNumbers}${moreCount}`);
     }
     
     // 3. Se não houver work orders concluídas, deletar em cascata
