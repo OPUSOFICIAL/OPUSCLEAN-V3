@@ -175,8 +175,13 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "service-types", { module: currentModule }] });
       toast({ title: "Tipo de serviço excluído com sucesso!" });
     },
-    onError: () => {
-      toast({ title: "Erro ao excluir tipo de serviço", variant: "destructive" });
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Erro ao excluir tipo de serviço";
+      toast({ 
+        title: "Erro ao excluir tipo de serviço", 
+        description: errorMessage,
+        variant: "destructive" 
+      });
     },
   });
 
