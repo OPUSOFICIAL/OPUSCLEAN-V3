@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ClientProvider, useClient } from "@/contexts/ClientContext";
 import { ModuleProvider, useModule } from "@/contexts/ModuleContext";
 import { BrandingProvider } from "@/contexts/BrandingContext";
+import { NetworkProvider } from "@/contexts/NetworkContext";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import WorkOrders from "@/pages/work-orders";
@@ -182,17 +183,19 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ClientProvider>
-          <ModuleProvider>
-            <BrandingProvider>
-              <TooltipProvider>
-                <ScrollToTop />
-                <Toaster />
-                <Router />
-              </TooltipProvider>
-            </BrandingProvider>
-          </ModuleProvider>
-        </ClientProvider>
+        <NetworkProvider>
+          <ClientProvider>
+            <ModuleProvider>
+              <BrandingProvider>
+                <TooltipProvider>
+                  <ScrollToTop />
+                  <Toaster />
+                  <Router />
+                </TooltipProvider>
+              </BrandingProvider>
+            </ModuleProvider>
+          </ClientProvider>
+        </NetworkProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
