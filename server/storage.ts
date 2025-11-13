@@ -460,7 +460,8 @@ export interface IStorage {
   processUserMessage(userId: string, companyId: string, customerId: string | null, module: 'clean' | 'maintenance', userMessage: string): Promise<{ conversationId: string; messages: ChatMessage[] }>;
 
   // Offline sync
-  syncBatch(data: SyncBatchRequest): Promise<SyncBatchResponse>;
+  getWorkOrdersByIds(ids: string[], customerId: string): Promise<WorkOrder[]>;
+  syncBatch(data: SyncBatchRequest, customerId: string, validatedWorkOrders: Map<string, WorkOrder>): Promise<SyncBatchResponse>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -7729,7 +7730,18 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
   // ============================================================================
   // OFFLINE SYNC
   // ============================================================================
-  async syncBatch(data: SyncBatchRequest): Promise<SyncBatchResponse> {
+  async getWorkOrdersByIds(ids: string[], customerId: string): Promise<WorkOrder[]> {
+    if (ids.length === 0) return [];
+    
+    return await db.query.workOrders.findMany({
+      where: and(
+        inArray(workOrders.id, ids),
+        eq(workOrders.customerId, customerId)
+      )
+    });
+  }
+
+  async syncBatch(data: SyncBatchRequest, customerId: string, validatedWorkOrders: Map<string, WorkOrder>): Promise<SyncBatchResponse> {
     const response: SyncBatchResponse = {
       success: true,
       workOrders: [],
@@ -7739,158 +7751,170 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
     };
 
     try {
-      // 1. Sync Work Orders
-      if (data.workOrders && data.workOrders.length > 0) {
+      // VALIDATION: Ensure all work orders belong to authenticated customer
+      if (data.workOrders) {
+        const invalidCustomer = data.workOrders.find(wo => wo.customerId !== customerId);
+        if (invalidCustomer) {
+          throw new Error(`Work order customer mismatch: expected ${customerId}, got ${invalidCustomer.customerId}`);
+        }
+      }
+
+      // VALIDATION: Deduplicate (customerId, localId) pairs to prevent constraint violations
+      if (data.workOrders) {
+        const seen = new Set<string>();
         for (const wo of data.workOrders) {
-          try {
-            // Use transaction to prevent race condition on duplicate localId
-            await db.transaction(async (tx) => {
-              // Check if work order with this localId already exists
-              const existing = wo.localId
-                ? await tx.query.workOrders.findFirst({
-                    where: eq(workOrders.localId, wo.localId),
-                  })
-                : null;
+          if (wo.localId) {
+            const key = `${wo.customerId}:${wo.localId}`;
+            if (seen.has(key)) {
+              throw new Error(`Duplicate (customerId, localId) in batch: ${key}`);
+            }
+            seen.add(key);
+          }
+        }
+      }
 
-              if (existing) {
-                // Already synced, return existing serverId
-                response.workOrders.push({
-                  localId: wo.localId!,
-                  serverId: existing.id,
-                  status: 'synced',
-                });
-              } else {
-                // Create new work order
-                const newId = nanoid();
-                await tx.insert(workOrders).values({
-                  id: newId,
-                  ...wo,
-                  localId: wo.localId,
+      // VALIDATION: Ensure all work orders in validatedWorkOrders map belong to authenticated customer
+      for (const [woId, wo] of validatedWorkOrders.entries()) {
+        if (wo.customerId !== customerId) {
+          throw new Error(`Validated work order ${woId} does not belong to customer ${customerId}`);
+        }
+      }
+
+      // Single transaction for entire batch - all or nothing
+      await db.transaction(async (tx) => {
+        // 1. UPSERT Work Orders
+        if (data.workOrders && data.workOrders.length > 0) {
+          for (const wo of data.workOrders) {
+            const newId = nanoid();
+            const [result] = await tx
+              .insert(workOrders)
+              .values({
+                id: newId,
+                ...wo,
+                localId: wo.localId,
+                syncStatus: 'synced',
+                createdOffline: true,
+                syncedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: [workOrders.customerId, workOrders.localId],
+                set: {
                   syncStatus: 'synced',
-                  createdOffline: true,
-                  syncedAt: new Date(),
-                });
+                  syncedAt: sql`now()`,
+                },
+              })
+              .returning({ id: workOrders.id, localId: workOrders.localId });
 
-                response.workOrders.push({
-                  localId: wo.localId!,
-                  serverId: newId,
-                  status: 'synced',
-                });
-              }
-            });
-          } catch (error: any) {
             response.workOrders.push({
               localId: wo.localId!,
-              serverId: '',
-              status: 'failed',
-              error: error.message || 'Unknown error',
+              serverId: result.id,
+              status: 'synced',
             });
           }
         }
-      }
 
-      // 2. Sync Checklist Executions
-      if (data.checklistExecutions && data.checklistExecutions.length > 0) {
-        for (const exec of data.checklistExecutions) {
-          try {
-            // Use transaction to prevent race condition
-            await db.transaction(async (tx) => {
-              // Check if execution with this localId already exists
-              const existing = exec.localId
-                ? await tx.query.maintenanceChecklistExecutions.findFirst({
-                    where: eq(maintenanceChecklistExecutions.localId, exec.localId),
-                  })
-                : null;
+        // 2. UPSERT Checklist Executions
+        if (data.checklistExecutions && data.checklistExecutions.length > 0) {
+          for (const exec of data.checklistExecutions) {
+            // Validate work order exists in validatedWorkOrders map
+            if (exec.workOrderId && !validatedWorkOrders.has(exec.workOrderId)) {
+              throw new Error(`Work order ${exec.workOrderId} not found or not authorized`);
+            }
 
-              if (existing) {
-                // Already synced
-                response.checklistExecutions.push({
-                  localId: exec.localId!,
-                  serverId: existing.id,
-                  status: 'synced',
-                });
-              } else {
-                // Create new execution
-                const newId = nanoid();
-                await tx.insert(maintenanceChecklistExecutions).values({
-                  id: newId,
-                  ...exec,
-                  localId: exec.localId,
+            const newId = nanoid();
+            const [result] = await tx
+              .insert(maintenanceChecklistExecutions)
+              .values({
+                id: newId,
+                ...exec,
+                localId: exec.localId,
+                syncStatus: 'synced',
+                createdOffline: true,
+                syncedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: [maintenanceChecklistExecutions.workOrderId, maintenanceChecklistExecutions.localId],
+                set: {
                   syncStatus: 'synced',
-                  createdOffline: true,
-                  syncedAt: new Date(),
-                });
+                  syncedAt: sql`now()`,
+                },
+              })
+              .returning({ id: maintenanceChecklistExecutions.id, localId: maintenanceChecklistExecutions.localId });
 
-                response.checklistExecutions.push({
-                  localId: exec.localId!,
-                  serverId: newId,
-                  status: 'synced',
-                });
-              }
-            });
-          } catch (error: any) {
             response.checklistExecutions.push({
               localId: exec.localId!,
-              serverId: '',
-              status: 'failed',
-              error: error.message || 'Unknown error',
+              serverId: result.id,
+              status: 'synced',
             });
           }
         }
-      }
 
-      // 3. Sync Attachments
-      if (data.attachments && data.attachments.length > 0) {
-        for (const att of data.attachments) {
-          try {
-            // Use transaction to prevent race condition
-            await db.transaction(async (tx) => {
-              // Check if attachment with this localId already exists
-              const existing = att.localId
-                ? await tx.query.workOrderAttachments.findFirst({
-                    where: eq(workOrderAttachments.localId, att.localId),
-                  })
-                : null;
+        // 3. UPSERT Attachments
+        if (data.attachments && data.attachments.length > 0) {
+          for (const att of data.attachments) {
+            // Validate work order exists in validatedWorkOrders map
+            if (att.workOrderId && !validatedWorkOrders.has(att.workOrderId)) {
+              throw new Error(`Work order ${att.workOrderId} not found or not authorized`);
+            }
 
-              if (existing) {
-                // Already synced
-                response.attachments.push({
-                  localId: att.localId!,
-                  serverId: existing.id,
-                  status: 'synced',
-                });
-              } else {
-                // Create new attachment
-                const newId = nanoid();
-                await tx.insert(workOrderAttachments).values({
-                  id: newId,
-                  ...att,
-                  localId: att.localId,
+            const newId = nanoid();
+            const [result] = await tx
+              .insert(workOrderAttachments)
+              .values({
+                id: newId,
+                ...att,
+                localId: att.localId,
+                syncStatus: 'synced',
+                createdOffline: true,
+                syncedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: [workOrderAttachments.workOrderId, workOrderAttachments.localId],
+                set: {
                   syncStatus: 'synced',
-                  createdOffline: true,
-                  syncedAt: new Date(),
-                });
+                  syncedAt: sql`now()`,
+                },
+              })
+              .returning({ id: workOrderAttachments.id, localId: workOrderAttachments.localId });
 
-                response.attachments.push({
-                  localId: att.localId!,
-                  serverId: newId,
-                  status: 'synced',
-                });
-              }
-            });
-          } catch (error: any) {
             response.attachments.push({
               localId: att.localId!,
-              serverId: '',
-              status: 'failed',
-              error: error.message || 'Unknown error',
+              serverId: result.id,
+              status: 'synced',
             });
           }
         }
-      }
+      });
     } catch (error: any) {
-      console.error('[SYNC] Batch sync error:', error);
+      // Transaction failed - mark all items as failed
+      console.error('[SYNC] Batch sync transaction failed:', error);
       response.success = false;
+
+      // Mark all submitted items as failed
+      if (data.workOrders) {
+        response.workOrders = data.workOrders.map(wo => ({
+          localId: wo.localId!,
+          serverId: '',
+          status: 'failed' as const,
+          error: error.message || 'Transaction failed',
+        }));
+      }
+      if (data.checklistExecutions) {
+        response.checklistExecutions = data.checklistExecutions.map(exec => ({
+          localId: exec.localId!,
+          serverId: '',
+          status: 'failed' as const,
+          error: error.message || 'Transaction failed',
+        }));
+      }
+      if (data.attachments) {
+        response.attachments = data.attachments.map(att => ({
+          localId: att.localId!,
+          serverId: '',
+          status: 'failed' as const,
+          error: error.message || 'Transaction failed',
+        }));
+      }
     }
 
     return response;

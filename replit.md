@@ -85,6 +85,28 @@ The frontend uses React and TypeScript, with Wouter for routing and TanStack Que
 
 **User Management**: Offers full CRUD operations for users, including client user creation and custom role assignment.
 
+**Offline Sync Infrastructure** (November 2025):
+- Complete backend infrastructure for offline-first Android APK with batch synchronization
+- **Database Schema Enhancements:**
+  - Sync metadata fields: `localId`, `syncStatus`, `createdOffline`, `lastSyncAttempt`, `syncRetryCount`, `syncError`, `syncedAt`
+  - Applied to: `work_orders`, `maintenance_checklist_executions`, `work_order_attachments`
+  - Tenant-scoped unique constraints: `(customer_id, local_id)` for work orders, `(work_order_id, local_id)` for executions/attachments
+- **Security Hardening:**
+  - Single SERIALIZABLE transaction per batch (all-or-nothing atomicity)
+  - Pre-transaction validation: customer ownership, duplicate detection, FK integrity
+  - Batch validation replacing N+1 queries with single scoped fetch via `getWorkOrdersByIds()`
+  - UPSERT-based idempotency using composite unique indexes with `onConflictDoUpdate`
+  - Prevents cross-tenant data leaks and race conditions through tenant-scoped constraints
+- **API Endpoints:**
+  - `POST /api/sync/batch`: Secure batch sync endpoint with authenticated customer validation
+  - Supports up to 50 items per batch (work orders, checklist executions, attachments)
+  - Returns individual status per item with server-assigned IDs
+- **Performance Optimizations:**
+  - Composite indexes on sync columns for efficient conflict detection
+  - Single batch query for FK validation instead of per-item lookups
+  - Transaction-level deduplication to prevent rollbacks
+- **Key Files:** `shared/schema.ts` (sync types), `server/storage.ts` (batch logic), `server/routes.ts` (batch endpoint)
+
 ### System Design Choices
 
 The project is configured for the Replit cloud environment, with automated PostgreSQL provisioning, schema pushing, and dependency installation. It's designed to be modular, supporting new operational modules with distinct theming and data isolation. The term "Site" is presented as "Local" in the UI.

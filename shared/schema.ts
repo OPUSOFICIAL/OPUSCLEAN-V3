@@ -322,7 +322,7 @@ export const workOrders = pgTable("work_orders", {
   syncedAt: timestamp("synced_at"),
 }, (table) => ({
   uniqueWorkOrderNumber: uniqueIndex("work_orders_customer_number_unique").on(table.customerId, table.number),
-  uniqueLocalId: uniqueIndex("work_orders_local_id_unique").on(table.localId).where(sql`local_id IS NOT NULL`),
+  uniqueCustomerLocalId: uniqueIndex("work_orders_customer_local_id_unique").on(table.customerId, table.localId).where(sql`local_id IS NOT NULL`),
 }));
 
 // 11a. TABELA: work_order_attachments (Anexos de Ordens de Trabalho)
@@ -348,7 +348,7 @@ export const workOrderAttachments = pgTable("work_order_attachments", {
   syncError: text("sync_error"),
   syncedAt: timestamp("synced_at"),
 }, (table) => ({
-  uniqueLocalId: uniqueIndex("work_order_attachments_local_id_unique").on(table.localId).where(sql`local_id IS NOT NULL`),
+  uniqueWorkOrderLocalId: uniqueIndex("work_order_attachments_wo_local_id_unique").on(table.workOrderId, table.localId).where(sql`local_id IS NOT NULL`),
 }));
 
 // 12. TABELA: audit_logs (Logs de Auditoria)
@@ -635,7 +635,7 @@ export const maintenanceChecklistExecutions = pgTable("maintenance_checklist_exe
   syncError: text("sync_error"),
   syncedAt: timestamp("synced_at"),
 }, (table) => ({
-  uniqueLocalId: uniqueIndex("maintenance_checklist_executions_local_id_unique").on(table.localId).where(sql`local_id IS NOT NULL`),
+  uniqueWorkOrderLocalId: uniqueIndex("maintenance_checklist_executions_wo_local_id_unique").on(table.workOrderId, table.localId).where(sql`local_id IS NOT NULL`),
 }));
 
 // 31. TABELA: maintenance_plans (Planos de Manutenção)

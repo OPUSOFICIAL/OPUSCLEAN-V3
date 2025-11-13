@@ -4352,35 +4352,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Check all checklist executions belong to user's customer (via work order)
+      // BATCH VALIDATION: Extract all referenced work order IDs
+      const referencedWOIds = new Set<string>();
       if (validatedData.checklistExecutions) {
         for (const exec of validatedData.checklistExecutions) {
           if (exec.workOrderId) {
-            const wo = await storage.getWorkOrder(exec.workOrderId);
-            if (wo && wo.customerId !== userCustomerId) {
-              console.warn("[SYNC] Security violation: User attempted to sync checklist for different customer");
-              return res.status(403).json({ 
-                message: "Forbidden: Cannot sync data for different customer"
-              });
-            }
+            referencedWOIds.add(exec.workOrderId);
+          }
+        }
+      }
+      if (validatedData.attachments) {
+        for (const att of validatedData.attachments) {
+          if (att.workOrderId) {
+            referencedWOIds.add(att.workOrderId);
           }
         }
       }
 
-      // Check all attachments belong to user's customer (via work order)
-      if (validatedData.attachments) {
-        for (const att of validatedData.attachments) {
-          if (att.workOrderId) {
-            const wo = await storage.getWorkOrder(att.workOrderId);
-            if (wo && wo.customerId !== userCustomerId) {
-              console.warn("[SYNC] Security violation: User attempted to sync attachment for different customer");
-              return res.status(403).json({ 
-                message: "Forbidden: Cannot sync data for different customer"
-              });
-            }
-          }
-        }
+      // Pre-fetch all referenced work orders in a single query (scoped to customer)
+      const validatedWorkOrdersArray = await storage.getWorkOrdersByIds(
+        Array.from(referencedWOIds),
+        userCustomerId
+      );
+
+      // Ensure all referenced work orders exist and belong to user's customer
+      if (validatedWorkOrdersArray.length !== referencedWOIds.size) {
+        const foundIds = new Set(validatedWorkOrdersArray.map(wo => wo.id));
+        const missingIds = Array.from(referencedWOIds).filter(id => !foundIds.has(id));
+        
+        console.warn("[SYNC] Security violation: Referenced work orders not found or not authorized:", missingIds);
+        return res.status(403).json({ 
+          message: "Forbidden: Invalid work order references",
+          details: `${missingIds.length} work order(s) not found or not authorized`,
+          missingIds,
+        });
       }
+
+      // Create Map for efficient lookup in storage layer
+      const validatedWorkOrders = new Map(
+        validatedWorkOrdersArray.map(wo => [wo.id, wo])
+      );
       
       // Log sync stats
       const stats = {
@@ -4390,8 +4401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       console.log("[SYNC] Processing batch:", stats);
 
-      // Execute sync
-      const result = await storage.syncBatch(validatedData);
+      // Execute sync with validated work orders map
+      const result = await storage.syncBatch(validatedData, userCustomerId, validatedWorkOrders);
 
       console.log("[SYNC] Batch sync completed:", {
         success: result.success,
