@@ -4,19 +4,23 @@
 
 Este guia explica como gerar o APK Android do aplicativo OPUS Facilities usando Capacitor.
 
-## ⚠️ IMPORTANTE - Comando de Build Correto
+## ⚠️ IMPORTANTE - Scripts de Build
 
-**SEMPRE USE:**
+Existem **dois scripts diferentes** dependendo do que você está fazendo:
+
+### 📱 Para Gerar APK Android:
 ```bash
-npx vite build
+npm run build:android
 ```
+**O que faz:** Build apenas do frontend (Vite) - sem passos de banco de dados.
 
-**NUNCA USE:**
+### 🌐 Para Deploy Web (Produção):
 ```bash
 npm run build
 ```
+**O que faz:** Build completo (frontend + backend + database push + seed).
 
-**Por quê?** O script `npm run build` inclui passos de banco de dados (`drizzle-kit push`) que aguardam confirmação interativa e podem travar o processo. Para Capacitor, só precisamos do build do frontend.
+**⚠️ Cuidado:** NÃO use `npm run build` para gerar APK - ele inclui passos de banco de dados que podem travar!
 
 ## 📋 Pré-requisitos
 
@@ -36,12 +40,10 @@ Se você quiser fazer o build localmente no seu computador:
 
 ### 1. Build do Frontend
 ```bash
-npx vite build
+npm run build:android
 ```
 
 Isso gera os arquivos otimizados em `dist/public/`.
-
-⚠️ **Nota:** Não use `npm run build` pois ele inclui passos de banco de dados que podem travar. Use `npx vite build` diretamente.
 
 ### 2. Sincronizar com Android
 ```bash
@@ -254,7 +256,7 @@ adb logcat | grep -i opus
 
 2. Certifique-se que o build foi feito corretamente:
 ```bash
-npx vite build
+npm run build:android
 npx cap sync android
 ```
 
