@@ -666,7 +666,7 @@ export default function WorkOrders() {
                                   <XCircle className="w-4 h-4" />
                                 </Button>
                               )}
-                              {canDeleteWorkOrders && (
+                              {canDeleteWorkOrders && wo.status !== 'concluida' && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
