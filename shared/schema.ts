@@ -18,6 +18,7 @@ export const moduleEnum = pgEnum('module', ['clean', 'maintenance']);
 export const equipmentStatusEnum = pgEnum('equipment_status', ['operacional', 'em_manutencao', 'inoperante', 'aposentado']);
 export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'anthropic', 'google', 'groq', 'azure_openai', 'cohere', 'huggingface', 'custom']);
 export const aiIntegrationStatusEnum = pgEnum('ai_integration_status', ['ativa', 'inativa', 'erro']);
+export const syncStatusEnum = pgEnum('sync_status', ['pending', 'syncing', 'synced', 'failed']);
 
 // Sistema de permissões granulares
 export const permissionKeyEnum = pgEnum('permission_key', [
@@ -311,8 +312,43 @@ export const workOrders = pgTable("work_orders", {
   cancelledBy: varchar("cancelled_by").references(() => users.id),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
+  // Offline sync fields
+  localId: varchar("local_id"),
+  syncStatus: syncStatusEnum("sync_status").default('synced'),
+  createdOffline: boolean("created_offline").default(false),
+  lastSyncAttempt: timestamp("last_sync_attempt"),
+  syncRetryCount: integer("sync_retry_count").default(0),
+  syncError: text("sync_error"),
+  syncedAt: timestamp("synced_at"),
 }, (table) => ({
   uniqueWorkOrderNumber: uniqueIndex("work_orders_customer_number_unique").on(table.customerId, table.number),
+  uniqueLocalId: uniqueIndex("work_orders_local_id_unique").on(table.localId).where(sql`local_id IS NOT NULL`),
+}));
+
+// 11a. TABELA: work_order_attachments (Anexos de Ordens de Trabalho)
+export const workOrderAttachments = pgTable("work_order_attachments", {
+  id: varchar("id").primaryKey(),
+  workOrderId: varchar("work_order_id").notNull().references(() => workOrders.id, { onDelete: 'cascade' }),
+  fileName: varchar("file_name").notNull(),
+  fileType: varchar("file_type"),
+  fileSize: integer("file_size"),
+  fileUrl: varchar("file_url"),
+  localPath: varchar("local_path"),
+  base64Data: text("base64_data"),
+  caption: text("caption"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  uploadedAt: timestamp("uploaded_at").default(sql`now()`),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  // Offline sync fields
+  localId: varchar("local_id"),
+  syncStatus: syncStatusEnum("sync_status").default('synced'),
+  createdOffline: boolean("created_offline").default(false),
+  lastSyncAttempt: timestamp("last_sync_attempt"),
+  syncRetryCount: integer("sync_retry_count").default(0),
+  syncError: text("sync_error"),
+  syncedAt: timestamp("synced_at"),
+}, (table) => ({
+  uniqueLocalId: uniqueIndex("work_order_attachments_local_id_unique").on(table.localId).where(sql`local_id IS NOT NULL`),
 }));
 
 // 12. TABELA: audit_logs (Logs de Auditoria)
@@ -590,7 +626,17 @@ export const maintenanceChecklistExecutions = pgTable("maintenance_checklist_exe
   attachments: jsonb("attachments"),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
-});
+  // Offline sync fields
+  localId: varchar("local_id"),
+  syncStatus: syncStatusEnum("sync_status").default('synced'),
+  createdOffline: boolean("created_offline").default(false),
+  lastSyncAttempt: timestamp("last_sync_attempt"),
+  syncRetryCount: integer("sync_retry_count").default(0),
+  syncError: text("sync_error"),
+  syncedAt: timestamp("synced_at"),
+}, (table) => ({
+  uniqueLocalId: uniqueIndex("maintenance_checklist_executions_local_id_unique").on(table.localId).where(sql`local_id IS NOT NULL`),
+}));
 
 // 31. TABELA: maintenance_plans (Planos de Manutenção)
 export const maintenancePlans = pgTable("maintenance_plans", {
@@ -864,6 +910,18 @@ export const workOrdersRelations = relations(workOrders, ({ one, many }) => ({
     references: [qrCodePoints.id],
   }),
   comments: many(workOrderComments),
+  attachments: many(workOrderAttachments),
+}));
+
+export const workOrderAttachmentsRelations = relations(workOrderAttachments, ({ one }) => ({
+  workOrder: one(workOrders, {
+    fields: [workOrderAttachments.workOrderId],
+    references: [workOrders.id],
+  }),
+  uploadedByUser: one(users, {
+    fields: [workOrderAttachments.uploadedBy],
+    references: [users.id],
+  }),
 }));
 
 export const cleaningActivitiesRelations = relations(cleaningActivities, ({ one, many }) => ({
@@ -1210,6 +1268,7 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({ id: t
     return val;
   }),
 });
+export const insertWorkOrderAttachmentSchema = createInsertSchema(workOrderAttachments).omit({ id: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 export const insertDashboardGoalSchema = createInsertSchema(dashboardGoals).omit({ id: true });
 export const insertCustomRoleSchema = createInsertSchema(customRoles);
@@ -1284,6 +1343,9 @@ export type InsertChecklistTemplate = z.infer<typeof insertChecklistTemplateSche
 
 export type WorkOrder = typeof workOrders.$inferSelect;
 export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
+
+export type WorkOrderAttachment = typeof workOrderAttachments.$inferSelect;
+export type InsertWorkOrderAttachment = z.infer<typeof insertWorkOrderAttachmentSchema>;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
