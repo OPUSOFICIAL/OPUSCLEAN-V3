@@ -122,7 +122,22 @@ The frontend uses React and TypeScript, with Wouter for routing and TanStack Que
   - NetworkContext for online/offline detection with automatic sync triggering on reconnection
   - SyncStatusIndicator component with visual feedback (badge, colors, tooltips)
   - React hook (useOfflineStorage) with toast notifications and state management
-- **Key Files:** `shared/schema.ts`, `server/storage.ts`, `server/routes.ts` (backend), `client/src/lib/offline-storage.ts`, `client/src/hooks/use-offline-storage.ts`, `client/src/contexts/NetworkContext.tsx`, `client/src/components/sync-status-indicator.tsx` (frontend)
+- **SyncQueueManager (November 2025):**
+  - Singleton pattern preventing concurrent sync processing
+  - **3-Phase Sequential Batching Strategy:**
+    - Phase 1: Drain all work orders completely (parent entities)
+    - Phase 2: Drain all checklist executions completely (child entities)
+    - Phase 3: Drain all attachments completely (child entities)
+    - Ensures parents have serverId before children sync, enabling proper ID reconciliation
+  - **Robust Error Handling:**
+    - Transport errors (network/timeout): Abort sync immediately, retry on next reconnection
+    - Hard backend errors: Call markAsFailed(), move item to failed state
+    - Promise.allSettled rejections: Logged with console.error, counted as failed, surfaced in errors array
+  - **Batch Processing:** Up to 50 items per batch, parallel markAsSynced/markAsFailed via Promise.allSettled
+  - **Auto-sync Integration:** useSyncOnReconnect hook triggers queue drainage 1s after network reconnection
+  - **Full Queue Drainage:** Each phase loops until empty, processing all pending items before moving to next phase
+  - Retry logic delegated to OfflineStorageManager (exponential backoff, max 5 attempts)
+- **Key Files:** `shared/schema.ts`, `server/storage.ts`, `server/routes.ts` (backend), `client/src/lib/offline-storage.ts`, `client/src/lib/sync-queue-manager.ts`, `client/src/hooks/use-offline-storage.ts`, `client/src/hooks/use-sync-on-reconnect.ts`, `client/src/contexts/NetworkContext.tsx`, `client/src/components/sync-status-indicator.tsx`, `client/src/App.tsx` (frontend)
 
 ### System Design Choices
 

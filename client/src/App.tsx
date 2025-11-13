@@ -49,6 +49,13 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
+
+// Component to initialize sync hooks
+function SyncInitializer() {
+  useSyncOnReconnect();
+  return null;
+}
 
 function AuthenticatedAdminRouter() {
   const { activeClientId, isLoading } = useClient();
@@ -188,6 +195,7 @@ function App() {
             <ModuleProvider>
               <BrandingProvider>
                 <TooltipProvider>
+                  <SyncInitializer />
                   <ScrollToTop />
                   <Toaster />
                   <Router />
