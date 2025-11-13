@@ -2,7 +2,7 @@
 
 ## Overview
 
-Acelera it Full Facilities is a modular platform for facilities management, currently supporting Clean and Maintenance modules. It aims to streamline operations through web administration and mobile applications, offering features like scheduling, work order management, QR code-based task execution, and public service requests. Designed for multi-company, multi-site, and multi-zone environments, it provides real-time analytics and a scalable solution for modern facilities management.
+Acelera it Full Facilities is a modular platform for facilities management, currently supporting Clean and Maintenance modules. It aims to streamline operations through web administration and mobile applications, offering features like scheduling, work order management, QR code-based task execution, and public service requests. Designed for multi-company, multi-site, and multi-zone environments, it provides real-time analytics and a scalable solution for modern facilities management, focusing on efficiency, cost reduction, and increased productivity.
 
 ## User Preferences
 
@@ -12,202 +12,71 @@ Preferred communication style: Simple, everyday language.
 
 ### UI/UX Decisions
 
-The system features an **enterprise-grade, corporate design** targeting B2B clients in the facilities management industry. The design emphasizes professionalism, trust, and measurable ROI, utilizing `shadcn/ui` with Radix UI primitives and Tailwind CSS. Module-specific colors (blue for Clean, orange for Maintenance) are used for focal elements. The design is responsive, optimized for desktop and mobile, with touch-friendly elements.
-
-**Pre-Login Pages Design Philosophy**:
-- **Landing Page**: Corporate SaaS aesthetic with facilities management focus
-  - Fixed frosted glass top bar (bg-white/80 backdrop-blur-lg) with Acelera Full Facilities logo (100px height with negative margins) and "Acessar Sistema" button
-  - Hero section with strong value proposition: "Transforme a Gestão de Facilities da sua Empresa"
-  - ROI-focused metrics (45% cost reduction, 3x productivity, 99% uptime, 24/7 support)
-  - **Interactive dashboard carousel** with auto-advancing slides (4 seconds) showing different system views:
-    - Dashboard Facilities (Overview with OSs and performance metrics)
-    - Manutenção (Work orders with status tracking)
-    - Analytics (Performance charts and SLA metrics)
-    - Calendário (Scheduled maintenance and activities)
-  - Clickable navigation dots for manual slide control
-  - Smooth AnimatePresence transitions between slides
-  - Business-focused benefits highlighting operational efficiency
-  - Features section with facilities-specific icons (Building2, Wrench, ClipboardCheck, TrendingUp)
-  - Professional color scheme: slate/gray with blue accents
-  - Clean gradient backgrounds (slate-50 to white)
-  - Trust-building elements and enterprise messaging
-
-- **Login Page**: Minimalist corporate design
-  - Simple top bar with only "Voltar" button (logo removed for cleaner design)
-  - Large centered Acelera Full Facilities logo (200px height) above form
-  - Clean white card with subtle shadows
-  - Direct email/password login (Microsoft SSO removed)
-  - Professional form styling with icon-enhanced inputs
-  - Security messaging: "Plataforma Enterprise Segura"
-  - Minimal decorative elements (subtle gradient orbs)
-
-- **Module Selection**: Professional module cards with ROI emphasis
-  - Large centered Acelera Full Facilities logo (128px height) at top
-  - Side-by-side cards for Clean and Maintenance modules
-  - Each card features: module icon, title, subtitle, ROI metrics, feature list
-  - Clean module: 45% cost reduction, 3x efficiency
-  - Maintenance module: 60% less downtime, 2.5x asset lifespan
-  - Feature lists with checkmarks highlighting operational benefits
-  - Gradient buttons matching module colors
-
-**Visual Elements**:
-- Acelera Full Facilities logo (attached_assets/acelera-full-facilities-logo.png) with triangular "A" symbol and blue detail
-- Logo sizes: Landing top bar (100px with negative margins), Login center (200px), Module selection (128px)
-- Icons from lucide-react representing facilities operations (Building2, Wrench, ClipboardCheck, Users, TrendingUp, Shield)
-- Custom Microsoft logo SVG for SSO
-- Framer Motion animations for professional, subtle transitions
-- Card-based layouts with hover effects
-- Gradient buttons: from-blue-600 to-blue-500 (Clean), from-orange-600 to-orange-500 (Maintenance)
-
-**Layout**: All internal pages use full-width layout (`w-full px-6`) instead of constrained max-width (`max-w-7xl`), allowing content to expand to the full available width between sidebar and screen edge, eliminating white space on larger displays.
+The system features an enterprise-grade, corporate design using `shadcn/ui` with Radix UI primitives and Tailwind CSS. It emphasizes professionalism and ROI, utilizing module-specific colors (blue for Clean, orange for Maintenance) and responsive design. Pre-login pages feature a corporate SaaS aesthetic with interactive dashboards, minimalist login, and professional module selection cards highlighting ROI. Visual elements include custom branding, Lucide React icons, Framer Motion animations, and full-width layouts for internal pages.
 
 ### Technical Implementations
 
-The frontend uses React and TypeScript, with Wouter for routing and TanStack Query for data management, built with Vite. The backend is an Express.js server in TypeScript, following RESTful API principles with Drizzle ORM for type-safe PostgreSQL interactions.
+The frontend uses React and TypeScript with Wouter for routing and TanStack Query for data management. The backend is an Express.js server in TypeScript, using Drizzle ORM for PostgreSQL. Key features include a hierarchical multi-tenancy model with role-based access control, comprehensive equipment management, QR code-based task execution and service requests, and robust work order management with virtual calendars and automated scheduling. Authentication supports Microsoft SSO and email/password, secured with JWT, Bcrypt, and other best practices. An AI integration configuration page is present, with chat assistant functionality under development. A TV Mode Dashboard provides real-time, gamified metrics. User management offers full CRUD and custom role assignments.
 
-### Feature Specifications
-
-**Multi-Tenancy**: Implements a hierarchical multi-tenancy model (Companies > Sites > Zones) with robust role-based access control and client/module-specific data isolation.
-
-**Equipment Management (Maintenance Module)**: Supports direct equipment selection for checklist assignment and maintenance planning. Includes an equipment history viewer for work order history.
-
-**QR Code System**: Facilitates Execution QRs for staff work order management and Public QRs for end-users to submit service requests, automatically generating corrective work orders.
-
-**Work Order Management**: Manages programmed, internal corrective, and public corrective work orders, tracking status, SLA, priority, assignments, comments with photo attachments, and multiple responsible collaborators. The Maintenance module uses a virtual calendar for future activity display and a monthly automated scheduler for work order creation. Work order numbering is customer-specific.
-
-**AI Integration**: AI integration configuration page allows OPUS users to configure AI providers (OpenAI, Google Gemini, Groq, Azure OpenAI, Cohere, etc.) for future use. The chat assistant functionality is currently in development and has been temporarily disabled. A development notice is displayed on the AI Integrations page informing users that the assistant will be available soon.
-
-**Authentication and Authorization**: Supports Microsoft SSO (Entra ID) and email/password authentication. Security includes JWT, Bcrypt, rate limiting, data sanitization, CORS, Helmet.js, and SQL injection prevention. A custom role system provides granular, permission-based access with strict module-based access control.
-
-**Dashboard**: Provides analytical charts for work orders, including distribution by priority and location, average completion time, and activity trends.
-
-**TV Mode Dashboard**: Real-time dashboard specifically designed for public display (TV screens) showing live metrics and gamified leaderboards. Features auto-refresh every 10 seconds, displaying work order statistics (resolved vs unresolved) via donut chart and a top 10 collaborators leaderboard ranked by completed work orders. Filtered by active client and module. Accessible at `/tv-mode`.
-
-**User Management**: Offers full CRUD operations for users, including client user creation and custom role assignment.
-
-**Offline Sync Infrastructure** (November 2025):
-- Complete backend infrastructure for offline-first Android APK with batch synchronization
-- **Database Schema Enhancements:**
-  - Sync metadata fields: `localId`, `syncStatus`, `createdOffline`, `lastSyncAttempt`, `syncRetryCount`, `syncError`, `syncedAt`
-  - Applied to: `work_orders`, `maintenance_checklist_executions`, `work_order_attachments`
-  - Tenant-scoped unique constraints: `(customer_id, local_id)` for work orders, `(work_order_id, local_id)` for executions/attachments
-- **Security Hardening:**
-  - Single SERIALIZABLE transaction per batch (all-or-nothing atomicity)
-  - Pre-transaction validation: customer ownership, duplicate detection, FK integrity
-  - Batch validation replacing N+1 queries with single scoped fetch via `getWorkOrdersByIds()`
-  - UPSERT-based idempotency using composite unique indexes with `onConflictDoUpdate`
-  - Prevents cross-tenant data leaks and race conditions through tenant-scoped constraints
-- **API Endpoints:**
-  - `POST /api/sync/batch`: Secure batch sync endpoint with authenticated customer validation
-  - Supports up to 50 items per batch (work orders, checklist executions, attachments)
-  - Returns individual status per item with server-assigned IDs
-- **Performance Optimizations:**
-  - Composite indexes on sync columns for efficient conflict detection
-  - Single batch query for FK validation instead of per-item lookups
-  - Transaction-level deduplication to prevent rollbacks
-- **Frontend Offline Storage (November 2025):**
-  - IndexedDB-based OfflineStorageManager with 4 object stores: workOrders, checklistExecutions, attachments, syncQueue
-  - Indexes on syncStatus, customerId, workOrderId, serverId, createdAt for efficient queries
-  - CRUD operations for all entity types with automatic sync queue management
-  - **Sync Queue Management:**
-    - Priority-based queue (work orders: 10, executions: 8, attachments: 5)
-    - Exponential backoff retry logic (max 5 retries, decreasing priority each retry)
-    - Automatic re-enqueuing of failed items until max retries reached
-    - Queue-based statistics for accurate pending counts
-  - **Parent-Child ID Linkage:**
-    - Automatic dependent record updates when parent work order syncs
-    - executions/attachments initially reference work order by localId
-    - Upon sync, updateDependentRecords() updates all children to reference serverId
-    - Prevents orphaned records and enables seamless sync reconciliation
-  - NetworkContext for online/offline detection with automatic sync triggering on reconnection
-  - SyncStatusIndicator component with visual feedback (badge, colors, tooltips)
-  - React hook (useOfflineStorage) with toast notifications and state management
-- **SyncQueueManager (November 2025):**
-  - Singleton pattern preventing concurrent sync processing
-  - **3-Phase Sequential Batching Strategy:**
-    - Phase 1: Drain all work orders completely (parent entities)
-    - Phase 2: Drain all checklist executions completely (child entities)
-    - Phase 3: Drain all attachments completely (child entities)
-    - Ensures parents have serverId before children sync, enabling proper ID reconciliation
-  - **Robust Error Handling:**
-    - Transport errors (network/timeout): Abort sync immediately, retry on next reconnection
-    - Hard backend errors: Call markAsFailed(), move item to failed state
-    - Promise.allSettled rejections: Logged with console.error, counted as failed, surfaced in errors array
-  - **Batch Processing:** Up to 50 items per batch, parallel markAsSynced/markAsFailed via Promise.allSettled
-  - **Auto-sync Integration:** useSyncOnReconnect hook triggers queue drainage 1s after network reconnection
-  - **Full Queue Drainage:** Each phase loops until empty, processing all pending items before moving to next phase
-  - Retry logic delegated to OfflineStorageManager (exponential backoff, max 5 attempts)
-- **Key Files:** `shared/schema.ts`, `server/storage.ts`, `server/routes.ts` (backend), `client/src/lib/offline-storage.ts`, `client/src/lib/sync-queue-manager.ts`, `client/src/hooks/use-offline-storage.ts`, `client/src/hooks/use-sync-on-reconnect.ts`, `client/src/contexts/NetworkContext.tsx`, `client/src/components/sync-status-indicator.tsx`, `client/src/App.tsx` (frontend)
+An offline sync infrastructure supports an offline-first Android APK with batch synchronization. This includes database schema enhancements for sync metadata, security hardening with serializable transactions and UPSERT-based idempotency, and secure batch API endpoints. The frontend utilizes IndexedDB for offline storage, a priority-based sync queue with exponential backoff, and automatic parent-child ID linkage. Pages like `mobile-work-order-execute.tsx` and `qr-execution.tsx` are adapted for offline use, validating fields and saving to IndexedDB when disconnected. A singleton `SyncQueueManager` ensures a 3-phase sequential batching strategy for work orders, checklist executions, and attachments, with robust error handling and auto-sync on reconnection.
 
 ### System Design Choices
 
-The project is configured for the Replit cloud environment, with automated PostgreSQL provisioning, schema pushing, and dependency installation. It's designed to be modular, supporting new operational modules with distinct theming and data isolation. The term "Site" is presented as "Local" in the UI.
-
-**Adaptive Subdomain-Based Branding System** (November 2025):
-- Fully adaptive subdomain detection supporting any domain type (custom TLDs, localhost, multi-part public suffixes, Replit domains)
-- Automatic client branding application (logos + module colors) based on subdomain
-- Works in both production VM and development environments
-- Testing via `?test-subdomain=tenant` query parameter in development
-- Logos displayed: login page (loginLogo), sidebar (sidebarLogo/sidebarLogoCollapsed), module selection (homeLogo)
-- Module colors (clean/maintenance) applied dynamically via CSS variables
-- Robust tenant switching with automatic state reset to prevent branding bleed-through
-- Graceful fallback handling for missing or broken logos
-- Static assets served via Express from `/attached_assets/customer_logos/` with caching
-- Key files: `client/src/lib/subdomain-detector.ts`, `client/src/contexts/BrandingContext.tsx`, `client/src/components/logo-image.tsx`
+The project is configured for the Replit cloud environment, with automated PostgreSQL provisioning and modular design for future expansion. It includes an adaptive subdomain-based branding system that dynamically applies client branding (logos and module colors) based on the subdomain, with robust fallback mechanisms and asset serving.
 
 ## External Dependencies
 
 ### Database & Storage
-- **PostgreSQL** (Neon hosting)
-- **Drizzle ORM**
-- **Drizzle Kit**
+- PostgreSQL (Neon hosting)
+- Drizzle ORM
+- Drizzle Kit
 
 ### UI Components & Styling
-- **Radix UI**
-- **shadcn/ui**
-- **Tailwind CSS**
-- **Lucide React**
-- **React Icons**
-- **Framer Motion**
+- Radix UI
+- shadcn/ui
+- Tailwind CSS
+- Lucide React
+- React Icons
+- Framer Motion
 
 ### Frontend Framework
-- **React 18**
-- **TypeScript**
-- **Vite**
-- **Wouter**
-- **TanStack Query**
-- **React Hook Form**
-- **Zod**
+- React 18
+- TypeScript
+- Vite
+- Wouter
+- TanStack Query
+- React Hook Form
+- Zod
 
 ### Backend & API
-- **Express.js**
-- **TypeScript**
-- **Passport.js**
-- **Passport Local**
-- **OpenID Client**
-- **JWT**
-- **Bcrypt.js**
+- Express.js
+- TypeScript
+- Passport.js
+- Passport Local
+- OpenID Client
+- JWT
+- Bcrypt.js
 
 ### Security & Middleware
-- **Helmet.js**
-- **CORS**
-- **Express Rate Limit**
-- **Express Session**
-- **Connect PG Simple**
+- Helmet.js
+- CORS
+- Express Rate Limit
+- Express Session
+- Connect PG Simple
 
 ### AI & Chat
-- **Groq SDK**
-- **Google Generative AI**
-- **OpenAI SDK**
-- **Zod** (for function calling schema validation)
+- Groq SDK
+- Google Generative AI
+- OpenAI SDK
+- Zod (for function calling schema validation)
 
 ### Utilities
-- **date-fns**
-- **nanoid**
-- **QRCode**
-- **QR Scanner**
-- **jsPDF**
-- **jsPDF AutoTable**
-- **html2canvas**
-- **XLSX**
-- **Memoizee**
+- date-fns
+- nanoid
+- QRCode
+- QR Scanner
+- jsPDF
+- jsPDF AutoTable
+- html2canvas
+- XLSX
+- Memoizee
