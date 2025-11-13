@@ -2182,6 +2182,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteService(id: string): Promise<void> {
+    // Verificar se existem work orders concluídas vinculadas a este serviço
+    const completedWorkOrders = await db.select()
+      .from(workOrders)
+      .where(
+        and(
+          eq(workOrders.serviceId, id),
+          eq(workOrders.status, 'concluida')
+        )
+      );
+    
+    if (completedWorkOrders.length > 0) {
+      throw new Error('Não foi possível deletar as atividades');
+    }
+    
+    // Se não houver work orders concluídas, pode deletar o serviço
     await db.delete(services).where(eq(services.id, id));
   }
 
@@ -2250,8 +2265,45 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteServiceType(id: string): Promise<void> {
-    // CATEGORIAS - COMENTADO (categorias foram removidas do sistema)
-    // await db.delete(serviceCategories).where(eq(serviceCategories.typeId, id));
+    // Deletar em cascata: tipo → categorias → serviços
+    // MAS bloquear se houver work orders concluídas vinculadas
+    
+    // 1. Buscar todas categorias vinculadas ao tipo
+    const categories = await db.select().from(serviceCategories)
+      .where(eq(serviceCategories.typeId, id));
+    
+    // 2. Para cada categoria, buscar serviços e verificar work orders concluídas
+    for (const category of categories) {
+      const servicesInCategory = await db.select().from(services)
+        .where(eq(services.categoryId, category.id));
+      
+      // Verificar se algum serviço tem work orders concluídas
+      for (const service of servicesInCategory) {
+        const completedWorkOrders = await db.select()
+          .from(workOrders)
+          .where(
+            and(
+              eq(workOrders.serviceId, service.id),
+              eq(workOrders.status, 'concluida')
+            )
+          );
+        
+        if (completedWorkOrders.length > 0) {
+          throw new Error('Não foi possível deletar as atividades');
+        }
+      }
+    }
+    
+    // 3. Se não houver work orders concluídas, deletar em cascata
+    // 3a. Deletar serviços vinculados às categorias
+    for (const category of categories) {
+      await db.delete(services).where(eq(services.categoryId, category.id));
+    }
+    
+    // 3b. Deletar categorias vinculadas ao tipo
+    await db.delete(serviceCategories).where(eq(serviceCategories.typeId, id));
+    
+    // 3c. Deletar tipo
     await db.delete(serviceTypes).where(eq(serviceTypes.id, id));
   }
 

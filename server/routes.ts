@@ -1516,14 +1516,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error deleting service type:", error);
       
-      // Check if it's a foreign key constraint error
-      if (error.code === '23503' && error.constraint?.includes('service_categories')) {
+      // Verificar se é o erro de atividades concluídas
+      if (error.message === 'Não foi possível deletar as atividades') {
         return res.status(400).json({ 
-          message: "Não é possível excluir este tipo de serviço porque existem categorias vinculadas a ele. Exclua primeiro as categorias relacionadas." 
+          message: error.message
         });
       }
       
-      res.status(500).json({ message: "Failed to delete service type" });
+      // Check if it's a foreign key constraint error
+      if (error.code === '23503') {
+        return res.status(400).json({ 
+          message: "Não é possível excluir este tipo de serviço porque existem vínculos com outros registros." 
+        });
+      }
+      
+      res.status(500).json({ message: "Falha ao excluir serviço" });
     }
   });
 
