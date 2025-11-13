@@ -9,23 +9,66 @@ import { useState, useEffect, useMemo } from "react";
 import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import * as XLSX from "xlsx";
 import { 
   FileBarChart, 
   DollarSign,
   TrendingUp,
   Building2,
   MapPin,
-  Download
+  Download,
+  RefreshCw
 } from "lucide-react";
 
 interface AssetReportProps {
   customerId: string;
 }
 
+// Type for backend asset report structure
+interface BackendAssetReport {
+  customer: {
+    id: string;
+    name: string;
+  };
+  summary: {
+    totalValue: number;
+    totalEquipment: number;
+    siteCount: number;
+    zoneCount: number;
+    totalsVerified: boolean;
+  };
+  sites: Array<{
+    siteId: string;
+    siteName: string;
+    totalValue: number;
+    equipmentCount: number;
+    zones: Array<{
+      zoneId: string;
+      zoneName: string;
+      totalValue: number;
+      equipmentCount: number;
+      equipment: Array<{
+        id: string;
+        name: string;
+        model: string;
+        manufacturer: string;
+        serialNumber: string;
+        unitValue: number;
+        quantity: number;
+        totalValue: number;
+        status: string;
+      }>;
+    }>;
+  }>;
+}
+
 export default function AssetReport({ customerId }: AssetReportProps) {
   const { currentModule } = useModule();
   const theme = useModuleTheme();
   const [, setLocation] = useLocation();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   // Redirect if not in maintenance module
   useEffect(() => {
@@ -49,6 +92,12 @@ export default function AssetReport({ customerId }: AssetReportProps) {
   // Fetch zones
   const { data: zones } = useQuery({
     queryKey: [`/api/customers/${customerId}/zones`, { module: currentModule }],
+    enabled: !!customerId,
+  });
+
+  // Fetch asset report from backend (for Excel export)
+  const { data: assetReport } = useQuery({
+    queryKey: [`/api/customers/${customerId}/reports/assets`, { module: currentModule }],
     enabled: !!customerId,
   });
 
@@ -125,6 +174,121 @@ export default function AssetReport({ customerId }: AssetReportProps) {
     }).format(value);
   };
 
+  // Generate Excel export (using backend assetReport data)
+  const generateExcelReport = () => {
+    if (!assetReport || typeof assetReport !== 'object') {
+      toast({
+        title: "Erro ao exportar",
+        description: "Dados do relatório não disponíveis.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Runtime validation of backend data structure
+    const report = assetReport as BackendAssetReport;
+    if (!report.customer || !report.summary || !Array.isArray(report.sites)) {
+      toast({
+        title: "Erro ao exportar",
+        description: "Estrutura de dados inválida do relatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      const workbook = XLSX.utils.book_new();
+      const moduleTitle = 'MANUTENÇÃO';
+      
+      // Create summary sheet matching reports.tsx structure exactly
+      const patrimonioSummaryData: any[][] = [
+        [`GRUPO OPUS - RELATÓRIO DE ${moduleTitle}`],
+        [''],
+        ['Cliente', report.customer?.name ?? 'Não identificado'],
+        ['Total Geral', Number(report.summary?.totalValue ?? 0)],
+        [''],
+        ['RESUMO'],
+        ['Total de Equipamentos', Number(report.summary?.totalEquipment ?? 0)],
+        ['Número de Locais', Number(report.summary?.siteCount ?? 0)],
+        ['Número de Zonas', Number(report.summary?.zoneCount ?? 0)]
+      ];
+      const summarySheet = XLSX.utils.aoa_to_sheet(patrimonioSummaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumo");
+
+      // Create hierarchical patrimony sheet matching reports.tsx structure exactly
+      if (Array.isArray(report.sites)) {
+        const hierarchyData: any[][] = [
+          ['PATRIMÔNIO HIERÁRQUICO'],
+          [''],
+          ['Hierarquia', 'Nome', 'Valor Unitário', 'Quantidade', 'Valor Total']
+        ];
+        
+        report.sites.forEach((site, siteIndex) => {
+          // Site row with numeric total value (numeric 0 instead of empty string)
+          hierarchyData.push([
+            `${siteIndex + 1}. Local`, 
+            site.siteName, 
+            0, 
+            0, 
+            Number(site.totalValue ?? 0)
+          ]);
+          
+          const zones = site.zones ?? [];
+          zones.forEach((zone) => {
+            // Zone row with numeric total value (numeric 0 instead of empty string)
+            hierarchyData.push([
+              '  • Zona', 
+              zone.zoneName, 
+              0, 
+              0, 
+              Number(zone.totalValue ?? 0)
+            ]);
+            
+            const zoneEquipment = zone.equipment ?? [];
+            zoneEquipment.forEach((equip) => {
+              // Equipment row with numeric values for unit, quantity, and total
+              hierarchyData.push([
+                '    ◦ Equipamento', 
+                equip.name,
+                Number(equip.unitValue ?? 0),
+                Number(equip.quantity ?? 1),
+                Number(equip.totalValue ?? 0)
+              ]);
+            });
+          });
+          hierarchyData.push(['', '', '', '', '']); // Blank line between sites
+        });
+        
+        const hierarchySheet = XLSX.utils.aoa_to_sheet(hierarchyData);
+        XLSX.utils.book_append_sheet(workbook, hierarchySheet, "Patrimônio Completo");
+      }
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `relatorio-patrimonio-${timestamp}`;
+      
+      // Download file
+      XLSX.writeFile(workbook, `${filename}.xlsx`);
+      
+      toast({
+        title: "Relatório exportado com sucesso",
+        description: "Relatório de Patrimônio em formato Excel baixado.",
+      });
+      
+    } catch (error) {
+      console.error('Erro ao gerar relatório:', error);
+      toast({
+        title: "Erro ao exportar relatório",
+        description: "Ocorreu um erro ao gerar o arquivo Excel. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const totalEquipment = Array.isArray(equipment) ? equipment.length : 0;
   const equipmentWithValue = Array.isArray(equipment) 
     ? equipment.filter((eq: any) => eq.value && parseFloat(eq.value) > 0).length 
@@ -157,11 +321,16 @@ export default function AssetReport({ customerId }: AssetReportProps) {
           <Button 
             variant="outline" 
             className={theme.buttons.outline}
-            onClick={() => window.print()}
+            onClick={generateExcelReport}
+            disabled={isGenerating || isLoadingEquipment}
             data-testid="button-export-report"
           >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+            {isGenerating ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            {isGenerating ? "Exportando..." : "Exportar"}
           </Button>
         }
       />
