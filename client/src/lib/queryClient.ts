@@ -4,14 +4,12 @@ async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     
-    // Tentar fazer parse do JSON para extrair message e details
+    // Tentar fazer parse do JSON para extrair apenas a mensagem
     try {
       const errorData = JSON.parse(text);
-      const error: any = new Error(errorData.message || text);
-      error.message = errorData.message || text;
-      error.details = errorData.details || null;
-      error.errors = errorData.errors || null;
-      throw error;
+      // Extrair apenas a mensagem, sem criar propriedades extras
+      const message = errorData.message || errorData.error || text;
+      throw new Error(message);
     } catch (parseError) {
       // Se não for JSON válido, jogar o texto direto
       throw new Error(text);
