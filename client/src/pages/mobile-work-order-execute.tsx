@@ -7,8 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle, Image as ImageIcon, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNetwork } from "@/contexts/NetworkContext";
+import { useOfflineStorage } from "@/hooks/use-offline-storage";
+import { nanoid } from "nanoid";
 
 // Helper function to add JWT token to fetch requests
 const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
@@ -31,6 +34,11 @@ export default function MobileWorkOrderExecute() {
   const [, params] = useRoute("/mobile/work-order/:id");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { isOnline } = useNetwork();
+  const { 
+    createOfflineChecklistExecution,
+    createOfflineAttachment 
+  } = useOfflineStorage();
   
   const [workOrder, setWorkOrder] = useState<any>(null);
   const [checklist, setChecklist] = useState<any>(null);
