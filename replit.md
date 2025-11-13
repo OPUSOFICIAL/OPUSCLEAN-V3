@@ -39,6 +39,13 @@ The project is configured for the Replit cloud environment, with automated Postg
 - React Icons
 - Framer Motion
 
+### Mobile (Android APK)
+- Capacitor 7 (Core, CLI, Android)
+- Offline-first architecture with IndexedDB
+- Native plugins: Network, Camera (planned)
+- Build config: `ANDROID_BUILD.md`
+- APK generation via Android Studio or Gradle
+
 ### Frontend Framework
 - React 18
 - TypeScript
