@@ -45,6 +45,9 @@ The project is configured for the Replit cloud environment, with automated Postg
 - Native plugins: Network, Camera (planned)
 - Build config: `ANDROID_BUILD.md`
 - APK generation via Android Studio or Gradle
+- Build script: `npm run build:android` (frontend only, no DB steps)
+- Sync script: `npx cap sync android`
+- Platform added: `android/` (native Android project)
 
 ### Frontend Framework
 - React 18
