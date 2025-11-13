@@ -238,17 +238,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Zones by Customer (filtrado por cliente)
-  app.get("/api/customers/:customerId/zones", async (req, res) => {
-    try {
-      const module = req.query.module as 'clean' | 'maintenance' | undefined;
-      const zones = await storage.getZonesByCustomer(req.params.customerId, module);
-      res.json(zones);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get customer zones" });
-    }
-  });
-
   // Cleaning Activities by Customer (filtrado por cliente)
   app.get("/api/customers/:customerId/cleaning-activities", async (req, res) => {
     try {
