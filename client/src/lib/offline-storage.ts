@@ -82,12 +82,34 @@ export interface SyncQueueItem {
   lastError?: string;
 }
 
+export interface CachedQRPoint {
+  code: string; // PK - QR code value
+  pointId: string;
+  name: string;
+  description?: string;
+  zoneId: string;
+  customerId: string;
+  module: 'clean' | 'maintenance';
+  lastSynced: number; // Timestamp
+}
+
+export interface CachedZone {
+  id: string; // PK - Zone ID
+  name: string;
+  areaM2?: number;
+  siteId?: string;
+  siteName?: string;
+  customerId: string;
+  module: 'clean' | 'maintenance';
+  lastSynced: number; // Timestamp
+}
+
 // ============================================================================
 // INDEXEDDB DATABASE SETUP
 // ============================================================================
 
 const DB_NAME = 'AceleraOfflineDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Updated to add QR points and zones cache
 
 export class OfflineStorageManager {
   private db: IDBDatabase | null = null;
@@ -149,6 +171,24 @@ export class OfflineStorageManager {
           queueStore.createIndex('type', 'type', { unique: false });
           queueStore.createIndex('createdAt', 'createdAt', { unique: false });
           console.log('[OFFLINE STORAGE] Created syncQueue store');
+        }
+
+        // v2: QR metadata cache for offline execution
+        if (!db.objectStoreNames.contains('qrPoints')) {
+          const qrPointsStore = db.createObjectStore('qrPoints', { keyPath: 'code' });
+          qrPointsStore.createIndex('customerId', 'customerId', { unique: false });
+          qrPointsStore.createIndex('module', 'module', { unique: false });
+          qrPointsStore.createIndex('zoneId', 'zoneId', { unique: false });
+          qrPointsStore.createIndex('lastSynced', 'lastSynced', { unique: false });
+          console.log('[OFFLINE STORAGE] Created qrPoints store');
+        }
+
+        if (!db.objectStoreNames.contains('zones')) {
+          const zonesStore = db.createObjectStore('zones', { keyPath: 'id' });
+          zonesStore.createIndex('customerId', 'customerId', { unique: false });
+          zonesStore.createIndex('module', 'module', { unique: false });
+          zonesStore.createIndex('lastSynced', 'lastSynced', { unique: false });
+          console.log('[OFFLINE STORAGE] Created zones store');
         }
       };
     });
@@ -425,6 +465,188 @@ export class OfflineStorageManager {
 
       request.onsuccess = () => {
         resolve(request.result || []);
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
+
+  // ============================================================================
+  // QR POINTS CACHE (for offline QR scanning)
+  // ============================================================================
+
+  async cacheQRPoint(data: Omit<CachedQRPoint, 'lastSynced'>): Promise<void> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['qrPoints'], 'readwrite');
+      const store = transaction.objectStore('qrPoints');
+
+      const qrPoint: CachedQRPoint = {
+        ...data,
+        lastSynced: Date.now(),
+      };
+
+      const request = store.put(qrPoint);
+
+      request.onsuccess = () => {
+        console.log('[OFFLINE STORAGE] QR point cached:', data.code);
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache QR point', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getQRPoint(code: string): Promise<CachedQRPoint | null> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['qrPoints'], 'readonly');
+      const store = transaction.objectStore('qrPoints');
+      const request = store.get(code);
+
+      request.onsuccess = () => {
+        resolve(request.result || null);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get QR point', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async cacheQRPointsBulk(points: Omit<CachedQRPoint, 'lastSynced'>[]): Promise<void> {
+    const db = await this.ensureDB();
+    const now = Date.now();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['qrPoints'], 'readwrite');
+      const store = transaction.objectStore('qrPoints');
+      let processedCount = 0;
+
+      points.forEach((point) => {
+        const qrPoint: CachedQRPoint = {
+          ...point,
+          lastSynced: now,
+        };
+        store.put(qrPoint);
+        processedCount++;
+      });
+
+      transaction.oncomplete = () => {
+        console.log(`[OFFLINE STORAGE] Cached ${processedCount} QR points in bulk`);
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache QR points in bulk', transaction.error);
+        reject(transaction.error);
+      };
+    });
+  }
+
+  // ============================================================================
+  // ZONES CACHE (for offline QR scanning)
+  // ============================================================================
+
+  async cacheZone(data: Omit<CachedZone, 'lastSynced'>): Promise<void> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['zones'], 'readwrite');
+      const store = transaction.objectStore('zones');
+
+      const zone: CachedZone = {
+        ...data,
+        lastSynced: Date.now(),
+      };
+
+      const request = store.put(zone);
+
+      request.onsuccess = () => {
+        console.log('[OFFLINE STORAGE] Zone cached:', data.id);
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache zone', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getZone(id: string): Promise<CachedZone | null> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['zones'], 'readonly');
+      const store = transaction.objectStore('zones');
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        resolve(request.result || null);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get zone', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async cacheZonesBulk(zones: Omit<CachedZone, 'lastSynced'>[]): Promise<void> {
+    const db = await this.ensureDB();
+    const now = Date.now();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['zones'], 'readwrite');
+      const store = transaction.objectStore('zones');
+      let processedCount = 0;
+
+      zones.forEach((zone) => {
+        const cachedZone: CachedZone = {
+          ...zone,
+          lastSynced: now,
+        };
+        store.put(cachedZone);
+        processedCount++;
+      });
+
+      transaction.oncomplete = () => {
+        console.log(`[OFFLINE STORAGE] Cached ${processedCount} zones in bulk`);
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache zones in bulk', transaction.error);
+        reject(transaction.error);
+      };
+    });
+  }
+
+  async getLastSyncTimestamp(): Promise<number | null> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['qrPoints'], 'readonly');
+      const store = transaction.objectStore('qrPoints');
+      const index = store.index('lastSynced');
+      const request = index.openCursor(null, 'prev'); // Get most recent
+
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (cursor) {
+          resolve((cursor.value as CachedQRPoint).lastSynced);
+        } else {
+          resolve(null);
+        }
       };
 
       request.onerror = () => {

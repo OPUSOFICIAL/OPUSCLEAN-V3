@@ -239,6 +239,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // QR Metadata Bulk - for offline sync (QR points + zones)
+  app.get("/api/customers/:customerId/qr-metadata/bulk", async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+
+      // Fetch QR points and zones in parallel
+      const [qrPoints, zones] = await Promise.all([
+        storage.getQrCodePointsByCustomer(customerId, module),
+        storage.getZonesByCustomer(customerId, module)
+      ]);
+
+      // Transform data to match cache schema
+      const qrPointsCache = qrPoints
+        .filter(p => p.isActive)
+        .map(p => ({
+          code: p.code,
+          pointId: p.id,
+          name: p.name || p.code,
+          description: p.description || undefined,
+          zoneId: p.zoneId,
+          customerId: customerId,
+          module: p.module as 'clean' | 'maintenance',
+        }));
+
+      const zonesCache = zones
+        .filter(z => z.isActive)
+        .map(z => ({
+          id: z.id,
+          name: z.name,
+          areaM2: z.areaM2 || undefined,
+          siteId: z.siteId,
+          siteName: undefined, // Will be enriched if needed
+          customerId: customerId,
+          module: z.module as 'clean' | 'maintenance',
+        }));
+
+      res.json({
+        qrPoints: qrPointsCache,
+        zones: zonesCache,
+        timestamp: Date.now(),
+        count: {
+          qrPoints: qrPointsCache.length,
+          zones: zonesCache.length
+        }
+      });
+
+      console.log(`[QR METADATA BULK] Sent ${qrPointsCache.length} QR points and ${zonesCache.length} zones to client`);
+    } catch (error) {
+      console.error("[QR METADATA BULK] Error:", error);
+      res.status(500).json({ message: "Failed to get QR metadata" });
+    }
+  });
+
   // Cleaning Activities by Customer (filtrado por cliente)
   app.get("/api/customers/:customerId/cleaning-activities", async (req, res) => {
     try {

@@ -240,6 +240,75 @@ export function useOfflineStorage() {
     }
   }, [toast, refreshStats]);
 
+  // QR Points Cache
+  const cacheQRPoint = useCallback(async (data: Omit<import('@/lib/offline-storage').CachedQRPoint, 'lastSynced'>) => {
+    try {
+      await offlineStorage.cacheQRPoint(data);
+      console.log('[USE OFFLINE STORAGE] QR point cached:', data.code);
+    } catch (error) {
+      console.error('[USE OFFLINE STORAGE] Failed to cache QR point:', error);
+      throw error;
+    }
+  }, []);
+
+  const getQRPoint = useCallback(async (code: string) => {
+    try {
+      return await offlineStorage.getQRPoint(code);
+    } catch (error) {
+      console.error('[USE OFFLINE STORAGE] Failed to get QR point:', error);
+      return null;
+    }
+  }, []);
+
+  const cacheQRPointsBulk = useCallback(async (points: Omit<import('@/lib/offline-storage').CachedQRPoint, 'lastSynced'>[]) => {
+    try {
+      await offlineStorage.cacheQRPointsBulk(points);
+      console.log(`[USE OFFLINE STORAGE] Cached ${points.length} QR points in bulk`);
+    } catch (error) {
+      console.error('[USE OFFLINE STORAGE] Failed to cache QR points in bulk:', error);
+      throw error;
+    }
+  }, []);
+
+  // Zones Cache
+  const cacheZone = useCallback(async (data: Omit<import('@/lib/offline-storage').CachedZone, 'lastSynced'>) => {
+    try {
+      await offlineStorage.cacheZone(data);
+      console.log('[USE OFFLINE STORAGE] Zone cached:', data.id);
+    } catch (error) {
+      console.error('[USE OFFLINE STORAGE] Failed to cache zone:', error);
+      throw error;
+    }
+  }, []);
+
+  const getZone = useCallback(async (id: string) => {
+    try {
+      return await offlineStorage.getZone(id);
+    } catch (error) {
+      console.error('[USE OFFLINE STORAGE] Failed to get zone:', error);
+      return null;
+    }
+  }, []);
+
+  const cacheZonesBulk = useCallback(async (zones: Omit<import('@/lib/offline-storage').CachedZone, 'lastSynced'>[]) => {
+    try {
+      await offlineStorage.cacheZonesBulk(zones);
+      console.log(`[USE OFFLINE STORAGE] Cached ${zones.length} zones in bulk`);
+    } catch (error) {
+      console.error('[USE OFFLINE STORAGE] Failed to cache zones in bulk:', error);
+      throw error;
+    }
+  }, []);
+
+  const getLastSyncTimestamp = useCallback(async () => {
+    try {
+      return await offlineStorage.getLastSyncTimestamp();
+    } catch (error) {
+      console.error('[USE OFFLINE STORAGE] Failed to get last sync timestamp:', error);
+      return null;
+    }
+  }, []);
+
   return {
     isInitialized,
     stats,
@@ -263,5 +332,18 @@ export function useOfflineStorage() {
     markAsSynced,
     markAsFailed,
     clearSyncedData,
+
+    // QR Points Cache
+    cacheQRPoint,
+    getQRPoint,
+    cacheQRPointsBulk,
+
+    // Zones Cache
+    cacheZone,
+    getZone,
+    cacheZonesBulk,
+
+    // Sync Metadata
+    getLastSyncTimestamp,
   };
 }

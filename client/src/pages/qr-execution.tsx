@@ -23,9 +23,11 @@ import {
   User,
   MapPin,
   FileText,
-  WifiOff
+  WifiOff,
+  Wifi
 } from "lucide-react";
 import { pickMultipleImages, type CapturedPhoto } from "@/lib/camera-utils";
+import type { CachedQRPoint, CachedZone } from "@/lib/offline-storage";
 
 export default function QrExecution() {
   const { currentModule } = useModule();
@@ -41,8 +43,53 @@ export default function QrExecution() {
   const { 
     createOfflineWorkOrder,
     createOfflineChecklistExecution,
-    createOfflineAttachment 
+    createOfflineAttachment,
+    getQRPoint,
+    getZone,
+    cacheQRPoint,
+    cacheZone
   } = useOfflineStorage();
+
+  // Cache-first data
+  const [cachedQRData, setCachedQRData] = useState<CachedQRPoint | null>(null);
+  const [cachedZone, setCachedZone] = useState<CachedZone | null>(null);
+  const [isFromCache, setIsFromCache] = useState(false);
+  const [cacheLoadAttempted, setCacheLoadAttempted] = useState(false);
+
+  // Cache-first: Load from cache if offline or while loading from API
+  useEffect(() => {
+    if (!code || cacheLoadAttempted) return;
+
+    async function loadFromCache() {
+      try {
+        console.log(`[QR EXECUTION] Loading QR point from cache: ${code}`);
+        const cachedPoint = await getQRPoint(code);
+        
+        if (cachedPoint) {
+          console.log('[QR EXECUTION] ✅ Found in cache:', cachedPoint);
+          setCachedQRData(cachedPoint);
+          setIsFromCache(true);
+
+          // Load zone from cache
+          if (cachedPoint.zoneId) {
+            const cachedZ = await getZone(cachedPoint.zoneId);
+            if (cachedZ) {
+              console.log('[QR EXECUTION] ✅ Found zone in cache:', cachedZ);
+              setCachedZone(cachedZ);
+            }
+          }
+        } else {
+          console.log('[QR EXECUTION] ⚠️ Not found in cache');
+        }
+      } catch (error) {
+        console.error('[QR EXECUTION] Cache load error:', error);
+      } finally {
+        setCacheLoadAttempted(true);
+      }
+    }
+
+    loadFromCache();
+  }, [code, cacheLoadAttempted, getQRPoint, getZone]);
 
   // Get QR point data and check for scheduled activities (only when online)
   const { data: qrData, isLoading, error } = useQuery({
@@ -55,6 +102,55 @@ export default function QrExecution() {
     queryKey: ["/api/zones", (qrData as any)?.point?.zoneId, { module: currentModule }],
     enabled: !!(qrData as any)?.point?.zoneId && isOnline,
   });
+
+  // Cache QR point when fetched from API (TanStack Query v5 pattern)
+  useEffect(() => {
+    if (!isOnline || !qrData || !(qrData as any)?.point) return;
+
+    async function updateCacheFromAPI() {
+      const pointData = (qrData as any).point;
+      try {
+        await cacheQRPoint({
+          code: pointData.code,
+          pointId: pointData.id,
+          name: pointData.name || pointData.code,
+          description: pointData.description,
+          zoneId: pointData.zoneId,
+          customerId: pointData.customerId,
+          module: pointData.module,
+        });
+        console.log('[QR EXECUTION] 💾 Cached QR point from API');
+        setIsFromCache(false); // Fresh from server
+      } catch (error) {
+        console.error('[QR EXECUTION] Failed to cache QR point:', error);
+      }
+    }
+
+    updateCacheFromAPI();
+  }, [isOnline, qrData, cacheQRPoint]);
+
+  // Cache zone when fetched from API
+  useEffect(() => {
+    if (!isOnline || !zone || !qrData || !(qrData as any)?.point?.customerId) return;
+
+    async function updateZoneCacheFromAPI() {
+      try {
+        await cacheZone({
+          id: (zone as any).id,
+          name: (zone as any).name,
+          areaM2: (zone as any).areaM2,
+          siteId: (zone as any).siteId,
+          customerId: (qrData as any).point.customerId,
+          module: (zone as any).module,
+        });
+        console.log('[QR EXECUTION] 💾 Cached zone from API');
+      } catch (error) {
+        console.error('[QR EXECUTION] Failed to cache zone:', error);
+      }
+    }
+
+    updateZoneCacheFromAPI();
+  }, [isOnline, zone, qrData, cacheZone]);
 
   // Mock current user - in real app this would come from auth context
   const currentUser = {
@@ -346,72 +442,75 @@ export default function QrExecution() {
     }
   }, [qrData, code, currentUser.id, zone]);
 
-  // Offline mode: QR scanning requires network
-  if (!isOnline) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center space-y-4">
-            <WifiOff className="w-16 h-16 text-destructive mx-auto" />
-            <div>
-              <h1 className="text-xl font-bold text-foreground mb-2">Modo Offline</h1>
-              <p className="text-muted-foreground mb-4">
-                Escaneamento de QR Code requer conexão com internet para validar os dados.
-              </p>
-              <div className="bg-muted/50 rounded-lg p-3 mb-4 text-left">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Alternativa:</strong> Você pode criar ordens de serviço manualmente enquanto estiver offline. Os dados serão sincronizados automaticamente quando a conexão retornar.
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Button 
-                onClick={() => setLocation("/mobile/work-orders/new")}
-                data-testid="button-create-manual-wo"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Criar Ordem Manual
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setLocation("/mobile")}
-                data-testid="button-back-to-mobile"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar ao App
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Determine effective data (cache or API)
+  const effectiveQRData = isOnline && qrData ? qrData : cachedQRData;
+  const effectiveZone = isOnline && zone ? zone : cachedZone;
 
-  if (isLoading) {
+  // Loading state: show spinner while loading from API OR while attempting cache load
+  if (isLoading || (!isOnline && !cacheLoadAttempted)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <QrCode className="w-12 h-12 text-muted-foreground mx-auto mb-4 animate-pulse" />
-          <p className="text-muted-foreground">Carregando informações do QR Code...</p>
+          <p className="text-muted-foreground">
+            {isOnline ? 'Carregando informações do QR Code...' : 'Carregando do cache local...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (error || !(qrData as any)?.point) {
+  // Error state: no data from API and no cache available
+  if (!effectiveQRData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h1 className="text-xl font-bold text-foreground mb-2">QR Code Inválido</h1>
-            <p className="text-muted-foreground mb-4">
-              Este QR Code não foi encontrado ou não é válido para execução.
-            </p>
-            <Button onClick={() => setLocation("/mobile")} data-testid="button-back-to-mobile">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao App
-            </Button>
+          <CardContent className="pt-6 text-center space-y-4">
+            {!isOnline ? (
+              <>
+                <WifiOff className="w-16 h-16 text-destructive mx-auto" />
+                <div>
+                  <h1 className="text-xl font-bold text-foreground mb-2">QR Code não disponível offline</h1>
+                  <p className="text-muted-foreground mb-4">
+                    Este QR Code não foi sincronizado para uso offline.
+                  </p>
+                  <div className="bg-muted/50 rounded-lg p-3 mb-4 text-left">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Dica:</strong> Conecte-se à internet uma vez para sincronizar os pontos QR. Depois você poderá escaneá-los offline.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={() => setLocation("/mobile/work-orders/new")}
+                    data-testid="button-create-manual-wo"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Criar Ordem Manual
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setLocation("/mobile")}
+                    data-testid="button-back-to-mobile"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Voltar ao App
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-12 h-12 text-destructive mx-auto" />
+                <h1 className="text-xl font-bold text-foreground mb-2">QR Code Inválido</h1>
+                <p className="text-muted-foreground mb-4">
+                  Este QR Code não foi encontrado ou não é válido para execução.
+                </p>
+                <Button onClick={() => setLocation("/mobile")} data-testid="button-back-to-mobile">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar ao App
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
