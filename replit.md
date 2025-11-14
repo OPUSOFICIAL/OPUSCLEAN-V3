@@ -42,7 +42,10 @@ The project is configured for the Replit cloud environment, with automated Postg
 ### Mobile (Android APK)
 - Capacitor 7 (Core, CLI, Android)
 - Offline-first architecture with IndexedDB
-- Native plugins: Network, Camera (planned)
+- Native plugins: @capacitor/network@7.0.2 (network detection), @capacitor/camera@7.0.2 (native camera/gallery)
+- Camera utils: `client/src/lib/camera-utils.ts` (single/multiple photos, automatic web fallback)
+- Network hook: `client/src/hooks/use-network-status.ts` (real-time connectivity status)
+- SyncQueueManager: Auto-sync on reconnection via Network plugin
 - Build config: `ANDROID_BUILD.md`
 - APK generation via Android Studio or Gradle
 - Build script: `npm run build:android` (frontend only, no DB steps)

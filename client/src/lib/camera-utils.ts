@@ -49,8 +49,21 @@ export async function takePictureWithCamera(): Promise<CapturedPhoto> {
       dataUrl,
     };
   } catch (error) {
-    console.error('[CAMERA] Error taking picture:', error);
-    throw error;
+    console.warn('[CAMERA] Native camera unavailable, falling back to file input:', error);
+    
+    return new Promise<CapturedPhoto>((resolve, reject) => {
+      createFileInputFallback(
+        false,
+        (photos) => {
+          if (photos.length > 0) {
+            resolve(photos[0]);
+          } else {
+            reject(new Error('No photo selected'));
+          }
+        },
+        () => reject(new Error('User cancelled photo selection'))
+      );
+    });
   }
 }
 
@@ -76,8 +89,21 @@ export async function selectFromGallery(): Promise<CapturedPhoto> {
       dataUrl,
     };
   } catch (error) {
-    console.error('[CAMERA] Error selecting from gallery:', error);
-    throw error;
+    console.warn('[CAMERA] Native gallery unavailable, falling back to file input:', error);
+    
+    return new Promise<CapturedPhoto>((resolve, reject) => {
+      createFileInputFallback(
+        false,
+        (photos) => {
+          if (photos.length > 0) {
+            resolve(photos[0]);
+          } else {
+            reject(new Error('No photo selected'));
+          }
+        },
+        () => reject(new Error('User cancelled photo selection'))
+      );
+    });
   }
 }
 
@@ -103,8 +129,21 @@ export async function promptForPicture(): Promise<CapturedPhoto> {
       dataUrl,
     };
   } catch (error) {
-    console.error('[CAMERA] Error prompting for picture:', error);
-    throw error;
+    console.warn('[CAMERA] Native prompt unavailable, falling back to file input:', error);
+    
+    return new Promise<CapturedPhoto>((resolve, reject) => {
+      createFileInputFallback(
+        false,
+        (photos) => {
+          if (photos.length > 0) {
+            resolve(photos[0]);
+          } else {
+            reject(new Error('No photo selected'));
+          }
+        },
+        () => reject(new Error('User cancelled photo selection'))
+      );
+    });
   }
 }
 
@@ -138,14 +177,28 @@ export async function pickMultipleImages(options?: { limit?: number; quality?: n
 
     return convertedPhotos;
   } catch (error) {
-    console.error('[CAMERA] Error picking multiple images:', error);
-    throw error;
+    console.warn('[CAMERA] Native plugin unavailable, falling back to file input:', error);
+    
+    return new Promise<CapturedPhoto[]>((resolve, reject) => {
+      createFileInputFallback(
+        true,
+        (photos) => {
+          if (photos.length > 0) {
+            resolve(photos);
+          } else {
+            reject(new Error('No photos selected'));
+          }
+        },
+        () => reject(new Error('User cancelled photo selection'))
+      );
+    });
   }
 }
 
 export function createFileInputFallback(
   multiple: boolean = false,
-  onPhotosSelected: (photos: CapturedPhoto[]) => void
+  onPhotosSelected: (photos: CapturedPhoto[]) => void,
+  onCancel?: () => void
 ): void {
   const input = document.createElement('input');
   input.type = 'file';
@@ -154,11 +207,17 @@ export function createFileInputFallback(
     input.multiple = true;
   }
 
+  let hasInteracted = false;
+
   input.onchange = async (e: Event) => {
+    hasInteracted = true;
     const target = e.target as HTMLInputElement;
     const files = target.files;
     
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      onPhotosSelected([]);
+      return;
+    }
 
     try {
       const photos = await Promise.all(
@@ -183,8 +242,22 @@ export function createFileInputFallback(
       onPhotosSelected(photos);
     } catch (error) {
       console.error('[CAMERA FALLBACK] Error converting files:', error);
+      onPhotosSelected([]);
     }
   };
+
+  window.addEventListener('focus', () => {
+    setTimeout(() => {
+      if (!hasInteracted) {
+        console.log('[CAMERA FALLBACK] User cancelled file selection');
+        if (onCancel) {
+          onCancel();
+        } else {
+          onPhotosSelected([]);
+        }
+      }
+    }, 300);
+  }, { once: true });
 
   input.click();
 }
