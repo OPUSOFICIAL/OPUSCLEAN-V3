@@ -44,16 +44,16 @@ export default function QrExecution() {
     createOfflineAttachment 
   } = useOfflineStorage();
 
-  // Get QR point data and check for scheduled activities
+  // Get QR point data and check for scheduled activities (only when online)
   const { data: qrData, isLoading, error } = useQuery({
     queryKey: ["/api/qr-execution", code],
-    enabled: !!code,
+    enabled: !!code && isOnline,
   });
 
-  // Get zone details
+  // Get zone details (only when online)
   const { data: zone } = useQuery({
     queryKey: ["/api/zones", (qrData as any)?.point?.zoneId, { module: currentModule }],
-    enabled: !!(qrData as any)?.point?.zoneId,
+    enabled: !!(qrData as any)?.point?.zoneId && isOnline,
   });
 
   // Mock current user - in real app this would come from auth context
@@ -345,6 +345,47 @@ export default function QrExecution() {
       localStorage.setItem('current-location', JSON.stringify(locationContext));
     }
   }, [qrData, code, currentUser.id, zone]);
+
+  // Offline mode: QR scanning requires network
+  if (!isOnline) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            <WifiOff className="w-16 h-16 text-destructive mx-auto" />
+            <div>
+              <h1 className="text-xl font-bold text-foreground mb-2">Modo Offline</h1>
+              <p className="text-muted-foreground mb-4">
+                Escaneamento de QR Code requer conexão com internet para validar os dados.
+              </p>
+              <div className="bg-muted/50 rounded-lg p-3 mb-4 text-left">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Alternativa:</strong> Você pode criar ordens de serviço manualmente enquanto estiver offline. Os dados serão sincronizados automaticamente quando a conexão retornar.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={() => setLocation("/mobile/work-orders/new")}
+                data-testid="button-create-manual-wo"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Criar Ordem Manual
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setLocation("/mobile")}
+                data-testid="button-back-to-mobile"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar ao App
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
