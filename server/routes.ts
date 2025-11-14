@@ -239,19 +239,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // QR Metadata Bulk - for offline sync (QR points + zones)
+  // QR Metadata Bulk - for offline sync (QR points + zones + scheduled WOs + checklists)
   app.get("/api/customers/:customerId/qr-metadata/bulk", async (req, res) => {
     try {
       const { customerId } = req.params;
       const module = req.query.module as 'clean' | 'maintenance' | undefined;
 
-      // Fetch QR points and zones in parallel
-      const [qrPoints, zones] = await Promise.all([
+      // Fetch all metadata in parallel
+      const [qrPoints, zones, scheduledWorkOrders] = await Promise.all([
         storage.getQrCodePointsByCustomer(customerId, module),
-        storage.getZonesByCustomer(customerId, module)
+        storage.getZonesByCustomer(customerId, module),
+        storage.getScheduledWorkOrdersForCache(customerId, module)
       ]);
 
-      // Transform data to match cache schema
+      // Transform QR points to cache schema
       const qrPointsCache = qrPoints
         .filter(p => p.isActive)
         .map(p => ({
@@ -264,6 +265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           module: p.module as 'clean' | 'maintenance',
         }));
 
+      // Transform zones to cache schema
       const zonesCache = zones
         .filter(z => z.isActive)
         .map(z => ({
@@ -271,22 +273,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: z.name,
           areaM2: z.areaM2 || undefined,
           siteId: z.siteId,
-          siteName: undefined, // Will be enriched if needed
+          siteName: undefined,
           customerId: customerId,
           module: z.module as 'clean' | 'maintenance',
         }));
 
-      res.json({
-        qrPoints: qrPointsCache,
-        zones: zonesCache,
-        timestamp: Date.now(),
-        count: {
-          qrPoints: qrPointsCache.length,
-          zones: zonesCache.length
+      // Transform scheduled work orders to cache schema
+      const scheduledWOsCache = scheduledWorkOrders.map(wo => ({
+        id: wo.id,
+        qrCode: (wo as any).qrCode || '',
+        title: wo.title,
+        description: wo.description || undefined,
+        priority: wo.priority || undefined,
+        slaCompleteMinutes: wo.slaCompleteMinutes || undefined,
+        checklistTemplateId: wo.checklistTemplateId || undefined,
+        customerId: customerId,
+        module: wo.module as 'clean' | 'maintenance',
+        // Serialize Date objects to ISO strings for cache compatibility
+        scheduledStartAt: wo.scheduledStartAt ? new Date(wo.scheduledStartAt).toISOString() : undefined,
+        createdAt: wo.createdAt ? new Date(wo.createdAt).toISOString() : undefined,
+      }));
+
+      // Extract unique checklist template IDs
+      const templateIds = new Set<string>();
+      scheduledWorkOrders.forEach(wo => {
+        if (wo.checklistTemplateId) {
+          templateIds.add(wo.checklistTemplateId);
         }
       });
 
-      console.log(`[QR METADATA BULK] Sent ${qrPointsCache.length} QR points and ${zonesCache.length} zones to client`);
+      // Fetch checklist templates
+      const checklistTemplates = await storage.getChecklistTemplatesByIds(Array.from(templateIds));
+
+      // Transform checklist templates to cache schema
+      const checklistTemplatesCache = checklistTemplates.map(tpl => ({
+        id: tpl.id,
+        name: tpl.name,
+        items: (tpl.items || []).map((item: any) => ({
+          id: item.id,
+          label: item.label,
+          type: item.type,
+          required: item.required || false,
+        })),
+        customerId: customerId,
+        module: tpl.module as 'clean' | 'maintenance',
+      }));
+
+      res.json({
+        qrPoints: qrPointsCache,
+        zones: zonesCache,
+        scheduledWorkOrders: scheduledWOsCache,
+        checklistTemplates: checklistTemplatesCache,
+        timestamp: Date.now(),
+        count: {
+          qrPoints: qrPointsCache.length,
+          zones: zonesCache.length,
+          scheduledWorkOrders: scheduledWOsCache.length,
+          checklistTemplates: checklistTemplatesCache.length
+        }
+      });
+
+      console.log(`[QR METADATA BULK] Sent ${qrPointsCache.length} QR points, ${zonesCache.length} zones, ${scheduledWOsCache.length} WOs, ${checklistTemplatesCache.length} templates`);
     } catch (error) {
       console.error("[QR METADATA BULK] Error:", error);
       res.status(500).json({ message: "Failed to get QR metadata" });

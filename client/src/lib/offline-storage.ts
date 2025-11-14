@@ -104,12 +104,41 @@ export interface CachedZone {
   lastSynced: number; // Timestamp
 }
 
+export interface CachedScheduledWorkOrder {
+  id: string; // PK - Work Order ID
+  qrCode: string; // QR code that triggers this
+  title: string;
+  description?: string;
+  priority?: string;
+  slaCompleteMinutes?: number;
+  checklistTemplateId?: string;
+  customerId: string;
+  module: 'clean' | 'maintenance';
+  scheduledStartAt?: string; // ISO datetime for prioritization
+  createdAt?: string; // ISO datetime fallback for prioritization
+  lastSynced: number; // Timestamp
+}
+
+export interface CachedChecklistTemplate {
+  id: string; // PK - Checklist Template ID
+  name: string;
+  items: Array<{
+    id: string;
+    label: string;
+    type: string;
+    required?: boolean;
+  }>;
+  customerId: string;
+  module: 'clean' | 'maintenance';
+  lastSynced: number; // Timestamp
+}
+
 // ============================================================================
 // INDEXEDDB DATABASE SETUP
 // ============================================================================
 
 const DB_NAME = 'AceleraOfflineDB';
-const DB_VERSION = 2; // Updated to add QR points and zones cache
+const DB_VERSION = 4; // v4: Added temporal fields (scheduledStartAt, createdAt) to scheduled work orders for prioritization
 
 export class OfflineStorageManager {
   private db: IDBDatabase | null = null;
@@ -189,6 +218,24 @@ export class OfflineStorageManager {
           zonesStore.createIndex('module', 'module', { unique: false });
           zonesStore.createIndex('lastSynced', 'lastSynced', { unique: false });
           console.log('[OFFLINE STORAGE] Created zones store');
+        }
+
+        // v3: Scheduled work orders and checklist templates for complete offline execution
+        if (!db.objectStoreNames.contains('scheduledWorkOrders')) {
+          const scheduledWOStore = db.createObjectStore('scheduledWorkOrders', { keyPath: 'id' });
+          scheduledWOStore.createIndex('qrCode', 'qrCode', { unique: false });
+          scheduledWOStore.createIndex('customerId', 'customerId', { unique: false });
+          scheduledWOStore.createIndex('module', 'module', { unique: false });
+          scheduledWOStore.createIndex('lastSynced', 'lastSynced', { unique: false });
+          console.log('[OFFLINE STORAGE] Created scheduledWorkOrders store');
+        }
+
+        if (!db.objectStoreNames.contains('checklistTemplates')) {
+          const checklistTemplatesStore = db.createObjectStore('checklistTemplates', { keyPath: 'id' });
+          checklistTemplatesStore.createIndex('customerId', 'customerId', { unique: false });
+          checklistTemplatesStore.createIndex('module', 'module', { unique: false });
+          checklistTemplatesStore.createIndex('lastSynced', 'lastSynced', { unique: false });
+          console.log('[OFFLINE STORAGE] Created checklistTemplates store');
         }
       };
     });
@@ -522,6 +569,11 @@ export class OfflineStorageManager {
     });
   }
 
+  // Alias for normalizer compatibility
+  async getQRPointByCode(code: string): Promise<CachedQRPoint | null> {
+    return this.getQRPoint(code);
+  }
+
   async cacheQRPointsBulk(points: Omit<CachedQRPoint, 'lastSynced'>[]): Promise<void> {
     const db = await this.ensureDB();
     const now = Date.now();
@@ -601,6 +653,44 @@ export class OfflineStorageManager {
     });
   }
 
+  async getAllQRPoints(): Promise<CachedQRPoint[]> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['qrPoints'], 'readonly');
+      const store = transaction.objectStore('qrPoints');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get all QR points', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getAllZones(): Promise<CachedZone[]> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['zones'], 'readonly');
+      const store = transaction.objectStore('zones');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get all zones', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
   async cacheZonesBulk(zones: Omit<CachedZone, 'lastSynced'>[]): Promise<void> {
     const db = await this.ensureDB();
     const now = Date.now();
@@ -651,6 +741,203 @@ export class OfflineStorageManager {
 
       request.onerror = () => {
         reject(request.error);
+      };
+    });
+  }
+
+  // ============================================================================
+  // SCHEDULED WORK ORDERS CACHE (for offline QR execution)
+  // ============================================================================
+
+  async cacheScheduledWorkOrder(data: Omit<CachedScheduledWorkOrder, 'lastSynced'>): Promise<void> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['scheduledWorkOrders'], 'readwrite');
+      const store = transaction.objectStore('scheduledWorkOrders');
+
+      const workOrder: CachedScheduledWorkOrder = {
+        ...data,
+        lastSynced: Date.now(),
+      };
+
+      const request = store.put(workOrder);
+
+      request.onsuccess = () => {
+        console.log('[OFFLINE STORAGE] Scheduled WO cached:', data.id);
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache scheduled WO', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getScheduledWorkOrdersByQRCode(qrCode: string): Promise<CachedScheduledWorkOrder[]> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['scheduledWorkOrders'], 'readonly');
+      const store = transaction.objectStore('scheduledWorkOrders');
+      const index = store.index('qrCode');
+      const request = index.getAll(qrCode);
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get scheduled WOs by QR code', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getAllScheduledWorkOrders(): Promise<CachedScheduledWorkOrder[]> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['scheduledWorkOrders'], 'readonly');
+      const store = transaction.objectStore('scheduledWorkOrders');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get all scheduled work orders', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async cacheScheduledWorkOrdersBulk(workOrders: Omit<CachedScheduledWorkOrder, 'lastSynced'>[]): Promise<void> {
+    const db = await this.ensureDB();
+    const now = Date.now();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['scheduledWorkOrders'], 'readwrite');
+      const store = transaction.objectStore('scheduledWorkOrders');
+      let processedCount = 0;
+
+      workOrders.forEach((wo) => {
+        const cachedWO: CachedScheduledWorkOrder = {
+          ...wo,
+          lastSynced: now,
+        };
+        store.put(cachedWO);
+        processedCount++;
+      });
+
+      transaction.oncomplete = () => {
+        console.log(`[OFFLINE STORAGE] Cached ${processedCount} scheduled work orders in bulk`);
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache scheduled WOs in bulk', transaction.error);
+        reject(transaction.error);
+      };
+    });
+  }
+
+  // ============================================================================
+  // CHECKLIST TEMPLATES CACHE (for offline checklist execution)
+  // ============================================================================
+
+  async cacheChecklistTemplate(data: Omit<CachedChecklistTemplate, 'lastSynced'>): Promise<void> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['checklistTemplates'], 'readwrite');
+      const store = transaction.objectStore('checklistTemplates');
+
+      const template: CachedChecklistTemplate = {
+        ...data,
+        lastSynced: Date.now(),
+      };
+
+      const request = store.put(template);
+
+      request.onsuccess = () => {
+        console.log('[OFFLINE STORAGE] Checklist template cached:', data.id);
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache checklist template', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getChecklistTemplate(id: string): Promise<CachedChecklistTemplate | null> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['checklistTemplates'], 'readonly');
+      const store = transaction.objectStore('checklistTemplates');
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        resolve(request.result || null);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get checklist template', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getAllChecklistTemplates(): Promise<CachedChecklistTemplate[]> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['checklistTemplates'], 'readonly');
+      const store = transaction.objectStore('checklistTemplates');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        resolve(request.result || []);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get all checklist templates', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async cacheChecklistTemplatesBulk(templates: Omit<CachedChecklistTemplate, 'lastSynced'>[]): Promise<void> {
+    const db = await this.ensureDB();
+    const now = Date.now();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['checklistTemplates'], 'readwrite');
+      const store = transaction.objectStore('checklistTemplates');
+      let processedCount = 0;
+
+      templates.forEach((tpl) => {
+        const cachedTemplate: CachedChecklistTemplate = {
+          ...tpl,
+          lastSynced: now,
+        };
+        store.put(cachedTemplate);
+        processedCount++;
+      });
+
+      transaction.oncomplete = () => {
+        console.log(`[OFFLINE STORAGE] Cached ${processedCount} checklist templates in bulk`);
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache checklist templates in bulk', transaction.error);
+        reject(transaction.error);
       };
     });
   }

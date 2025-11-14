@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { pickMultipleImages, type CapturedPhoto } from "@/lib/camera-utils";
 import type { CachedQRPoint, CachedZone } from "@/lib/offline-storage";
+import { OfflineExecutionNormalizer } from "@/lib/offline-execution-normalizer";
 
 export default function QrExecution() {
   const { currentModule } = useModule();
@@ -55,6 +56,7 @@ export default function QrExecution() {
   const [cachedZone, setCachedZone] = useState<CachedZone | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
   const [cacheLoadAttempted, setCacheLoadAttempted] = useState(false);
+  const [normalizedOfflineData, setNormalizedOfflineData] = useState<any>(null);
 
   // Cache-first: Load from cache if offline or while loading from API
   useEffect(() => {
@@ -77,6 +79,17 @@ export default function QrExecution() {
               console.log('[QR EXECUTION] ✅ Found zone in cache:', cachedZ);
               setCachedZone(cachedZ);
             }
+          }
+
+          // Normalize offline data using OfflineExecutionNormalizer
+          console.log('[QR EXECUTION] Normalizing offline data with scheduled WOs...');
+          const normalizer = new OfflineExecutionNormalizer();
+          const normalized = await normalizer.normalizeForQRCode(code);
+          if (normalized) {
+            console.log('[QR EXECUTION] ✅ Normalized offline data:', normalized);
+            setNormalizedOfflineData(normalized);
+          } else {
+            console.log('[QR EXECUTION] ⚠️ Normalizer returned null');
           }
         } else {
           console.log('[QR EXECUTION] ⚠️ Not found in cache');
@@ -442,8 +455,8 @@ export default function QrExecution() {
     }
   }, [effectiveQRData, code, currentUser.id, effectiveZone]);
 
-  // Normalize cached data to API format
-  const normalizedCacheData = cachedQRData ? {
+  // Use normalized offline data (from OfflineExecutionNormalizer) or fallback to basic cache
+  const normalizedCacheData = normalizedOfflineData || (cachedQRData ? {
     point: {
       id: cachedQRData.pointId,
       code: cachedQRData.code,
@@ -453,10 +466,10 @@ export default function QrExecution() {
       customerId: cachedQRData.customerId,
       module: cachedQRData.module,
     },
-    hasScheduledActivity: false, // Not available in cache
+    hasScheduledActivity: false, // Fallback if normalizer failed
     scheduledWorkOrder: null,
     checklist: null,
-  } : null;
+  } : null);
 
   const normalizedCacheZone = cachedZone ? {
     id: cachedZone.id,

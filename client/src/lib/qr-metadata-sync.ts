@@ -1,11 +1,11 @@
 import { offlineStorage } from './offline-storage';
-import type { CachedQRPoint, CachedZone } from './offline-storage';
+import type { CachedQRPoint, CachedZone, CachedScheduledWorkOrder, CachedChecklistTemplate } from './offline-storage';
 
 /**
  * QR Metadata Synchronization Manager
  * 
- * Handles automatic syncing of QR points and zones metadata
- * for offline QR code scanning capability.
+ * Handles automatic syncing of QR points, zones, scheduled work orders,
+ * and checklist templates for offline QR code scanning and execution.
  * 
  * Triggered on:
  * - App init/login
@@ -16,10 +16,14 @@ import type { CachedQRPoint, CachedZone } from './offline-storage';
 interface QRMetadataResponse {
   qrPoints: Omit<CachedQRPoint, 'lastSynced'>[];
   zones: Omit<CachedZone, 'lastSynced'>[];
+  scheduledWorkOrders: Omit<CachedScheduledWorkOrder, 'lastSynced'>[];
+  checklistTemplates: Omit<CachedChecklistTemplate, 'lastSynced'>[];
   timestamp: number;
   count: {
     qrPoints: number;
     zones: number;
+    scheduledWorkOrders: number;
+    checklistTemplates: number;
   };
 }
 
@@ -66,21 +70,33 @@ export class QRMetadataSyncManager {
 
       const data: QRMetadataResponse = await response.json();
 
-      console.log(`[QR METADATA SYNC] Received ${data.count.qrPoints} QR points and ${data.count.zones} zones`);
+      console.log(`[QR METADATA SYNC] Received ${data.count.qrPoints} QR points, ${data.count.zones} zones, ${data.count.scheduledWorkOrders} work orders, ${data.count.checklistTemplates} checklist templates`);
 
-      // Cache QR points in IndexedDB
-      if (data.qrPoints.length > 0) {
-        await offlineStorage.cacheQRPointsBulk(data.qrPoints);
-        console.log(`[QR METADATA SYNC] Cached ${data.qrPoints.length} QR points`);
-      }
-
-      // Cache zones in IndexedDB
-      if (data.zones.length > 0) {
-        await offlineStorage.cacheZonesBulk(data.zones);
-        console.log(`[QR METADATA SYNC] Cached ${data.zones.length} zones`);
-      }
+      // Cache all metadata in parallel
+      await Promise.all([
+        // Cache QR points
+        data.qrPoints.length > 0 
+          ? offlineStorage.cacheQRPointsBulk(data.qrPoints)
+          : Promise.resolve(),
+        
+        // Cache zones
+        data.zones.length > 0 
+          ? offlineStorage.cacheZonesBulk(data.zones)
+          : Promise.resolve(),
+        
+        // Cache scheduled work orders
+        data.scheduledWorkOrders.length > 0 
+          ? offlineStorage.cacheScheduledWorkOrdersBulk(data.scheduledWorkOrders)
+          : Promise.resolve(),
+        
+        // Cache checklist templates
+        data.checklistTemplates.length > 0 
+          ? offlineStorage.cacheChecklistTemplatesBulk(data.checklistTemplates)
+          : Promise.resolve(),
+      ]);
 
       console.log(`[QR METADATA SYNC] ✅ Sync completed successfully at ${new Date(data.timestamp).toISOString()}`);
+      console.log(`[QR METADATA SYNC] Cached: ${data.count.qrPoints} QR points, ${data.count.zones} zones, ${data.count.scheduledWorkOrders} WOs, ${data.count.checklistTemplates} templates`);
 
       return { success: true };
     } catch (error) {

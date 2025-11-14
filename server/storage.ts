@@ -575,6 +575,92 @@ export class DatabaseStorage implements IStorage {
     })) as any;
   }
 
+  async getScheduledWorkOrdersForCache(customerId: string, module?: 'clean' | 'maintenance'): Promise<WorkOrder[]> {
+    // Get sites for this customer (filter by module if provided)
+    const sitesWhereCondition = module
+      ? and(eq(sites.customerId, customerId), eq(sites.module, module))
+      : eq(sites.customerId, customerId);
+    
+    const customerSites = await db.select().from(sites).where(sitesWhereCondition);
+    const siteIds = customerSites.map(site => site.id);
+    
+    if (siteIds.length === 0) {
+      return [];
+    }
+    
+    // Get zones for these sites
+    const customerZones = await db.select().from(zones)
+      .where(inArray(zones.siteId, siteIds));
+    const zoneIds = customerZones.map(zone => zone.id);
+    
+    if (zoneIds.length === 0) {
+      return [];
+    }
+    
+    // Filter: status IN ('programada', 'aberta') AND scheduledDate within next 7 days
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    
+    const whereConditions = and(
+      inArray(workOrders.zoneId, zoneIds),
+      or(
+        eq(workOrders.status, 'programada'),
+        eq(workOrders.status, 'aberta')
+      ),
+      sql`${workOrders.scheduledDate} IS NOT NULL`,
+      sql`${workOrders.scheduledDate} <= ${sevenDaysFromNow.toISOString()}`
+    );
+    
+    // Get work orders with zone and site names via JOIN
+    const results = await db.select({
+      workOrder: workOrders,
+      zoneName: zones.name,
+      siteName: sites.name,
+      siteId: sites.id,
+      qrCode: qrCodePoints.code
+    })
+      .from(workOrders)
+      .leftJoin(zones, eq(workOrders.zoneId, zones.id))
+      .leftJoin(sites, eq(zones.siteId, sites.id))
+      .leftJoin(qrCodePoints, eq(workOrders.zoneId, qrCodePoints.zoneId))
+      .where(whereConditions)
+      .orderBy(workOrders.scheduledDate);
+    
+    // Transform results to include all metadata
+    return results.map(r => ({
+      ...r.workOrder,
+      zoneName: r.zoneName || '-',
+      siteName: r.siteName || '-',
+      siteId: r.siteId,
+      qrCode: r.qrCode
+    })) as any;
+  }
+
+  async getChecklistTemplatesByIds(ids: string[]): Promise<ChecklistTemplate[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    
+    const rawTemplates = await db.select()
+      .from(checklistTemplates)
+      .where(inArray(checklistTemplates.id, ids));
+    
+    // Parse JSONB items field (Postgres returns it as string)
+    const templates = rawTemplates.map(t => ({
+      ...t,
+      items: typeof t.items === 'string' ? JSON.parse(t.items) : (t.items || [])
+    }));
+    
+    // Debug logging
+    console.log(`[STORAGE] Fetched ${templates.length} checklist templates`);
+    templates.forEach(t => {
+      const itemsCount = Array.isArray(t.items) ? t.items.length : 0;
+      console.log(`[STORAGE] Template ${t.id}: ${t.name} - ${itemsCount} items`);
+    });
+    
+    return templates;
+  }
+
   async getDashboardStatsByCustomer(customerId: string, period: string, site: string, module?: 'clean' | 'maintenance'): Promise<any> {
     // Get customer sites for filtering (filter by module if provided)
     const sitesWhereCondition = module
