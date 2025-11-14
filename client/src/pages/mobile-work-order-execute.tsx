@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNetwork } from "@/contexts/NetworkContext";
 import { useOfflineStorage } from "@/hooks/use-offline-storage";
 import { nanoid } from "nanoid";
+import { pickMultipleImages, promptForPicture, type CapturedPhoto } from "@/lib/camera-utils";
 
 // Helper function to add JWT token to fetch requests
 const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
@@ -174,9 +175,7 @@ export default function MobileWorkOrderExecute() {
     }
   };
 
-  const handlePhotoUpload = (itemId: string, files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    
+  const handlePhotoUpload = async (itemId: string) => {
     // Buscar o item do checklist para verificar o limite máximo
     const checklistItem = checklist?.items?.find((item: any) => item.id === itemId);
     const maxPhotos = checklistItem?.validation?.photoMaxCount;
@@ -185,8 +184,7 @@ export default function MobileWorkOrderExecute() {
     const currentCount = currentPhotos.length;
     
     // Calcular quantas fotos ainda podem ser adicionadas
-    let photosToAdd = Array.from(files);
-    let remainingSlots = maxPhotos ? maxPhotos - currentCount : Infinity;
+    const remainingSlots = maxPhotos ? maxPhotos - currentCount : Infinity;
     
     if (remainingSlots <= 0) {
       toast({
@@ -197,35 +195,42 @@ export default function MobileWorkOrderExecute() {
       return;
     }
     
-    // Se tentar adicionar mais fotos que o permitido, limitar
-    if (photosToAdd.length > remainingSlots) {
-      photosToAdd = photosToAdd.slice(0, remainingSlots);
+    try {
+      // Usar camera utils nativo/fallback automaticamente
+      const photos = await pickMultipleImages({ 
+        limit: remainingSlots,
+        quality: 80 
+      });
+      
+      if (photos.length === 0) return; // Cancelamento
+      
+      // Se recebeu mais fotos que o permitido, limitar
+      const photosToAdd = photos.slice(0, remainingSlots);
+      
+      if (photos.length > remainingSlots) {
+        toast({
+          title: "Limite máximo",
+          description: `Apenas ${remainingSlots} foto(s) foram adicionadas para respeitar o limite de ${maxPhotos} foto(s).`,
+        });
+      }
+      
+      setAnswers(prev => ({
+        ...prev,
+        [itemId]: [...currentPhotos, ...photosToAdd]
+      }));
+    } catch (error) {
+      console.error('[PHOTO UPLOAD] Error:', error);
       toast({
-        title: "Limite máximo",
-        description: `Apenas ${remainingSlots} foto(s) foram adicionadas para respeitar o limite de ${maxPhotos} foto(s).`,
+        title: "Erro ao capturar fotos",
+        description: "Não foi possível adicionar as fotos. Tente novamente.",
+        variant: "destructive",
       });
     }
-    
-    const newPhotos = photosToAdd.map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      name: file.name
-    }));
-    
-    setAnswers(prev => ({
-      ...prev,
-      [itemId]: [...currentPhotos, ...newPhotos]
-    }));
   };
 
   const removePhoto = (itemId: string, index: number) => {
     const currentPhotos = answers[itemId] || [];
     const updatedPhotos = currentPhotos.filter((_: any, i: number) => i !== index);
-    
-    // Liberar URL do preview
-    if (currentPhotos[index]?.preview) {
-      URL.revokeObjectURL(currentPhotos[index].preview);
-    }
     
     setAnswers(prev => ({
       ...prev,
@@ -276,27 +281,19 @@ export default function MobileWorkOrderExecute() {
     return true;
   };
 
-  const convertPhotosToBase64 = async (photos: any[]): Promise<string[]> => {
-    const promises = photos.map((photo) => {
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(photo.file);
-      });
-    });
-    return Promise.all(promises);
+  const convertPhotosToBase64 = async (photos: CapturedPhoto[]): Promise<string[]> => {
+    // Fotos já estão em Base64 com dataUrl, apenas retornar
+    return photos.map(photo => photo.dataUrl);
   };
 
-  const handlePausePhotoUpload = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    setPausePhoto({
-      file,
-      preview: URL.createObjectURL(file),
-      name: file.name
-    });
+  const handlePausePhotoUpload = async () => {
+    try {
+      const photo = await promptForPicture();
+      setPausePhoto(photo);
+    } catch (error) {
+      console.error('[PAUSE PHOTO] Error:', error);
+      // Cancelamento silencioso
+    }
   };
 
   const handlePause = async () => {
@@ -311,16 +308,8 @@ export default function MobileWorkOrderExecute() {
 
     setIsPausing(true);
     try {
-      // Converter foto para base64 se houver
-      let photoBase64 = null;
-      if (pausePhoto) {
-        photoBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(pausePhoto.file);
-        });
-      }
+      // Foto de pausa já está em Base64
+      const photoBase64 = pausePhoto ? pausePhoto.dataUrl : null;
 
       // Atualizar status da OS para pausada
       const response = await authenticatedFetch(`/api/work-orders/${workOrder.id}`, {
