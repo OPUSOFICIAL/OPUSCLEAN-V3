@@ -2004,6 +2004,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload Base64 Attachment (for mobile photo uploads)
+  const uploadBase64Schema = z.object({
+    base64: z.string().min(1),
+    format: z.enum(['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf']),
+    workOrderId: z.string().optional(),
+  });
+
+  app.post("/api/attachments/upload-base64", requireAuth, async (req, res) => {
+    try {
+      // Validate request body
+      const validatedData = uploadBase64Schema.parse(req.body);
+      const { base64, format, workOrderId } = validatedData;
+
+      // Strip data URL prefix if present (data:image/jpeg;base64,XXXXX)
+      const base64Clean = base64.includes(',') 
+        ? base64.split(',')[1] 
+        : base64;
+
+      // Decode Base64 to Buffer
+      const buffer = Buffer.from(base64Clean, 'base64');
+
+      // Validate workOrderId ownership if provided
+      if (workOrderId && req.user) {
+        const workOrder = await storage.getWorkOrder(workOrderId);
+        if (!workOrder || workOrder.customerId !== req.user.customerId) {
+          return res.status(403).json({ 
+            message: "Forbidden: Work order not found or not authorized" 
+          });
+        }
+      }
+
+      // Save file to disk
+      const { relativePath, absolutePath } = await storage.saveWorkOrderAttachmentFile({
+        buffer,
+        format,
+      });
+
+      // Create DB record if workOrderId provided
+      let attachmentId: string | undefined;
+      if (workOrderId && req.user) {
+        const result = await storage.createWorkOrderAttachmentRecord({
+          workOrderId,
+          userId: req.user.id,
+          relativePath,
+          fileSize: buffer.length,
+          fileType: `image/${format}`,
+          originalName: `upload_${Date.now()}.${format}`,
+        });
+        attachmentId = result.id;
+      }
+
+      // Return success response
+      res.status(201).json({
+        success: true,
+        filename: relativePath.split('/').pop(),
+        url: relativePath,
+        id: attachmentId,
+      });
+    } catch (error) {
+      console.error('[UPLOAD] Base64 upload error:', error);
+
+      // Handle validation errors
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid upload data", 
+          errors: error.errors 
+        });
+      }
+
+      // Handle size/format errors from helper
+      if (error instanceof Error) {
+        if (error.message.includes('exceeds 8MB')) {
+          return res.status(413).json({ message: error.message });
+        }
+        if (error.message.includes('Unsupported format')) {
+          return res.status(400).json({ message: error.message });
+        }
+      }
+
+      // Default error
+      res.status(500).json({ 
+        message: "Failed to upload attachment",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Batch upload endpoint for multiple photos
+  const uploadBase64BatchSchema = z.object({
+    attachments: z.array(z.object({
+      base64: z.string().min(1),
+      format: z.enum(['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf']),
+    })),
+  });
+
+  app.post("/api/attachments/upload-base64-batch", requireAuth, async (req, res) => {
+    try {
+      // Validate request body
+      const validatedData = uploadBase64BatchSchema.parse(req.body);
+      const { attachments } = validatedData;
+
+      if (attachments.length === 0) {
+        return res.status(400).json({ message: "No attachments provided" });
+      }
+
+      // Process all photos
+      const results = await Promise.all(
+        attachments.map(async ({ base64, format }) => {
+          // Strip data URL prefix if present
+          const base64Clean = base64.includes(',') 
+            ? base64.split(',')[1] 
+            : base64;
+
+          // Decode Base64 to Buffer
+          const buffer = Buffer.from(base64Clean, 'base64');
+
+          // Save file to disk
+          const { relativePath } = await storage.saveWorkOrderAttachmentFile({
+            buffer,
+            format,
+          });
+
+          return {
+            filename: relativePath.split('/').pop() as string,
+            url: relativePath,
+          };
+        })
+      );
+
+      // Return batch response
+      res.status(201).json({
+        success: true,
+        filenames: results.map(r => r.filename),
+        urls: results.map(r => r.url),
+      });
+    } catch (error) {
+      console.error('[BATCH UPLOAD] Batch upload error:', error);
+
+      // Handle validation errors
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid batch upload data", 
+          errors: error.errors 
+        });
+      }
+
+      // Handle size/format errors
+      if (error instanceof Error) {
+        if (error.message.includes('exceeds 8MB')) {
+          return res.status(413).json({ message: error.message });
+        }
+        if (error.message.includes('Unsupported format')) {
+          return res.status(400).json({ message: error.message });
+        }
+      }
+
+      // Default error
+      res.status(500).json({ 
+        message: "Failed to upload attachments",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Dashboard stats
   app.get("/api/companies/:companyId/dashboard-stats", async (req, res) => {
     try {

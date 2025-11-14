@@ -44,6 +44,8 @@ import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
 import { serializeForAI } from "./utils/serialization";
+import * as fs from "fs/promises";
+import * as path from "path";
 
 // ============================================================================
 // Encryption helpers for AI Integration API keys
@@ -3425,6 +3427,96 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWorkOrderComment(id: string): Promise<void> {
     await db.delete(workOrderComments).where(eq(workOrderComments.id, id));
+  }
+
+  // Work Order Attachments - File Upload Helpers
+  async saveWorkOrderAttachmentFile({ 
+    buffer, 
+    format 
+  }: { 
+    buffer: Buffer; 
+    format: string;
+  }): Promise<{ relativePath: string; absolutePath: string }> {
+    // 1. Validate format
+    const allowedFormats = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+    const normalizedFormat = format.toLowerCase();
+    
+    if (!allowedFormats.includes(normalizedFormat)) {
+      throw new Error(`Unsupported format: ${format}. Allowed: ${allowedFormats.join(', ')}`);
+    }
+
+    // 2. Enforce 8MB size limit
+    const MAX_SIZE = 8 * 1024 * 1024; // 8MB in bytes
+    if (buffer.length > MAX_SIZE) {
+      throw new Error(`File size exceeds 8MB limit. Size: ${(buffer.length / 1024 / 1024).toFixed(2)}MB`);
+    }
+
+    // 3. Generate timestamp and YYYY/MM path
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    
+    // 4. Create directory structure
+    const dirPath = path.join('attached_assets', 'work_order_attachments', String(year), month);
+    await fs.mkdir(dirPath, { recursive: true });
+    
+    // 5. Generate unique filename
+    const timestamp = Date.now();
+    const uniqueId = nanoid(8);
+    const filename = `wo-${timestamp}-${uniqueId}.${normalizedFormat}`;
+    
+    // 6. Compute paths
+    const absolutePath = path.join(dirPath, filename);
+    const relativePath = `/${dirPath}/${filename}`.replace(/\\/g, '/'); // Normalize for URLs
+    
+    // 7. Save file
+    await fs.writeFile(absolutePath, buffer);
+    
+    console.log('[ATTACHMENT] File saved:', { relativePath, size: buffer.length, format: normalizedFormat });
+    
+    return { relativePath, absolutePath };
+  }
+
+  async createWorkOrderAttachmentRecord({
+    workOrderId,
+    userId,
+    relativePath,
+    fileSize,
+    fileType,
+    originalName,
+    description
+  }: {
+    workOrderId: string;
+    userId: string;
+    relativePath: string;
+    fileSize: number;
+    fileType: string;
+    originalName?: string;
+    description?: string;
+  }): Promise<{ id: string }> {
+    const id = nanoid();
+    const localId = nanoid();
+    
+    const [result] = await this.db
+      .insert(workOrderAttachments)
+      .values({
+        id,
+        localId,
+        workOrderId,
+        fileUrl: relativePath,
+        fileName: originalName || path.basename(relativePath),
+        fileType,
+        fileSize,
+        caption: description || null,
+        uploadedBy: userId,
+        syncStatus: 'synced',
+        createdOffline: false,
+      })
+      .returning({ id: workOrderAttachments.id });
+    
+    console.log('[ATTACHMENT] Record created:', { id: result.id, workOrderId, fileUrl: relativePath });
+    
+    return { id: result.id };
   }
 
   // Bathroom Counters
@@ -7849,7 +7941,7 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
           }
         }
 
-        // 3. UPSERT Attachments
+        // 3. UPSERT Attachments - save physical files first
         if (data.attachments && data.attachments.length > 0) {
           for (const att of data.attachments) {
             // Validate work order exists in validatedWorkOrders map
@@ -7857,12 +7949,39 @@ PROIBIDO: Responder "preciso saber a data" - VOCÊ JÁ TEM A DATA!`;
               throw new Error(`Work order ${att.workOrderId} not found or not authorized`);
             }
 
+            // Save physical file from Base64
+            let fileUrl = att.fileData;
+            if (att.fileData && att.fileData.startsWith('data:')) {
+              // Extract format from fileType (e.g., "image/jpeg" -> "jpeg")
+              const format = att.fileType?.split('/')[1] || 'jpeg';
+              
+              // Strip data URL prefix and decode
+              const base64Clean = att.fileData.includes(',') 
+                ? att.fileData.split(',')[1] 
+                : att.fileData;
+              const buffer = Buffer.from(base64Clean, 'base64');
+
+              // Save file to disk
+              const { relativePath } = await this.saveWorkOrderAttachmentFile({
+                buffer,
+                format: format as 'jpg' | 'jpeg' | 'png' | 'webp' | 'heic' | 'pdf',
+              });
+              
+              fileUrl = relativePath;
+            }
+
             const newId = nanoid();
             const [result] = await tx
               .insert(workOrderAttachments)
               .values({
                 id: newId,
-                ...att,
+                workOrderId: att.workOrderId,
+                userId: att.uploadedBy,
+                fileUrl,
+                fileSize: att.fileData?.length || 0,
+                fileType: att.fileType || 'image/jpeg',
+                originalName: att.fileName || `attachment_${Date.now()}`,
+                comment: att.comment,
                 localId: att.localId,
                 syncStatus: 'synced',
                 createdOffline: true,

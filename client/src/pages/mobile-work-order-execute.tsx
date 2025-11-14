@@ -13,6 +13,7 @@ import { useNetwork } from "@/contexts/NetworkContext";
 import { useOfflineStorage } from "@/hooks/use-offline-storage";
 import { nanoid } from "nanoid";
 import { pickMultipleImages, promptForPicture, type CapturedPhoto } from "@/lib/camera-utils";
+import { apiRequest } from "@/lib/queryClient";
 
 // Helper function to add JWT token to fetch requests
 const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
@@ -446,13 +447,34 @@ export default function MobileWorkOrderExecute() {
             }
           }
 
+          // Upload photos first, get filenames (batch)
+          let uploadedFilenames: string[] = [];
+          if (allPhotos.length > 0) {
+            try {
+              const attachments = allPhotos.map((photoDataUrl: string) => {
+                const formatMatch = photoDataUrl.match(/^data:image\/(\w+);base64,/);
+                const format = formatMatch ? formatMatch[1] as 'jpg' | 'jpeg' | 'png' | 'webp' | 'heic' | 'pdf' : 'jpeg';
+                return { base64: photoDataUrl, format };
+              });
+
+              const res = await apiRequest('POST', '/api/attachments/upload-base64-batch', {
+                attachments,
+              });
+              uploadedFilenames = res.filenames;
+              console.log('[FINISH ONLINE] Batch photos uploaded:', uploadedFilenames);
+            } catch (uploadError) {
+              console.error('[FINISH ONLINE] Batch photo upload failed:', uploadError);
+              // Continue without photos if upload fails
+            }
+          }
+
           await authenticatedFetch(`/api/work-orders/${workOrder.id}/comments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId: currentUser?.id,
               comment: checklistSummary,
-              attachments: allPhotos,
+              attachments: uploadedFilenames,
             }),
           });
         } catch (commentError) {
@@ -707,10 +729,10 @@ export default function MobileWorkOrderExecute() {
                           {/* Preview das fotos */}
                           {answers[item.id] && answers[item.id].length > 0 && (
                             <div className="grid grid-cols-3 gap-2">
-                              {answers[item.id].map((photo: any, photoIndex: number) => (
+                              {answers[item.id].map((photo: CapturedPhoto, photoIndex: number) => (
                                 <div key={photoIndex} className="relative aspect-square">
                                   <img 
-                                    src={photo.preview} 
+                                    src={photo.dataUrl} 
                                     alt={`Foto ${photoIndex + 1}`}
                                     className="w-full h-full object-cover rounded-lg border-2 border-slate-200"
                                   />
@@ -720,6 +742,7 @@ export default function MobileWorkOrderExecute() {
                                     size="icon"
                                     className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                                     onClick={() => removePhoto(item.id, photoIndex)}
+                                    data-testid={`button-remove-photo-${item.id}-${photoIndex}`}
                                   >
                                     <X className="w-3 h-3" />
                                   </Button>
@@ -728,47 +751,20 @@ export default function MobileWorkOrderExecute() {
                             </div>
                           )}
 
-                          {/* Botões de upload */}
+                          {/* Botão adicionar fotos */}
                           {(!item.validation?.photoMaxCount || 
                             (answers[item.id]?.length || 0) < item.validation.photoMaxCount) && (
-                            <div className="grid grid-cols-2 gap-3">
-                              {/* Botão Tirar Foto */}
-                              <label className="block">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  capture="environment"
-                                  className="hidden"
-                                  onChange={(e) => handlePhotoUpload(item.id, e.target.files)}
-                                  data-testid={`camera-input-${item.id}`}
-                                />
-                                <div className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-blue-500 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer transition-colors">
-                                  <Camera className="w-6 h-6 text-blue-600" />
-                                  <span className="text-xs font-medium text-blue-600 text-center">
-                                    Tirar Foto
-                                  </span>
-                                </div>
-                              </label>
-
-                              {/* Botão Galeria */}
-                              <label className="block">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  className="hidden"
-                                  onChange={(e) => handlePhotoUpload(item.id, e.target.files)}
-                                  data-testid={`gallery-input-${item.id}`}
-                                />
-                                <div className="flex flex-col items-center justify-center gap-2 p-4 border-2 border-green-500 rounded-lg bg-green-50 hover:bg-green-100 cursor-pointer transition-colors">
-                                  <ImageIcon className="w-6 h-6 text-green-600" />
-                                  <span className="text-xs font-medium text-green-600 text-center">
-                                    Da Galeria
-                                  </span>
-                                </div>
-                              </label>
-                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => handlePhotoUpload(item.id)}
+                              disabled={isSubmitting}
+                              data-testid={`button-add-photos-${item.id}`}
+                            >
+                              <Camera className="w-4 h-4 mr-2" />
+                              Adicionar Fotos
+                            </Button>
                           )}
 
                           {/* Contador */}
@@ -922,7 +918,7 @@ export default function MobileWorkOrderExecute() {
                 {pausePhoto ? (
                   <div className="relative">
                     <img 
-                      src={pausePhoto.preview} 
+                      src={pausePhoto.dataUrl} 
                       alt="Foto da pausa"
                       className="w-full h-48 object-cover rounded-lg border"
                     />
@@ -931,29 +927,23 @@ export default function MobileWorkOrderExecute() {
                       variant="destructive"
                       size="icon"
                       className="absolute top-2 right-2"
-                      onClick={() => {
-                        URL.revokeObjectURL(pausePhoto.preview);
-                        setPausePhoto(null);
-                      }}
+                      onClick={() => setPausePhoto(null)}
+                      data-testid="button-remove-pause-photo"
                     >
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
                 ) : (
-                  <label className="block">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={(e) => handlePausePhotoUpload(e.target.files)}
-                      data-testid="input-pause-photo"
-                    />
-                    <div className="flex items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer">
-                      <Camera className="w-5 h-5 text-slate-600" />
-                      <span className="text-sm text-slate-600">Tirar/Anexar Foto</span>
-                    </div>
-                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handlePausePhotoUpload}
+                    data-testid="button-add-pause-photo"
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Tirar/Anexar Foto
+                  </Button>
                 )}
               </div>
 
@@ -964,10 +954,7 @@ export default function MobileWorkOrderExecute() {
                   onClick={() => {
                     setIsPauseModalOpen(false);
                     setPauseReason("");
-                    if (pausePhoto) {
-                      URL.revokeObjectURL(pausePhoto.preview);
-                      setPausePhoto(null);
-                    }
+                    setPausePhoto(null);
                   }}
                   disabled={isPausing}
                   className="flex-1"

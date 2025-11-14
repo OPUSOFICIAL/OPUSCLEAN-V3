@@ -25,6 +25,7 @@ import {
   FileText,
   WifiOff
 } from "lucide-react";
+import { pickMultipleImages, type CapturedPhoto } from "@/lib/camera-utils";
 
 export default function QrExecution() {
   const { currentModule } = useModule();
@@ -32,7 +33,7 @@ export default function QrExecution() {
   const [, setLocation] = useLocation();
   const [observations, setObservations] = useState("");
   const [checklistItems, setChecklistItems] = useState<Record<string, any>>({});
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [isCompleting, setIsCompleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -102,9 +103,20 @@ export default function QrExecution() {
     }));
   };
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setPhotos(prev => [...prev, ...files]);
+  const handlePhotoUpload = async () => {
+    try {
+      const newPhotos = await pickMultipleImages({ quality: 80 });
+      if (newPhotos.length > 0) {
+        setPhotos(prev => [...prev, ...newPhotos]);
+      }
+    } catch (error) {
+      console.error('[QR PHOTO UPLOAD] Error:', error);
+      toast({
+        title: "Erro ao capturar fotos",
+        description: "Não foi possível adicionar as fotos. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateCorrectiveOrder = async () => {
@@ -125,8 +137,34 @@ export default function QrExecution() {
     };
 
     if (isOnline) {
-      // Online: Use mutation normal
-      createWorkOrderMutation.mutate(workOrderData);
+      // Online: Upload photos first, then submit filenames (batch)
+      let uploadedFilenames: string[] = [];
+      if (photos.length > 0) {
+        try {
+          const attachments = photos.map((photo) => ({
+            base64: photo.dataUrl,
+            format: photo.format as 'jpg' | 'jpeg' | 'png' | 'webp' | 'heic' | 'pdf',
+          }));
+          
+          const res = await apiRequest('POST', '/api/attachments/upload-base64-batch', {
+            attachments,
+          });
+          uploadedFilenames = res.filenames;
+        } catch (uploadError) {
+          console.error('[QR CORRECTIVE] Batch photo upload failed:', uploadError);
+          toast({
+            title: "Erro ao enviar fotos",
+            description: "Não foi possível fazer upload das fotos. Tente novamente.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      createWorkOrderMutation.mutate({
+        ...workOrderData,
+        attachments: uploadedFilenames.length > 0 ? uploadedFilenames : undefined
+      });
     } else {
       // Offline: Save to IndexedDB
       // Validate required fields
@@ -151,19 +189,13 @@ export default function QrExecution() {
 
         // Save photos as attachments if any
         if (photos.length > 0) {
-          const photoPromises = photos.map(async (file, index) => {
-            const base64 = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(file);
-            });
-
+          const photoPromises = photos.map(async (photo, index) => {
             await createOfflineAttachment({
               workOrderId: localId, // Use localId
               type: 'photo',
-              url: base64,
-              fileName: file.name || `photo_${Date.now()}_${index}.jpg`,
-              mimeType: file.type || 'image/jpeg',
+              url: photo.dataUrl, // Já está em Base64
+              fileName: `photo_${Date.now()}_${index}.${photo.format}`,
+              mimeType: `image/${photo.format}`,
               uploadedBy: currentUser.id,
               syncStatus: 'pending',
               createdOffline: true,
@@ -201,13 +233,37 @@ export default function QrExecution() {
     setIsCompleting(true);
 
     if (isOnline) {
-      // Online: Use mutation normal
+      // Online: Upload photos first, then submit filenames (batch)
+      let uploadedFilenames: string[] = [];
+      if (photos.length > 0) {
+        try {
+          const attachments = photos.map((photo) => ({
+            base64: photo.dataUrl,
+            format: photo.format as 'jpg' | 'jpeg' | 'png' | 'webp' | 'heic' | 'pdf',
+          }));
+          
+          const res = await apiRequest('POST', '/api/attachments/upload-base64-batch', {
+            attachments,
+          });
+          uploadedFilenames = res.filenames;
+        } catch (uploadError) {
+          console.error('[QR COMPLETE] Batch photo upload failed:', uploadError);
+          toast({
+            title: "Erro ao enviar fotos",
+            description: "Não foi possível fazer upload das fotos. Tente novamente.",
+            variant: "destructive",
+          });
+          setIsCompleting(false);
+          return;
+        }
+      }
+
       updateWorkOrderMutation.mutate({
         id: workOrder.id,
         status: "concluida",
         completedAt: new Date().toISOString(),
         checklistData: checklistItems,
-        attachments: photos.map(p => p.name)
+        attachments: uploadedFilenames
       });
     } else {
       // Offline: Save checklist execution + attachments
@@ -229,19 +285,13 @@ export default function QrExecution() {
 
         // 2. Save photos as attachments
         if (photos.length > 0) {
-          const photoPromises = photos.map(async (file, index) => {
-            const base64 = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(file);
-            });
-
+          const photoPromises = photos.map(async (photo, index) => {
             await createOfflineAttachment({
               workOrderId: workOrder.id, // serverId
               type: 'photo',
-              url: base64,
-              fileName: file.name || `qr_photo_${Date.now()}_${index}.jpg`,
-              mimeType: file.type || 'image/jpeg',
+              url: photo.dataUrl, // Já está em Base64
+              fileName: `qr_photo_${Date.now()}_${index}.${photo.format}`,
+              mimeType: `image/${photo.format}`,
               uploadedBy: currentUser.id,
               syncStatus: 'pending',
               createdOffline: true,
@@ -424,25 +474,22 @@ export default function QrExecution() {
               )}
 
               {/* Photo Upload */}
-              <div className="border-2 border-dashed border-border rounded-lg p-4">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                  id="photo-upload"
-                />
-                <label htmlFor="photo-upload" className="cursor-pointer">
-                  <div className="text-center">
-                    <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Anexar fotos</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {photos.length > 0 ? `${photos.length} foto(s) selecionada(s)` : "Toque para adicionar fotos"}
-                    </p>
-                  </div>
-                </label>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-auto py-6"
+                onClick={handlePhotoUpload}
+                disabled={isCompleting}
+                data-testid="button-upload-photos"
+              >
+                <div className="text-center">
+                  <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Anexar fotos</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {photos.length > 0 ? `${photos.length} foto(s) selecionada(s)` : "Toque para adicionar fotos"}
+                  </p>
+                </div>
+              </Button>
 
               {/* Complete Button */}
               <Button 
@@ -492,25 +539,22 @@ export default function QrExecution() {
               </div>
 
               {/* Photo Upload for corrective */}
-              <div className="border-2 border-dashed border-border rounded-lg p-4">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                  id="corrective-photo-upload"
-                />
-                <label htmlFor="corrective-photo-upload" className="cursor-pointer">
-                  <div className="text-center">
-                    <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Anexar fotos (opcional)</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {photos.length > 0 ? `${photos.length} foto(s) selecionada(s)` : "Evidências da necessidade de limpeza"}
-                    </p>
-                  </div>
-                </label>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-auto py-6"
+                onClick={handlePhotoUpload}
+                disabled={createWorkOrderMutation.isPending}
+                data-testid="button-upload-corrective-photos"
+              >
+                <div className="text-center">
+                  <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Anexar fotos (opcional)</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {photos.length > 0 ? `${photos.length} foto(s) selecionada(s)` : "Evidências da necessidade de limpeza"}
+                  </p>
+                </div>
+              </Button>
 
               {/* Create Corrective Button */}
               <Button 
