@@ -216,15 +216,15 @@ export default function QrExecution() {
   };
 
   const handleCreateCorrectiveOrder = async () => {
-    if (!zone || !(qrData as any)?.point) return;
+    if (!effectiveZone || !(effectiveQRData as any)?.point) return;
 
     const workOrderData = {
-      companyId: (qrData as any)?.company?.id || 'company-opus-default',
-      customerId: (qrData as any)?.customer?.id || (qrData as any)?.point?.customerId,
-      zoneId: zone?.id,
+      companyId: (effectiveQRData as any)?.company?.id || 'company-opus-default',
+      customerId: (effectiveQRData as any)?.customer?.id || (effectiveQRData as any)?.point?.customerId,
+      zoneId: effectiveZone?.id,
       type: "internal_corrective" as const, // Canonical enum key
       priority: "media" as const,
-      title: `Limpeza Corretiva - ${zone?.name || 'Local'}`,
+      title: `Limpeza Corretiva - ${effectiveZone?.name || 'Local'}`,
       description: observations || "Solicitação via QR Code de execução",
       assignedUserId: currentUser.id,
       origin: "QR Execução",
@@ -323,8 +323,8 @@ export default function QrExecution() {
   };
 
   const handleCompleteWorkOrder = async () => {
-    if (!(qrData as any)?.scheduledWorkOrder) return;
-    const workOrder = (qrData as any).scheduledWorkOrder;
+    if (!(effectiveQRData as any)?.scheduledWorkOrder) return;
+    const workOrder = (effectiveQRData as any).scheduledWorkOrder;
 
     setIsCompleting(true);
 
@@ -424,27 +424,55 @@ export default function QrExecution() {
 
   useEffect(() => {
     // Store QR scan data for offline sync
-    if (qrData) {
+    if (effectiveQRData) {
       localStorage.setItem(`qr-scan-${code}`, JSON.stringify({
         timestamp: new Date().toISOString(),
         userId: currentUser.id,
-        qrData
+        qrData: effectiveQRData
       }));
       
       // Store current location context for work order filtering
       const locationContext = {
-        zoneId: (qrData as any).point?.zoneId,
-        zoneName: zone?.name || (qrData as any)?.point?.name,
-        siteName: (qrData as any).site?.name,
+        zoneId: (effectiveQRData as any).point?.zoneId,
+        zoneName: effectiveZone?.name || (effectiveQRData as any)?.point?.name,
+        siteName: (effectiveQRData as any).site?.name,
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('current-location', JSON.stringify(locationContext));
     }
-  }, [qrData, code, currentUser.id, zone]);
+  }, [effectiveQRData, code, currentUser.id, effectiveZone]);
 
-  // Determine effective data (cache or API)
-  const effectiveQRData = isOnline && qrData ? qrData : cachedQRData;
-  const effectiveZone = isOnline && zone ? zone : cachedZone;
+  // Normalize cached data to API format
+  const normalizedCacheData = cachedQRData ? {
+    point: {
+      id: cachedQRData.pointId,
+      code: cachedQRData.code,
+      name: cachedQRData.name,
+      description: cachedQRData.description,
+      zoneId: cachedQRData.zoneId,
+      customerId: cachedQRData.customerId,
+      module: cachedQRData.module,
+    },
+    hasScheduledActivity: false, // Not available in cache
+    scheduledWorkOrder: null,
+    checklist: null,
+  } : null;
+
+  const normalizedCacheZone = cachedZone ? {
+    id: cachedZone.id,
+    name: cachedZone.name,
+    areaM2: cachedZone.areaM2,
+    siteId: cachedZone.siteId,
+    module: cachedZone.module,
+    isActive: true,
+  } : null;
+
+  // Determine effective data (online API data takes priority over cache)
+  const effectiveQRData = qrData || normalizedCacheData;
+  const effectiveZone = zone || normalizedCacheZone;
+  
+  // Update isFromCache flag based on actual data source
+  const actuallyFromCache = !isOnline && !!cachedQRData && !qrData;
 
   // Loading state: show spinner while loading from API OR while attempting cache load
   if (isLoading || (!isOnline && !cacheLoadAttempted)) {
@@ -540,16 +568,26 @@ export default function QrExecution() {
       </div>
 
       <div className="p-4 space-y-6">
+        {/* Connection Status Badge */}
+        {actuallyFromCache && (
+          <div className="bg-muted/50 border border-border rounded-lg p-3 flex items-center gap-2">
+            <WifiOff className="w-4 h-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              <strong>Modo Offline:</strong> Usando dados em cache. Funcionalidades limitadas.
+            </p>
+          </div>
+        )}
+
         {/* Location Info */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
               <MapPin className="w-5 h-5 text-primary mt-1" />
               <div className="flex-1">
-                <h2 className="text-lg font-semibold text-foreground">{zone?.name || (qrData as any)?.point?.name}</h2>
-                <p className="text-sm text-muted-foreground">{(qrData as any)?.point?.description}</p>
-                {zone?.areaM2 && (
-                  <p className="text-xs text-muted-foreground mt-1">Área: {zone?.areaM2}m²</p>
+                <h2 className="text-lg font-semibold text-foreground">{effectiveZone?.name || (effectiveQRData as any)?.point?.name}</h2>
+                <p className="text-sm text-muted-foreground">{(effectiveQRData as any)?.point?.description}</p>
+                {effectiveZone?.areaM2 && (
+                  <p className="text-xs text-muted-foreground mt-1">Área: {effectiveZone?.areaM2}m²</p>
                 )}
               </div>
             </div>
@@ -570,7 +608,7 @@ export default function QrExecution() {
         </Card>
 
         {/* Scheduled Activity or Corrective Option */}
-        {(qrData as any).hasScheduledActivity && (qrData as any).scheduledWorkOrder ? (
+        {(effectiveQRData as any).hasScheduledActivity && (effectiveQRData as any).scheduledWorkOrder ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -580,24 +618,24 @@ export default function QrExecution() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-chart-2/5 border border-chart-2/20 rounded-lg p-3">
-                <h3 className="font-medium text-foreground mb-1">{(qrData as any).scheduledWorkOrder.title}</h3>
-                <p className="text-sm text-muted-foreground">{(qrData as any).scheduledWorkOrder.description}</p>
+                <h3 className="font-medium text-foreground mb-1">{(effectiveQRData as any).scheduledWorkOrder.title}</h3>
+                <p className="text-sm text-muted-foreground">{(effectiveQRData as any).scheduledWorkOrder.description}</p>
                 <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                   <span className="flex items-center space-x-1">
                     <Clock className="w-3 h-3" />
-                    <span>SLA: {(qrData as any).scheduledWorkOrder.slaCompleteMinutes || 60} min</span>
+                    <span>SLA: {(effectiveQRData as any).scheduledWorkOrder.slaCompleteMinutes || 60} min</span>
                   </span>
                   <Badge className="bg-chart-4/10 text-chart-4">
-                    {(qrData as any).scheduledWorkOrder.priority || 'Média'}
+                    {(effectiveQRData as any).scheduledWorkOrder.priority || 'Média'}
                   </Badge>
                 </div>
               </div>
 
               {/* Checklist */}
-              {(qrData as any).checklist && (
+              {(effectiveQRData as any).checklist && (
                 <div className="space-y-3">
                   <h4 className="font-medium text-foreground">Checklist</h4>
-                  {(qrData as any).checklist.map((item: any, index: number) => (
+                  {(effectiveQRData as any).checklist.map((item: any, index: number) => (
                     <div key={index} className="flex items-center space-x-3 p-3 border border-border rounded-lg">
                       <Checkbox 
                         checked={checklistItems[item.id] || false}
