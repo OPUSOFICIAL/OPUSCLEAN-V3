@@ -41,16 +41,18 @@ The project is configured for the Replit cloud environment, with automated Postg
 
 ### Mobile (Android APK)
 - Capacitor 7 (Core, CLI, Android)
-- Offline-first architecture with IndexedDB
+- Offline-first architecture with IndexedDB v4
 - Native plugins: @capacitor/network@7.0.2 (network detection), @capacitor/camera@7.0.2 (native camera/gallery)
 - Camera utils: `client/src/lib/camera-utils.ts` (single/multiple photos, automatic web fallback)
 - Network hook: `client/src/hooks/use-network-status.ts` (real-time connectivity status)
 - SyncQueueManager: Auto-sync on reconnection via Network plugin
-- Build config: `ANDROID_BUILD.md`
-- APK generation via Android Studio or Gradle
-- Build script: `npm run build:android` (frontend only, no DB steps)
-- Sync script: `npx cap sync android`
+- Build config: `ANDROID_BUILD.md`, `GERAR_APK.md`, `📱_COMO_GERAR_APK.txt`
+- APK generation: MUST compile locally (requires Android SDK not available on Replit)
+- Build scripts: `gerar-apk.sh` (Mac/Linux), `gerar-apk.bat` (Windows)
+- Build steps: `npm run build:android` → `npx cap sync android` → `./gradlew assembleDebug`
 - Platform added: `android/` (native Android project)
+- IndexedDB stores: qrPoints, zones, scheduledWorkOrders, checklistTemplates
+- OfflineExecutionNormalizer: Deterministic WO prioritization (scheduledStartAt → createdAt → id)
 
 ### Frontend Framework
 - React 18
