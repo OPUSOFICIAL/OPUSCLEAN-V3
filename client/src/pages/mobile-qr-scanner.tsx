@@ -138,6 +138,8 @@ export default function MobileQrScanner() {
       }
     }
 
+    console.log('[QR SCANNER] Processando QR code:', { extractedCode, isOnline });
+
     try {
       // MODO OFFLINE: Buscar do IndexedDB
       if (!isOnline) {
@@ -290,21 +292,54 @@ export default function MobileQrScanner() {
         errorMessage = error;
       }
       
-      // Se for erro de rede (fetch failed)
+      // Se for erro de rede (fetch failed ou internet disconnected)
       const isNetworkError = errorMessage.toLowerCase().includes('fetch') || 
                              errorMessage.toLowerCase().includes('network') ||
-                             errorMessage.toLowerCase().includes('failed to fetch');
+                             errorMessage.toLowerCase().includes('failed to fetch') ||
+                             errorMessage.toLowerCase().includes('disconnected');
       
-      if (isNetworkError && !isOnline) {
+      if (isNetworkError) {
+        console.log('[QR SCANNER] Erro de rede detectado, tentando cache offline...');
+        
+        // FALLBACK: Tentar buscar do cache offline
+        try {
+          const cachedPoint = await getQRPoint(extractedCode);
+          if (cachedPoint) {
+            const cachedZone = await getZone(cachedPoint.zoneId);
+            
+            const resolved = {
+              customer: { id: cachedPoint.customerId },
+              site: { id: cachedZone?.siteId || '', name: cachedZone?.siteName || 'Local' },
+              zone: { id: cachedPoint.zoneId, name: cachedZone?.name || 'Zona' },
+              point: { 
+                id: cachedPoint.pointId,
+                name: cachedPoint.name,
+                description: cachedPoint.description,
+                code: cachedPoint.code,
+                zoneId: cachedPoint.zoneId,
+                customerId: cachedPoint.customerId,
+                module: cachedPoint.module,
+              },
+              qrPoint: cachedPoint,
+            };
+
+            setResolvedContext(resolved);
+            setShowServiceModal(true);
+            
+            toast({
+              title: "✈️ QR Code encontrado no cache!",
+              description: `${resolved.zone.name} - ${resolved.site.name} (Modo Offline)`,
+            });
+            return;
+          }
+        } catch (cacheError) {
+          console.error('[QR SCANNER] Erro ao buscar do cache:', cacheError);
+        }
+        
+        // Se não encontrou no cache
         toast({
-          title: "Modo Offline",
-          description: "Você está offline. Verifique se este QR code foi escaneado anteriormente para usar do cache.",
-          variant: "destructive",
-        });
-      } else if (isNetworkError) {
-        toast({
-          title: "Erro de Conexão",
-          description: "Não foi possível conectar ao servidor. Verifique sua internet.",
+          title: "Sem Internet",
+          description: "Este QR code não está no cache offline. Conecte-se à internet para escanear novos QR codes.",
           variant: "destructive",
         });
       } else {
