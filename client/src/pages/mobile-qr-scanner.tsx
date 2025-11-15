@@ -150,9 +150,17 @@ export default function MobileQrScanner() {
         
         const resolved = {
           customer: { id: cachedPoint.customerId },
-          site: { id: cachedPoint.siteId, name: cachedZone?.siteName || 'Local' },
+          site: { id: cachedZone?.siteId || '', name: cachedZone?.siteName || 'Local' },
           zone: { id: cachedPoint.zoneId, name: cachedZone?.name || 'Zona' },
-          point: cachedPoint,
+          point: { 
+            id: cachedPoint.pointId,
+            name: cachedPoint.name,
+            description: cachedPoint.description,
+            code: cachedPoint.code,
+            zoneId: cachedPoint.zoneId,
+            customerId: cachedPoint.customerId,
+            module: cachedPoint.module,
+          },
           qrPoint: cachedPoint,
         };
 
