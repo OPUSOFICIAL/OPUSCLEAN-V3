@@ -279,12 +279,41 @@ export default function MobileQrScanner() {
         return;
       }
     } catch (error) {
-      console.error("Erro ao processar QR code:", error);
-      toast({
-        title: "Erro ao processar",
-        description: "Erro de conexão. Verifique sua internet e tente novamente.",
-        variant: "destructive",
-      });
+      console.error("[QR SCANNER ERROR]", error);
+      
+      // Tentar obter mensagem de erro mais específica
+      let errorMessage = "Erro desconhecido ao processar QR code.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Se for erro de rede (fetch failed)
+      const isNetworkError = errorMessage.toLowerCase().includes('fetch') || 
+                             errorMessage.toLowerCase().includes('network') ||
+                             errorMessage.toLowerCase().includes('failed to fetch');
+      
+      if (isNetworkError && !isOnline) {
+        toast({
+          title: "Modo Offline",
+          description: "Você está offline. Verifique se este QR code foi escaneado anteriormente para usar do cache.",
+          variant: "destructive",
+        });
+      } else if (isNetworkError) {
+        toast({
+          title: "Erro de Conexão",
+          description: "Não foi possível conectar ao servidor. Verifique sua internet.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao processar QR",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
       
       setIsProcessing(false);
       setTimeout(() => startScanner(), 2000);
