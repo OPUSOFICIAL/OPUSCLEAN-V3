@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Camera, Flashlight, FlashlightOff, RotateCcw } from "lucide-react";
+import { ArrowLeft, Camera, Flashlight, FlashlightOff, RotateCcw, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QrScanner from "qr-scanner";
 import ServiceSelectionModal from "@/components/ServiceSelectionModal";
 import { useModule } from "@/contexts/ModuleContext";
+import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useOfflineStorage } from "@/hooks/use-offline-storage";
 
 const COMPANY_ID = "company-opus-default";
 
@@ -14,6 +16,8 @@ export default function MobileQrScanner() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { currentModule, setModule, canAccessModule } = useModule();
+  const { isOnline } = useNetworkStatus();
+  const { getQRPoint, getZone } = useOfflineStorage();
   
   // QR Scanner States
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -126,7 +130,43 @@ export default function MobileQrScanner() {
     }
 
     try {
-      // Adicionar token de autenticação
+      // MODO OFFLINE: Buscar do IndexedDB
+      if (!isOnline) {
+        console.log('[QR SCANNER OFFLINE] Buscando QR code do cache:', extractedCode);
+        
+        const cachedPoint = await getQRPoint(extractedCode);
+        if (!cachedPoint) {
+          toast({
+            title: "QR Code não encontrado offline",
+            description: "Este QR code não está no cache offline. Conecte-se à internet para sincronizar.",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          setTimeout(() => startScanner(), 2000);
+          return;
+        }
+
+        const cachedZone = await getZone(cachedPoint.zoneId);
+        
+        const resolved = {
+          customer: { id: cachedPoint.customerId },
+          site: { id: cachedPoint.siteId, name: cachedZone?.siteName || 'Local' },
+          zone: { id: cachedPoint.zoneId, name: cachedZone?.name || 'Zona' },
+          point: cachedPoint,
+          qrPoint: cachedPoint,
+        };
+
+        setResolvedContext(resolved);
+        setShowServiceModal(true);
+        
+        toast({
+          title: "✈️ QR Code detectado! (Modo Offline)",
+          description: `${resolved.zone.name} - ${resolved.site.name}`,
+        });
+        return;
+      }
+
+      // MODO ONLINE: Buscar da API
       const token = localStorage.getItem("opus_clean_token");
       const headers: Record<string, string> = {
         'Cache-Control': 'no-cache',
@@ -397,7 +437,15 @@ export default function MobileQrScanner() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-xl font-bold text-white">Scanner QR</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white">Scanner QR</h1>
+            {!isOnline && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/80 rounded-md">
+                <WifiOff className="w-4 h-4 text-white" />
+                <span className="text-xs font-medium text-white">Offline</span>
+              </div>
+            )}
+          </div>
           <div className="flex space-x-2">
             {cameras.length > 1 && (
               <Button 
