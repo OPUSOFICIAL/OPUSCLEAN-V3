@@ -4,8 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.acelerait.facilities',
   appName: 'OPUS Facilities',
   webDir: 'dist/public',
-  // Server config removed for offline-first operation
-  // Assets are bundled locally and served via capacitor:// protocol
+  // Server URL for API requests (login, sync, etc)
+  server: {
+    url: 'https://5096b304-c27d-40bb-b542-8d20aebdf3ca-00-mp6q3s0er8fy.kirk.replit.dev',
+    cleartext: true,
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
