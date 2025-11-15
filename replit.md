@@ -46,7 +46,7 @@ The project is configured for the Replit cloud environment, with automated Postg
 - Camera utils: `client/src/lib/camera-utils.ts` (single/multiple photos, automatic web fallback)
 - Network hook: `client/src/hooks/use-network-status.ts` (real-time connectivity status)
 - SyncQueueManager: Auto-sync on reconnection via Network plugin
-- Build config: `ANDROID_BUILD.md`, `GERAR_APK.md`, `📱_COMO_GERAR_APK.txt`, `CAMERA_FIX.md`
+- Build config: `ANDROID_BUILD.md`, `GERAR_APK.md`, `📱_COMO_GERAR_APK.txt`, `CAMERA_FIX.md`, `OFFLINE_FIX.md`
 - APK generation: MUST compile locally (requires Android SDK not available on Replit)
 - Build scripts: `gerar-apk.sh` (Mac/Linux), `gerar-apk.bat` (Windows)
 - Build steps: `npm run build:android` → `npx cap sync android` → `./gradlew assembleDebug`
@@ -54,7 +54,9 @@ The project is configured for the Replit cloud environment, with automated Postg
 - IndexedDB stores: qrPoints, zones, scheduledWorkOrders, checklistTemplates
 - OfflineExecutionNormalizer: Deterministic WO prioritization (scheduledStartAt → createdAt → id)
 - Android permissions configured: CAMERA, READ/WRITE_EXTERNAL_STORAGE, READ_MEDIA_IMAGES (Android 13+)
-- Server URL configured in capacitor.config.ts for initial login/sync (offline-first after authentication)
+- Capacitor config: NO server.url (truly offline-first with local bundled assets via capacitor:// protocol)
+- QR scanner with offline detection: Uses IndexedDB when offline, API when online
+- Visual offline indicator: Orange "Offline" badge in scanner header when disconnected
 
 ### Frontend Framework
 - React 18
