@@ -16,7 +16,9 @@ const COMPANY_ID = "company-opus-default";
 // Get API base URL for mobile
 function getApiBaseUrl(): string {
   if (Capacitor.isNativePlatform()) {
-    return import.meta.env.VITE_API_BASE_URL || 'https://5096b304-c27d-40bb-b542-8d20aebdf3ca-00-mp6q3s0er8fy.kirk.replit.dev';
+    // IMPORTANTE: Atualize esta URL quando migrar para um novo ambiente Replit
+    // URL atual do Replit: https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev
+    return import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
   }
   return '';
 }

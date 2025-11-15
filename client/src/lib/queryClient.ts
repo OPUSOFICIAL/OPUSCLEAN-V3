@@ -6,8 +6,9 @@ function getApiBaseUrl(): string {
   // Check if running in Capacitor (native mobile app)
   if (Capacitor.isNativePlatform()) {
     // In production APK, use the actual backend server URL
-    // For now, use the Replit dev server (user will need to update this for production)
-    return import.meta.env.VITE_API_BASE_URL || 'https://5096b304-c27d-40bb-b542-8d20aebdf3ca-00-mp6q3s0er8fy.kirk.replit.dev';
+    // IMPORTANTE: Atualize esta URL quando migrar para um novo ambiente Replit
+    // URL atual do Replit: https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev
+    return import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
   }
   
   // In web browser, use relative URLs (works with Vite proxy)
