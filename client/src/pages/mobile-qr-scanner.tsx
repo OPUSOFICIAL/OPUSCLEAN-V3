@@ -26,7 +26,7 @@ export default function MobileQrScanner() {
   const { toast } = useToast();
   const { currentModule, setModule, canAccessModule } = useModule();
   const { isOnline } = useNetworkStatus();
-  const { getQRPoint, getZone } = useOfflineStorage();
+  const { getQRPoint, getZone, cacheQRPoint, cacheZone } = useOfflineStorage();
   
   // QR Scanner States
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -212,6 +212,33 @@ export default function MobileQrScanner() {
         if (!resolved.customer) {
           throw new Error('QR code sem cliente associado');
         }
+        
+        // SALVAR NO CACHE para uso offline futuro
+        if (resolved.qrPoint) {
+          await cacheQRPoint({
+            code: extractedCode,
+            pointId: resolved.qrPoint.id,
+            name: resolved.qrPoint.name,
+            description: resolved.qrPoint.description,
+            zoneId: resolved.zone.id,
+            customerId: resolved.customer.id,
+            module: resolved.qrPoint.module || 'clean',
+          });
+        }
+        
+        if (resolved.zone) {
+          await cacheZone({
+            id: resolved.zone.id,
+            name: resolved.zone.name,
+            areaM2: resolved.zone.areaM2,
+            siteId: resolved.site.id,
+            siteName: resolved.site.name,
+            customerId: resolved.customer.id,
+            module: resolved.qrPoint?.module || 'clean',
+          });
+        }
+        
+        console.log('[QR SCANNER] QR point e zone salvos no cache para uso offline');
         
         // Verificar e trocar módulo automaticamente se necessário
         const qrModule = resolved.qrPoint?.module || 'clean';
