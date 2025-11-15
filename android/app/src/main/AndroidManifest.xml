@@ -38,6 +38,9 @@
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     
+    <!-- Network Status Detection (Capacitor Network Plugin) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
     <!-- Camera Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
