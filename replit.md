@@ -54,9 +54,11 @@ The project is configured for the Replit cloud environment, with automated Postg
 - IndexedDB stores: qrPoints, zones, scheduledWorkOrders, checklistTemplates
 - OfflineExecutionNormalizer: Deterministic WO prioritization (scheduledStartAt → createdAt → id)
 - Android permissions configured: CAMERA, READ/WRITE_EXTERNAL_STORAGE, READ_MEDIA_IMAGES (Android 13+)
-- Capacitor config: NO server.url (truly offline-first with local bundled assets via capacitor:// protocol)
-- QR scanner with offline detection: Uses IndexedDB when offline, API when online
+- Hybrid architecture: Local assets (no server.url) + Absolute API URLs (Capacitor.isNativePlatform detection)
+- API requests auto-detect environment: Relative URLs in browser, absolute URLs in APK
+- QR scanner with offline detection: Uses IndexedDB when offline, absolute API when online
 - Visual offline indicator: Orange "Offline" badge in scanner header when disconnected
+- See: `HYBRID_ARCHITECTURE.md` for technical architecture details
 
 ### Frontend Framework
 - React 18

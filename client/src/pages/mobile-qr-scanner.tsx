@@ -9,8 +9,17 @@ import ServiceSelectionModal from "@/components/ServiceSelectionModal";
 import { useModule } from "@/contexts/ModuleContext";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineStorage } from "@/hooks/use-offline-storage";
+import { Capacitor } from "@capacitor/core";
 
 const COMPANY_ID = "company-opus-default";
+
+// Get API base URL for mobile
+function getApiBaseUrl(): string {
+  if (Capacitor.isNativePlatform()) {
+    return import.meta.env.VITE_API_BASE_URL || 'https://5096b304-c27d-40bb-b542-8d20aebdf3ca-00-mp6q3s0er8fy.kirk.replit.dev';
+  }
+  return '';
+}
 
 export default function MobileQrScanner() {
   const [, setLocation] = useLocation();
@@ -185,7 +194,11 @@ export default function MobileQrScanner() {
         headers["Authorization"] = `Bearer ${token}`;
       }
       
-      const response = await fetch(`/api/qr-scan/resolve?code=${encodeURIComponent(extractedCode)}`, {
+      const baseUrl = getApiBaseUrl();
+      const apiUrl = `${baseUrl}/api/qr-scan/resolve?code=${encodeURIComponent(extractedCode)}`;
+      console.log('[QR SCANNER ONLINE] Chamando API:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         cache: 'no-store',
         headers
       });

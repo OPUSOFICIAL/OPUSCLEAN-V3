@@ -194,11 +194,21 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ## Key Files Changed
 
-- `capacitor.config.ts` - Removed server.url
-- `client/src/pages/mobile-qr-scanner.tsx` - Added offline check + IndexedDB
+- `capacitor.config.ts` - Removed server.url (offline-first assets)
+- `client/src/lib/queryClient.ts` - Added Capacitor detection + absolute URLs
+- `client/src/pages/mobile-qr-scanner.tsx` - Added offline check + IndexedDB + absolute URLs
 - `android/app/src/main/AndroidManifest.xml` - Camera permissions (previous fix)
+
+## Architecture Evolution
+
+1. **v1.0.1:** Login fixed with `server.url`
+2. **v1.0.2:** Camera fixed with Android permissions
+3. **v1.0.3:** Offline attempt (removed `server.url` → broke login!)
+4. **v1.0.4:** **Hybrid architecture** - Local assets + Remote API ✅
+
+See `HYBRID_ARCHITECTURE.md` for technical details.
 
 ---
 
-**Version:** 1.0.3 (truly offline-first!)  
+**Version:** 1.0.4 (hybrid offline-first!)  
 **Last update:** November 2025

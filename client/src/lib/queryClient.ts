@@ -1,4 +1,31 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
+
+// Get the appropriate API base URL depending on environment
+function getApiBaseUrl(): string {
+  // Check if running in Capacitor (native mobile app)
+  if (Capacitor.isNativePlatform()) {
+    // In production APK, use the actual backend server URL
+    // For now, use the Replit dev server (user will need to update this for production)
+    return import.meta.env.VITE_API_BASE_URL || 'https://5096b304-c27d-40bb-b542-8d20aebdf3ca-00-mp6q3s0er8fy.kirk.replit.dev';
+  }
+  
+  // In web browser, use relative URLs (works with Vite proxy)
+  return '';
+}
+
+// Convert relative URL to absolute if needed
+function getFullUrl(url: string): string {
+  const baseUrl = getApiBaseUrl();
+  
+  // If URL is already absolute, return as is
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  // Combine base URL with relative URL
+  return baseUrl + url;
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -30,7 +57,12 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${token}`;
   }
   
-  const res = await fetch(url, {
+  // Convert to absolute URL if in Capacitor
+  const fullUrl = getFullUrl(url);
+  
+  console.log('[API REQUEST]', method, fullUrl, Capacitor.isNativePlatform() ? '(Capacitor)' : '(Web)');
+  
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -75,7 +107,10 @@ export const getQueryFn: <T>(options: {
       url += "?" + params.toString();
     }
     
-    const res = await fetch(url, {
+    // Convert to absolute URL if in Capacitor
+    const fullUrl = getFullUrl(url);
+    
+    const res = await fetch(fullUrl, {
       headers,
       credentials: "include",
     });
