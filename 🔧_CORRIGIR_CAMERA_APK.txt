@@ -1,0 +1,148 @@
+═══════════════════════════════════════════════════════════════════
+📸 COMO CORRIGIR O ERRO DE CÂMERA NO APK
+═══════════════════════════════════════════════════════════════════
+
+❌ PROBLEMA:
+   APK não tinha permissões de câmera no AndroidManifest.xml
+   → "Câmera não disponível"
+   → "Não foi possível acessar a câmera do dispositivo"
+
+✅ SOLUÇÃO:
+   Adicionei todas as permissões necessárias:
+   ✅ CAMERA (usar câmera)
+   ✅ READ_EXTERNAL_STORAGE (ler galeria)
+   ✅ WRITE_EXTERNAL_STORAGE (salvar fotos)
+   ✅ READ_MEDIA_IMAGES (Android 13+)
+
+═══════════════════════════════════════════════════════════════════
+📥 PASSO 1: BAIXAR PROJETO ATUALIZADO
+═══════════════════════════════════════════════════════════════════
+
+1. Nesta Replit, clique nos 3 pontinhos (⋮) no topo
+2. Selecione "Download as ZIP"
+3. Extraia e SUBSTITUA a pasta antiga
+
+═══════════════════════════════════════════════════════════════════
+🔨 PASSO 2: RECOMPILAR APK (Mesmos Comandos!)
+═══════════════════════════════════════════════════════════════════
+
+🪟 WINDOWS:
+──────────
+gerar-apk.bat
+
+
+🍎 MAC/LINUX:
+──────────────
+./gerar-apk.sh
+
+═══════════════════════════════════════════════════════════════════
+📲 PASSO 3: REINSTALAR NO CELULAR
+═══════════════════════════════════════════════════════════════════
+
+⚠️ IMPORTANTE: Desinstale o APK antigo primeiro!
+
+Depois instale o novo APK:
+📂 android/app/build/outputs/apk/debug/app-debug.apk
+
+═══════════════════════════════════════════════════════════════════
+📸 TESTAR CÂMERA
+═══════════════════════════════════════════════════════════════════
+
+1. Faça login: admin / admin123
+2. Escaneie um QR code (ou use o botão "Scanner QR")
+3. Execute uma atividade
+4. Clique em "Adicionar Foto"
+5. ✅ Agora a câmera deve funcionar!
+
+═══════════════════════════════════════════════════════════════════
+🔐 PERMISSÕES QUE O ANDROID VAI PEDIR
+═══════════════════════════════════════════════════════════════════
+
+Na primeira vez que usar a câmera, o Android vai pedir:
+✅ Permitir que OPUS Facilities tire fotos e grave vídeos?
+   → Clique em "Permitir"
+
+Na primeira vez que acessar galeria, o Android vai pedir:
+✅ Permitir que OPUS Facilities acesse fotos e mídia?
+   → Clique em "Permitir"
+
+═══════════════════════════════════════════════════════════════════
+⚠️ SE CÂMERA AINDA NÃO FUNCIONAR
+═══════════════════════════════════════════════════════════════════
+
+1. VERIFICAR PERMISSÕES MANUALMENTE:
+   Configurações do Android → Apps → OPUS Facilities → Permissões
+   
+   Certifique-se que está "Permitido":
+   ✅ Câmera
+   ✅ Fotos e vídeos
+
+2. REINSTALAR APK:
+   - Desinstale completamente o app
+   - Reinstale o novo APK
+   - Aceite as permissões quando solicitado
+
+3. REINICIAR CELULAR:
+   - Às vezes o Android precisa reiniciar para aplicar permissões
+
+═══════════════════════════════════════════════════════════════════
+📊 O QUE MUDOU
+═══════════════════════════════════════════════════════════════════
+
+ANTES (APK antigo):
+❌ AndroidManifest.xml SEM permissões de câmera
+❌ Câmera não funcionava
+❌ Galeria não funcionava
+
+DEPOIS (APK novo):
+✅ AndroidManifest.xml COM todas as permissões
+✅ Câmera funciona
+✅ Galeria funciona
+✅ Funciona em Android 13+ (Tiramisu)
+
+═══════════════════════════════════════════════════════════════════
+🎯 FLUXO COMPLETO OFFLINE COM FOTOS
+═══════════════════════════════════════════════════════════════════
+
+1. ✅ Fazer login (online)
+2. ✅ Sincronizar dados (QR points, zonas, WOs, checklists)
+3. ✅ Ativar MODO AVIÃO (teste offline)
+4. ✅ Escanear QR → Ver atividade programada
+5. ✅ Executar checklist
+6. ✅ TIRAR FOTOS com câmera nativa! 📸
+7. ✅ Salvar tudo localmente (IndexedDB)
+8. ✅ Desativar MODO AVIÃO
+9. ✅ Auto-sync em 1 segundo! (envia fotos + dados)
+
+═══════════════════════════════════════════════════════════════════
+📸 PERMISSÕES ADICIONADAS NO ANDROIDMANIFEST.XML
+═══════════════════════════════════════════════════════════════════
+
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera" android:required="false" />
+<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
+═══════════════════════════════════════════════════════════════════
+
+🎯 RESUMO RÁPIDO:
+1. Baixe projeto atualizado (ZIP)
+2. Execute: gerar-apk.bat (Windows) ou ./gerar-apk.sh (Mac/Linux)
+3. Desinstale APK antigo do celular
+4. Instale novo APK
+5. Aceite as permissões de câmera/galeria
+6. Teste tirar fotos! 📸
+
+═══════════════════════════════════════════════════════════════════
+
+⚠️ LEMBRE-SE:
+   - Sempre DESINSTALE o APK antigo antes de instalar o novo
+   - Aceite TODAS as permissões quando o Android pedir
+   - Se não funcionar, reinicie o celular
+
+═══════════════════════════════════════════════════════════════════
