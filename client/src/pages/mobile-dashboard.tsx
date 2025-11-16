@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
 import { MobileHeader } from "@/components/mobile-header";
 import PullToRefresh from "react-simple-pull-to-refresh";
+import { Capacitor } from "@capacitor/core";
 
 interface WorkOrder {
   id: string;
@@ -67,11 +68,36 @@ export default function MobileDashboard() {
         params.append('assignedTo', user.id);
       }
       
-      const url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
+      let url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
       
-      const response = await fetch(url);
+      // 🔥 FIX: No APK, usar URL absoluta do servidor
+      if (Capacitor.isNativePlatform()) {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
+        url = baseUrl + url;
+      }
+      
+      // Get token for authentication
+      const token = localStorage.getItem("opus_clean_token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      console.log('[MOBILE DASHBOARD] Fetching work orders:', url);
+      
+      const response = await fetch(url, {
+        headers,
+        credentials: "include"
+      });
+      
+      console.log('[MOBILE DASHBOARD] Response status:', response.status);
+      
       if (!response.ok) throw new Error('Failed to fetch work orders');
-      return response.json();
+      const data = await response.json();
+      
+      console.log('[MOBILE DASHBOARD] Work orders received:', data.length);
+      
+      return data;
     }
   });
   
