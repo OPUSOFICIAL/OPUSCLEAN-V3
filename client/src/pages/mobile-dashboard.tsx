@@ -62,6 +62,7 @@ export default function MobileDashboard() {
       }
       
       // If user is an operator, filter by assignedTo
+      // Backend will return: assigned to this user + unassigned (null) + paused
       if (user?.id) {
         params.append('assignedTo', user.id);
       }
