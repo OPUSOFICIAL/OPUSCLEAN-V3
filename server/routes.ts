@@ -2356,11 +2356,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "QR code not found or invalid type" });
       }
       
-      // TODO: Check for scheduled activities at this time/location
-      // TODO: Return appropriate work order or option to create corrective one
+      // 🔥 FIX: Buscar work orders agendadas para esta zona
+      let scheduledWorkOrders: any[] = [];
+      let zone = null;
       
-      res.json({ point, hasScheduledActivity: false });
+      if (point.zoneId) {
+        // Buscar a zona para pegar o siteId
+        zone = await storage.getZone(point.zoneId);
+        console.log('[QR EXECUTION] Zone:', zone);
+        
+        if (zone && zone.siteId) {
+          console.log('[QR EXECUTION] Zone has siteId:', zone.siteId);
+          
+          // Buscar o site para pegar o customerId
+          const site = await storage.getSite(zone.siteId);
+          console.log('[QR EXECUTION] Site result:', site);
+          
+          if (site) {
+            console.log('[QR EXECUTION] Site customerId:', site.customerId);
+            
+            if (site.customerId) {
+              // Buscar work orders do cliente com filtro de módulo
+              console.log('[QR EXECUTION] Fetching WOs for customer:', site.customerId, 'module:', point.module);
+              const allWorkOrders = await storage.getWorkOrdersByCustomer(site.customerId, point.module as 'clean' | 'maintenance');
+              console.log('[QR EXECUTION] All work orders for customer:', allWorkOrders.length);
+              
+              // Filtrar work orders desta zona específica que não estão concluídas/canceladas
+              scheduledWorkOrders = allWorkOrders.filter((wo: any) => 
+                wo.zoneId === point.zoneId && 
+                wo.status !== 'concluida' && 
+                wo.status !== 'cancelada'
+              );
+              console.log('[QR EXECUTION] Filtered work orders for zone:', scheduledWorkOrders.length);
+            } else {
+              console.log('[QR EXECUTION] Site has no customerId!');
+            }
+          } else {
+            console.log('[QR EXECUTION] Site not found for siteId:', zone.siteId);
+          }
+        } else {
+          console.log('[QR EXECUTION] Zone has no siteId or zone is null');
+        }
+      }
+      
+      // Se há work orders agendadas, retorna a mais prioritária
+      const hasScheduledActivity = scheduledWorkOrders.length > 0;
+      const scheduledWorkOrder = hasScheduledActivity ? scheduledWorkOrders[0] : null;
+      
+      res.json({ 
+        point, 
+        zone,
+        hasScheduledActivity,
+        scheduledWorkOrder
+      });
     } catch (error) {
+      console.error('[QR EXECUTION] Error:', error);
       res.status(500).json({ message: "Failed to process QR scan" });
     }
   });
