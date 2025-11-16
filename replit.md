@@ -58,7 +58,15 @@ The project is configured for the Replit cloud environment, with automated Postg
 - API requests auto-detect environment: Relative URLs in browser, absolute URLs in APK
 - QR scanner with offline detection: Uses IndexedDB when offline, absolute API when online
 - Visual offline indicator: Orange "Offline" badge in scanner header when disconnected
+- Mobile Dashboard fix (Nov 2025): Auto-detects APK vs browser environment using Capacitor.isNativePlatform()
+  - APK: Uses absolute URLs (REPLIT_DOMAINS environment variable)
+  - Browser: Uses relative URLs for same-origin requests
+  - Fixes "0 Available Work Orders" issue in APK
+- QR Execution endpoint: Traverses hierarchy (QR Point → Zone → Site → Customer) to fetch scheduled work orders
+  - Returns work orders filtered by zone and status (excludes completed/cancelled)
+  - Security: Operators see only their assigned + unassigned work orders
 - See: `HYBRID_ARCHITECTURE.md` for technical architecture details
+- See: `GERAR_APK_AGORA.md` for latest APK generation instructions
 
 ### Frontend Framework
 - React 18
