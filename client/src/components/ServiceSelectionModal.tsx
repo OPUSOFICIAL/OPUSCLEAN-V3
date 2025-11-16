@@ -48,26 +48,11 @@ export default function ServiceSelectionModal({
 
   useEffect(() => {
     if (isOpen && resolvedContext?.customer?.id) {
-      // Se já tem work order agendada do QR scanner, usar ela diretamente
-      if (resolvedContext.hasScheduledActivity && resolvedContext.scheduledWorkOrder) {
-        console.log('[SERVICE MODAL] Work order agendada detectada:', resolvedContext.scheduledWorkOrder);
-        setAvailableWorkOrders([resolvedContext.scheduledWorkOrder]);
-        setSelectedWorkOrder(resolvedContext.scheduledWorkOrder.id);
-        setSelectedService(resolvedContext.scheduledWorkOrder.serviceId || '');
-        setIsLoadingServices(false);
-        setIsLoadingWorkOrders(false);
-      } else {
-        loadServices();
-      }
+      loadServices();
     }
   }, [isOpen, resolvedContext]);
 
   useEffect(() => {
-    // Pular se já tem work order agendada
-    if (resolvedContext?.hasScheduledActivity && resolvedContext?.scheduledWorkOrder) {
-      return;
-    }
-    
     if (selectedService && resolvedContext?.zone?.id) {
       loadWorkOrdersForService(selectedService);
     } else {
@@ -202,57 +187,38 @@ export default function ServiceSelectionModal({
         </CardHeader>
 
         <CardContent className="space-y-6 overflow-y-auto flex-1">
-          {/* Mensagem especial quando há serviço agendado */}
-          {resolvedContext?.hasScheduledActivity && resolvedContext?.scheduledWorkOrder && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Wrench className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-green-900 mb-1">
-                    🎯 Serviço Agendado Detectado!
-                  </h4>
-                  <p className="text-sm text-green-700">
-                    Este local tem uma ordem de serviço agendada. Clique em "Executar OS Selecionada" abaixo para iniciar.
-                  </p>
-                </div>
+          {/* Selecionar Serviço */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-slate-900">
+              Selecione o Serviço
+            </h3>
+            
+            {isLoadingServices ? (
+              <div className="text-center py-4 text-slate-500">
+                Carregando serviços...
               </div>
-            </div>
-          )}
-          
-          {/* Se há work order agendada, não mostrar seletor de serviço */}
-          {!(resolvedContext?.hasScheduledActivity && resolvedContext?.scheduledWorkOrder) && (
-            <div className="space-y-3">
-              <h3 className="font-semibold text-slate-900">
-                Selecione o Serviço
-              </h3>
-              
-              {isLoadingServices ? (
-                <div className="text-center py-4 text-slate-500">
-                  Carregando serviços...
-                </div>
-              ) : services.length === 0 ? (
-                <div className="text-center py-4 text-slate-500">
-                  Nenhum serviço disponível
-                </div>
-              ) : (
-                <Select value={selectedService} onValueChange={setSelectedService}>
-                  <SelectTrigger data-testid="select-service" className="w-full">
-                    <SelectValue placeholder="Escolha o tipo de serviço" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[99999]">
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.id}>
-                        {service.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          )}
+            ) : services.length === 0 ? (
+              <div className="text-center py-4 text-slate-500">
+                Nenhum serviço disponível
+              </div>
+            ) : (
+              <Select value={selectedService} onValueChange={setSelectedService}>
+                <SelectTrigger data-testid="select-service" className="w-full">
+                  <SelectValue placeholder="Escolha o tipo de serviço" />
+                </SelectTrigger>
+                <SelectContent className="z-[99999]">
+                  {services.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
 
-          {/* Mostrar lista de work orders (agendada OU após selecionar serviço) */}
-          {((resolvedContext?.hasScheduledActivity && resolvedContext?.scheduledWorkOrder) || selectedService) && (
+          {/* Mostrar lista de work orders após selecionar serviço */}
+          {selectedService && (
             <div className="space-y-4 border-t pt-4">
               {isLoadingWorkOrders ? (
                 <div className="text-center py-4 text-slate-500">
