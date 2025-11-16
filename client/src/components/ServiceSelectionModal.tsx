@@ -7,6 +7,15 @@ import { MapPin, Building2, X, Wrench, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
+import { Capacitor } from "@capacitor/core";
+
+// Get API base URL for mobile
+function getApiBaseUrl(): string {
+  if (Capacitor.isNativePlatform()) {
+    return import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
+  }
+  return '';
+}
 
 interface ServiceSelectionModalProps {
   isOpen: boolean;
@@ -65,9 +74,10 @@ export default function ServiceSelectionModal({
     setIsLoadingServices(true);
     try {
       const module = resolvedContext?.qrPoint?.module || 'clean';
+      const baseUrl = getApiBaseUrl();
       
       // Carregar apenas serviços (não precisamos filtrar por work orders)
-      const servicesResponse = await fetch(`/api/customers/${resolvedContext.customer.id}/services?module=${module}`);
+      const servicesResponse = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/services?module=${module}`);
       
       if (servicesResponse.ok) {
         const allServices = await servicesResponse.json();
@@ -90,7 +100,8 @@ export default function ServiceSelectionModal({
     setSelectedWorkOrder(null);
     try {
       const module = resolvedContext?.qrPoint?.module || 'clean';
-      const response = await fetch(`/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}`);
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}`);
       if (response.ok) {
         const allWorkOrders = await response.json();
         
