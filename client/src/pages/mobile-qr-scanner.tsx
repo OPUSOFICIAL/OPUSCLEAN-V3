@@ -199,7 +199,7 @@ export default function MobileQrScanner() {
       }
       
       const baseUrl = getApiBaseUrl();
-      const apiUrl = `${baseUrl}/api/qr-scan/resolve?code=${encodeURIComponent(extractedCode)}`;
+      const apiUrl = `${baseUrl}/api/qr-execution/${encodeURIComponent(extractedCode)}`;
       console.log('[QR SCANNER ONLINE] Chamando API:', apiUrl);
       
       const response = await fetch(apiUrl, {
@@ -208,12 +208,34 @@ export default function MobileQrScanner() {
       });
       
       if (response.ok) {
-        const resolved = await response.json();
+        const executionData = await response.json();
         
-        // Verificar se tem customer
-        if (!resolved.customer) {
-          throw new Error('QR code sem cliente associado');
+        console.log('[QR SCANNER] Dados recebidos:', executionData);
+        
+        // Adaptar estrutura da nova API para o formato esperado
+        // Nova API retorna: { point, zone, hasScheduledActivity, scheduledWorkOrder }
+        // Precisamos converter para: { qrPoint, zone, site, customer }
+        
+        if (!executionData.point || !executionData.zone) {
+          throw new Error('QR code com dados incompletos');
         }
+        
+        // Buscar customerId da zona (via site)
+        const zoneResponse = await fetch(`${baseUrl}/api/zones/${executionData.zone.id}`, { headers });
+        const fullZone = await zoneResponse.json();
+        
+        const siteResponse = await fetch(`${baseUrl}/api/sites/${fullZone.siteId}`, { headers });
+        const site = await siteResponse.json();
+        
+        // Montar estrutura compatível com o resto do código
+        const resolved = {
+          qrPoint: executionData.point,
+          zone: executionData.zone,
+          site: site,
+          customer: { id: site.customerId },
+          hasScheduledActivity: executionData.hasScheduledActivity,
+          scheduledWorkOrder: executionData.scheduledWorkOrder
+        };
         
         // SALVAR NO CACHE para uso offline futuro
         if (resolved.qrPoint) {
@@ -271,10 +293,18 @@ export default function MobileQrScanner() {
         setResolvedContext(resolved);
         setShowServiceModal(true);
         
-        toast({
-          title: "QR Code detectado!",
-          description: `${resolved.zone.name} - ${resolved.site.name}`,
-        });
+        // Mostrar mensagem diferente se há serviço agendado
+        if (resolved.hasScheduledActivity && resolved.scheduledWorkOrder) {
+          toast({
+            title: "🎯 Serviço Agendado!",
+            description: `${resolved.zone.name} - ${resolved.scheduledWorkOrder.title}`,
+          });
+        } else {
+          toast({
+            title: "QR Code detectado!",
+            description: `${resolved.zone.name} - ${resolved.site.name}`,
+          });
+        }
       } else {
         // Tratar erros específicos por status HTTP
         if (response.status === 403) {
