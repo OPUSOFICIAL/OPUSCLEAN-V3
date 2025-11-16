@@ -477,7 +477,8 @@ export default function MobileWorkOrderExecute() {
               const res = await apiRequest('POST', '/api/attachments/upload-base64-batch', {
                 attachments,
               });
-              uploadedFilenames = res.filenames;
+              const data = await res.json();
+              uploadedFilenames = data.filenames;
               console.log('[FINISH ONLINE] Batch photos uploaded:', uploadedFilenames);
             } catch (uploadError) {
               console.error('[FINISH ONLINE] Batch photo upload failed:', uploadError);
