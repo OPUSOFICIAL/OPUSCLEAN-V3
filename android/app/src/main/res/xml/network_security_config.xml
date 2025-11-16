@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- CONFIGURAÇÃO PARA DESENVOLVIMENTO (Replit) -->
+    <!-- Permite confiar no certificado SSL do domínio Replit -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">replit.dev</domain>
+        <trust-anchors>
+            <!-- Certificados do sistema Android -->
+            <certificates src="system" />
+            <!-- Certificados instalados pelo usuário -->
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- CONFIGURAÇÃO PARA DEBUG -->
+    <!-- Durante desenvolvimento, confia em certificados instalados pelo usuário -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+            <certificates src="system" />
+        </trust-anchors>
+    </debug-overrides>
+    
+    <!-- CONFIGURAÇÃO PADRÃO (Outros domínios) -->
+    <!-- Usa apenas certificados do sistema para outros domínios -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
