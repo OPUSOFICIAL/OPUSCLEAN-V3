@@ -5,6 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MapPin, Building2, Clock, CheckCircle, AlertCircle, Calendar, User, QrCode, Flag, PlayCircle, PauseCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Capacitor } from "@capacitor/core";
+
+// Get base URL for API requests (absolute URL for APK, relative for web)
+const getBaseUrl = (): string => {
+  if (Capacitor.isNativePlatform()) {
+    const replitDomain = import.meta.env.VITE_REPLIT_DOMAINS;
+    if (!replitDomain) {
+      console.error('[MOBILE WO DETAILS] VITE_REPLIT_DOMAINS not set!');
+      return '';
+    }
+    return `https://${replitDomain}`;
+  }
+  return '';
+};
 
 export default function MobileWorkOrderDetails() {
   const [, params] = useRoute("/mobile/work-order-details/:id");
@@ -25,14 +39,15 @@ export default function MobileWorkOrderDetails() {
   const loadWorkOrder = async (id: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/work-orders/${id}`);
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/api/work-orders/${id}`);
       if (!response.ok) throw new Error('Work order não encontrada');
       const data = await response.json();
       setWorkOrder(data);
 
       // Buscar comentários para histórico
       try {
-        const commentsResponse = await fetch(`/api/work-orders/${id}/comments`);
+        const commentsResponse = await fetch(`${baseUrl}/api/work-orders/${id}/comments`);
         if (commentsResponse.ok) {
           const commentsData = await commentsResponse.json();
           setComments(commentsData);
@@ -75,8 +90,10 @@ export default function MobileWorkOrderDetails() {
 
       console.log('Tentando retomar OS com token:', token ? 'Token presente' : 'Token ausente');
 
+      const baseUrl = getBaseUrl();
+
       // Retomar execução - mudar status para em_execucao
-      const response = await fetch(`/api/work-orders/${workOrder.id}`, {
+      const response = await fetch(`${baseUrl}/api/work-orders/${workOrder.id}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -94,7 +111,7 @@ export default function MobileWorkOrderDetails() {
       }
 
       // Criar comentário de retomada
-      await fetch(`/api/work-orders/${workOrder.id}/comments`, {
+      await fetch(`${baseUrl}/api/work-orders/${workOrder.id}/comments`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
