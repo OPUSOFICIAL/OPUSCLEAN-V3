@@ -14,6 +14,20 @@ import { useOfflineStorage } from "@/hooks/use-offline-storage";
 import { nanoid } from "nanoid";
 import { pickMultipleImages, promptForPicture, type CapturedPhoto } from "@/lib/camera-utils";
 import { apiRequest } from "@/lib/queryClient";
+import { Capacitor } from "@capacitor/core";
+
+// Get base URL for API requests (absolute URL for APK, relative for web)
+const getBaseUrl = (): string => {
+  if (Capacitor.isNativePlatform()) {
+    const replitDomain = import.meta.env.VITE_REPLIT_DOMAINS;
+    if (!replitDomain) {
+      console.error('[MOBILE WO EXECUTE] VITE_REPLIT_DOMAINS not set!');
+      return '';
+    }
+    return `https://${replitDomain}`;
+  }
+  return '';
+};
 
 // Helper function to add JWT token to fetch requests
 const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
@@ -26,7 +40,10 @@ const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Res
     headers["Authorization"] = `Bearer ${token}`;
   }
   
-  return fetch(url, {
+  const fullUrl = getBaseUrl() + url;
+  console.log('[MOBILE WO EXECUTE] Fetching:', fullUrl);
+  
+  return fetch(fullUrl, {
     ...options,
     headers,
   });
