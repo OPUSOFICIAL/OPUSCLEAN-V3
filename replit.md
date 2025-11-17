@@ -18,6 +18,16 @@ The system features an enterprise-grade, corporate design using `shadcn/ui` with
 
 The frontend uses React and TypeScript with Wouter for routing and TanStack Query for data management. The backend is an Express.js server in TypeScript, using Drizzle ORM for PostgreSQL. Key features include a hierarchical multi-tenancy model with role-based access control, comprehensive equipment management, QR code-based task execution and service requests, and robust work order management with virtual calendars and automated scheduling. Authentication supports Microsoft SSO and email/password, secured with JWT, Bcrypt, and other best practices. An AI integration configuration page is present, with chat assistant functionality under development. A TV Mode Dashboard provides real-time, gamified metrics. User management offers full CRUD and custom role assignments.
 
+**Enhanced Shift-Based Scheduling (Nov 17, 2025):**
+- Shift activities (cleaning & maintenance) now support **weekday filtering** in addition to shift selection
+- Users can configure activities to occur on specific days (e.g., "morning shift only on Mon/Wed/Fri")
+- Frontend calendar displays shift activities only on selected weekdays
+- Backend work order generation creates orders only for selected weekday+shift combinations
+- Form validation requires at least one weekday selection for shift-based activities
+- Fully implemented in both Clean and Maintenance modules with consistency
+- Retrocompatible: Activities without weekday configuration work as before (all days)
+- Documentation: `MELHORIA_TURNOS_COM_DIAS_DA_SEMANA.md`
+
 An offline sync infrastructure supports an offline-first Android APK with batch synchronization. This includes database schema enhancements for sync metadata, security hardening with serializable transactions and UPSERT-based idempotency, and secure batch API endpoints. The frontend utilizes IndexedDB for offline storage, a priority-based sync queue with exponential backoff, and automatic parent-child ID linkage. Pages like `mobile-work-order-execute.tsx` and `qr-execution.tsx` are adapted for offline use, validating fields and saving to IndexedDB when disconnected. A singleton `SyncQueueManager` ensures a 3-phase sequential batching strategy for work orders, checklist executions, and attachments, with robust error handling and auto-sync on reconnection.
 
 ### System Design Choices
