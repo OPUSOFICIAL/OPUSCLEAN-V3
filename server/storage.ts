@@ -2878,27 +2878,41 @@ export class DatabaseStorage implements IStorage {
           
         case 'turno':
           // Shift-based: 1 OS para CADA turno (3 turnos = 3 OS por dia)
-          const shifts = (frequencyConfig as any)?.turnShifts || ['manha'];
-          const shiftTimes = {
-            'manha': { hour: 8, minute: 0 },
-            'tarde': { hour: 14, minute: 0 },
-            'noite': { hour: 20, minute: 0 }
+          // Verificar se o dia atual está nos dias da semana configurados
+          const turnWeekDays = (frequencyConfig as any)?.weekDays || [];
+          const currentDayOfWeek = current.getDay(); // 0 = Sunday
+          const turnDayMap = {
+            'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3,
+            'quinta': 4, 'sexta': 5, 'sabado': 6
           };
           
-          shifts.forEach((shift: string, index: number) => {
-            const time = shiftTimes[shift as keyof typeof shiftTimes];
-            if (time) {
-              const occurrence = new Date(current);
-              occurrence.setHours(time.hour, time.minute, 0, 0);
-              if (occurrence >= effectiveStart && occurrence <= effectiveEnd) {
-                occurrences.push({
-                  date: new Date(occurrence),
-                  occurrence: index + 1,
-                  total: shifts.length
-                });
+          // Se dias da semana foram configurados, verificar se o dia atual está incluído
+          const shouldGenerateForToday = turnWeekDays.length === 0 || 
+            turnWeekDays.some((day: string) => turnDayMap[day as keyof typeof turnDayMap] === currentDayOfWeek);
+          
+          if (shouldGenerateForToday) {
+            const shifts = (frequencyConfig as any)?.turnShifts || ['manha'];
+            const shiftTimes = {
+              'manha': { hour: 8, minute: 0 },
+              'tarde': { hour: 14, minute: 0 },
+              'noite': { hour: 20, minute: 0 }
+            };
+            
+            shifts.forEach((shift: string, index: number) => {
+              const time = shiftTimes[shift as keyof typeof shiftTimes];
+              if (time) {
+                const occurrence = new Date(current);
+                occurrence.setHours(time.hour, time.minute, 0, 0);
+                if (occurrence >= effectiveStart && occurrence <= effectiveEnd) {
+                  occurrences.push({
+                    date: new Date(occurrence),
+                    occurrence: index + 1,
+                    total: shifts.length
+                  });
+                }
               }
-            }
-          });
+            });
+          }
           break;
       }
       
