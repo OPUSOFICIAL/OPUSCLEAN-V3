@@ -38,6 +38,22 @@ The frontend uses React and TypeScript with Wouter for routing and TanStack Quer
 - Removed limited/stub edit modals and replaced with full-featured form experience
 - Pattern: Single reusable component for both create and edit operations
 
+**Performance Optimizations (Nov 17, 2025):**
+- **Database Indexes**: Added indexes on frequently queried columns for faster report generation
+  - work_orders: `customerId`, `module`, `status`, `zoneId` (indexed individually)
+  - zones: `siteId`, `module` (indexed individually)
+  - sites: `customerId`, `module` (indexed individually)
+- **Parallel Query Execution**: Refactored report functions to use `Promise.all` for parallelizing independent queries
+  - `getGeneralReport`: Parallel fetching of zones and users data
+  - `getOperatorPerformance`: Parallel fetching of zones and users data
+  - Reduces overall query execution time by running independent operations concurrently
+- **Real Data Integrity**: All reports use 100% authentic data with no simulations
+  - Quality Index: Calculated from actual checklist ratings
+  - Resource Utilization: Based on real operator assignments
+  - Completion Times: Derived from actual timestamps (startedAt → completedAt)
+  - SLA Metrics: Calculated from real scheduled vs completed dates
+- **Applied**: Database schema changes pushed via `drizzle-kit push`
+
 An offline sync infrastructure supports an offline-first Android APK with batch synchronization. This includes database schema enhancements for sync metadata, security hardening with serializable transactions and UPSERT-based idempotency, and secure batch API endpoints. The frontend utilizes IndexedDB for offline storage, a priority-based sync queue with exponential backoff, and automatic parent-child ID linkage. Pages like `mobile-work-order-execute.tsx` and `qr-execution.tsx` are adapted for offline use, validating fields and saving to IndexedDB when disconnected. A singleton `SyncQueueManager` ensures a 3-phase sequential batching strategy for work orders, checklist executions, and attachments, with robust error handling and auto-sync on reconnection.
 
 ### System Design Choices
