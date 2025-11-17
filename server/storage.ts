@@ -1309,6 +1309,20 @@ export class DatabaseStorage implements IStorage {
       const siteWorkOrders = zoneIds.length > 0 ? 
         await db.select().from(workOrders).where(inArray(workOrders.zoneId, zoneIds)) : [];
       
+      // REAL: Calcular área total do site somando áreas das zonas
+      const totalArea = siteZones.reduce((sum, zone) => {
+        const area = zone.areaM2 ? parseFloat(zone.areaM2) : 0;
+        return sum + area;
+      }, 0);
+
+      // REAL: Taxa de utilização baseada em % de zonas com WOs ativas
+      const zonesWithActiveWO = zoneIds.filter(zoneId => 
+        siteWorkOrders.some(wo => wo.zoneId === zoneId && wo.status === 'em_execucao')
+      ).length;
+      const utilizationRate = zoneIds.length > 0 
+        ? Math.round((zonesWithActiveWO / zoneIds.length) * 100) 
+        : 0;
+
       return {
         id: site.id,
         name: site.name,
@@ -1317,14 +1331,41 @@ export class DatabaseStorage implements IStorage {
         completedWorkOrders: siteWorkOrders.filter(wo => wo.status === 'concluida').length,
         efficiency: siteWorkOrders.length > 0 ? 
           Math.round((siteWorkOrders.filter(wo => wo.status === 'concluida').length / siteWorkOrders.length) * 100) : 0,
-        area: Math.round(Math.random() * 2000 + 1000), // 1000-3000 m²
-        utilizationRate: Math.round(Math.random() * 30 + 65) // 65-95%
+        area: Math.round(totalArea),
+        utilizationRate
       };
     }));
 
     const zonesData = await Promise.all(customerZones.map(async (zone) => {
       const zoneWorkOrders = await db.select().from(workOrders).where(eq(workOrders.zoneId, zone.id));
       
+      // REAL: Calcular tempo médio de conclusão para esta zona
+      const completedWithTimes = zoneWorkOrders.filter(wo => 
+        wo.status === 'concluida' && wo.startedAt && wo.completedAt
+      );
+      let averageTime = 0;
+      if (completedWithTimes.length > 0) {
+        const totalMinutes = completedWithTimes.reduce((sum, wo) => {
+          const start = new Date(wo.startedAt!).getTime();
+          const end = new Date(wo.completedAt!).getTime();
+          const minutes = (end - start) / (1000 * 60);
+          return sum + (minutes > 0 ? minutes : 0);
+        }, 0);
+        averageTime = Math.round(totalMinutes / completedWithTimes.length);
+      }
+
+      // REAL: Data da última limpeza/manutenção concluída nesta zona
+      const completedWorkOrders = zoneWorkOrders
+        .filter(wo => wo.status === 'concluida' && wo.completedAt)
+        .sort((a, b) => {
+          const dateA = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+          const dateB = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+          return dateB - dateA;
+        });
+      const lastCleaning = completedWorkOrders.length > 0 && completedWorkOrders[0].completedAt
+        ? new Date(completedWorkOrders[0].completedAt).toISOString().split('T')[0]
+        : "Nunca";
+
       return {
         id: zone.id,
         name: zone.name,
@@ -1332,9 +1373,9 @@ export class DatabaseStorage implements IStorage {
         siteName: customerSites.find(s => s.id === zone.siteId)?.name || "N/A",
         totalWorkOrders: zoneWorkOrders.length,
         completedWorkOrders: zoneWorkOrders.filter(wo => wo.status === 'concluida').length,
-        averageTime: Math.round(Math.random() * 60 + 60), // 60-120 min
+        averageTime,
         priority: zone.category ? (zone.category === 'critica' ? 'Alta' : zone.category === 'comum' ? 'Média' : 'Baixa') : 'Média',
-        lastCleaning: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        lastCleaning
       };
     }));
 
