@@ -2956,15 +2956,15 @@ export class DatabaseStorage implements IStorage {
     if (workOrderIds.length > 0) {
       // Deletar comentários
       await db.delete(workOrderComments)
-        .where(sql`${workOrderComments.workOrderId} = ANY(${workOrderIds})`);
+        .where(inArray(workOrderComments.workOrderId, workOrderIds));
       
       // Deletar bathroom counter logs
       await db.delete(bathroomCounterLogs)
-        .where(sql`${bathroomCounterLogs.workOrderId} = ANY(${workOrderIds})`);
+        .where(inArray(bathroomCounterLogs.workOrderId, workOrderIds));
       
       // Deletar maintenance checklist executions (se houver)
       await db.delete(maintenanceChecklistExecutions)
-        .where(sql`${maintenanceChecklistExecutions.workOrderId} = ANY(${workOrderIds})`);
+        .where(inArray(maintenanceChecklistExecutions.workOrderId, workOrderIds));
       
       // work_order_attachments tem CASCADE, então será deletado automaticamente
       
@@ -3047,15 +3047,15 @@ export class DatabaseStorage implements IStorage {
     if (workOrderIds.length > 0) {
       // Deletar comentários
       await db.delete(workOrderComments)
-        .where(sql`${workOrderComments.workOrderId} = ANY(${workOrderIds})`);
+        .where(inArray(workOrderComments.workOrderId, workOrderIds));
       
       // Deletar bathroom counter logs
       await db.delete(bathroomCounterLogs)
-        .where(sql`${bathroomCounterLogs.workOrderId} = ANY(${workOrderIds})`);
+        .where(inArray(bathroomCounterLogs.workOrderId, workOrderIds));
       
       // Deletar maintenance checklist executions
       await db.delete(maintenanceChecklistExecutions)
-        .where(sql`${maintenanceChecklistExecutions.workOrderId} = ANY(${workOrderIds})`);
+        .where(inArray(maintenanceChecklistExecutions.workOrderId, workOrderIds));
       
       // work_order_attachments tem CASCADE, então será deletado automaticamente
       
