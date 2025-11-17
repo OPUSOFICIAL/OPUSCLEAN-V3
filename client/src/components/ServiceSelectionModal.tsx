@@ -8,8 +8,6 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { Capacitor } from "@capacitor/core";
-import { offlineStorage } from "@/lib/offline-storage";
-import { useNetworkStatus } from "@/hooks/use-network-status";
 
 // Get API base URL for mobile
 function getApiBaseUrl(): string {
@@ -49,7 +47,6 @@ export default function ServiceSelectionModal({
   onServiceSelect,
 }: ServiceSelectionModalProps) {
   const { toast } = useToast();
-  const { isOnline } = useNetworkStatus();
   const [services, setServices] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<string>("");
   const [isLoadingServices, setIsLoadingServices] = useState(true);
@@ -77,22 +74,9 @@ export default function ServiceSelectionModal({
     setIsLoadingServices(true);
     try {
       const module = resolvedContext?.qrPoint?.module || 'clean';
-      
-      // MODO OFFLINE: Buscar do cache
-      if (!isOnline) {
-        console.log('[SERVICE MODAL OFFLINE] Buscando serviços do cache');
-        const cachedServices = await offlineStorage.getServicesByCustomerAndModule(
-          resolvedContext.customer.id,
-          module
-        );
-        console.log('[SERVICE MODAL OFFLINE] Serviços encontrados no cache:', cachedServices.length);
-        setServices(cachedServices || []);
-        setIsLoadingServices(false);
-        return;
-      }
-
-      // MODO ONLINE: Buscar da API
       const baseUrl = getApiBaseUrl();
+      
+      // Carregar apenas serviços (não precisamos filtrar por work orders)
       const servicesResponse = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/services?module=${module}`);
       
       if (servicesResponse.ok) {
@@ -103,19 +87,6 @@ export default function ServiceSelectionModal({
         
         console.log('[SERVICE MODAL] Serviços disponíveis:', filteredServices.length, 'Total:', allServices.length);
         setServices(filteredServices || []);
-
-        // SALVAR NO CACHE para uso offline
-        await offlineStorage.cacheServicesBulk(
-          filteredServices.map((s: any) => ({
-            id: s.id,
-            name: s.name,
-            description: s.description,
-            estimatedDuration: s.estimatedDuration,
-            customerId: resolvedContext.customer.id,
-            module: module,
-          }))
-        );
-        console.log('[SERVICE MODAL] Serviços salvos no cache para uso offline');
       }
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
