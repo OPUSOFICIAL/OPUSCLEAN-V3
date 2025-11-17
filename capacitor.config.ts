@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.acelerait.facilities',
-  appName: 'OPUS Facilities',
+  appName: 'Acelera Facilities',
   webDir: 'dist/public',
   // OFFLINE-FIRST: Assets are bundled and served locally via capacitor://
   // API calls use relative paths (/api/*) which resolve to bundled backend
