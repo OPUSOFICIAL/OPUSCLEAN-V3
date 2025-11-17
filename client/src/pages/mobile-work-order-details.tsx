@@ -10,12 +10,9 @@ import { Capacitor } from "@capacitor/core";
 // Get base URL for API requests (absolute URL for APK, relative for web)
 const getBaseUrl = (): string => {
   if (Capacitor.isNativePlatform()) {
-    const replitDomain = import.meta.env.VITE_REPLIT_DOMAINS;
-    if (!replitDomain) {
-      console.error('[MOBILE WO DETAILS] VITE_REPLIT_DOMAINS not set!');
-      return '';
-    }
-    return `https://${replitDomain}`;
+    // IMPORTANTE: Atualize esta URL quando migrar para um novo ambiente Replit
+    // URL atual do Replit: https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev
+    return import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
   }
   return '';
 };

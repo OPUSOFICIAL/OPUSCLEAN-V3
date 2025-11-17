@@ -59,9 +59,15 @@ The project is configured for the Replit cloud environment, with automated Postg
 - QR scanner with offline detection: Uses IndexedDB when offline, absolute API when online
 - Visual offline indicator: Orange "Offline" badge in scanner header when disconnected
 - Mobile Dashboard fix (Nov 2025): Auto-detects APK vs browser environment using Capacitor.isNativePlatform()
-  - APK: Uses absolute URLs (REPLIT_DOMAINS environment variable)
+  - APK: Uses absolute URLs (hardcoded Replit URL with fallback to VITE_API_BASE_URL)
   - Browser: Uses relative URLs for same-origin requests
   - Fixes "0 Available Work Orders" issue in APK
+- **CRITICAL FIX (17 Nov 2025):** Fixed "Não foi possível carregar a ordem de serviço" error
+  - Root cause: VITE_REPLIT_DOMAINS not configured, causing empty base URL
+  - Solution: Hardcoded Replit URL in `mobile-work-order-execute.tsx` and `mobile-work-order-details.tsx`
+  - Pattern: `import.meta.env.VITE_API_BASE_URL || 'https://52e46882-...-ga4lr9ry58vz.spock.replit.dev'`
+  - When migrating Replit: Update hardcoded URL in both files
+  - See: `CORRECAO_URGENTE_APK.md` for full details
 - QR Execution endpoint: Traverses hierarchy (QR Point → Zone → Site → Customer) to fetch scheduled work orders
   - Returns work orders filtered by zone and status (excludes completed/cancelled)
   - Security: Operators see only their assigned + unassigned work orders
