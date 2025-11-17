@@ -824,12 +824,18 @@ export class DatabaseStorage implements IStorage {
     }
 
     const siteIds = customerSites.map(site => site.id);
+    const companyId = customerSites[0].companyId;
 
     const zonesWhereCondition = module
       ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
       : inArray(zones.siteId, siteIds);
 
-    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
+    // PARALELO: Buscar zones e users ao mesmo tempo
+    const [customerZones, allOperators] = await Promise.all([
+      db.select().from(zones).where(zonesWhereCondition),
+      db.select().from(users).where(eq(users.companyId, companyId))
+    ]);
+
     const zoneIds = customerZones.map(zone => zone.id);
     
     if (zoneIds.length === 0) {
@@ -854,8 +860,6 @@ export class DatabaseStorage implements IStorage {
       : 0;
 
     // REAL: Resource Utilization - % de operadores com WOs ativas
-    const companyId = customerSites[0].companyId;
-    const allOperators = await db.select().from(users).where(eq(users.companyId, companyId));
     const operators = allOperators.filter(u => u.role === 'operador' || u.role === 'supervisor_site');
     const activeWorkOrders = customerWorkOrders.filter(wo => wo.status === 'em_execucao');
     const uniqueOperatorsWithWork = new Set(activeWorkOrders.map(wo => wo.assignedTo).filter(Boolean));
@@ -942,6 +946,7 @@ export class DatabaseStorage implements IStorage {
       ? and(eq(sites.customerId, customerId), eq(sites.module, module))
       : eq(sites.customerId, customerId);
 
+    // PARALELO: Buscar sites e zonas ao mesmo tempo seria ideal, mas zones depende de sites
     const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     if (customerSites.length === 0) {
       return { slaBreakdown: [], timeDistribution: [], criticalAlerts: [] };
@@ -953,6 +958,7 @@ export class DatabaseStorage implements IStorage {
       ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
       : inArray(zones.siteId, siteIds);
 
+    // Buscar zones e work orders pode ser paralelizado se usarmos siteIds diretamente
     const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
     
@@ -1260,13 +1266,19 @@ export class DatabaseStorage implements IStorage {
     }
 
     const siteIds = customerSites.map(site => site.id);
+    const companyId = customerSites[0].companyId;
+    
     const zonesWhereCondition = module
       ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
       : inArray(zones.siteId, siteIds);
-    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
-    const zoneIds = customerZones.map(zone => zone.id);
 
-    const customerUsers = await db.select().from(users).where(eq(users.companyId, customerSites[0].companyId));
+    // PARALELO: Buscar zones e users ao mesmo tempo
+    const [customerZones, customerUsers] = await Promise.all([
+      db.select().from(zones).where(zonesWhereCondition),
+      db.select().from(users).where(eq(users.companyId, companyId))
+    ]);
+
+    const zoneIds = customerZones.map(zone => zone.id);
     const operators = customerUsers.filter(user => user.role === 'operador' || user.role === 'supervisor_site');
 
     // Buscar todas as WOs das zonas do cliente
