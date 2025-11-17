@@ -28,6 +28,16 @@ The frontend uses React and TypeScript with Wouter for routing and TanStack Quer
 - Retrocompatible: Activities without weekday configuration work as before (all days)
 - Documentation: `MELHORIA_TURNOS_COM_DIAS_DA_SEMANA.md`
 
+**Full-Featured Edit Forms (Nov 17, 2025):**
+- Activity edit forms now use the same complete form as creation, just pre-filled with existing values
+- Both Clean (`cleaning-schedule.tsx`) and Maintenance (`maintenance-plans.tsx`) modules updated
+- `CreateCleaningActivityModal` and `CreateMaintenanceActivityModal` components now support optional `editingActivity` prop for edit mode
+- When `editingActivity` is provided, form auto-populates with existing data via `useEffect`
+- Edit mode uses dedicated `updateActivityMutation` (PUT request) instead of create mutation
+- Modal titles and button labels dynamically adapt based on mode (Create vs Edit)
+- Removed limited/stub edit modals and replaced with full-featured form experience
+- Pattern: Single reusable component for both create and edit operations
+
 An offline sync infrastructure supports an offline-first Android APK with batch synchronization. This includes database schema enhancements for sync metadata, security hardening with serializable transactions and UPSERT-based idempotency, and secure batch API endpoints. The frontend utilizes IndexedDB for offline storage, a priority-based sync queue with exponential backoff, and automatic parent-child ID linkage. Pages like `mobile-work-order-execute.tsx` and `qr-execution.tsx` are adapted for offline use, validating fields and saving to IndexedDB when disconnected. A singleton `SyncQueueManager` ensures a 3-phase sequential batching strategy for work orders, checklist executions, and attachments, with robust error handling and auto-sync on reconnection.
 
 ### System Design Choices
