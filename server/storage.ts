@@ -2579,23 +2579,58 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCleaningActivity(id: string): Promise<void> {
-    // Passo 1: Buscar IDs das work orders relacionadas
+    // Passo 1: Buscar IDs das work orders relacionadas QUE PODEM SER DELETADAS
+    // IMPORTANTE: NÃO deletar work orders concluídas ou canceladas (preservar histórico)
     const relatedWorkOrders = await db.select({ id: workOrders.id })
       .from(workOrders)
-      .where(eq(workOrders.cleaningActivityId, id));
+      .where(
+        and(
+          eq(workOrders.cleaningActivityId, id),
+          // Deletar apenas: aberta, em_execucao, pausada, vencida
+          // NÃO deletar: concluida, cancelada
+          sql`${workOrders.status} NOT IN ('concluida', 'cancelada')`
+        )
+      );
     
     const workOrderIds = relatedWorkOrders.map(wo => wo.id);
     
-    // Passo 2: Deletar comentários das work orders (se houver)
+    // Passo 2: Deletar TODOS os registros relacionados às work orders (se houver)
     if (workOrderIds.length > 0) {
+      // Deletar comentários
       await db.delete(workOrderComments)
         .where(sql`${workOrderComments.workOrderId} = ANY(${workOrderIds})`);
+      
+      // Deletar bathroom counter logs
+      await db.delete(bathroomCounterLogs)
+        .where(sql`${bathroomCounterLogs.workOrderId} = ANY(${workOrderIds})`);
+      
+      // Deletar maintenance checklist executions (se houver)
+      await db.delete(maintenanceChecklistExecutions)
+        .where(sql`${maintenanceChecklistExecutions.workOrderId} = ANY(${workOrderIds})`);
+      
+      // work_order_attachments tem CASCADE, então será deletado automaticamente
+      
+      // Passo 3: Deletar APENAS as work orders não concluídas/canceladas
+      await db.delete(workOrders)
+        .where(
+          and(
+            eq(workOrders.cleaningActivityId, id),
+            sql`${workOrders.status} NOT IN ('concluida', 'cancelada')`
+          )
+        );
     }
     
-    // Passo 3: Deletar as work orders relacionadas
-    await db.delete(workOrders).where(eq(workOrders.cleaningActivityId, id));
+    // Passo 4: Desvincular work orders concluídas/canceladas da atividade (preservar histórico)
+    await db.update(workOrders)
+      .set({ cleaningActivityId: null })
+      .where(
+        and(
+          eq(workOrders.cleaningActivityId, id),
+          sql`${workOrders.status} IN ('concluida', 'cancelada')`
+        )
+      );
     
-    // Passo 4: Deletar a cleaning activity
+    // Passo 5: Deletar a cleaning activity
     await db.delete(cleaningActivities).where(eq(cleaningActivities.id, id));
   }
 
@@ -2635,23 +2670,58 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMaintenanceActivity(id: string): Promise<void> {
-    // Passo 1: Buscar IDs das work orders relacionadas
+    // Passo 1: Buscar IDs das work orders relacionadas QUE PODEM SER DELETADAS
+    // IMPORTANTE: NÃO deletar work orders concluídas ou canceladas (preservar histórico)
     const relatedWorkOrders = await db.select({ id: workOrders.id })
       .from(workOrders)
-      .where(eq(workOrders.maintenanceActivityId, id));
+      .where(
+        and(
+          eq(workOrders.maintenanceActivityId, id),
+          // Deletar apenas: aberta, em_execucao, pausada, vencida
+          // NÃO deletar: concluida, cancelada
+          sql`${workOrders.status} NOT IN ('concluida', 'cancelada')`
+        )
+      );
     
     const workOrderIds = relatedWorkOrders.map(wo => wo.id);
     
-    // Passo 2: Deletar comentários das work orders (se houver)
+    // Passo 2: Deletar TODOS os registros relacionados às work orders (se houver)
     if (workOrderIds.length > 0) {
+      // Deletar comentários
       await db.delete(workOrderComments)
         .where(sql`${workOrderComments.workOrderId} = ANY(${workOrderIds})`);
+      
+      // Deletar bathroom counter logs
+      await db.delete(bathroomCounterLogs)
+        .where(sql`${bathroomCounterLogs.workOrderId} = ANY(${workOrderIds})`);
+      
+      // Deletar maintenance checklist executions
+      await db.delete(maintenanceChecklistExecutions)
+        .where(sql`${maintenanceChecklistExecutions.workOrderId} = ANY(${workOrderIds})`);
+      
+      // work_order_attachments tem CASCADE, então será deletado automaticamente
+      
+      // Passo 3: Deletar APENAS as work orders não concluídas/canceladas
+      await db.delete(workOrders)
+        .where(
+          and(
+            eq(workOrders.maintenanceActivityId, id),
+            sql`${workOrders.status} NOT IN ('concluida', 'cancelada')`
+          )
+        );
     }
     
-    // Passo 3: Deletar as work orders relacionadas
-    await db.delete(workOrders).where(eq(workOrders.maintenanceActivityId, id));
+    // Passo 4: Desvincular work orders concluídas/canceladas da atividade (preservar histórico)
+    await db.update(workOrders)
+      .set({ maintenanceActivityId: null })
+      .where(
+        and(
+          eq(workOrders.maintenanceActivityId, id),
+          sql`${workOrders.status} IN ('concluida', 'cancelada')`
+        )
+      );
     
-    // Passo 4: Deletar a maintenance activity
+    // Passo 5: Deletar a maintenance activity
     await db.delete(maintenanceActivities).where(eq(maintenanceActivities.id, id));
   }
 
