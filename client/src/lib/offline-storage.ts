@@ -133,12 +133,22 @@ export interface CachedChecklistTemplate {
   lastSynced: number; // Timestamp
 }
 
+export interface CachedService {
+  id: string; // PK - Service ID
+  name: string;
+  description?: string;
+  estimatedDuration?: number;
+  customerId: string;
+  module: 'clean' | 'maintenance';
+  lastSynced: number; // Timestamp
+}
+
 // ============================================================================
 // INDEXEDDB DATABASE SETUP
 // ============================================================================
 
 const DB_NAME = 'AceleraOfflineDB';
-const DB_VERSION = 4; // v4: Added temporal fields (scheduledStartAt, createdAt) to scheduled work orders for prioritization
+const DB_VERSION = 5; // v5: Added services cache for offline execution
 
 export class OfflineStorageManager {
   private db: IDBDatabase | null = null;
@@ -236,6 +246,15 @@ export class OfflineStorageManager {
           checklistTemplatesStore.createIndex('module', 'module', { unique: false });
           checklistTemplatesStore.createIndex('lastSynced', 'lastSynced', { unique: false });
           console.log('[OFFLINE STORAGE] Created checklistTemplates store');
+        }
+
+        // v5: Services cache
+        if (!db.objectStoreNames.contains('services')) {
+          const servicesStore = db.createObjectStore('services', { keyPath: 'id' });
+          servicesStore.createIndex('customerId', 'customerId', { unique: false });
+          servicesStore.createIndex('module', 'module', { unique: false });
+          servicesStore.createIndex('lastSynced', 'lastSynced', { unique: false });
+          console.log('[OFFLINE STORAGE] Created services store');
         }
       };
     });
@@ -937,6 +956,108 @@ export class OfflineStorageManager {
 
       transaction.onerror = () => {
         console.error('[OFFLINE STORAGE] Failed to cache checklist templates in bulk', transaction.error);
+        reject(transaction.error);
+      };
+    });
+  }
+
+  // ============================================================================
+  // SERVICES CACHE (for offline service selection)
+  // ============================================================================
+
+  async cacheService(data: Omit<CachedService, 'lastSynced'>): Promise<void> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['services'], 'readwrite');
+      const store = transaction.objectStore('services');
+
+      const service: CachedService = {
+        ...data,
+        lastSynced: Date.now(),
+      };
+
+      const request = store.put(service);
+
+      request.onsuccess = () => {
+        console.log('[OFFLINE STORAGE] Service cached:', data.id);
+        resolve();
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache service', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getService(id: string): Promise<CachedService | null> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['services'], 'readonly');
+      const store = transaction.objectStore('services');
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        resolve(request.result || null);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get service', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async getServicesByCustomerAndModule(customerId: string, module: 'clean' | 'maintenance'): Promise<CachedService[]> {
+    const db = await this.ensureDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['services'], 'readonly');
+      const store = transaction.objectStore('services');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const allServices = request.result || [];
+        const filtered = allServices.filter(
+          (s: CachedService) => s.customerId === customerId && s.module === module
+        );
+        resolve(filtered);
+      };
+
+      request.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to get services', request.error);
+        reject(request.error);
+      };
+    });
+  }
+
+  async cacheServicesBulk(services: Omit<CachedService, 'lastSynced'>[]): Promise<void> {
+    const db = await this.ensureDB();
+    const now = Date.now();
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['services'], 'readwrite');
+      const store = transaction.objectStore('services');
+      let processedCount = 0;
+
+      services.forEach((svc) => {
+        const cachedService: CachedService = {
+          ...svc,
+          lastSynced: now,
+        };
+        store.put(cachedService);
+        processedCount++;
+      });
+
+      transaction.oncomplete = () => {
+        console.log(`[OFFLINE STORAGE] Cached ${processedCount} services in bulk`);
+        resolve();
+      };
+
+      transaction.onerror = () => {
+        console.error('[OFFLINE STORAGE] Failed to cache services in bulk', transaction.error);
         reject(transaction.error);
       };
     });
