@@ -968,25 +968,114 @@ export class DatabaseStorage implements IStorage {
     const customerWorkOrders = await db.select().from(workOrders).where(whereConditions);
     const total = customerWorkOrders.length;
 
+    // REAL: SLA Breakdown - agrupar por categoria de zona e calcular SLA real
+    const criticalZones = customerZones.filter(z => z.category === 'critica');
+    const commonZones = customerZones.filter(z => z.category === 'comum');
+    const lowPriorityZones = customerZones.filter(z => !z.category || (z.category !== 'critica' && z.category !== 'comum'));
+
+    const getZoneSLA = (zones: any[]) => {
+      const zoneIds = zones.map(z => z.id);
+      const zoneWOs = customerWorkOrders.filter(wo => zoneIds.includes(wo.zoneId || ''));
+      const total = zoneWOs.length;
+      const metSLA = zoneWOs.filter(wo => {
+        if (!wo.dueDate || !wo.completedAt) return false;
+        return new Date(wo.completedAt) <= new Date(wo.dueDate);
+      }).length;
+      return { total, met: metSLA, percentage: total > 0 ? Math.round((metSLA / total) * 100) : 0 };
+    };
+
+    const criticalSLA = getZoneSLA(criticalZones);
+    const commonSLA = getZoneSLA(commonZones);
+    const lowPrioritySLA = getZoneSLA(lowPriorityZones);
+
+    // Emergency WOs (priority alta ou notas com "urgente"/"emergência")
+    const emergencyWOs = customerWorkOrders.filter(wo => 
+      wo.priority === 'alta' || 
+      wo.notes?.toLowerCase().includes('urgente') ||
+      wo.notes?.toLowerCase().includes('emergência')
+    );
+    const emergencySLA = {
+      total: emergencyWOs.length,
+      met: emergencyWOs.filter(wo => {
+        if (!wo.dueDate || !wo.completedAt) return false;
+        return new Date(wo.completedAt) <= new Date(wo.dueDate);
+      }).length,
+      percentage: emergencyWOs.length > 0 
+        ? Math.round((emergencyWOs.filter(wo => {
+            if (!wo.dueDate || !wo.completedAt) return false;
+            return new Date(wo.completedAt) <= new Date(wo.dueDate);
+          }).length / emergencyWOs.length) * 100)
+        : 0
+    };
+
     const slaBreakdown = [
-      { category: "Limpeza Geral", met: Math.floor(total * 0.85), total: Math.floor(total * 0.4), percentage: 85 },
-      { category: "Manutenção Preventiva", met: Math.floor(total * 0.92), total: Math.floor(total * 0.3), percentage: 92 },
-      { category: "Serviços Especiais", met: Math.floor(total * 0.78), total: Math.floor(total * 0.2), percentage: 78 },
-      { category: "Emergências", met: Math.floor(total * 0.95), total: Math.floor(total * 0.1), percentage: 95 }
+      { category: "Zonas Críticas", met: criticalSLA.met, total: criticalSLA.total, percentage: criticalSLA.percentage },
+      { category: "Zonas Comuns", met: commonSLA.met, total: commonSLA.total, percentage: commonSLA.percentage },
+      { category: "Baixa Prioridade", met: lowPrioritySLA.met, total: lowPrioritySLA.total, percentage: lowPrioritySLA.percentage },
+      { category: "Emergências", met: emergencySLA.met, total: emergencySLA.total, percentage: emergencySLA.percentage }
     ];
 
+    // REAL: Time Distribution - calcular tempo real de conclusão
+    const completedWithTimes = customerWorkOrders.filter(wo => 
+      wo.status === 'concluida' && wo.startedAt && wo.completedAt
+    );
+    
+    const timeRanges = {
+      '0-2h': 0,
+      '2-4h': 0,
+      '4-8h': 0,
+      '+8h': 0
+    };
+
+    completedWithTimes.forEach(wo => {
+      const start = new Date(wo.startedAt!).getTime();
+      const end = new Date(wo.completedAt!).getTime();
+      const hours = (end - start) / (1000 * 60 * 60);
+      
+      if (hours <= 2) timeRanges['0-2h']++;
+      else if (hours <= 4) timeRanges['2-4h']++;
+      else if (hours <= 8) timeRanges['4-8h']++;
+      else timeRanges['+8h']++;
+    });
+
+    const totalCompleted = completedWithTimes.length || 1;
     const timeDistribution = [
-      { range: "0-2h", count: Math.floor(total * 0.45), percentage: 45 },
-      { range: "2-4h", count: Math.floor(total * 0.30), percentage: 30 },
-      { range: "4-8h", count: Math.floor(total * 0.15), percentage: 15 },
-      { range: "+8h", count: Math.floor(total * 0.10), percentage: 10 }
+      { range: "0-2h", count: timeRanges['0-2h'], percentage: Math.round((timeRanges['0-2h'] / totalCompleted) * 100) },
+      { range: "2-4h", count: timeRanges['2-4h'], percentage: Math.round((timeRanges['2-4h'] / totalCompleted) * 100) },
+      { range: "4-8h", count: timeRanges['4-8h'], percentage: Math.round((timeRanges['4-8h'] / totalCompleted) * 100) },
+      { range: "+8h", count: timeRanges['+8h'], percentage: Math.round((timeRanges['+8h'] / totalCompleted) * 100) }
     ];
+
+    // REAL: Average Response Time
+    let averageResponseTime = "N/A";
+    if (completedWithTimes.length > 0) {
+      const totalMinutes = completedWithTimes.reduce((sum, wo) => {
+        const start = new Date(wo.startedAt!).getTime();
+        const end = new Date(wo.completedAt!).getTime();
+        return sum + ((end - start) / (1000 * 60));
+      }, 0);
+      const avgMinutes = Math.round(totalMinutes / completedWithTimes.length);
+      const hours = Math.floor(avgMinutes / 60);
+      const minutes = avgMinutes % 60;
+      averageResponseTime = `${hours}h ${minutes}min`;
+    }
+
+    // REAL: Critical Alerts - WOs atrasadas ou com problemas
+    const criticalAlerts = customerWorkOrders.filter(wo => {
+      if (wo.status === 'concluida' && wo.dueDate && wo.completedAt) {
+        return new Date(wo.completedAt) > new Date(wo.dueDate);
+      }
+      if (wo.status !== 'concluida' && wo.dueDate) {
+        return new Date() > new Date(wo.dueDate);
+      }
+      return false;
+    }).length;
 
     return {
       slaBreakdown,
       timeDistribution,
-      averageResponseTime: "2h 15min",
-      criticalAlerts: total > 0 ? Math.floor(total * 0.05) : 0,
+      averageResponseTime,
+      criticalAlerts,
       onTimeCompletion: total > 0 ? Math.round((customerWorkOrders.filter(wo => wo.status === 'concluida').length / total) * 100) : 0
     };
   }
@@ -1406,34 +1495,108 @@ export class DatabaseStorage implements IStorage {
       return { trends: [], patterns: [], forecasts: [] };
     }
 
-    const customerWorkOrders = await db.select().from(workOrders).where(inArray(workOrders.zoneId, zoneIds));
-    const completed = customerWorkOrders.filter(wo => wo.status === 'concluida').length;
+    const whereConditions = module 
+      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      : inArray(workOrders.zoneId, zoneIds);
+    const customerWorkOrders = await db.select().from(workOrders).where(whereConditions);
 
-    // Tendências mensais dos últimos 6 meses
-    const trends = [
-      { period: "Jan 2025", workOrders: Math.floor(completed * 0.8), efficiency: 82, cost: 15420 },
-      { period: "Fev 2025", workOrders: Math.floor(completed * 0.9), efficiency: 85, cost: 16890 },
-      { period: "Mar 2025", workOrders: Math.floor(completed * 1.1), efficiency: 88, cost: 18350 },
-      { period: "Abr 2025", workOrders: Math.floor(completed * 1.0), efficiency: 87, cost: 17680 },
-      { period: "Mai 2025", workOrders: Math.floor(completed * 1.2), efficiency: 91, cost: 19240 },
-      { period: "Jun 2025", workOrders: completed, efficiency: 94, cost: 20150 }
-    ];
+    // REAL: Tendências mensais dos últimos 6 meses baseadas em dados reais
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const trends = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date();
+      monthDate.setMonth(monthDate.getMonth() - i);
+      const month = monthDate.getMonth();
+      const year = monthDate.getFullYear();
+      
+      const monthWorkOrders = customerWorkOrders.filter(wo => {
+        const woDate = wo.createdAt ? new Date(wo.createdAt) : new Date();
+        return woDate.getMonth() === month && woDate.getFullYear() === year;
+      });
+      
+      const monthCompleted = monthWorkOrders.filter(wo => wo.status === 'concluida');
+      const monthTotal = monthWorkOrders.length;
+      const monthOnTime = monthWorkOrders.filter(wo => {
+        if (!wo.dueDate || !wo.completedAt) return false;
+        return new Date(wo.completedAt) <= new Date(wo.dueDate);
+      }).length;
+      
+      const efficiency = monthTotal > 0 ? Math.round((monthOnTime / monthTotal) * 100) : 0;
+      const cost = monthCompleted.length * 85.50;
+      
+      trends.push({
+        period: `${monthNames[month]} ${year}`,
+        workOrders: monthCompleted.length,
+        efficiency,
+        cost: Math.round(cost)
+      });
+    }
 
-    // Padrões por dia da semana
-    const patterns = [
-      { day: "Segunda", avgWorkOrders: Math.floor(completed / 4), peak: "08:00-10:00" },
-      { day: "Terça", avgWorkOrders: Math.floor(completed / 3.5), peak: "09:00-11:00" },
-      { day: "Quarta", avgWorkOrders: Math.floor(completed / 3.8), peak: "08:30-10:30" },
-      { day: "Quinta", avgWorkOrders: Math.floor(completed / 4.2), peak: "09:00-11:00" },
-      { day: "Sexta", avgWorkOrders: Math.floor(completed / 5), peak: "07:30-09:30" }
-    ];
+    // REAL: Padrões por dia da semana baseados em dados reais
+    const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const weekdayCounts: { [key: number]: { count: number; hours: number[] } } = {};
+    
+    for (let i = 0; i < 7; i++) {
+      weekdayCounts[i] = { count: 0, hours: [] };
+    }
+    
+    customerWorkOrders.forEach(wo => {
+      if (wo.createdAt) {
+        const date = new Date(wo.createdAt);
+        const dayOfWeek = date.getDay();
+        const hour = date.getHours();
+        weekdayCounts[dayOfWeek].count++;
+        weekdayCounts[dayOfWeek].hours.push(hour);
+      }
+    });
+    
+    const patterns = [];
+    for (let i = 1; i <= 5; i++) {
+      const dayData = weekdayCounts[i];
+      const avgWorkOrders = dayData.count;
+      
+      let peakHour = 8;
+      if (dayData.hours.length > 0) {
+        const hourCounts: { [hour: number]: number } = {};
+        dayData.hours.forEach(h => {
+          hourCounts[h] = (hourCounts[h] || 0) + 1;
+        });
+        peakHour = parseInt(Object.keys(hourCounts).reduce((a, b) => 
+          hourCounts[parseInt(a)] > hourCounts[parseInt(b)] ? a : b, '8'));
+      }
+      
+      const peakStart = `${peakHour.toString().padStart(2, '0')}:00`;
+      const peakEnd = `${(peakHour + 2).toString().padStart(2, '0')}:00`;
+      
+      patterns.push({
+        day: weekdayNames[i],
+        avgWorkOrders,
+        peak: `${peakStart}-${peakEnd}`
+      });
+    }
 
-    // Previsões para próximos meses
-    const forecasts = [
-      { period: "Jul 2025", predicted: Math.floor(completed * 1.1), confidence: 87 },
-      { period: "Ago 2025", predicted: Math.floor(completed * 1.15), confidence: 82 },
-      { period: "Set 2025", predicted: Math.floor(completed * 1.08), confidence: 79 }
-    ];
+    // REAL: Previsões baseadas em média móvel simples dos últimos 3 meses
+    const last3Months = trends.slice(-3);
+    const avgWorkOrders = last3Months.length > 0
+      ? Math.round(last3Months.reduce((sum, t) => sum + t.workOrders, 0) / last3Months.length)
+      : 0;
+    
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const forecasts = [];
+    
+    for (let i = 1; i <= 3; i++) {
+      const forecastDate = new Date(currentYear, currentMonth + i, 1);
+      const forecastMonth = forecastDate.getMonth();
+      const forecastYear = forecastDate.getFullYear();
+      
+      forecasts.push({
+        period: `${monthNames[forecastMonth]} ${forecastYear}`,
+        predicted: avgWorkOrders,
+        confidence: Math.max(50, 90 - (i * 8))
+      });
+    }
 
     return { trends, patterns, forecasts };
   }
