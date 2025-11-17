@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, decimal, jsonb, pgEnum, uniqueIndex, unique, date, time } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, decimal, jsonb, pgEnum, uniqueIndex, unique, date, time, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -124,7 +124,11 @@ export const sites = pgTable("sites", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
-});
+}, (table) => ({
+  // Performance indexes for common queries
+  customerModuleIdx: index("sites_customer_module_idx").on(table.customerId, table.module),
+  companyIdIdx: index("sites_company_id_idx").on(table.companyId),
+}));
 
 // 4. TABELA: zones (Zonas/Áreas)
 export const zones = pgTable("zones", {
@@ -143,7 +147,11 @@ export const zones = pgTable("zones", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
-});
+}, (table) => ({
+  // Performance indexes for common queries
+  siteModuleIdx: index("zones_site_module_idx").on(table.siteId, table.module),
+  categoryIdx: index("zones_category_idx").on(table.category),
+}));
 
 // 5. TABELA: users (Usuários do Sistema)
 export const users = pgTable("users", {
@@ -323,6 +331,14 @@ export const workOrders = pgTable("work_orders", {
 }, (table) => ({
   uniqueWorkOrderNumber: uniqueIndex("work_orders_customer_number_unique").on(table.customerId, table.number),
   uniqueCustomerLocalId: uniqueIndex("work_orders_customer_local_id_unique").on(table.customerId, table.localId).where(sql`local_id IS NOT NULL`),
+  // Performance indexes for common queries
+  customerModuleIdx: index("work_orders_customer_module_idx").on(table.customerId, table.module),
+  zoneIdIdx: index("work_orders_zone_id_idx").on(table.zoneId),
+  statusIdx: index("work_orders_status_idx").on(table.status),
+  moduleStatusIdx: index("work_orders_module_status_idx").on(table.module, table.status),
+  assignedUserIdx: index("work_orders_assigned_user_idx").on(table.assignedUserId),
+  completedAtIdx: index("work_orders_completed_at_idx").on(table.completedAt),
+  dueDateIdx: index("work_orders_due_date_idx").on(table.dueDate),
 }));
 
 // 11a. TABELA: work_order_attachments (Anexos de Ordens de Trabalho)
