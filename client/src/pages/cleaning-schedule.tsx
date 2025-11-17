@@ -352,8 +352,23 @@ export default function CleaningSchedule() {
         return currentMonth === startMonth && day === (activity.frequencyConfig?.monthDay || 1);
       }
       if (activity.frequency === 'turno') {
-        // Atividades por turno aparecem todos os dias (como diárias)
-        return true;
+        // Atividades por turno aparecem apenas nos dias da semana configurados
+        const turnWeekDays = activity.frequencyConfig?.weekDays || [];
+        if (turnWeekDays.length === 0) {
+          // Se não houver dias configurados, mostrar todos os dias (retrocompatibilidade)
+          return true;
+        }
+        
+        // Verificar se o dia atual está nos dias configurados
+        const dayOfWeek = currentDate.getDay(); // 0 = domingo
+        const dayMap = {
+          'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3,
+          'quinta': 4, 'sexta': 5, 'sabado': 6
+        };
+        
+        return turnWeekDays.some((weekDay: string) => 
+          dayMap[weekDay as keyof typeof dayMap] === dayOfWeek
+        );
       }
       return false;
     });
