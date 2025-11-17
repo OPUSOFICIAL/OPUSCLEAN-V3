@@ -1170,32 +1170,115 @@ export class DatabaseStorage implements IStorage {
       return { operators: [], rankings: [], teamStats: {} };
     }
 
+    const siteIds = customerSites.map(site => site.id);
+    const zonesWhereCondition = module
+      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      : inArray(zones.siteId, siteIds);
+    const customerZones = await db.select().from(zones).where(zonesWhereCondition);
+    const zoneIds = customerZones.map(zone => zone.id);
+
     const customerUsers = await db.select().from(users).where(eq(users.companyId, customerSites[0].companyId));
     const operators = customerUsers.filter(user => user.role === 'operador' || user.role === 'supervisor_site');
 
-    const operatorsData = operators.map((op, index) => ({
-      id: op.id,
-      name: op.name,
-      tasksCompleted: Math.floor(Math.random() * 50 + 20), // 20-70 tarefas
-      efficiency: Math.round(Math.random() * 20 + 75), // 75-95%
-      qualityScore: Math.round(Math.random() * 15 + 80), // 80-95
-      punctuality: Math.round(Math.random() * 10 + 88), // 88-98%
-      experienceLevel: index < 2 ? "Senior" : index < 4 ? "Pleno" : "Junior",
-      certification: Math.random() > 0.3 ? "Ativo" : "Pendente"
+    // Buscar todas as WOs das zonas do cliente
+    const whereConditions = module 
+      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      : inArray(workOrders.zoneId, zoneIds);
+    const allWorkOrders = await db.select().from(workOrders).where(whereConditions);
+
+    // REAL: Calcular métricas para cada operador
+    const operatorsData = await Promise.all(operators.map(async (op) => {
+      // Tarefas concluídas por este operador
+      const operatorWorkOrders = allWorkOrders.filter(wo => wo.assignedTo === op.id);
+      const tasksCompleted = operatorWorkOrders.filter(wo => wo.status === 'concluida').length;
+      
+      // Eficiência: % de tarefas concluídas no prazo
+      const onTimeCompletion = operatorWorkOrders.filter(wo => {
+        if (!wo.dueDate || !wo.completedAt) return false;
+        return new Date(wo.completedAt) <= new Date(wo.dueDate);
+      }).length;
+      const efficiency = operatorWorkOrders.length > 0 
+        ? Math.round((onTimeCompletion / operatorWorkOrders.length) * 100) 
+        : 0;
+
+      // Quality Score: média dos ratings das WOs deste operador
+      const ratedWorkOrders = operatorWorkOrders.filter(wo => wo.qualityRating !== null);
+      const qualityScore = ratedWorkOrders.length > 0
+        ? Math.round(ratedWorkOrders.reduce((sum, wo) => sum + (wo.qualityRating || 0), 0) / ratedWorkOrders.length)
+        : 0;
+
+      // Pontualidade: % de tarefas iniciadas dentro do prazo esperado
+      const onTimeStart = operatorWorkOrders.filter(wo => {
+        if (!wo.scheduledStartAt || !wo.startedAt) return false;
+        const scheduled = new Date(wo.scheduledStartAt).getTime();
+        const started = new Date(wo.startedAt).getTime();
+        const delay = (started - scheduled) / (1000 * 60);
+        return delay <= 30;
+      }).length;
+      const punctuality = operatorWorkOrders.length > 0
+        ? Math.round((onTimeStart / operatorWorkOrders.length) * 100)
+        : 0;
+
+      // Nível de experiência baseado no total de tarefas concluídas
+      let experienceLevel = "Junior";
+      if (tasksCompleted >= 100) experienceLevel = "Senior";
+      else if (tasksCompleted >= 50) experienceLevel = "Pleno";
+
+      // Certificação baseada em ter concluído pelo menos 10 tarefas
+      const certification = tasksCompleted >= 10 ? "Ativo" : "Pendente";
+
+      return {
+        id: op.id,
+        name: op.name,
+        tasksCompleted,
+        efficiency,
+        qualityScore,
+        punctuality,
+        experienceLevel,
+        certification
+      };
     }));
 
-    const rankings = [
-      { position: 1, operator: "Maria Silva", score: 94.5, improvement: "+2.1%" },
-      { position: 2, operator: "João Santos", score: 91.2, improvement: "+1.8%" },
-      { position: 3, operator: "Ana Costa", score: 89.7, improvement: "-0.5%" }
-    ];
+    // REAL: Rankings baseados em score combinado (eficiência + qualidade + pontualidade)
+    const operatorsWithScores = operatorsData.map(op => {
+      const score = (op.efficiency * 0.4) + (op.qualityScore * 0.4) + (op.punctuality * 0.2);
+      return {
+        operator: op.name,
+        score: Math.round(score * 10) / 10,
+        efficiency: op.efficiency,
+        quality: op.qualityScore,
+        punctuality: op.punctuality
+      };
+    });
+
+    const sortedOperators = operatorsWithScores.sort((a, b) => b.score - a.score);
+    const rankings = sortedOperators.slice(0, 3).map((op, index) => ({
+      position: index + 1,
+      operator: op.operator,
+      score: op.score,
+      improvement: "0%" // Histórico não disponível no momento
+    }));
+
+    // REAL: Team Stats
+    const totalEfficiency = operatorsData.reduce((sum, op) => sum + op.efficiency, 0);
+    const averageEfficiency = operatorsData.length > 0 
+      ? Math.round(totalEfficiency / operatorsData.length) 
+      : 0;
+    
+    const topPerformer = sortedOperators[0]?.operator || "N/A";
+    
+    // Operadores que precisam melhoria (eficiência < 70%)
+    const improvementNeeded = operatorsData.filter(op => op.efficiency < 70).length;
+    
+    // Operadores com certificação ativa
+    const trainingCompleted = operatorsData.filter(op => op.certification === "Ativo").length;
 
     const teamStats = {
       totalOperators: operators.length,
-      averageEfficiency: Math.round(Math.random() * 10 + 85), // 85-95%
-      topPerformer: operatorsData[0]?.name || "N/A",
-      improvementNeeded: Math.floor(operators.length * 0.2), // 20% precisam melhoria
-      trainingCompleted: Math.floor(operators.length * 0.8) // 80% completaram treinamento
+      averageEfficiency,
+      topPerformer,
+      improvementNeeded,
+      trainingCompleted
     };
 
     return { operators: operatorsData, rankings, teamStats };
