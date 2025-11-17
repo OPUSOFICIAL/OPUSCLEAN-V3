@@ -1227,6 +1227,23 @@ export default function CleaningSchedule() {
           />
         )}
 
+        {/* Modal de Edição de Atividade */}
+        {showEditActivityModal && selectedActivity && (
+          <CreateCleaningActivityModal
+            activeClientId={activeClientId}
+            editingActivity={selectedActivity}
+            onClose={() => {
+              setShowEditActivityModal(false);
+              setSelectedActivity(null);
+            }}
+            onSuccess={() => {
+              setShowEditActivityModal(false);
+              setSelectedActivity(null);
+              queryClient.invalidateQueries({ queryKey: ["/api/companies", activeClientId, "cleaning-activities"] });
+            }}
+          />
+        )}
+
         {/* Modal de Detalhes da Atividade */}
         <Dialog open={showActivityDetailsModal} onOpenChange={setShowActivityDetailsModal}>
           <DialogContent className="max-w-md">
@@ -1269,81 +1286,6 @@ export default function CleaningSchedule() {
                     <span className="font-medium text-gray-700">Responsável:</span>
                     <p className="text-gray-600">{getAssignedUserName(selectedActivity.assignedUserId || '')}</p>
                   </div>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Edição da Atividade */}
-        <Dialog open={showEditActivityModal} onOpenChange={setShowEditActivityModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">Editar Atividade</DialogTitle>
-              <DialogDescription>
-                Modifique as informações da atividade abaixo.
-              </DialogDescription>
-            </DialogHeader>
-            {selectedActivity && (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-name">Nome da Atividade</Label>
-                  <Input 
-                    id="edit-name"
-                    defaultValue={selectedActivity.name}
-                    className="mt-1"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-description">Descrição</Label>
-                  <Textarea 
-                    id="edit-description"
-                    defaultValue={selectedActivity.description || ''}
-                    className="mt-1"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-frequency">Frequência</Label>
-                  <Select defaultValue={selectedActivity.frequency}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="diaria">Diária</SelectItem>
-                      <SelectItem value="semanal">Semanal</SelectItem>
-                      <SelectItem value="mensal">Mensal</SelectItem>
-                      <SelectItem value="trimestral">Trimestral</SelectItem>
-                      <SelectItem value="semestral">Semestral</SelectItem>
-                      <SelectItem value="anual">Anual</SelectItem>
-                      <SelectItem value="turno">Por Turno</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowEditActivityModal(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    className={theme.buttons.primary}
-                    style={theme.buttons.primaryStyle}
-                    type="button"
-                    onClick={() => {
-                      toast({
-                        title: "Em Desenvolvimento",
-                        description: "Funcionalidade de edição será implementada em breve",
-                      });
-                      setShowEditActivityModal(false);
-                    }}
-                  >
-                    Salvar Alterações
-                  </Button>
                 </div>
               </div>
             )}
@@ -1635,38 +1577,41 @@ function MultiSelect({
   );
 }
 
-// Componente de Modal para Criação de Atividade de Limpeza
+// Componente de Modal para Criação/Edição de Atividade de Limpeza
 interface CreateCleaningActivityModalProps {
   activeClientId: string;
   onClose: () => void;
   onSuccess: () => void;
+  editingActivity?: any; // Se fornecido, modal está em modo de edição
 }
 
-function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: CreateCleaningActivityModalProps) {
+function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editingActivity }: CreateCleaningActivityModalProps) {
   const { currentModule } = useModule();
   const theme = useModuleTheme();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  const isEditMode = !!editingActivity;
+  
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    frequency: "diaria",
-    startDate: "",
-    frequencyConfig: {
+    name: editingActivity?.name || "",
+    description: editingActivity?.description || "",
+    frequency: editingActivity?.frequency || "diaria",
+    startDate: editingActivity?.startDate || "",
+    frequencyConfig: editingActivity?.frequencyConfig || {
       weekDays: [] as string[], // para semanal: ["domingo", "segunda", ...]
       monthDay: 1, // para mensal: dia do mês (1-31)
       turnShifts: [] as string[], // para turno: ["manha", "tarde", "noite"]
       timesPerDay: 1 // para diaria: quantas vezes por dia
     },
-    serviceId: "",
-    siteIds: [] as string[], // MULTI-SELEÇÃO de locais
-    zoneIds: [] as string[], // MULTI-SELEÇÃO de zonas
-    checklistTemplateId: "",
+    serviceId: editingActivity?.serviceId || "",
+    siteIds: editingActivity?.siteIds || [] as string[], // MULTI-SELEÇÃO de locais
+    zoneIds: editingActivity?.zoneIds || [] as string[], // MULTI-SELEÇÃO de zonas
+    checklistTemplateId: editingActivity?.checklistTemplateId || "",
     // Campos opcionais de horário
-    startTime: "",
-    endTime: "",
-    isActive: true
+    startTime: editingActivity?.startTime || "",
+    endTime: editingActivity?.endTime || "",
+    isActive: editingActivity?.isActive !== undefined ? editingActivity.isActive : true
   });
 
   const { data: services } = useQuery({
@@ -1733,6 +1678,45 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       }
     }));
   };
+
+  const updateActivityMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const submitData = {
+        name: data.name,
+        description: data.description,
+        frequency: data.frequency,
+        frequencyConfig: data.frequencyConfig,
+        serviceId: data.serviceId,
+        siteIds: data.siteIds,
+        zoneIds: data.zoneIds,
+        checklistTemplateId: data.checklistTemplateId,
+        startDate: data.startDate,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        isActive: data.isActive,
+      };
+      
+      const response = await apiRequest("PATCH", `/api/customers/${activeClientId}/cleaning-activities/${editingActivity.id}`, submitData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({ 
+        title: "Atividade atualizada com sucesso!"
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers", activeClientId, "cleaning-activities"] 
+      });
+      
+      onSuccess();
+    },
+    onError: () => {
+      toast({ 
+        title: "Erro ao atualizar atividade", 
+        variant: "destructive" 
+      });
+    },
+  });
 
   const createActivityMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1913,16 +1897,24 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       return;
     }
 
-    createActivityMutation.mutate(formData);
+    if (isEditMode) {
+      updateActivityMutation.mutate(formData);
+    } else {
+      createActivityMutation.mutate(formData);
+    }
   };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="create-activity-modal">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Nova Atividade de Limpeza</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {isEditMode ? "Editar Atividade de Limpeza" : "Nova Atividade de Limpeza"}
+          </DialogTitle>
           <DialogDescription>
-            Preencha as informações para criar uma nova atividade de limpeza programada
+            {isEditMode 
+              ? "Modifique as informações da atividade abaixo"
+              : "Preencha as informações para criar uma nova atividade de limpeza programada"}
           </DialogDescription>
         </DialogHeader>
         
@@ -2305,18 +2297,18 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
               className={theme.buttons.primary}
               style={theme.buttons.primaryStyle}
               type="submit" 
-              disabled={createActivityMutation.isPending}
+              disabled={isEditMode ? updateActivityMutation.isPending : createActivityMutation.isPending}
               data-testid="button-submit"
             >
-              {createActivityMutation.isPending ? (
+              {(isEditMode ? updateActivityMutation.isPending : createActivityMutation.isPending) ? (
                 <>
                   <Clock className="w-4 h-4 mr-2 animate-spin" />
-                  Criando...
+                  {isEditMode ? "Salvando..." : "Criando..."}
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Criar Atividade
+                  {isEditMode ? "Salvar Alterações" : "Criar Atividade"}
                 </>
               )}
             </Button>
