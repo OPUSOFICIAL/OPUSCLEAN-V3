@@ -1889,6 +1889,15 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
       return;
     }
 
+    if (formData.frequency === "turno" && formData.frequencyConfig.weekDays.length === 0) {
+      toast({
+        title: "Dias da semana obrigatórios",
+        description: "Selecione pelo menos um dia da semana para as atividades por turno",
+        variant: "destructive"
+      });
+      return;
+    }
+
     createActivityMutation.mutate(formData);
   };
 
@@ -2095,31 +2104,66 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess }: Cre
               )}
 
               {formData.frequency === "turno" && (
-                <div key="shift-config" className="md:col-span-2 space-y-3">
-                  <Label>Turnos *</Label>
-                  <div className="flex gap-4">
-                    {[
-                      { key: "manha", label: "Manhã" },
-                      { key: "tarde", label: "Tarde" },
-                      { key: "noite", label: "Noite" }
-                    ].map(shift => (
-                      <label key={shift.key} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.frequencyConfig.turnShifts.includes(shift.key)}
-                          onChange={(e) => {
-                            const newTurnShifts = e.target.checked
-                              ? [...formData.frequencyConfig.turnShifts, shift.key]
-                              : formData.frequencyConfig.turnShifts.filter(s => s !== shift.key);
-                            handleFrequencyConfigChange("turnShifts", newTurnShifts);
-                          }}
-                          className="rounded"
-                        />
-                        <span>{shift.label}</span>
-                      </label>
-                    ))}
+                <>
+                  <div key="shift-config" className="md:col-span-2 space-y-3">
+                    <Label>Turnos *</Label>
+                    <div className="flex gap-4">
+                      {[
+                        { key: "manha", label: "Manhã" },
+                        { key: "tarde", label: "Tarde" },
+                        { key: "noite", label: "Noite" }
+                      ].map(shift => (
+                        <label key={shift.key} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.frequencyConfig.turnShifts.includes(shift.key)}
+                            onChange={(e) => {
+                              const newTurnShifts = e.target.checked
+                                ? [...formData.frequencyConfig.turnShifts, shift.key]
+                                : formData.frequencyConfig.turnShifts.filter(s => s !== shift.key);
+                              handleFrequencyConfigChange("turnShifts", newTurnShifts);
+                            }}
+                            className="rounded"
+                          />
+                          <span>{shift.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                  
+                  <div key="shift-weekdays-config" className="md:col-span-2 space-y-3">
+                    <Label>Dias da Semana *</Label>
+                    <div className="grid grid-cols-7 gap-2">
+                      {[
+                        { key: "domingo", label: "Dom" },
+                        { key: "segunda", label: "Seg" },
+                        { key: "terca", label: "Ter" },
+                        { key: "quarta", label: "Qua" },
+                        { key: "quinta", label: "Qui" },
+                        { key: "sexta", label: "Sex" },
+                        { key: "sabado", label: "Sáb" }
+                      ].map(day => (
+                        <label key={day.key} className="flex flex-col items-center space-y-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.frequencyConfig.weekDays.includes(day.key)}
+                            onChange={(e) => {
+                              const newWeekDays = e.target.checked
+                                ? [...formData.frequencyConfig.weekDays, day.key]
+                                : formData.frequencyConfig.weekDays.filter(d => d !== day.key);
+                              handleFrequencyConfigChange("weekDays", newWeekDays);
+                            }}
+                            className="rounded"
+                          />
+                          <span className="text-xs">{day.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Selecione os dias da semana em que as atividades dos turnos escolhidos devem ocorrer
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </div>
