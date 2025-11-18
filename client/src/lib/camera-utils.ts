@@ -4,6 +4,81 @@ export interface CapturedPhoto {
   base64: string;
   format: string;
   dataUrl: string;
+  originalSize?: number;
+  compressedSize?: number;
+}
+
+interface CompressionOptions {
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+}
+
+async function compressImage(
+  base64: string, 
+  format: string, 
+  options: CompressionOptions = {}
+): Promise<{ base64: string; originalSize: number; compressedSize: number }> {
+  const {
+    maxWidth = 1920,
+    maxHeight = 1920,
+    quality = 0.6
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    try {
+      const img = new Image();
+      const dataUrl = `data:image/${format};base64,${base64}`;
+      
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        
+        // Calcular novo tamanho mantendo aspect ratio
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = width * ratio;
+          height = height * ratio;
+        }
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const compressedDataUrl = canvas.toDataURL(`image/${format}`, quality);
+        const compressedBase64 = compressedDataUrl.split(',')[1];
+        
+        const originalSize = base64.length;
+        const compressedSize = compressedBase64.length;
+        
+        console.log('[COMPRESSION]', {
+          original: `${(originalSize / 1024).toFixed(2)}KB`,
+          compressed: `${(compressedSize / 1024).toFixed(2)}KB`,
+          reduction: `${(((originalSize - compressedSize) / originalSize) * 100).toFixed(1)}%`,
+          dimensions: `${width}x${height}`
+        });
+        
+        resolve({ base64: compressedBase64, originalSize, compressedSize });
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image for compression'));
+      };
+      
+      img.src = dataUrl;
+    } catch (error) {
+      console.error('[COMPRESSION] Error:', error);
+      reject(error);
+    }
+  });
 }
 
 async function webPathToBase64(webPath: string, format: string): Promise<string> {
@@ -30,7 +105,7 @@ async function webPathToBase64(webPath: string, format: string): Promise<string>
 export async function takePictureWithCamera(): Promise<CapturedPhoto> {
   try {
     const image = await Camera.getPhoto({
-      quality: 90,
+      quality: 60,
       allowEditing: false,
       resultType: CameraResultType.Base64,
       source: CameraSource.Camera,
@@ -41,12 +116,21 @@ export async function takePictureWithCamera(): Promise<CapturedPhoto> {
     }
 
     const format = image.format || 'jpeg';
-    const dataUrl = `data:image/${format};base64,${image.base64String}`;
+    
+    const compressed = await compressImage(image.base64String, format, {
+      maxWidth: 1920,
+      maxHeight: 1920,
+      quality: 0.6
+    });
+    
+    const dataUrl = `data:image/${format};base64,${compressed.base64}`;
 
     return {
-      base64: image.base64String,
+      base64: compressed.base64,
       format,
       dataUrl,
+      originalSize: compressed.originalSize,
+      compressedSize: compressed.compressedSize,
     };
   } catch (error) {
     console.warn('[CAMERA] Native camera unavailable, falling back to file input:', error);
@@ -70,7 +154,7 @@ export async function takePictureWithCamera(): Promise<CapturedPhoto> {
 export async function selectFromGallery(): Promise<CapturedPhoto> {
   try {
     const image = await Camera.getPhoto({
-      quality: 90,
+      quality: 60,
       allowEditing: false,
       resultType: CameraResultType.Base64,
       source: CameraSource.Photos,
@@ -81,12 +165,21 @@ export async function selectFromGallery(): Promise<CapturedPhoto> {
     }
 
     const format = image.format || 'jpeg';
-    const dataUrl = `data:image/${format};base64,${image.base64String}`;
+    
+    const compressed = await compressImage(image.base64String, format, {
+      maxWidth: 1920,
+      maxHeight: 1920,
+      quality: 0.6
+    });
+    
+    const dataUrl = `data:image/${format};base64,${compressed.base64}`;
 
     return {
-      base64: image.base64String,
+      base64: compressed.base64,
       format,
       dataUrl,
+      originalSize: compressed.originalSize,
+      compressedSize: compressed.compressedSize,
     };
   } catch (error) {
     console.warn('[CAMERA] Native gallery unavailable, falling back to file input:', error);
@@ -110,7 +203,7 @@ export async function selectFromGallery(): Promise<CapturedPhoto> {
 export async function promptForPicture(): Promise<CapturedPhoto> {
   try {
     const image = await Camera.getPhoto({
-      quality: 90,
+      quality: 60,
       allowEditing: false,
       resultType: CameraResultType.Base64,
       source: CameraSource.Prompt,
@@ -121,12 +214,21 @@ export async function promptForPicture(): Promise<CapturedPhoto> {
     }
 
     const format = image.format || 'jpeg';
-    const dataUrl = `data:image/${format};base64,${image.base64String}`;
+    
+    const compressed = await compressImage(image.base64String, format, {
+      maxWidth: 1920,
+      maxHeight: 1920,
+      quality: 0.6
+    });
+    
+    const dataUrl = `data:image/${format};base64,${compressed.base64}`;
 
     return {
-      base64: image.base64String,
+      base64: compressed.base64,
       format,
       dataUrl,
+      originalSize: compressed.originalSize,
+      compressedSize: compressed.compressedSize,
     };
   } catch (error) {
     console.warn('[CAMERA] Native prompt unavailable, falling back to file input:', error);
@@ -150,7 +252,7 @@ export async function promptForPicture(): Promise<CapturedPhoto> {
 export async function pickMultipleImages(options?: { limit?: number; quality?: number }): Promise<CapturedPhoto[]> {
   try {
     const galleryOptions: GalleryImageOptions = {
-      quality: options?.quality || 90,
+      quality: options?.quality || 60,
       limit: options?.limit || 10,
       correctOrientation: true,
     };
@@ -165,12 +267,21 @@ export async function pickMultipleImages(options?: { limit?: number; quality?: n
       result.photos.map(async (photo) => {
         const format = photo.format || 'jpeg';
         const base64 = await webPathToBase64(photo.webPath, format);
-        const dataUrl = `data:image/${format};base64,${base64}`;
+        
+        const compressed = await compressImage(base64, format, {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.6
+        });
+        
+        const dataUrl = `data:image/${format};base64,${compressed.base64}`;
 
         return {
-          base64,
+          base64: compressed.base64,
           format,
           dataUrl,
+          originalSize: compressed.originalSize,
+          compressedSize: compressed.compressedSize,
         };
       })
     );
@@ -233,9 +344,22 @@ export function createFileInputFallback(
           });
 
           const format = file.type.split('/')[1] || 'jpeg';
-          const dataUrl = `data:image/${format};base64,${base64}`;
+          
+          const compressed = await compressImage(base64, format, {
+            maxWidth: 1920,
+            maxHeight: 1920,
+            quality: 0.6
+          });
+          
+          const dataUrl = `data:image/${format};base64,${compressed.base64}`;
 
-          return { base64, format, dataUrl };
+          return { 
+            base64: compressed.base64, 
+            format, 
+            dataUrl,
+            originalSize: compressed.originalSize,
+            compressedSize: compressed.compressedSize,
+          };
         })
       );
 

@@ -11,7 +11,7 @@ interface SyncResult {
 
 class SyncQueueManager {
   private isProcessing = false;
-  private batchSize = 50; // Maximum items per batch (matching backend limit)
+  private batchSize = 5; // Reduzido para conexões lentas (era 50, agora 5 fotos por vez)
 
   async processSyncQueue(): Promise<SyncResult> {
     if (this.isProcessing) {
