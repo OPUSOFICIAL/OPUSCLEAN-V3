@@ -610,12 +610,12 @@ export default function QrCodes() {
                           className={cn(
                             "absolute top-4 left-4 w-7 h-7 rounded-md border-2 flex items-center justify-center transition-all duration-200 hover:scale-110",
                             isSelected 
-                              ? cn(
-                                  "border-transparent shadow-lg",
-                                  theme.backgrounds.primary
-                                )
+                              ? "border-transparent shadow-lg"
                               : 'border-gray-400 bg-white hover:border-gray-600 hover:bg-gray-50'
                           )}
+                          style={isSelected ? {
+                            background: 'linear-gradient(135deg, var(--module-primary), var(--module-secondary))'
+                          } : undefined}
                         >
                           {isSelected && <Check className="w-5 h-5 text-white font-bold" />}
                         </button>
