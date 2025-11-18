@@ -2983,6 +2983,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Account is disabled' });
       }
 
+      // Check if customer is active
+      if (user.customerId) {
+        const [customer] = await db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, user.customerId))
+          .limit(1);
+        
+        if (!customer || !customer.isActive) {
+          return res.status(403).json({ message: 'Customer account is disabled' });
+        }
+      }
+
       // Generate secure JWT token
       const token = jwt.sign(
         {
