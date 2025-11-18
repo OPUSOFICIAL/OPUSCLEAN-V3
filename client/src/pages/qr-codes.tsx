@@ -594,17 +594,30 @@ export default function QrCodes() {
                   const isSelected = selectedQrCodes.includes(point.id);
                   
                   return (
-                    <Card key={point.id} className="relative">
+                    <Card 
+                      key={point.id} 
+                      className={cn(
+                        "relative transition-all duration-200",
+                        isSelected && "ring-2 ring-offset-2",
+                        isSelected && theme.borders.primary
+                      )}
+                    >
                       <CardContent className="p-6">
                         {/* Checkbox */}
                         <button
                           onClick={() => toggleSelection(point.id)}
+                          data-testid={`checkbox-qr-${point.id}`}
                           className={cn(
-                            "absolute top-4 left-4 w-6 h-6 rounded border-2 flex items-center justify-center",
-                            isSelected ? cn(theme.backgrounds.primary, theme.borders.primary) : 'border-gray-300'
+                            "absolute top-4 left-4 w-7 h-7 rounded-md border-2 flex items-center justify-center transition-all duration-200 hover:scale-110",
+                            isSelected 
+                              ? cn(
+                                  "border-transparent shadow-lg",
+                                  theme.backgrounds.primary
+                                )
+                              : 'border-gray-400 bg-white hover:border-gray-600 hover:bg-gray-50'
                           )}
                         >
-                          {isSelected && <Check className="w-4 h-4 text-white" />}
+                          {isSelected && <Check className="w-5 h-5 text-white font-bold" />}
                         </button>
 
                         {/* Badge Tipo */}
