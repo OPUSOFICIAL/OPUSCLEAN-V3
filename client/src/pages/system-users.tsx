@@ -18,6 +18,7 @@ import { useModule, MODULE_CONFIGS } from '@/contexts/ModuleContext';
 import { useModuleTheme } from '@/hooks/use-module-theme';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
+import { useCacheInvalidation } from '@/hooks/use-cache-invalidation';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username é obrigatório'),
@@ -46,6 +47,7 @@ type User = {
 export default function SystemUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const cache = useCacheInvalidation();
   const { can } = usePermissions();
   const { currentModule } = useModule();
   const theme = useModuleTheme();
@@ -122,7 +124,7 @@ export default function SystemUsers() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/system-users'] });
+      cache.invalidateUsers();
       setIsCreateDialogOpen(false);
       setEditingUser(null);
       form.reset();
@@ -145,7 +147,7 @@ export default function SystemUsers() {
       await apiRequest('PATCH', `/api/system-users/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/system-users'] });
+      cache.invalidateUsers();
       setIsCreateDialogOpen(false);
       setEditingUser(null);
       form.reset();
@@ -168,7 +170,7 @@ export default function SystemUsers() {
       await apiRequest('PATCH', `/api/system-users/${id}/status`, { isActive });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/system-users'] });
+      cache.invalidateUsers();
       toast({
         title: 'Sucesso',
         description: 'Status do usuário atualizado!',
@@ -191,7 +193,7 @@ export default function SystemUsers() {
     },
     onSuccess: (tempPassword, userId) => {
       const user = users.find((u: User) => u.id === userId);
-      queryClient.invalidateQueries({ queryKey: ['/api/system-users'] });
+      cache.invalidateUsers();
       toast({
         title: 'Senha Resetada!',
         description: (
