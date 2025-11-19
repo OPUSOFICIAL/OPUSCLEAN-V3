@@ -27,6 +27,7 @@ export interface CustomRole {
   name: string;
   description?: string;
   isSystemRole: boolean;
+  isMobileOnly: boolean;
   isActive: boolean;
   permissions: PermissionKey[];
 }

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,6 +43,7 @@ const createRoleSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   description: z.string().optional(),
   permissions: z.array(z.string()).min(1, 'Selecione pelo menos uma permissão'),
+  isMobileOnly: z.boolean().default(false),
 });
 
 type CreateRoleForm = z.infer<typeof createRoleSchema>;
@@ -86,6 +88,7 @@ export default function Roles() {
       name: '',
       description: '',
       permissions: [],
+      isMobileOnly: false,
     },
   });
 
@@ -222,6 +225,7 @@ export default function Roles() {
       name: role.name,
       description: role.description || '',
       permissions: role.permissions,
+      isMobileOnly: role.isMobileOnly || false,
     });
     setIsCreateDialogOpen(true);
   };
@@ -342,6 +346,30 @@ export default function Roles() {
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="isMobileOnly"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-md border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Acesso Mobile
+                          </FormLabel>
+                          <div className="text-sm text-muted-foreground">
+                            Este perfil é exclusivo para aplicativo mobile. Operadores não acessam o sistema web administrativo, apenas o app mobile para executar tarefas.
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="switch-mobile-only"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
                   <div>
                     <FormLabel className="text-base font-medium mb-4 block">
@@ -468,13 +496,13 @@ export default function Roles() {
                             {role.isSystemRole && (
                               <Badge variant="secondary">Sistema</Badge>
                             )}
-                            {!role.isActive && (
-                              <Badge variant="destructive">Inativo</Badge>
-                            )}
-                            {role.name === 'Operador' && (
+                            {role.isMobileOnly && (
                               <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
                                 📱 Acesso Mobile
                               </Badge>
+                            )}
+                            {!role.isActive && (
+                              <Badge variant="destructive">Inativo</Badge>
                             )}
                           </div>
                           {role.description && (
@@ -593,6 +621,11 @@ export default function Roles() {
                                 <div className="flex items-center gap-3 mb-2">
                                   <CardTitle className="text-lg">{role.name}</CardTitle>
                                   <Badge variant="secondary">Sistema</Badge>
+                                  {role.isMobileOnly && (
+                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                                      📱 Acesso Mobile
+                                    </Badge>
+                                  )}
                                   {!role.isActive && (
                                     <Badge variant="destructive">Inativo</Badge>
                                   )}

@@ -401,6 +401,7 @@ export const customRoles = pgTable("custom_roles", {
   name: varchar("name").notNull(),
   description: text("description"),
   isSystemRole: boolean("is_system_role").default(false),
+  isMobileOnly: boolean("is_mobile_only").default(false),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
