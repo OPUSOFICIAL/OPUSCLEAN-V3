@@ -204,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create site for customer (new route for customer filtering)
-  app.post("/api/customers/:customerId/sites", requireManageWorkOrders, async (req, res) => {
+  app.post("/api/customers/:customerId/sites", requirePermission('sites_create'), async (req, res) => {
     try {
       console.log("Creating site with data:", req.body, "customerId:", req.params.customerId);
       
@@ -247,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sites", async (req, res) => {
+  app.post("/api/sites", requirePermission('sites_create'), async (req, res) => {
     try {
       const site = insertSiteSchema.parse({
         ...req.body,
@@ -263,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/sites/:id", async (req, res) => {
+  app.put("/api/sites/:id", requirePermission('sites_edit'), async (req, res) => {
     try {
       const site = insertSiteSchema.partial().parse(req.body);
       const updatedSite = await storage.updateSite(req.params.id, site);
@@ -276,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/sites/:id", async (req, res) => {
+  app.delete("/api/sites/:id", requirePermission('sites_delete'), async (req, res) => {
     try {
       await storage.deleteSite(req.params.id);
       res.json({ message: "Site excluído com sucesso" });
@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/zones", async (req, res) => {
+  app.post("/api/zones", requirePermission('zones_create'), async (req, res) => {
     try {
       const zone = insertZoneSchema.parse({
         ...req.body,
@@ -1028,7 +1028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/zones/:id", async (req, res) => {
+  app.put("/api/zones/:id", requirePermission('zones_edit'), async (req, res) => {
     try {
       const zone = insertZoneSchema.partial().parse(req.body);
       const updatedZone = await storage.updateZone(req.params.id, zone);
@@ -1041,7 +1041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/zones/:id", async (req, res) => {
+  app.patch("/api/zones/:id", requirePermission('zones_edit'), async (req, res) => {
     try {
       const zone = insertZoneSchema.partial().parse(req.body);
       const updatedZone = await storage.updateZone(req.params.id, zone);
@@ -1054,7 +1054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/zones/:id", async (req, res) => {
+  app.delete("/api/zones/:id", requirePermission('zones_delete'), async (req, res) => {
     try {
       await storage.deleteZone(req.params.id);
       res.json({ message: "Zone deleted successfully" });
