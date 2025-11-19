@@ -2863,7 +2863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Auto-create 3 default client roles for the new customer
       try {
-        const companyId = req.params.companyId;
+        const companyId = newCustomer.companyId; // Company do cliente (não confundir com customer ID)
         const timestamp = Date.now();
         
         // 1. Operador (Mobile-only, 4 permissions)
