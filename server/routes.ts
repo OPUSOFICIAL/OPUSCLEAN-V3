@@ -43,7 +43,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'kJsXXrXanldoNcZJG/iHeTEI8WdMch4PFW
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: 100,
   message: { message: "Muitas tentativas de login. Tente novamente em 15 minutos." },
   standardHeaders: true,
   legacyHeaders: false,
