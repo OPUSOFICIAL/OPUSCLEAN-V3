@@ -3350,11 +3350,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Listar todas as funções
   app.get("/api/roles", requireAuth, async (req, res) => {
     try {
+      console.log('[ROLES GET DEBUG] Endpoint chamado, req.user:', req.user?.username || 'undefined');
+      
       if (!req.user) {
+        console.log('[ROLES GET DEBUG] ❌ req.user é undefined!');
         return res.status(401).json({ message: "Não autenticado" });
       }
       
       const isSystemRole = req.query.isSystemRole === 'true';
+      console.log('[ROLES GET DEBUG] isSystemRole:', isSystemRole, 'user.role:', req.user.role);
       const userPermissions = await getUserPermissions(req.user.id);
       
       // Admin OPUS sempre tem acesso total
