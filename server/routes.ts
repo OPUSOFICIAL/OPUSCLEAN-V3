@@ -36,7 +36,8 @@ import {
   requireOwnCustomer,
   requireOpusUser,
   requirePermission,
-  getUserPermissions
+  getUserPermissions,
+  validatePermissionsByUserType
 } from "./middleware/auth";
 import { sanitizeUser, sanitizeUsers } from "./utils/security";
 import { serializeForAI } from "./utils/serialization";
@@ -387,18 +388,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const checklistTemplates = await storage.getChecklistTemplatesByIds(Array.from(templateIds));
 
       // Transform checklist templates to cache schema
-      const checklistTemplatesCache = checklistTemplates.map(tpl => ({
-        id: tpl.id,
-        name: tpl.name,
-        items: (tpl.items || []).map((item: any) => ({
-          id: item.id,
-          label: item.label,
-          type: item.type,
-          required: item.required || false,
-        })),
-        customerId: customerId,
-        module: tpl.module as 'clean' | 'maintenance',
-      }));
+      const checklistTemplatesCache = checklistTemplates.map(tpl => {
+        const items = Array.isArray(tpl.items) ? tpl.items : [];
+        return {
+          id: tpl.id,
+          name: tpl.name,
+          items: items.map((item: any) => ({
+            id: item.id,
+            label: item.label,
+            type: item.type,
+            required: item.required || false,
+          })),
+          customerId: customerId,
+          module: tpl.module as 'clean' | 'maintenance',
+        };
+      });
 
       res.json({
         qrPoints: qrPointsCache,
@@ -3277,9 +3281,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Criar nova função
-  app.post("/api/roles", async (req, res) => {
+  app.post("/api/roles", requireAuth, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+      
       const { permissions, ...roleData } = req.body;
+      
+      // FASE 2: Validar permissões por userType
+      if (permissions?.length) {
+        // Buscar usuário completo para obter userType
+        const fullUser = await storage.getUser(req.user.id);
+        if (!fullUser) {
+          return res.status(401).json({ message: "Usuário não encontrado" });
+        }
+        
+        // Validar se o userType pode criar roles com essas permissões
+        const validation = validatePermissionsByUserType(
+          fullUser.userType || 'customer_user',
+          permissions
+        );
+        
+        if (!validation.valid) {
+          console.error(`[ROLE CREATE DENIED] User ${req.user.username} (${fullUser.userType}) tentou criar role com permissões proibidas:`, validation.invalidPermissions);
+          return res.status(403).json({ 
+            message: "Você não pode criar uma função com essas permissões",
+            invalidPermissions: validation.invalidPermissions,
+            hint: "Algumas permissões são exclusivas para administradores OPUS"
+          });
+        }
+      }
       
       // Criar a função
       const role = await storage.createCustomRole(roleData);
@@ -3288,6 +3320,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (permissions?.length) {
         await storage.setRolePermissions(role.id, permissions);
       }
+      
+      console.log(`[ROLE CREATED] ✅ User ${req.user.username} criou role: ${role.name} com ${permissions?.length || 0} permissões`);
       
       // Retornar função completa com permissões
       const fullRole = await storage.getCustomRoleById(role.id);
@@ -3299,9 +3333,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Atualizar função
-  app.patch("/api/roles/:id", async (req, res) => {
+  app.patch("/api/roles/:id", requireAuth, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+      
       const { permissions, ...roleData } = req.body;
+      
+      // FASE 2: Validar permissões por userType
+      if (permissions) {
+        // Buscar usuário completo para obter userType
+        const fullUser = await storage.getUser(req.user.id);
+        if (!fullUser) {
+          return res.status(401).json({ message: "Usuário não encontrado" });
+        }
+        
+        // Validar se o userType pode editar roles com essas permissões
+        const validation = validatePermissionsByUserType(
+          fullUser.userType || 'customer_user',
+          permissions
+        );
+        
+        if (!validation.valid) {
+          console.error(`[ROLE UPDATE DENIED] User ${req.user.username} (${fullUser.userType}) tentou editar role com permissões proibidas:`, validation.invalidPermissions);
+          return res.status(403).json({ 
+            message: "Você não pode editar uma função com essas permissões",
+            invalidPermissions: validation.invalidPermissions,
+            hint: "Algumas permissões são exclusivas para administradores OPUS"
+          });
+        }
+      }
       
       // Atualizar dados da função
       const role = await storage.updateCustomRole(req.params.id, roleData);
@@ -3310,6 +3372,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (permissions) {
         await storage.setRolePermissions(req.params.id, permissions);
       }
+      
+      console.log(`[ROLE UPDATED] ✅ User ${req.user.username} atualizou role: ${req.params.id}`);
       
       // Retornar função completa atualizada
       const fullRole = await storage.getCustomRoleById(req.params.id);
@@ -3343,15 +3407,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Atribuir role a um usuário (novo endpoint mais intuitivo)
-  app.post("/api/users/:userId/roles", async (req, res) => {
+  app.post("/api/users/:userId/roles", requireAuth, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+      
+      const { roleId, customerId } = req.body;
+      const targetUserId = req.params.userId;
+      
+      // FASE 2: Validar se as permissões do role são compatíveis com o userType do usuário alvo
+      
+      // 1. Buscar o usuário alvo
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // 2. Buscar o role e suas permissões
+      const role = await storage.getCustomRoleById(roleId);
+      if (!role) {
+        return res.status(404).json({ message: "Função não encontrada" });
+      }
+      
+      const rolePermissions = await storage.getRolePermissions(roleId);
+      const permissions = rolePermissions.map((rp: any) => rp.permission);
+      
+      // 3. Validar compatibilidade userType x permissões
+      const validation = validatePermissionsByUserType(
+        targetUser.userType || 'customer_user',
+        permissions
+      );
+      
+      if (!validation.valid) {
+        console.error(`[ROLE ASSIGNMENT DENIED] User ${req.user.username} tentou atribuir role "${role.name}" com permissões incompatíveis para usuário ${targetUser.username} (${targetUser.userType})`);
+        console.error(`Permissões inválidas:`, validation.invalidPermissions);
+        return res.status(403).json({ 
+          message: `Esta função não pode ser atribuída a um usuário do tipo ${targetUser.userType === 'opus_user' ? 'OPUS' : 'Cliente'}`,
+          invalidPermissions: validation.invalidPermissions,
+          hint: targetUser.userType === 'customer_user' 
+            ? "Usuários de cliente não podem ter permissões OPUS (gerenciar clientes, usuários OPUS, etc)"
+            : "Permissões não compatíveis com o tipo de usuário"
+        });
+      }
+      
+      // 4. Criar atribuição
       const assignmentData = {
         id: `ura-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        userId: req.params.userId,
-        roleId: req.body.roleId,
-        customerId: req.body.customerId || null,
+        userId: targetUserId,
+        roleId,
+        customerId: customerId || null,
       };
+      
       const assignment = await storage.createUserRoleAssignment(assignmentData);
+      console.log(`[ROLE ASSIGNED] ✅ User ${req.user.username} atribuiu role "${role.name}" para ${targetUser.username}`);
+      
       res.status(201).json(assignment);
     } catch (error) {
       if (error instanceof z.ZodError) {

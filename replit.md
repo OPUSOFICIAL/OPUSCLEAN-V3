@@ -18,6 +18,29 @@ The system features an enterprise-grade, corporate design using `shadcn/ui` with
 
 The frontend uses React and TypeScript with Wouter for routing and TanStack Query for data management. The backend is an Express.js server in TypeScript, using Drizzle ORM for PostgreSQL. Key features include a hierarchical multi-tenancy model with role-based access control, comprehensive equipment management, QR code-based task execution and service requests, and robust work order management with virtual calendars and automated scheduling. Authentication supports Microsoft SSO and email/password, secured with JWT, Bcrypt, and other best practices. An AI integration configuration page is present, with chat assistant functionality under development. A TV Mode Dashboard provides real-time, gamified metrics. User management offers full CRUD and custom role assignments.
 
+**Permission System Refactoring (Nov 19, 2025):**
+- **FASE 1 COMPLETA**: Foundation for granular permission-based access control
+  - `getUserPermissions(userId)`: Helper that consolidates all user permissions from custom roles
+  - `requirePermission(permission)`: Middleware for endpoint-level permission checks
+  - `validatePermissionsByUserType()`: Function to validate permission compatibility with userType
+  - OPUS_ONLY_PERMISSIONS: Constants defining permissions exclusive to opus_user (customers_*, opus_users_*, roles_manage)
+  - CLIENT_ALLOWED_PERMISSIONS: All other permissions allowed for customer_user
+  - Test endpoints: `/api/auth/my-permissions`, `/api/test/permissions/*` for validation
+  - Detailed console logs for permission checks and denials
+  - Both systems coexist: Old role-based (enum) + New permission-based (granular)
+- **FASE 2 COMPLETA**: UserType validation in custom roles endpoints
+  - POST `/api/roles`: Validates permissions when creating custom roles (blocks OPUS permissions for customer_user)
+  - PATCH `/api/roles/:id`: Validates permissions when editing custom roles
+  - POST `/api/users/:userId/roles`: Validates role assignment compatibility with target user's userType
+  - Comprehensive error messages with invalidPermissions array and helpful hints
+  - Audit logs: `[ROLE CREATE DENIED]`, `[ROLE UPDATE DENIED]`, `[ROLE ASSIGNMENT DENIED]`
+  - Security: customer_user cannot escalate privileges or assign OPUS-only permissions
+  - Documentation: `FASE_2_VALIDACAO_PERMISSOES.md`
+- **Query Optimization Fix**: Changed TanStack Query staleTime from 0 to 5 minutes
+  - Eliminated infinite query loops causing excessive database logs
+  - Permissions data cached for 5 minutes, auto-invalidated on mutations
+  - Reduced database load and improved frontend performance
+
 **Enhanced Shift-Based Scheduling (Nov 17, 2025):**
 - Shift activities (cleaning & maintenance) now support **weekday filtering** in addition to shift selection
 - Users can configure activities to occur on specific days (e.g., "morning shift only on Mon/Wed/Fri")
