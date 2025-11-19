@@ -34,7 +34,9 @@ import {
   requireManageWorkOrders,
   requireViewReports,
   requireOwnCustomer,
-  requireOpusUser
+  requireOpusUser,
+  requirePermission,
+  getUserPermissions
 } from "./middleware/auth";
 import { sanitizeUser, sanitizeUsers } from "./utils/security";
 import { serializeForAI } from "./utils/serialization";
@@ -50,6 +52,85 @@ const loginLimiter = rateLimit({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // ============================================================================
+  // 🧪 ENDPOINTS DE TESTE - NOVO SISTEMA DE PERMISSÕES
+  // ============================================================================
+  
+  /**
+   * Endpoint para buscar as permissões do usuário logado
+   * Útil para debug e validação do novo sistema
+   */
+  app.get("/api/auth/my-permissions", requireAuth, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Não autenticado' });
+      }
+      
+      const permissions = await getUserPermissions(req.user.id);
+      
+      res.json({
+        userId: req.user.id,
+        username: req.user.username,
+        role: req.user.role,
+        userType: req.user.userType,
+        permissions: permissions,
+        permissionCount: permissions.length
+      });
+    } catch (error) {
+      console.error('[GET /api/auth/my-permissions] Error:', error);
+      res.status(500).json({ error: 'Erro ao buscar permissões' });
+    }
+  });
+  
+  /**
+   * Endpoint de teste usando o NOVO sistema de permissões
+   * Requer permissão 'users_view' ao invés de role
+   */
+  app.get("/api/test/permissions/users-view", requirePermission('users_view'), async (req, res) => {
+    try {
+      const permissions = await getUserPermissions(req.user!.id);
+      
+      res.json({
+        success: true,
+        message: '✅ Acesso permitido! Você tem a permissão users_view',
+        user: {
+          id: req.user!.id,
+          username: req.user!.username,
+          role: req.user!.role,
+          userType: req.user!.userType
+        },
+        permissions: permissions
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro no teste' });
+    }
+  });
+  
+  /**
+   * Endpoint de teste para permissões OPUS-only
+   * Requer permissão 'customers_create' (exclusiva OPUS)
+   */
+  app.get("/api/test/permissions/customers-create", requirePermission('customers_create'), async (req, res) => {
+    try {
+      res.json({
+        success: true,
+        message: '✅ Acesso permitido! Você tem permissão OPUS: customers_create',
+        user: {
+          id: req.user!.id,
+          username: req.user!.username,
+          role: req.user!.role,
+          userType: req.user!.userType
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Erro no teste' });
+    }
+  });
+  
+  // ============================================================================
+  // FIM DOS ENDPOINTS DE TESTE
+  // ============================================================================
   
   // Companies
   app.get("/api/companies", async (req, res) => {
