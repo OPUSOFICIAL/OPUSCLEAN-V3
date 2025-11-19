@@ -36,6 +36,13 @@ The frontend uses React and TypeScript with Wouter for routing and TanStack Quer
   - Audit logs: `[ROLE CREATE DENIED]`, `[ROLE UPDATE DENIED]`, `[ROLE ASSIGNMENT DENIED]`
   - Security: customer_user cannot escalate privileges or assign OPUS-only permissions
   - Documentation: `FASE_2_VALIDACAO_PERMISSOES.md`
+- **FASE 3 COMPLETA**: Frontend filtering of OPUS-only permissions
+  - Added `userType` field to User interface (`client/src/hooks/useAuth.ts`)
+  - OPUS_ONLY_PERMISSIONS constants mirrored in frontend (`client/src/pages/roles.tsx`)
+  - Dynamic permission filtering: opus_user sees all 45 permissions, customer_user sees only 36 (excludes OPUS permissions)
+  - Improved UX: customer_user cannot see or select permissions they cannot use
+  - Layered security: Backend validation (FASE 2) + Frontend filtering (FASE 3)
+  - Documentation: `FASE_3_FRONTEND_FILTRO_PERMISSOES.md`
 - **Query Optimization Fix**: Changed TanStack Query staleTime from 0 to 5 minutes
   - Eliminated infinite query loops causing excessive database logs
   - Permissions data cached for 5 minutes, auto-invalidated on mutations
