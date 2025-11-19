@@ -3282,7 +3282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requiredPermission = isSystemRole ? 'system_roles_view' : 'users_view';
       const userPermissions = await getUserPermissions(req.user.id);
       
-      if (!userPermissions.has(requiredPermission)) {
+      if (!userPermissions.includes(requiredPermission)) {
         console.log(`[ROLES GET DENIED] User ${req.user.username} sem permissão ${requiredPermission} para listar ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
         return res.status(403).json({ 
           message: "Você não tem permissão para visualizar essas funções" 
@@ -3313,7 +3313,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Não autenticado" });
       }
       
-      const { permissions, ...roleData } = req.body;
+      const { permissions, isSystemRole, ...roleData } = req.body;
+      
+      // Validar permissão baseado no tipo de role
+      const requiredPermission = isSystemRole ? 'system_roles_edit' : 'users_edit';
+      const userPermissions = await getUserPermissions(req.user.id);
+      
+      if (!userPermissions.includes(requiredPermission)) {
+        console.log(`[ROLE CREATE DENIED] User ${req.user.username} sem permissão ${requiredPermission} para criar ${isSystemRole ? 'role de sistema' : 'role de cliente'}`);
+        return res.status(403).json({ 
+          message: "Você não tem permissão para criar esse tipo de função" 
+        });
+      }
       
       // FASE 2: Validar permissões por userType
       if (permissions?.length) {
@@ -3367,6 +3378,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { permissions, ...roleData } = req.body;
       
+      // Buscar role existente para verificar se é de sistema
+      const existingRole = await storage.getCustomRoleById(req.params.id);
+      if (!existingRole) {
+        return res.status(404).json({ message: "Função não encontrada" });
+      }
+      
+      // Validar permissão baseado no tipo de role
+      const requiredPermission = existingRole.isSystemRole ? 'system_roles_edit' : 'users_edit';
+      const userPermissions = await getUserPermissions(req.user.id);
+      
+      if (!userPermissions.includes(requiredPermission)) {
+        console.log(`[ROLE UPDATE DENIED] User ${req.user.username} sem permissão ${requiredPermission} para editar ${existingRole.isSystemRole ? 'role de sistema' : 'role de cliente'}`);
+        return res.status(403).json({ 
+          message: "Você não tem permissão para editar esse tipo de função" 
+        });
+      }
+      
       // FASE 2: Validar permissões por userType
       if (permissions) {
         // Buscar usuário completo para obter userType
@@ -3411,9 +3439,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Excluir função
-  app.delete("/api/roles/:id", async (req, res) => {
+  app.delete("/api/roles/:id", requireAuth, async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+      
+      // Buscar role existente para verificar se é de sistema
+      const existingRole = await storage.getCustomRoleById(req.params.id);
+      if (!existingRole) {
+        return res.status(404).json({ message: "Função não encontrada" });
+      }
+      
+      // Validar permissão baseado no tipo de role
+      const requiredPermission = existingRole.isSystemRole ? 'system_roles_delete' : 'users_delete';
+      const userPermissions = await getUserPermissions(req.user.id);
+      
+      if (!userPermissions.includes(requiredPermission)) {
+        console.log(`[ROLE DELETE DENIED] User ${req.user.username} sem permissão ${requiredPermission} para deletar ${existingRole.isSystemRole ? 'role de sistema' : 'role de cliente'}`);
+        return res.status(403).json({ 
+          message: "Você não tem permissão para deletar esse tipo de função" 
+        });
+      }
+      
       await storage.deleteCustomRole(req.params.id);
+      console.log(`[ROLE DELETED] ✅ User ${req.user.username} deletou ${existingRole.isSystemRole ? 'role de sistema' : 'role de cliente'}: ${existingRole.name}`);
       res.status(204).end();
     } catch (error) {
       console.error("Error deleting role:", error);
