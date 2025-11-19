@@ -376,44 +376,90 @@ export default function Roles() {
                       Permissões
                     </FormLabel>
                     <div className="space-y-4">
-                      {Object.entries(groupedPermissions).map(([category, permissions]) => (
-                        <Card key={category}>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium">{category}</CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            {permissions.map((permission) => (
-                              <FormField
-                                key={permission.key}
-                                control={form.control}
-                                name="permissions"
-                                render={({ field }) => (
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value.includes(permission.key)}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                            field.onChange([...field.value, permission.key]);
-                                          } else {
-                                            field.onChange(
-                                              field.value.filter((value) => value !== permission.key)
-                                            );
-                                          }
-                                        }}
-                                        data-testid={`checkbox-permission-${permission.key}`}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="text-sm font-normal">
-                                      {permission.label}
-                                    </FormLabel>
-                                  </FormItem>
-                                )}
-                              />
-                            ))}
-                          </CardContent>
-                        </Card>
-                      ))}
+                      {Object.entries(groupedPermissions).map(([category, permissions]) => {
+                        const categoryPermissionKeys = permissions.map(p => p.key);
+                        
+                        return (
+                          <Card key={category}>
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-medium">{category}</CardTitle>
+                                <FormField
+                                  control={form.control}
+                                  name="permissions"
+                                  render={({ field }) => {
+                                    const selectedInCategory = categoryPermissionKeys.filter(key => 
+                                      field.value.includes(key)
+                                    );
+                                    const allSelected = selectedInCategory.length === categoryPermissionKeys.length;
+                                    const someSelected = selectedInCategory.length > 0 && !allSelected;
+                                    
+                                    return (
+                                      <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={allSelected}
+                                            onCheckedChange={(checked) => {
+                                              if (checked) {
+                                                // Adicionar todas as permissões desta categoria
+                                                const existingSet = new Set(field.value);
+                                                categoryPermissionKeys.forEach(key => existingSet.add(key));
+                                                const newPermissions = Array.from(existingSet) as string[];
+                                                field.onChange(newPermissions);
+                                              } else {
+                                                // Remover todas as permissões desta categoria
+                                                const newPermissions = field.value.filter(
+                                                  (value: string) => !categoryPermissionKeys.includes(value as PermissionKey)
+                                                );
+                                                field.onChange(newPermissions);
+                                              }
+                                            }}
+                                            data-testid={`checkbox-select-all-${category}`}
+                                          />
+                                        </FormControl>
+                                        <FormLabel className="text-xs font-normal text-muted-foreground cursor-pointer">
+                                          {someSelected ? `${selectedInCategory.length}/${categoryPermissionKeys.length} selecionadas` : 'Selecionar todas'}
+                                        </FormLabel>
+                                      </FormItem>
+                                    );
+                                  }}
+                                />
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              {permissions.map((permission) => (
+                                <FormField
+                                  key={permission.key}
+                                  control={form.control}
+                                  name="permissions"
+                                  render={({ field }) => (
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value.includes(permission.key)}
+                                          onCheckedChange={(checked) => {
+                                            if (checked) {
+                                              field.onChange([...field.value, permission.key]);
+                                            } else {
+                                              field.onChange(
+                                                field.value.filter((value) => value !== permission.key)
+                                              );
+                                            }
+                                          }}
+                                          data-testid={`checkbox-permission-${permission.key}`}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="text-sm font-normal">
+                                        {permission.label}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                              ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
 
