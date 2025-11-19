@@ -134,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================================================
   
   // Companies
-  app.get("/api/companies", async (req, res) => {
+  app.get("/api/companies", requirePermission('customers_view'), async (req, res) => {
     try {
       const companies = await storage.getCompanies();
       res.json(companies);
@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/companies", async (req, res) => {
+  app.post("/api/companies", requirePermission('customers_create'), async (req, res) => {
     try {
       const company = insertCompanySchema.parse(req.body);
       const newCompany = await storage.createCompany(company);
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/companies/:id", async (req, res) => {
+  app.put("/api/companies/:id", requirePermission('customers_edit'), async (req, res) => {
     try {
       const company = insertCompanySchema.partial().parse(req.body);
       const updatedCompany = await storage.updateCompany(req.params.id, company);
@@ -705,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Work Orders by Customer - Delete (filtrado por cliente) - APENAS ADMIN
-  app.delete("/api/customers/:customerId/work-orders/:id", requireAdmin, async (req, res) => {
+  app.delete("/api/customers/:customerId/work-orders/:id", requirePermission('workorders_delete'), async (req, res) => {
     try {
       // Validate that the customer exists
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);
@@ -2806,7 +2806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customers endpoints
-  app.get("/api/companies/:companyId/customers", async (req, res) => {
+  app.get("/api/companies/:companyId/customers", requirePermission('customers_view'), async (req, res) => {
     try {
       const customers = await storage.getCustomersByCompany(req.params.companyId);
       res.json(customers);
@@ -2816,7 +2816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/customers/:id", async (req, res) => {
+  app.get("/api/customers/:id", requirePermission('customers_view'), async (req, res) => {
     try {
       const customer = await storage.getCustomer(req.params.id);
       if (!customer) {
@@ -2829,7 +2829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/companies/:companyId/customers", requireManageClients, async (req, res) => {
+  app.post("/api/companies/:companyId/customers", requirePermission('customers_create'), async (req, res) => {
     try {
       // Generate subdomain from customer name if not provided
       let subdomain = req.body.subdomain;
@@ -2870,7 +2870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/customers/:id", requireManageClients, async (req, res) => {
+  app.put("/api/customers/:id", requirePermission('customers_edit'), async (req, res) => {
     try {
       const customer = insertCustomerSchema.partial().parse(req.body);
       const updatedCustomer = await storage.updateCustomer(req.params.id, customer);
@@ -2884,7 +2884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/customers/:id", requireManageClients, async (req, res) => {
+  app.delete("/api/customers/:id", requirePermission('customers_delete'), async (req, res) => {
     try {
       await storage.deleteCustomer(req.params.id);
       res.status(204).send();
@@ -2895,7 +2895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer branding configuration
-  app.put("/api/customers/:id/branding", requireManageClients, async (req, res) => {
+  app.put("/api/customers/:id/branding", requirePermission('customers_edit'), async (req, res) => {
     try {
       const { loginLogo, sidebarLogo, sidebarLogoCollapsed, homeLogo, favicon, moduleColors, subdomain } = req.body;
       
@@ -3887,7 +3887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === SYSTEM USERS MANAGEMENT ===
   
   // Listar usuários do sistema OPUS (type: opus_user)
-  app.get("/api/system-users", async (req, res) => {
+  app.get("/api/system-users", requirePermission('opus_users_view'), async (req, res) => {
     try {
       const users = await storage.getOpusUsers();
       
@@ -3913,7 +3913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Criar novo usuário do sistema OPUS
-  app.post("/api/system-users", async (req, res) => {
+  app.post("/api/system-users", requirePermission('opus_users_create'), async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
       
@@ -3959,7 +3959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Atualizar usuário do sistema
-  app.patch("/api/system-users/:id", async (req, res) => {
+  app.patch("/api/system-users/:id", requirePermission('opus_users_edit'), async (req, res) => {
     try {
       const userData = insertUserSchema.partial().parse(req.body);
       const user = await storage.updateUser(req.params.id, userData);
@@ -3971,7 +3971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alterar status (ativo/inativo) de usuário do sistema
-  app.patch("/api/system-users/:id/status", async (req, res) => {
+  app.patch("/api/system-users/:id/status", requirePermission('opus_users_edit'), async (req, res) => {
     try {
       const { isActive } = req.body;
       const user = await storage.updateUser(req.params.id, { isActive });
@@ -3985,7 +3985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === USER ALLOWED CUSTOMERS ===
 
   // Buscar clientes permitidos para um usuário
-  app.get("/api/system-users/:userId/allowed-customers", async (req, res) => {
+  app.get("/api/system-users/:userId/allowed-customers", requirePermission('opus_users_view'), async (req, res) => {
     try {
       const customers = await storage.getCustomersByUser(req.params.userId);
       res.json(customers);
@@ -3996,7 +3996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Definir clientes permitidos para um usuário (substitui lista completa)
-  app.put("/api/system-users/:userId/allowed-customers", async (req, res) => {
+  app.put("/api/system-users/:userId/allowed-customers", requirePermission('opus_users_edit'), async (req, res) => {
     try {
       const { customerIds } = req.body;
       
