@@ -132,7 +132,9 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnMount: true,
       refetchOnReconnect: true,
-      staleTime: 0,
+      // staleTime: 5 minutos (300000ms) - dados são considerados frescos por 5 min
+      // Isso evita requisições desnecessárias quando componentes re-renderizam
+      staleTime: 5 * 60 * 1000, // 5 minutos
       retry: false,
     },
     mutations: {
