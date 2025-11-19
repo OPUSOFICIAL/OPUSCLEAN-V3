@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { logout } from "@/lib/auth";
+import { logout, getRoleDisplayName } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -303,17 +303,21 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
         {isCollapsed ? (
           <div className="flex justify-center">
             <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-secondary-foreground">AD</span>
+              <span className="text-sm font-medium text-secondary-foreground">
+                {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'US'}
+              </span>
             </div>
           </div>
         ) : (
           <div className="flex items-center space-x-3 p-2">
             <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-secondary-foreground">AD</span>
+              <span className="text-sm font-medium text-secondary-foreground">
+                {user?.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'US'}
+              </span>
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">Administrador</p>
-              <p className="text-xs text-muted-foreground">Admin</p>
+              <p className="text-sm font-medium text-foreground">{user?.name || 'Usuário'}</p>
+              <p className="text-xs text-muted-foreground">{user?.role ? getRoleDisplayName(user.role) : 'Sem cargo'}</p>
             </div>
             <Button 
               variant="ghost" 
