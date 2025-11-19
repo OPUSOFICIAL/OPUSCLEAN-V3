@@ -19,6 +19,20 @@ import type { CustomRole } from '@/hooks/usePermissions';
 import { ModernPageHeader } from '@/components/ui/modern-page-header';
 import { ModernCard } from '@/components/ui/modern-card';
 import { useModuleTheme } from '@/hooks/use-module-theme';
+import { useAuth } from '@/hooks/useAuth';
+
+// Permissões exclusivas OPUS (sincronizar com backend)
+const OPUS_ONLY_PERMISSIONS: PermissionKey[] = [
+  'customers_view',
+  'customers_create',
+  'customers_edit',
+  'customers_delete',
+  'opus_users_view',
+  'opus_users_create',
+  'opus_users_edit',
+  'opus_users_delete',
+  'roles_manage',
+];
 
 const createRoleSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -31,11 +45,28 @@ type CreateRoleForm = z.infer<typeof createRoleSchema>;
 export default function Roles() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { availablePermissions, can } = usePermissions();
   const theme = useModuleTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
+
+  // Filtrar permissões disponíveis baseado no userType
+  const filteredAvailablePermissions = availablePermissions.filter(permission => {
+    // Se for opus_user, pode ver todas as permissões
+    if (user?.userType === 'opus_user') {
+      return true;
+    }
+    
+    // Se for customer_user, ocultar permissões OPUS
+    if (user?.userType === 'customer_user') {
+      return !OPUS_ONLY_PERMISSIONS.includes(permission.key);
+    }
+    
+    // Fallback: se userType não definido, assumir customer_user (mais restritivo)
+    return !OPUS_ONLY_PERMISSIONS.includes(permission.key);
+  });
 
   const form = useForm<CreateRoleForm>({
     resolver: zodResolver(createRoleSchema),
@@ -160,14 +191,14 @@ export default function Roles() {
     }
   };
 
-  // Agrupar permissões por categoria
-  const groupedPermissions = availablePermissions.reduce((acc, permission) => {
+  // Agrupar permissões por categoria (usando permissões filtradas)
+  const groupedPermissions = filteredAvailablePermissions.reduce((acc, permission) => {
     if (!acc[permission.category]) {
       acc[permission.category] = [];
     }
     acc[permission.category].push(permission);
     return acc;
-  }, {} as Record<string, typeof availablePermissions>);
+  }, {} as Record<string, typeof filteredAvailablePermissions>);
 
   // Mapear áreas acessíveis com ícones
   const areaAccessMap: Record<string, { label: string; icon: any; viewPerm: string }> = {

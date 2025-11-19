@@ -7,6 +7,7 @@ export interface User {
   email: string;
   name: string;
   role: 'admin' | 'gestor_cliente' | 'supervisor_site' | 'operador' | 'auditor';
+  userType?: 'opus_user' | 'customer_user';
   isActive: boolean;
 }
 
