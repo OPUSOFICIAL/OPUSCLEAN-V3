@@ -4222,7 +4222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Criar novo usuário do sistema OPUS
   app.post("/api/system-users", requirePermission('opus_users_create'), async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      const { customRoleId, ...userData } = req.body;
       
       // Hash password if provided
       let hashedPassword = userData.password;
@@ -4239,7 +4239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: userData.email,
         password: hashedPassword || '',
         name: userData.name,
-        role: userData.role,
+        role: 'admin' as const, // Default role para sistema
         userType: 'opus_user' as const,
         companyId: 'company-opus-default',
         customerId: null,
@@ -4250,6 +4250,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const user = await storage.createUser(userDataToInsert);
+      
+      // Atribuir custom role ao usuário
+      if (customRoleId) {
+        await storage.createUserRoleAssignment({
+          userId,
+          roleId: customRoleId,
+          customerId: null,
+        });
+      }
+      
       res.status(201).json(user);
     } catch (error: any) {
       console.error("Error creating system user:", error);
@@ -4268,8 +4278,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Atualizar usuário do sistema
   app.patch("/api/system-users/:id", requirePermission('opus_users_edit'), async (req, res) => {
     try {
-      const userData = insertUserSchema.partial().parse(req.body);
+      const { customRoleId, ...userData } = req.body;
       const user = await storage.updateUser(req.params.id, userData);
+      
+      // Atualizar custom role do usuário se fornecido
+      if (customRoleId) {
+        // Remover atribuições antigas
+        const oldAssignments = await storage.getUserRoleAssignments(req.params.id);
+        for (const assignment of oldAssignments) {
+          await storage.deleteUserRoleAssignment(req.params.id, assignment.roleId);
+        }
+        // Atribuir nova role
+        await storage.createUserRoleAssignment({
+          userId: req.params.id,
+          roleId: customRoleId,
+          customerId: null,
+        });
+      }
+      
       res.json(sanitizeUser(user));
     } catch (error) {
       console.error("Error updating system user:", error);

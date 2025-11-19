@@ -24,7 +24,7 @@ const createUserSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').or(z.literal('')),
   name: z.string().min(1, 'Nome é obrigatório'),
-  role: z.enum(['admin', 'gestor_cliente', 'supervisor_site', 'operador', 'auditor']),
+  customRoleId: z.string().min(1, 'Função é obrigatória'),
   modules: z.array(z.enum(['clean', 'maintenance'])).min(1, 'Selecione pelo menos um módulo'),
 });
 
@@ -63,7 +63,7 @@ export default function SystemUsers() {
       email: '',
       password: '',
       name: '',
-      role: 'operador',
+      customRoleId: '',
       modules: ['clean', 'maintenance'],
     },
   });
@@ -106,6 +106,11 @@ export default function SystemUsers() {
   const { data: allowedCustomers = [] } = useQuery({
     queryKey: ['/api/system-users', editingUser?.id, 'allowed-customers'],
     enabled: !!editingUser?.id && isCreateDialogOpen,
+  });
+
+  // Buscar custom roles de sistema
+  const { data: systemRoles = [] } = useQuery({
+    queryKey: ['/api/roles?isSystemRole=true'],
   });
 
   const createUserMutation = useMutation({
@@ -248,13 +253,17 @@ export default function SystemUsers() {
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: User & { customRoles?: any[] }) => {
     setEditingUser(user);
+    
+    // Pegar a custom role do usuário
+    const userCustomRoleId = user.customRoles?.[0]?.roleId || '';
+    
     form.reset({
       username: user.username,
       email: user.email,
       name: user.name,
-      role: user.role as any,
+      customRoleId: userCustomRoleId,
       modules: user.modules || ['clean', 'maintenance'],
       password: '', // Não pré-carregar senha
     });
@@ -268,32 +277,27 @@ export default function SystemUsers() {
         const updateData = data.password ? data : { ...data, password: undefined };
         await updateUserMutation.mutateAsync({ id: editingUser.id, data: updateData });
         
-        // Salvar clientes permitidos apenas se não for admin
-        if (data.role !== 'admin' && data.role !== 'gestor_cliente') {
-          await updateAllowedCustomersMutation.mutateAsync({ 
-            userId: editingUser.id, 
-            customerIds: selectedCustomerIds 
-          });
-        }
+        // Atualizar clientes permitidos
+        await updateAllowedCustomersMutation.mutateAsync({ 
+          userId: editingUser.id, 
+          customerIds: selectedCustomerIds 
+        });
       } else {
         // Criar usuário primeiro
         const newUser = await createUserMutation.mutateAsync(data);
         
-        // Salvar clientes permitidos apenas se não for admin
-        // Precisamos do ID do usuário criado
-        if (data.role !== 'admin' && data.role !== 'gestor_cliente') {
-          // Aguardar um pouco para garantir que o usuário foi criado
-          setTimeout(async () => {
-            const createdUsers = await queryClient.getQueryData(['/api/system-users']) as User[];
-            const createdUser = createdUsers?.find((u: User) => u.email === data.email);
-            if (createdUser) {
-              await updateAllowedCustomersMutation.mutateAsync({ 
-                userId: createdUser.id, 
-                customerIds: selectedCustomerIds 
-              });
-            }
-          }, 500);
-        }
+        // Salvar clientes permitidos
+        // Aguardar um pouco para garantir que o usuário foi criado
+        setTimeout(async () => {
+          const createdUsers = await queryClient.getQueryData(['/api/system-users']) as User[];
+          const createdUser = createdUsers?.find((u: User) => u.email === data.email);
+          if (createdUser) {
+            await updateAllowedCustomersMutation.mutateAsync({ 
+              userId: createdUser.id, 
+              customerIds: selectedCustomerIds 
+            });
+          }
+        }, 500);
       }
       
       setIsCreateDialogOpen(false);
@@ -501,7 +505,7 @@ export default function SystemUsers() {
 
                 <FormField
                   control={form.control}
-                  name="role"
+                  name="customRoleId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Função</FormLabel>
@@ -512,13 +516,16 @@ export default function SystemUsers() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="admin">Administrador</SelectItem>
-                          <SelectItem value="gestor_cliente">Gestor de Cliente</SelectItem>
-                          <SelectItem value="supervisor_site">Supervisor de Local</SelectItem>
-                          <SelectItem value="operador">Operador</SelectItem>
-                          <SelectItem value="auditor">Auditor</SelectItem>
+                          {(systemRoles as any[]).map((role: any) => (
+                            <SelectItem key={role.id} value={role.id}>
+                              {role.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-sm text-muted-foreground">
+                        Selecione a função do usuário no sistema
+                      </p>
                     </FormItem>
                   )}
                 />
@@ -588,9 +595,8 @@ export default function SystemUsers() {
                   )}
                 />
 
-                {/* Clientes Permitidos - só exibir para não-admins */}
-                {form.watch('role') !== 'admin' && form.watch('role') !== 'gestor_cliente' && (
-                  <div className="space-y-3 border-t pt-4">
+                {/* Clientes Permitidos - sempre exibir */}
+                <div className="space-y-3 border-t pt-4">
                     <div>
                       <FormLabel>Clientes Permitidos</FormLabel>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -625,7 +631,6 @@ export default function SystemUsers() {
                       </p>
                     )}
                   </div>
-                )}
 
                 <div className="flex justify-end space-x-2">
                   <Button 
