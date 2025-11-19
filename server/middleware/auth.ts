@@ -48,8 +48,13 @@ export const OPUS_ONLY_PERMISSIONS = [
   'opus_users_edit',
   'opus_users_delete',
   
-  // Gerenciamento de Funções/Roles
+  // Gerenciamento de Funções/Roles (geral)
   'roles_manage',
+  
+  // Gerenciamento de Funções de Sistema (específicas)
+  'system_roles_view',
+  'system_roles_edit',
+  'system_roles_delete',
 ] as const;
 
 /**

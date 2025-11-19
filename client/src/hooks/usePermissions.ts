@@ -18,7 +18,8 @@ export type PermissionKey =
   | 'service_settings_view' | 'service_settings_edit'
   | 'roles_manage'
   | 'opus_users_view' | 'opus_users_create' | 'opus_users_edit' | 'opus_users_delete'
-  | 'client_users_view' | 'client_users_create' | 'client_users_edit' | 'client_users_delete';
+  | 'client_users_view' | 'client_users_create' | 'client_users_edit' | 'client_users_delete'
+  | 'system_roles_view' | 'system_roles_edit' | 'system_roles_delete';
 
 export interface CustomRole {
   id: string;
@@ -164,6 +165,11 @@ export function usePermissions() {
     // Gerenciamento de Roles (apenas super admin)
     manageRoles: () => hasPermission('roles_manage'),
     
+    // Funções de Sistema (OPUS only por padrão)
+    viewSystemRoles: () => hasPermission('system_roles_view'),
+    editSystemRoles: () => hasPermission('system_roles_edit'),
+    deleteSystemRoles: () => hasPermission('system_roles_delete'),
+    
     // Verificar se é SUPER ADMIN (tem todas as permissões incluindo roles_manage)
     isSuperAdmin: () => hasPermission('roles_manage'),
 
@@ -287,6 +293,11 @@ export function usePermissions() {
     
     // Gerenciamento de Roles
     { key: 'roles_manage', label: 'Gerenciar Funções', category: 'Administração' },
+    
+    // Funções de Sistema (OPUS only)
+    { key: 'system_roles_view', label: 'Visualizar Funções de Sistema', category: 'Funções de Sistema' },
+    { key: 'system_roles_edit', label: 'Editar Funções de Sistema', category: 'Funções de Sistema' },
+    { key: 'system_roles_delete', label: 'Excluir Funções de Sistema', category: 'Funções de Sistema' },
     
     // Usuários OPUS
     { key: 'opus_users_view', label: 'Visualizar Usuários OPUS', category: 'Usuários OPUS' },
