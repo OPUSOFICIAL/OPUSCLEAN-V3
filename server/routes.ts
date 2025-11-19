@@ -3355,10 +3355,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const isSystemRole = req.query.isSystemRole === 'true';
-      
-      // Validar permissão baseado no tipo de role
-      const requiredPermission = isSystemRole ? 'system_roles_view' : 'users_view';
       const userPermissions = await getUserPermissions(req.user.id);
+      
+      // Admin OPUS sempre tem acesso total
+      if (req.user.role === 'admin') {
+        const allRoles = await storage.getCustomRoles();
+        let roles = allRoles;
+        if (req.query.isSystemRole !== undefined) {
+          roles = allRoles.filter(role => role.isSystemRole === isSystemRole);
+        }
+        console.log(`[ROLES GET] ✅ Admin OPUS ${req.user.username} listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
+        return res.json(roles);
+      }
+      
+      // Para não-admin, validar permissões
+      const requiredPermission = isSystemRole ? 'system_roles_view' : 'roles_manage';
       
       if (!userPermissions.includes(requiredPermission)) {
         console.log(`[ROLES GET DENIED] User ${req.user.username} sem permissão ${requiredPermission} para listar ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
