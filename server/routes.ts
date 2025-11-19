@@ -3408,8 +3408,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { permissions, isSystemRole, ...roleData } = req.body;
       
-      // Validar permissão baseado no tipo de role
-      const requiredPermission = isSystemRole ? 'system_roles_edit' : 'users_edit';
+      // Admin OPUS sempre tem acesso total
+      if (req.user.role === 'admin') {
+        const role = await storage.createCustomRole(roleData);
+        if (permissions?.length) {
+          await storage.setRolePermissions(role.id, permissions);
+        }
+        console.log(`[ROLE CREATED] ✅ Admin OPUS ${req.user.username} criou role: ${role.name} com ${permissions?.length || 0} permissões`);
+        const fullRole = await storage.getCustomRoleById(role.id);
+        return res.status(201).json(fullRole);
+      }
+      
+      // Para não-admin, validar permissão baseado no tipo de role
+      const requiredPermission = isSystemRole ? 'system_roles_edit' : 'roles_manage';
       const userPermissions = await getUserPermissions(req.user.id);
       
       if (!userPermissions.includes(requiredPermission)) {
@@ -3477,8 +3488,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Função não encontrada" });
       }
       
-      // Validar permissão baseado no tipo de role
-      const requiredPermission = existingRole.isSystemRole ? 'system_roles_edit' : 'users_edit';
+      // Admin OPUS sempre tem acesso total
+      if (req.user.role === 'admin') {
+        await storage.updateCustomRole(req.params.id, roleData);
+        if (permissions) {
+          await storage.setRolePermissions(req.params.id, permissions);
+        }
+        console.log(`[ROLE UPDATED] ✅ Admin OPUS ${req.user.username} editou role: ${existingRole.name}`);
+        const updatedRole = await storage.getCustomRoleById(req.params.id);
+        return res.json(updatedRole);
+      }
+      
+      // Para não-admin, validar permissão baseado no tipo de role
+      const requiredPermission = existingRole.isSystemRole ? 'system_roles_edit' : 'roles_manage';
       const userPermissions = await getUserPermissions(req.user.id);
       
       if (!userPermissions.includes(requiredPermission)) {
@@ -3544,8 +3566,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Função não encontrada" });
       }
       
-      // Validar permissão baseado no tipo de role
-      const requiredPermission = existingRole.isSystemRole ? 'system_roles_delete' : 'users_delete';
+      // Admin OPUS sempre tem acesso total
+      if (req.user.role === 'admin') {
+        await storage.deleteCustomRole(req.params.id);
+        console.log(`[ROLE DELETED] ✅ Admin OPUS ${req.user.username} deletou ${existingRole.isSystemRole ? 'role de sistema' : 'role de cliente'}: ${existingRole.name}`);
+        return res.status(204).end();
+      }
+      
+      // Para não-admin, validar permissão baseado no tipo de role
+      const requiredPermission = existingRole.isSystemRole ? 'system_roles_delete' : 'roles_manage';
       const userPermissions = await getUserPermissions(req.user.id);
       
       if (!userPermissions.includes(requiredPermission)) {
