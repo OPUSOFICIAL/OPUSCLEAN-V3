@@ -54,6 +54,7 @@ export default function SystemUsers() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const [hasInitializedCustomers, setHasInitializedCustomers] = useState(false);
 
   const form = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
@@ -218,16 +219,28 @@ export default function SystemUsers() {
 
   // Carregar clientes permitidos quando abrindo dialog de edição
   useEffect(() => {
+    if (!isCreateDialogOpen) {
+      setHasInitializedCustomers(false);
+      return;
+    }
+    
+    // Só inicializar UMA VEZ quando o dialog abre
+    if (hasInitializedCustomers) {
+      return;
+    }
+    
     const allowedCustomersArray = Array.isArray(allowedCustomers) ? allowedCustomers : [];
     const availableCustomersArray = Array.isArray(availableCustomers) ? availableCustomers : [];
     
     if (editingUser && allowedCustomersArray.length > 0) {
       setSelectedCustomerIds((allowedCustomersArray as any[]).map((c: any) => c.id));
-    } else if (!editingUser && isCreateDialogOpen) {
+    } else if (!editingUser) {
       // Ao criar novo usuário, selecionar todos os clientes por padrão
       setSelectedCustomerIds((availableCustomersArray as any[]).map((c: any) => c.id));
     }
-  }, [editingUser, allowedCustomers, isCreateDialogOpen, availableCustomers]);
+    
+    setHasInitializedCustomers(true);
+  }, [editingUser, allowedCustomers, isCreateDialogOpen, availableCustomers, hasInitializedCustomers]);
 
   const filteredUsers = users.filter((user: User) =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -287,6 +300,7 @@ export default function SystemUsers() {
       setEditingUser(null);
       form.reset();
       setSelectedCustomerIds([]);
+      setHasInitializedCustomers(false);
     } catch (error) {
       // Erro já tratado pelas mutations
     }
