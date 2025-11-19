@@ -22,6 +22,7 @@ import { ModernPageHeader } from '@/components/ui/modern-page-header';
 import { ModernCard } from '@/components/ui/modern-card';
 import { useModuleTheme } from '@/hooks/use-module-theme';
 import { useAuth } from '@/hooks/useAuth';
+import { useCacheInvalidation } from '@/hooks/use-cache-invalidation';
 
 // Permissões exclusivas OPUS (sincronizar com backend)
 const OPUS_ONLY_PERMISSIONS: PermissionKey[] = [
@@ -51,6 +52,7 @@ type CreateRoleForm = z.infer<typeof createRoleSchema>;
 export default function Roles() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const cache = useCacheInvalidation();
   const { user } = useAuth();
   const { availablePermissions, can } = usePermissions();
   const theme = useModuleTheme();
@@ -129,9 +131,8 @@ export default function Roles() {
       await apiRequest('POST', '/api/roles', data);
     },
     onSuccess: () => {
-      // Invalidar ambas as queries
-      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
+      // Invalidar todas as queries de roles
+      cache.invalidateRoles();
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -154,9 +155,8 @@ export default function Roles() {
       await apiRequest('PATCH', `/api/roles/${id}`, data);
     },
     onSuccess: () => {
-      // Invalidar ambas as queries
-      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
+      // Invalidar todas as queries de roles
+      cache.invalidateRoles();
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -179,9 +179,8 @@ export default function Roles() {
       await apiRequest('DELETE', `/api/roles/${roleId}`);
     },
     onSuccess: () => {
-      // Invalidar ambas as queries para atualização reativa
-      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
+      // Invalidar todas as queries de roles
+      cache.invalidateRoles();
       toast({
         title: 'Sucesso',
         description: 'Função excluída com sucesso!',
@@ -220,7 +219,11 @@ export default function Roles() {
     if (editingRole) {
       updateRoleMutation.mutate({ id: editingRole.id, data });
     } else {
-      createRoleMutation.mutate(data);
+      // Passar isSystemRole baseado na tab ativa
+      createRoleMutation.mutate({
+        ...data,
+        isSystemRole: activeTab === 'system',
+      });
     }
   };
 
