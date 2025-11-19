@@ -1249,8 +1249,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Users - PROTEGIDO: Apenas admin e gestor_cliente podem gerenciar usuários
-  app.get("/api/users", requireManageUsers, async (req, res) => {
+  // Users - PROTEGIDO: Requer permissão users_view
+  app.get("/api/users", requirePermission('users_view'), async (req, res) => {
     try {
       const users = await storage.getUsers();
       res.json(sanitizeUsers(users));
@@ -1259,7 +1259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/companies/:companyId/users", requireManageUsers, async (req, res) => {
+  app.get("/api/companies/:companyId/users", requirePermission('users_view'), async (req, res) => {
     try {
       const users = await storage.getUsersByCompany(req.params.companyId);
       res.json(sanitizeUsers(users));
@@ -1280,7 +1280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", requireManageUsers, async (req, res) => {
+  app.post("/api/users", requirePermission('users_create'), async (req, res) => {
     try {
       const { role: customRoleId, ...userData } = req.body;
       
@@ -1419,7 +1419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/users/:id", requireManageUsers, async (req, res) => {
+  app.put("/api/users/:id", requirePermission('users_edit'), async (req, res) => {
     try {
       const user = insertUserSchema.partial().parse(req.body);
       
@@ -1462,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/users/:id", requireManageUsers, async (req, res) => {
+  app.patch("/api/users/:id", requirePermission('users_edit'), async (req, res) => {
     try {
       const user = insertUserSchema.partial().parse(req.body);
       
@@ -1505,7 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/users/:id", requireManageUsers, async (req, res) => {
+  app.delete("/api/users/:id", requirePermission('users_delete'), async (req, res) => {
     try {
       await storage.deleteUser(req.params.id);
       res.json({ message: "User deleted successfully" });
