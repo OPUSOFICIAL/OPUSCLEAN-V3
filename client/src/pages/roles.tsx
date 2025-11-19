@@ -130,8 +130,8 @@ export default function Roles() {
     },
     onSuccess: () => {
       // Invalidar ambas as queries
-      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: false }] });
-      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: true }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -155,8 +155,8 @@ export default function Roles() {
     },
     onSuccess: () => {
       // Invalidar ambas as queries
-      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: false }] });
-      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: true }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -179,9 +179,9 @@ export default function Roles() {
       await apiRequest('DELETE', `/api/roles/${roleId}`);
     },
     onSuccess: () => {
-      // Invalidar ambas as queries
-      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: false }] });
-      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: true }] });
+      // Invalidar ambas as queries para atualização reativa
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
       toast({
         title: 'Sucesso',
         description: 'Função excluída com sucesso!',
