@@ -115,26 +115,12 @@ export default function Roles() {
 
   // Query para roles de cliente (isSystemRole=false)
   const { data: clientRoles = [], isLoading: isLoadingClientRoles } = useQuery<CustomRole[]>({
-    queryKey: ['/api/roles', { isSystemRole: false }],
-    queryFn: async () => {
-      const response = await fetch('/api/roles?isSystemRole=false', {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch client roles');
-      return response.json();
-    },
+    queryKey: ['/api/roles?isSystemRole=false'],
   });
 
   // Query para roles de sistema (isSystemRole=true) - apenas se tiver permissão
   const { data: systemRoles = [], isLoading: isLoadingSystemRoles } = useQuery<CustomRole[]>({
-    queryKey: ['/api/roles', { isSystemRole: true }],
-    queryFn: async () => {
-      const response = await fetch('/api/roles?isSystemRole=true', {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch system roles');
-      return response.json();
-    },
+    queryKey: ['/api/roles?isSystemRole=true'],
     enabled: can.viewSystemRoles(), // Só busca se tiver permissão
   });
 
