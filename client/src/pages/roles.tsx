@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +33,9 @@ const OPUS_ONLY_PERMISSIONS: PermissionKey[] = [
   'opus_users_edit',
   'opus_users_delete',
   'roles_manage',
+  'system_roles_view',
+  'system_roles_edit',
+  'system_roles_delete',
 ];
 
 const createRoleSchema = z.object({
@@ -51,15 +55,23 @@ export default function Roles() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
+  const [activeTab, setActiveTab] = useState('client'); // 'client' ou 'system'
 
-  // Filtrar permissões disponíveis baseado no userType
+  // Filtrar permissões disponíveis baseado no userType e contexto (tab ativa)
   const filteredAvailablePermissions = availablePermissions.filter(permission => {
-    // Se for opus_user, pode ver todas as permissões
-    if (user?.userType === 'opus_user') {
-      return true;
+    // Se estiver na tab de Sistema (editando/criando role de sistema)
+    if (activeTab === 'system' || editingRole?.isSystemRole) {
+      // Apenas opus_user pode ver todas as permissões para roles de sistema
+      return user?.userType === 'opus_user';
     }
     
-    // Se for customer_user, ocultar permissões OPUS
+    // Se estiver na tab de Cliente (editando/criando role de cliente)
+    // Opus_user vê todas as permissões exceto OPUS-only
+    if (user?.userType === 'opus_user') {
+      return !OPUS_ONLY_PERMISSIONS.includes(permission.key);
+    }
+    
+    // Customer_user vê apenas permissões não-OPUS
     if (user?.userType === 'customer_user') {
       return !OPUS_ONLY_PERMISSIONS.includes(permission.key);
     }
@@ -98,16 +110,39 @@ export default function Roles() {
     );
   }
 
-  const { data: roles = [], isLoading } = useQuery<CustomRole[]>({
-    queryKey: ['/api/roles'],
+  // Query para roles de cliente (isSystemRole=false)
+  const { data: clientRoles = [], isLoading: isLoadingClientRoles } = useQuery<CustomRole[]>({
+    queryKey: ['/api/roles', { isSystemRole: false }],
+    queryFn: async () => {
+      const response = await fetch('/api/roles?isSystemRole=false', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch client roles');
+      return response.json();
+    },
+  });
+
+  // Query para roles de sistema (isSystemRole=true) - apenas se tiver permissão
+  const { data: systemRoles = [], isLoading: isLoadingSystemRoles } = useQuery<CustomRole[]>({
+    queryKey: ['/api/roles', { isSystemRole: true }],
+    queryFn: async () => {
+      const response = await fetch('/api/roles?isSystemRole=true', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch system roles');
+      return response.json();
+    },
+    enabled: can.viewSystemRoles(), // Só busca se tiver permissão
   });
 
   const createRoleMutation = useMutation({
-    mutationFn: async (data: CreateRoleForm) => {
+    mutationFn: async (data: CreateRoleForm & { isSystemRole?: boolean }) => {
       await apiRequest('POST', '/api/roles', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+      // Invalidar ambas as queries
+      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: false }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: true }] });
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -130,7 +165,9 @@ export default function Roles() {
       await apiRequest('PATCH', `/api/roles/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+      // Invalidar ambas as queries
+      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: false }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: true }] });
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -153,7 +190,9 @@ export default function Roles() {
       await apiRequest('DELETE', `/api/roles/${roleId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+      // Invalidar ambas as queries
+      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: false }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles', { isSystemRole: true }] });
       toast({
         title: 'Sucesso',
         description: 'Função excluída com sucesso!',
@@ -168,7 +207,11 @@ export default function Roles() {
     },
   });
 
-  const filteredRoles = roles.filter((role: CustomRole) =>
+  // Selecionar roles baseado na tab ativa
+  const currentRoles = activeTab === 'system' ? systemRoles : clientRoles;
+  const isLoading = activeTab === 'system' ? isLoadingSystemRoles : isLoadingClientRoles;
+
+  const filteredRoles = currentRoles.filter((role: CustomRole) =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -373,36 +416,49 @@ export default function Roles() {
           }
         />
 
-        <ModernCard variant="gradient">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Funções Cadastradas</CardTitle>
-                <CardDescription>
-                  Total de {filteredRoles.length} função(ões)
-                </CardDescription>
-              </div>
-              <Input
-                placeholder="Buscar por nome ou descrição..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
-                data-testid="input-search-roles"
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {filteredRoles.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhuma função encontrada</h3>
-                <p className="text-muted-foreground">
-                  {searchTerm ? 'Tente ajustar sua busca' : 'Crie a primeira função personalizada'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {filteredRoles.map((role: CustomRole) => (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full max-w-md" style={{ gridTemplateColumns: can.viewSystemRoles() ? '1fr 1fr' : '1fr' }}>
+            <TabsTrigger value="client" data-testid="tab-client-roles">
+              Funções de Cliente
+            </TabsTrigger>
+            {can.viewSystemRoles() && (
+              <TabsTrigger value="system" data-testid="tab-system-roles">
+                Funções de Sistema
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <TabsContent value="client" className="mt-6">
+            <ModernCard variant="gradient">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Funções de Cliente</CardTitle>
+                    <CardDescription>
+                      Total de {filteredRoles.length} função(ões) de cliente
+                    </CardDescription>
+                  </div>
+                  <Input
+                    placeholder="Buscar por nome ou descrição..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                    data-testid="input-search-roles"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                {filteredRoles.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Nenhuma função encontrada</h3>
+                    <p className="text-muted-foreground">
+                      {searchTerm ? 'Tente ajustar sua busca' : 'Crie a primeira função personalizada de cliente'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {filteredRoles.map((role: CustomRole) => (
                   <ModernCard key={role.id} variant="gradient">
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -496,6 +552,124 @@ export default function Roles() {
             )}
           </CardContent>
         </ModernCard>
+      </TabsContent>
+
+          {can.viewSystemRoles() && (
+            <TabsContent value="system" className="mt-6">
+              <ModernCard variant="gradient">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Funções de Sistema</CardTitle>
+                      <CardDescription>
+                        Total de {filteredRoles.length} função(ões) de sistema (OPUS)
+                      </CardDescription>
+                    </div>
+                    <Input
+                      placeholder="Buscar por nome ou descrição..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="max-w-sm"
+                      data-testid="input-search-system-roles"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {filteredRoles.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">Nenhuma função de sistema encontrada</h3>
+                      <p className="text-muted-foreground">
+                        {searchTerm ? 'Tente ajustar sua busca' : 'Crie funções de sistema para gerenciar permissões OPUS'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {filteredRoles.map((role: CustomRole) => (
+                        <ModernCard key={role.id} variant="gradient">
+                          <CardHeader>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <CardTitle className="text-lg">{role.name}</CardTitle>
+                                  <Badge variant="secondary">Sistema</Badge>
+                                  {!role.isActive && (
+                                    <Badge variant="destructive">Inativo</Badge>
+                                  )}
+                                </div>
+                                {role.description && (
+                                  <CardDescription className="mt-2">
+                                    {role.description}
+                                  </CardDescription>
+                                )}
+                                
+                                {/* Áreas Acessíveis */}
+                                <div className="mt-4 space-y-2">
+                                  <span className="text-sm font-medium text-foreground">
+                                    Áreas Acessíveis ({getAccessibleAreas(role.permissions).length}):
+                                  </span>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                    {getAccessibleAreas(role.permissions).map((area) => {
+                                      const Icon = area.icon;
+                                      return (
+                                        <div 
+                                          key={area.key}
+                                          className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/5 border border-primary/20 text-sm"
+                                        >
+                                          <Icon className="h-4 w-4 text-primary flex-shrink-0" />
+                                          <span className="text-foreground text-xs">{area.label}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Total de Permissões */}
+                                <div className="mt-4 pt-3 border-t">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">
+                                      Total de permissões:
+                                    </span>
+                                    <Badge variant="secondary">
+                                      {role.permissions.length}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                {can.editSystemRoles() && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEdit(role)}
+                                    data-testid={`button-edit-role-${role.id}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {can.deleteSystemRoles() && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => deleteRoleMutation.mutate(role.id)}
+                                    disabled={deleteRoleMutation.isPending}
+                                    data-testid={`button-delete-role-${role.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </ModernCard>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </ModernCard>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </div>
   );

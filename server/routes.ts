@@ -3471,6 +3471,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Inicializar roles de sistema padrão (apenas OPUS)
+  app.post("/api/roles/init-system-roles", requireAuth, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+      
+      // Apenas opus_user pode inicializar roles de sistema
+      const fullUser = await storage.getUser(req.user.id);
+      if (!fullUser || fullUser.userType !== 'opus_user') {
+        return res.status(403).json({ 
+          message: "Apenas administradores OPUS podem inicializar roles de sistema" 
+        });
+      }
+      
+      // Verificar se usuário tem permissão system_roles_edit
+      const userPermissions = await getUserPermissions(req.user.id);
+      if (!userPermissions.includes('system_roles_edit')) {
+        return res.status(403).json({ 
+          message: "Você não tem permissão para criar roles de sistema" 
+        });
+      }
+      
+      // Definir roles de sistema padrão
+      const systemRoles = [
+        {
+          name: 'Auditor',
+          description: 'Auditoria e relatórios (apenas visualização)',
+          isSystemRole: true,
+          permissions: [
+            'dashboard_view',
+            'reports_view',
+            'work_orders_view',
+            'activities_view',
+            'users_view',
+            'roles_view'
+          ]
+        },
+        {
+          name: 'Operador',
+          description: 'Execução de ordens de serviço',
+          isSystemRole: true,
+          permissions: [
+            'dashboard_view',
+            'work_orders_view',
+            'work_orders_edit',
+            'activities_view'
+          ]
+        },
+        {
+          name: 'Supervisor Site',
+          description: 'Supervisão e gerenciamento de atividades',
+          isSystemRole: true,
+          permissions: [
+            'dashboard_view',
+            'reports_view',
+            'work_orders_view',
+            'work_orders_edit',
+            'work_orders_create',
+            'activities_view',
+            'activities_edit',
+            'activities_create',
+            'users_view'
+          ]
+        }
+      ];
+      
+      const created = [];
+      const skipped = [];
+      
+      // Buscar todas as roles existentes
+      const existingRoles = await storage.getCustomRoles();
+      
+      for (const roleData of systemRoles) {
+        // Verificar se já existe uma role de sistema com este nome
+        const exists = existingRoles.find(
+          r => r.isSystemRole && r.name === roleData.name
+        );
+        
+        if (exists) {
+          skipped.push(roleData.name);
+          continue;
+        }
+        
+        // Criar a role
+        const { permissions, ...roleInfo } = roleData;
+        const role = await storage.createCustomRole(roleInfo);
+        
+        // Adicionar permissões
+        if (permissions?.length) {
+          await storage.setRolePermissions(role.id, permissions);
+        }
+        
+        created.push(roleData.name);
+        console.log(`[SYSTEM ROLE CREATED] ✅ Role de sistema criada: ${roleData.name} com ${permissions.length} permissões`);
+      }
+      
+      res.json({
+        message: "Inicialização de roles de sistema concluída",
+        created,
+        skipped,
+        total: systemRoles.length
+      });
+    } catch (error) {
+      console.error("Error initializing system roles:", error);
+      res.status(500).json({ message: "Failed to initialize system roles" });
+    }
+  });
+
   // Buscar roles de um usuário específico
   app.get("/api/users/:userId/roles", async (req, res) => {
     try {
