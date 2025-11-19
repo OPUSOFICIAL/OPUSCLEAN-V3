@@ -3270,9 +3270,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === ROLES MANAGEMENT ===
   
   // Listar todas as funções
-  app.get("/api/roles", async (req, res) => {
+  app.get("/api/roles", requireAuth, async (req, res) => {
     try {
-      const roles = await storage.getCustomRoles();
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+      
+      const isSystemRole = req.query.isSystemRole === 'true';
+      
+      // Validar permissão baseado no tipo de role
+      const requiredPermission = isSystemRole ? 'system_roles_view' : 'users_view';
+      const userPermissions = await getUserPermissions(req.user.id);
+      
+      if (!userPermissions.has(requiredPermission)) {
+        console.log(`[ROLES GET DENIED] User ${req.user.username} sem permissão ${requiredPermission} para listar ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
+        return res.status(403).json({ 
+          message: "Você não tem permissão para visualizar essas funções" 
+        });
+      }
+      
+      // Buscar todas as roles
+      const allRoles = await storage.getCustomRoles();
+      
+      // Filtrar por isSystemRole se especificado
+      let roles = allRoles;
+      if (req.query.isSystemRole !== undefined) {
+        roles = allRoles.filter(role => role.isSystemRole === isSystemRole);
+      }
+      
+      console.log(`[ROLES GET] ✅ User ${req.user.username} listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
       res.json(roles);
     } catch (error) {
       console.error("Error fetching roles:", error);
