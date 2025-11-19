@@ -1227,6 +1227,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Buscar custom role e mapear para role base
+      let baseRole: 'admin' | 'gestor_cliente' | 'supervisor_site' | 'operador' | 'auditor' = 'operador';
+      
+      if (customRoleId && customRoleId.startsWith('role-')) {
+        const customRole = await storage.getCustomRoleById(customRoleId);
+        
+        if (customRole) {
+          // Mapear nome do custom role para role base
+          const roleName = customRole.name.toLowerCase();
+          
+          if (roleName.includes('admin') || roleName.includes('administrador')) {
+            baseRole = 'admin';
+          } else if (roleName.includes('gestor') || roleName.includes('gerente') || roleName.includes('cliente')) {
+            baseRole = 'gestor_cliente';
+          } else if (roleName.includes('supervisor') || roleName.includes('coordenador')) {
+            baseRole = 'supervisor_site';
+          } else if (roleName.includes('auditor')) {
+            baseRole = 'auditor';
+          } else {
+            baseRole = 'operador';
+          }
+        }
+      }
+      
       // Generate unique user ID
       const userId = `user-${validatedData.username}-${Date.now()}`;
       
@@ -1235,11 +1259,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.password = await bcrypt.hash(validatedData.password, 12);
       }
       
-      // Criar usuário com role padrão "operador" (será sobrescrito pelas permissões do custom role)
+      // Criar usuário com role base mapeado do custom role
       const newUser = await storage.createUser({
         ...validatedData,
         id: userId,
-        role: 'operador', // Role padrão, as permissões virão do custom role
+        role: baseRole,
       } as any);
 
       // Se foi enviado um customRoleId, criar userRoleAssignment via storage
