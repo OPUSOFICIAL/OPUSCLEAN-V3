@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { broadcast } from "./websocket";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
@@ -698,6 +699,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const workOrder = await storage.createWorkOrder(req.body);
+      
+      // Broadcast work order creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'workorders',
+        data: workOrder,
+        customerId: req.params.customerId
+      });
+      
       res.json(workOrder);
     } catch (error) {
       res.status(500).json({ message: "Failed to create customer work order" });
@@ -733,6 +743,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteWorkOrder(req.params.id);
+      
+      // Broadcast work order deletion to all connected clients
+      broadcast({
+        type: 'delete',
+        resource: 'workorders',
+        id: req.params.id,
+        customerId: req.params.customerId
+      });
+      
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete customer work order" });
@@ -2938,6 +2957,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Continue anyway - don't fail customer creation if role creation fails
       }
       
+      // Broadcast customer creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'customers',
+        data: newCustomer,
+        companyId: req.params.companyId
+      });
+      
       res.status(201).json(newCustomer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2952,6 +2979,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const customer = insertCustomerSchema.partial().parse(req.body);
       const updatedCustomer = await storage.updateCustomer(req.params.id, customer);
+      
+      // Broadcast customer update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'customers',
+        data: updatedCustomer,
+        id: req.params.id
+      });
+      
       res.json(updatedCustomer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2965,6 +3001,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/customers/:id", requirePermission('customers_delete'), async (req, res) => {
     try {
       await storage.deleteCustomer(req.params.id);
+      
+      // Broadcast customer deletion to all connected clients
+      broadcast({
+        type: 'delete',
+        resource: 'customers',
+        id: req.params.id
+      });
+      
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting customer:", error);
@@ -3466,6 +3510,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Retornar função completa com permissões
       const fullRole = await storage.getCustomRoleById(role.id);
+      
+      // Broadcast role creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'roles',
+        data: fullRole
+      });
+      
       res.status(201).json(fullRole);
     } catch (error) {
       console.error("Error creating role:", error);
@@ -3546,6 +3598,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Retornar função completa atualizada
       const fullRole = await storage.getCustomRoleById(req.params.id);
+      
+      // Broadcast role update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'roles',
+        data: fullRole,
+        id: req.params.id
+      });
+      
       res.json(fullRole);
     } catch (error) {
       console.error("Error updating role:", error);
@@ -3586,6 +3647,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.deleteCustomRole(req.params.id);
       console.log(`[ROLE DELETED] ✅ User ${req.user.username} deletou ${existingRole.isSystemRole ? 'role de sistema' : 'role de cliente'}: ${existingRole.name}`);
+      
+      // Broadcast role deletion to all connected clients
+      broadcast({
+        type: 'delete',
+        resource: 'roles',
+        id: req.params.id
+      });
+      
       res.status(204).end();
     } catch (error) {
       console.error("Error deleting role:", error);

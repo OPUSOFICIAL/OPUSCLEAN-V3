@@ -50,10 +50,36 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 // Component to initialize sync hooks
 function SyncInitializer() {
   useSyncOnReconnect();
+  return null;
+}
+
+// Component to initialize WebSocket connection for real-time updates
+function WebSocketInitializer() {
+  const { isAuthenticated } = useAuth();
+  
+  const { isConnected, connectionStatus } = useWebSocket({
+    enabled: isAuthenticated,
+    onConnect: () => {
+      console.log('[App] 🚀 WebSocket connected - real-time updates enabled');
+    },
+    onDisconnect: () => {
+      console.log('[App] 🔌 WebSocket disconnected');
+    },
+    onMessage: (message) => {
+      console.log('[App] 📩 WebSocket message:', message);
+    }
+  });
+
+  // Show connection status in development
+  if (import.meta.env.DEV && isAuthenticated) {
+    console.log(`[WebSocket] Status: ${connectionStatus}, Connected: ${isConnected}`);
+  }
+
   return null;
 }
 
@@ -196,6 +222,7 @@ function App() {
               <BrandingProvider>
                 <TooltipProvider>
                   <SyncInitializer />
+                  <WebSocketInitializer />
                   <ScrollToTop />
                   <Toaster />
                   <Router />
