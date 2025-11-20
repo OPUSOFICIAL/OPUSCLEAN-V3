@@ -219,11 +219,20 @@ export default function Roles() {
     if (editingRole) {
       updateRoleMutation.mutate({ id: editingRole.id, data });
     } else {
-      // Passar isSystemRole baseado na tab ativa
-      createRoleMutation.mutate({
+      const isSystemRole = activeTab === 'system';
+      
+      // Para funções de cliente, adicionar companyId do usuário
+      const roleData: any = {
         ...data,
-        isSystemRole: activeTab === 'system',
-      });
+        isSystemRole,
+      };
+      
+      // Se for função de cliente e o usuário tiver companyId, adicioná-lo
+      if (!isSystemRole && user?.companyId) {
+        roleData.companyId = user.companyId;
+      }
+      
+      createRoleMutation.mutate(roleData);
     }
   };
 
