@@ -786,6 +786,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(workOrder);
     } catch (error) {
+      console.error("[CREATE WO ERROR] Detailed error:", error);
+      console.error("[CREATE WO ERROR] Request body:", JSON.stringify(req.body, null, 2));
       res.status(500).json({ message: "Failed to create customer work order" });
     }
   });
