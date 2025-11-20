@@ -46,7 +46,7 @@ export default function MobileDashboard() {
   const currentLocation = JSON.parse(localStorage.getItem('current-location') || 'null');
   
   // Buscar as OS - o hook precisa ser chamado antes de qualquer return
-  const { data: workOrders = [], isLoading } = useQuery({
+  const { data: workOrdersResponse, isLoading } = useQuery({
     queryKey: ["/api/customers", effectiveCustomerId, "work-orders", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
     queryFn: async () => {
@@ -93,13 +93,16 @@ export default function MobileDashboard() {
       console.log('[MOBILE DASHBOARD] Response status:', response.status);
       
       if (!response.ok) throw new Error('Failed to fetch work orders');
-      const data = await response.json();
+      const responseData = await response.json();
       
-      console.log('[MOBILE DASHBOARD] Work orders received:', data.length);
+      console.log('[MOBILE DASHBOARD] Work orders received:', responseData?.data?.length || 0);
       
-      return data;
+      return responseData;
     }
   });
+  
+  // Extrair dados da resposta paginada
+  const workOrders = workOrdersResponse?.data || [];
   
   // Verificar se o usuário é colaborador
   if (!user || !canOnlyViewOwnWorkOrders(user)) {
