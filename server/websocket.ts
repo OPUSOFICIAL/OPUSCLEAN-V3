@@ -134,6 +134,8 @@ export function broadcast(message: BroadcastMessage) {
     return;
   }
 
+  log(`[WS] 📡 Broadcasting ${message.type} ${message.resource} (total clients: ${clients.size})`);
+
   const messageStr = JSON.stringify({
     ...message,
     timestamp: new Date().toISOString()
@@ -154,9 +156,7 @@ export function broadcast(message: BroadcastMessage) {
     }
   });
   
-  if (sentCount > 0) {
-    log(`[WS] 📡 Broadcast ${message.type} ${message.resource} to ${sentCount} clients`);
-  }
+  log(`[WS] ✅ Broadcast ${message.type} ${message.resource} sent to ${sentCount}/${clients.size} clients`);
 }
 
 /**
