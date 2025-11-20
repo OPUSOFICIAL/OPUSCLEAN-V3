@@ -3452,6 +3452,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { permissions, isSystemRole, ...roleData } = req.body;
       
+      // Validar se companyId existe (se fornecido)
+      if (roleData.companyId) {
+        const company = await storage.getCompany(roleData.companyId);
+        if (!company) {
+          console.error(`[ROLE CREATE ERROR] Company not found: ${roleData.companyId}`);
+          return res.status(400).json({ 
+            message: "Empresa não encontrada. Por favor, selecione uma empresa válida." 
+          });
+        }
+      }
+      
+      // Se é role de sistema, não deve ter companyId
+      if (isSystemRole && roleData.companyId) {
+        delete roleData.companyId;
+      }
+      
       // Admin OPUS sempre tem acesso total
       if (req.user.role === 'admin') {
         const role = await storage.createCustomRole(roleData);
@@ -3460,6 +3476,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         console.log(`[ROLE CREATED] ✅ Admin OPUS ${req.user.username} criou role: ${role.name} com ${permissions?.length || 0} permissões`);
         const fullRole = await storage.getCustomRoleById(role.id);
+        
+        // Broadcast role creation to all connected clients
+        broadcast({
+          type: 'create',
+          resource: 'roles',
+          data: fullRole
+        });
+        
         return res.status(201).json(fullRole);
       }
       
