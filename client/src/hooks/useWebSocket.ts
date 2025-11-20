@@ -288,7 +288,10 @@ function invalidateQueriesByResource(resource: string, message: WebSocketMessage
     // Roles
     case 'roles':
     case 'role':
+      // Invalidate all role queries (with and without query params)
       queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
       break;
 
     // Dashboard
