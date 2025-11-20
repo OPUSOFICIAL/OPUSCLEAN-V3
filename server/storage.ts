@@ -139,6 +139,7 @@ export interface IStorage {
   getServicesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Service[]>;
   getUsersByCustomer(customerId: string): Promise<User[]>;
   getChecklistTemplatesByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<ChecklistTemplate[]>;
+  getChecklistTemplateById(id: string): Promise<ChecklistTemplate | undefined>;
   getQrCodePointsByZone(zoneId: string): Promise<QrCodePoint[]>;
   getQrCodePoint(id: string): Promise<QrCodePoint | undefined>;
   getQrCodePointByCode(code: string): Promise<QrCodePoint | undefined>;
@@ -2231,6 +2232,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(checklistTemplates.createdAt);
       
     return results;
+  }
+
+  async getChecklistTemplateById(id: string): Promise<ChecklistTemplate | undefined> {
+    const [template] = await db.select().from(checklistTemplates)
+      .where(eq(checklistTemplates.id, id));
+    return template;
   }
 
   async getZonesBySite(siteId: string, module?: 'clean' | 'maintenance'): Promise<Zone[]> {

@@ -523,6 +523,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get a specific checklist template by ID
+  app.get("/api/checklist-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getChecklistTemplateById(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "Checklist template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching checklist template:", error);
+      res.status(500).json({ message: "Failed to fetch checklist template" });
+    }
+  });
+
   app.post("/api/customers/:customerId/checklist-templates", async (req, res) => {
     try {
       // Validate that the checklist belongs to the customer
