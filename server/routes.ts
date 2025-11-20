@@ -660,11 +660,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => wo.serviceId === serviceId);
       }
       
-      // Ordenação por ID (decrescente = mais recentes primeiro)
+      // Ordenação por ID (ascendente = mais antigos primeiro)
       workOrders.sort((a: any, b: any) => {
         const idA = parseInt(a.number || a.id);
         const idB = parseInt(b.number || b.id);
-        return idB - idA; // Decrescente
+        return idA - idB; // Ascendente
       });
       
       // Paginação (aplicada DEPOIS dos filtros e ordenação)
