@@ -7,6 +7,7 @@ import { ClientProvider, useClient } from "@/contexts/ClientContext";
 import { ModuleProvider, useModule } from "@/contexts/ModuleContext";
 import { BrandingProvider } from "@/contexts/BrandingContext";
 import { NetworkProvider } from "@/contexts/NetworkContext";
+import { logout } from "@/lib/auth";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import WorkOrders from "@/pages/work-orders";
@@ -95,28 +96,33 @@ function WebSocketInitializer() {
       
       // Detectar se a sessão foi invalidada (login em outro aparelho)
       if (message.type === 'session_invalidated') {
-        console.log('[App] ⚠️ SESSÃO INVALIDADA - Executando logout forçado...');
+        console.log('[App] ⚠️ SESSÃO INVALIDADA - Login detectado em outro dispositivo');
         
-        // STEP 1: Limpar localStorage IMEDIATAMENTE
-        localStorage.removeItem('opus_clean_token');
-        localStorage.removeItem('opus_clean_user');
-        console.log('[App] ✅ localStorage limpo');
-        
-        // STEP 2: Desconectar WebSocket
-        disconnect();
-        console.log('[App] ✅ WebSocket desconectado');
-        
-        // STEP 3: Redirecionar IMEDIATAMENTE (SÍNCRONO - não esperar)
-        console.log('[App] 🔄 Redirecionando para /login...');
-        window.location.href = '/login';
-        
-        // STEP 4: Toast aparece durante redirect (mas não bloqueia)
-        toast({
-          title: "Sessão encerrada",
-          description: message.message || "Essa conta foi logada em outro aparelho",
-          variant: "destructive",
-          duration: 1000,
-        });
+        // Executar a MESMA função do botão de logout (já faz tudo certo!)
+        (async () => {
+          try {
+            // Função logout() já:
+            // 1. Faz POST /api/auth/logout
+            // 2. Limpa localStorage (token + user)
+            // 3. Invalida queries do React Query
+            await logout();
+            
+            // Mostrar toast específico para invalidação de sessão
+            toast({
+              title: "Sessão encerrada",
+              description: message.message || "Essa conta foi logada em outro aparelho",
+              variant: "destructive",
+              duration: 2000,
+            });
+            
+            // Forçar recarregamento da página para voltar ao login (igual botão de logout)
+            window.location.reload();
+          } catch (error) {
+            console.error('[App] Erro ao fazer logout forçado:', error);
+            // Mesmo com erro, forçar reload para garantir logout
+            window.location.reload();
+          }
+        })();
         
         return;
       }
