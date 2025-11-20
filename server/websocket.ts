@@ -237,8 +237,18 @@ export function getConnectedClients() {
  * Sends session_invalidated message and closes the connection
  */
 function invalidateUserSession(userId: string, sessionId: string) {
+  let found = false;
+  
+  log(`[WS] 🔍 Searching for session to invalidate: userId=${userId}, sessionId=${sessionId.substring(0, 10)}...`);
+  log(`[WS] 📊 Total clients: ${clients.size}`);
+  
   clients.forEach((client) => {
+    log(`[WS] 🔍 Checking client: userId=${client.userId}, sessionId=${client.sessionId?.substring(0, 10)}..., readyState=${client.readyState}`);
+    
     if (client.userId === userId && client.sessionId === sessionId && client.readyState === WebSocket.OPEN) {
+      found = true;
+      log(`[WS] ✅ Found matching client! Sending invalidation message...`);
+      
       // Enviar mensagem de sessão invalidada
       client.send(JSON.stringify({
         type: 'session_invalidated',
@@ -246,14 +256,21 @@ function invalidateUserSession(userId: string, sessionId: string) {
         timestamp: new Date().toISOString()
       }));
       
-      // Fechar conexão após 1 segundo
+      log(`[WS] 📤 Invalidation message sent!`);
+      
+      // Fechar conexão após 2 segundos (dar tempo para a mensagem chegar)
       setTimeout(() => {
+        log(`[WS] 🔒 Closing invalidated connection...`);
         client.close(4000, 'Session invalidated - logged in from another device');
-      }, 1000);
+      }, 2000);
       
       log(`[WS] 🚫 Invalidated session for user ${userId}`);
     }
   });
+  
+  if (!found) {
+    log(`[WS] ⚠️ No matching client found to invalidate!`);
+  }
 }
 
 /**
