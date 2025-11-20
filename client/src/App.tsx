@@ -95,24 +95,28 @@ function WebSocketInitializer() {
       
       // Detectar se a sessão foi invalidada (login em outro aparelho)
       if (message.type === 'session_invalidated') {
-        // Limpar localStorage PRIMEIRO
+        console.log('[App] ⚠️ SESSÃO INVALIDADA - Executando logout forçado...');
+        
+        // STEP 1: Limpar localStorage IMEDIATAMENTE
         localStorage.removeItem('opus_clean_token');
         localStorage.removeItem('opus_clean_user');
+        console.log('[App] ✅ localStorage limpo');
         
-        // Desconectar WebSocket imediatamente
+        // STEP 2: Desconectar WebSocket
         disconnect();
+        console.log('[App] ✅ WebSocket desconectado');
         
-        // Mostrar toast
+        // STEP 3: Redirecionar IMEDIATAMENTE (SÍNCRONO - não esperar)
+        console.log('[App] 🔄 Redirecionando para /login...');
+        window.location.href = '/login';
+        
+        // STEP 4: Toast aparece durante redirect (mas não bloqueia)
         toast({
           title: "Sessão encerrada",
           description: message.message || "Essa conta foi logada em outro aparelho",
           variant: "destructive",
-          duration: 1500,
+          duration: 1000,
         });
-        
-        // Forçar navegação IMEDIATA para /login (não esperar)
-        // Usando replace para limpar histórico
-        window.location.replace('/login');
         
         return;
       }
