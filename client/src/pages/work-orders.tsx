@@ -275,36 +275,8 @@ export default function WorkOrders() {
     }
   };
 
-  const filteredWorkOrders = (workOrders as any[])?.filter((wo: any) => {
-    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(wo.status);
-    const matchesZone = zoneFilter.length === 0 || zoneFilter.includes(wo.zoneId);
-    const matchesType = typeFilter === "todos" || wo.type === typeFilter;
-    
-    const matchesSearch = wo.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         wo.number?.toString().includes(searchTerm) ||
-                         wo.id?.toString().includes(searchTerm);
-    
-    let matchesDateRange = true;
-    if (startDate || endDate) {
-      const scheduledDate = wo.scheduledDate ? new Date(wo.scheduledDate) : null;
-      if (scheduledDate) {
-        if (startDate) {
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          if (scheduledDate < start) matchesDateRange = false;
-        }
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          if (scheduledDate > end) matchesDateRange = false;
-        }
-      } else {
-        matchesDateRange = false;
-      }
-    }
-    
-    return matchesStatus && matchesZone && matchesType && matchesSearch && matchesDateRange;
-  }) || [];
+  // workOrders já vem filtrado e ordenado do backend com paginação
+  const filteredWorkOrders = workOrders || [];
 
   // Usar contadores do backend (já considera TODOS os registros, não apenas a página atual)
   const totalAbertas = statusCounts.abertas;
