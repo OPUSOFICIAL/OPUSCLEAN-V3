@@ -3431,14 +3431,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate secure JWT token
+      // Generate unique session ID for this login
+      const sessionId = nanoid();
+      
+      // Generate secure JWT token with sessionId
       const token = jwt.sign(
         {
           userId: user.id,
           username: user.username,
           role: user.role,
           companyId: user.companyId,
-          customerId: user.customerId
+          customerId: user.customerId,
+          sessionId: sessionId // Adicionar sessionId para controle de sessão única
         },
         JWT_SECRET,
         { expiresIn: '24h' }

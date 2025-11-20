@@ -10,6 +10,7 @@ interface AuthenticatedWebSocket extends WebSocket {
   username?: string;
   customerId?: string;
   isAlive?: boolean;
+  sessionId?: string;
 }
 
 interface BroadcastMessage {
@@ -23,6 +24,9 @@ interface BroadcastMessage {
 
 let wss: WebSocketServer | null = null;
 const clients = new Set<AuthenticatedWebSocket>();
+
+// Mapa de sessões ativas: userId -> sessionId
+const activeSessions = new Map<string, string>();
 
 export function setupWebSocket(server: Server) {
   wss = new WebSocketServer({ 
@@ -47,14 +51,27 @@ export function setupWebSocket(server: Server) {
         ws.userId = decoded.userId;
         ws.username = decoded.username;
         ws.customerId = decoded.customerId;
+        ws.sessionId = decoded.sessionId || token; // Use sessionId from token or fallback to token
         
-        log(`[WS] ✅ Client connected: ${ws.username} (${ws.userId})`);
+        // Verificar se já existe uma sessão ativa para este usuário
+        const existingSessionId = activeSessions.get(ws.userId);
+        if (existingSessionId && existingSessionId !== ws.sessionId) {
+          // Invalidar sessão anterior
+          log(`[WS] 🔄 User ${ws.username} logged in from another device. Invalidating old session.`);
+          invalidateUserSession(ws.userId, existingSessionId);
+        }
+        
+        // Registrar nova sessão ativa
+        activeSessions.set(ws.userId, ws.sessionId);
+        
+        log(`[WS] ✅ Client connected: ${ws.username} (${ws.userId}) - Session: ${ws.sessionId.substring(0, 8)}...`);
         
         // Send welcome message
         ws.send(JSON.stringify({
           type: 'connected',
           message: 'WebSocket connected',
           userId: ws.userId,
+          sessionId: ws.sessionId,
           timestamp: new Date().toISOString()
         }));
       } catch (error) {
@@ -95,6 +112,16 @@ export function setupWebSocket(server: Server) {
     
     ws.on('close', () => {
       clients.delete(ws);
+      
+      // Limpar sessão ativa se for a mesma que está registrada
+      if (ws.userId && ws.sessionId) {
+        const currentSession = activeSessions.get(ws.userId);
+        if (currentSession === ws.sessionId) {
+          activeSessions.delete(ws.userId);
+          log(`[WS] 🗑️ Session cleared for user: ${ws.username}`);
+        }
+      }
+      
       log(`[WS] 🔌 Client disconnected: ${ws.username || 'unknown'} (total: ${clients.size})`);
     });
     
@@ -203,4 +230,51 @@ export function getConnectedClients() {
     customerId: ws.customerId,
     isAlive: ws.isAlive
   }));
+}
+
+/**
+ * Invalidate a specific user session
+ * Sends session_invalidated message and closes the connection
+ */
+function invalidateUserSession(userId: string, sessionId: string) {
+  clients.forEach((client) => {
+    if (client.userId === userId && client.sessionId === sessionId && client.readyState === WebSocket.OPEN) {
+      // Enviar mensagem de sessão invalidada
+      client.send(JSON.stringify({
+        type: 'session_invalidated',
+        message: 'Essa conta foi logada em outro aparelho',
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Fechar conexão após 1 segundo
+      setTimeout(() => {
+        client.close(4000, 'Session invalidated - logged in from another device');
+      }, 1000);
+      
+      log(`[WS] 🚫 Invalidated session for user ${userId}`);
+    }
+  });
+}
+
+/**
+ * Force logout a user (close all connections)
+ */
+export function forceLogoutUser(userId: string) {
+  clients.forEach((client) => {
+    if (client.userId === userId && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({
+        type: 'force_logout',
+        message: 'Você foi desconectado pelo sistema',
+        timestamp: new Date().toISOString()
+      }));
+      
+      setTimeout(() => {
+        client.close(4001, 'Force logout');
+      }, 1000);
+    }
+  });
+  
+  // Limpar sessão ativa
+  activeSessions.delete(userId);
+  log(`[WS] 🚫 Force logout user ${userId}`);
 }

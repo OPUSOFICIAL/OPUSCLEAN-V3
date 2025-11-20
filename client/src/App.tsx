@@ -93,6 +93,46 @@ function WebSocketInitializer() {
     onMessage: (message) => {
       console.log('[App] 📩 WebSocket message:', message);
       
+      // Detectar se a sessão foi invalidada (login em outro aparelho)
+      if (message.type === 'session_invalidated') {
+        toast({
+          title: "Sessão encerrada",
+          description: message.message || "Essa conta foi logada em outro aparelho",
+          variant: "destructive",
+          duration: 5000,
+        });
+        
+        // Redirecionar para login após 2 segundos
+        setTimeout(() => {
+          // Limpar localStorage
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          
+          // Redirecionar para login
+          window.location.href = '/login';
+        }, 2000);
+        
+        return;
+      }
+      
+      // Detectar force logout
+      if (message.type === 'force_logout') {
+        toast({
+          title: "Desconectado",
+          description: message.message || "Você foi desconectado pelo sistema",
+          variant: "destructive",
+          duration: 5000,
+        });
+        
+        setTimeout(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }, 2000);
+        
+        return;
+      }
+      
       // Mostrar toast sutil para atualizações em tempo real
       if (message.type && message.resource && (message.type === 'create' || message.type === 'update' || message.type === 'delete')) {
         const resourceLabel = getResourceLabel(message.resource);
