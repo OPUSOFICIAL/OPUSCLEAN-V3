@@ -151,9 +151,10 @@ export default function WorkOrders() {
     enabled: !!activeClientId,
   });
 
-  // Extrair dados e paginação da resposta
+  // Extrair dados, paginação e contadores da resposta
   const workOrders = workOrdersResponse?.data || [];
   const pagination = workOrdersResponse?.pagination;
+  const statusCounts = workOrdersResponse?.statusCounts || { abertas: 0, vencidas: 0, pausadas: 0, concluidas: 0 };
 
   const { data: zones } = useQuery({
     queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
@@ -303,30 +304,13 @@ export default function WorkOrders() {
     }
     
     return matchesStatus && matchesZone && matchesType && matchesSearch && matchesDateRange;
-  }).sort((a: any, b: any) => {
-    if (a.scheduledDate && b.scheduledDate) {
-      return new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime();
-    }
-    if (a.scheduledDate) return -1;
-    if (b.scheduledDate) return 1;
-    return 0;
   }) || [];
 
-  const totalAbertas = (workOrders as any[])?.filter((wo: any) => 
-    wo.status === 'aberta' || wo.status === 'atrasada'
-  ).length || 0;
-  
-  const totalVencidas = (workOrders as any[])?.filter((wo: any) => 
-    wo.status === 'vencida'
-  ).length || 0;
-  
-  const totalPausadas = (workOrders as any[])?.filter((wo: any) => 
-    wo.status === 'pausada'
-  ).length || 0;
-  
-  const totalConcluidas = (workOrders as any[])?.filter((wo: any) => 
-    wo.status === 'concluida'
-  ).length || 0;
+  // Usar contadores do backend (já considera TODOS os registros, não apenas a página atual)
+  const totalAbertas = statusCounts.abertas;
+  const totalVencidas = statusCounts.vencidas;
+  const totalPausadas = statusCounts.pausadas;
+  const totalConcluidas = statusCounts.concluidas;
 
   // Descrição dinâmica baseada no módulo
   const headerDescription = currentModule === 'maintenance' 

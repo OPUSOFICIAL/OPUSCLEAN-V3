@@ -660,17 +660,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => wo.serviceId === serviceId);
       }
       
-      // Paginação (aplicada DEPOIS dos filtros)
+      // Ordenação por ID (decrescente = mais recentes primeiro)
+      workOrders.sort((a: any, b: any) => {
+        const idA = parseInt(a.number || a.id);
+        const idB = parseInt(b.number || b.id);
+        return idB - idA; // Decrescente
+      });
+      
+      // Paginação (aplicada DEPOIS dos filtros e ordenação)
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 50; // Padrão: 50 por página
       const total = workOrders.length;
       const totalPages = Math.ceil(total / limit);
       
+      // Calcular contadores por status (ANTES da paginação)
+      const statusCounts = {
+        abertas: workOrders.filter((wo: any) => wo.status === 'aberta').length,
+        vencidas: workOrders.filter((wo: any) => wo.status === 'vencida').length,
+        pausadas: workOrders.filter((wo: any) => wo.status === 'pausada').length,
+        concluidas: workOrders.filter((wo: any) => wo.status === 'concluida').length,
+      };
+      
       // Calcular skip e aplicar paginação
       const skip = (page - 1) * limit;
       const paginatedWorkOrders = workOrders.slice(skip, skip + limit);
       
-      // Retornar dados com metadados de paginação
+      // Retornar dados com metadados de paginação e contadores
       res.json({
         data: paginatedWorkOrders,
         pagination: {
@@ -680,7 +695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalPages,
           hasNextPage: page < totalPages,
           hasPreviousPage: page > 1,
-        }
+        },
+        statusCounts
       });
     } catch (error) {
       console.error("Error fetching customer work orders:", error);
