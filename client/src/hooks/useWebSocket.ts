@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { queryClient } from '@/lib/queryClient';
 
 interface WebSocketMessage {
-  type: 'connected' | 'update' | 'delete' | 'create' | 'pong' | 'error';
+  type: 'connected' | 'update' | 'delete' | 'create' | 'pong' | 'error' | 'session_invalidated' | 'force_logout';
   resource?: string;
   data?: any;
   id?: string;
@@ -35,6 +35,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const manualDisconnectRef = useRef(false);
   
   // Use refs for callbacks to avoid dependency issues
   const onMessageRef = useRef(onMessage);
@@ -72,6 +73,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       console.log('[WS Client] Already connected');
       return;
     }
+
+    // Resetar flag de desconexão manual ao tentar conectar
+    manualDisconnectRef.current = false;
 
     try {
       console.log('[WS Client] Connecting...');
@@ -140,6 +144,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         
         onDisconnectRef.current?.();
         
+        // Não reconectar se foi desconexão manual (logout forçado)
+        if (manualDisconnectRef.current) {
+          console.log('[WS Client] ⛔ Manual disconnect - não reconectando');
+          return;
+        }
+        
         // Attempt to reconnect with exponential backoff
         if (enabled) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
@@ -159,6 +169,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, [enabled, getWebSocketUrl]);
 
   const disconnect = useCallback(() => {
+    // Marcar como desconexão manual para evitar reconexão automática
+    manualDisconnectRef.current = true;
+    
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;

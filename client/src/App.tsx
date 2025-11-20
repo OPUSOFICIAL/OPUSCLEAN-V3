@@ -82,7 +82,7 @@ function WebSocketInitializer() {
     return labels[resource] || resource;
   };
   
-  const { isConnected, connectionStatus } = useWebSocket({
+  const { isConnected, connectionStatus, disconnect } = useWebSocket({
     enabled: isAuthenticated,
     onConnect: () => {
       console.log('[App] 🚀 WebSocket connected - real-time updates enabled');
@@ -95,20 +95,22 @@ function WebSocketInitializer() {
       
       // Detectar se a sessão foi invalidada (login em outro aparelho)
       if (message.type === 'session_invalidated') {
+        // Desconectar WebSocket imediatamente para evitar reconexão
+        disconnect();
+        
+        // Limpar localStorage imediatamente
+        localStorage.removeItem('opus_clean_token');
+        localStorage.removeItem('opus_clean_user');
+        
         toast({
           title: "Sessão encerrada",
           description: message.message || "Essa conta foi logada em outro aparelho",
           variant: "destructive",
-          duration: 5000,
+          duration: 3000,
         });
         
         // Redirecionar para login após 2 segundos
         setTimeout(() => {
-          // Limpar localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          
-          // Redirecionar para login
           window.location.href = '/login';
         }, 2000);
         
@@ -117,16 +119,22 @@ function WebSocketInitializer() {
       
       // Detectar force logout
       if (message.type === 'force_logout') {
+        // Desconectar WebSocket imediatamente
+        disconnect();
+        
+        // Limpar localStorage imediatamente
+        localStorage.removeItem('opus_clean_token');
+        localStorage.removeItem('opus_clean_user');
+        
         toast({
           title: "Desconectado",
           description: message.message || "Você foi desconectado pelo sistema",
           variant: "destructive",
-          duration: 5000,
+          duration: 3000,
         });
         
+        // Redirecionar para login após 2 segundos
         setTimeout(() => {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
           window.location.href = '/login';
         }, 2000);
         
