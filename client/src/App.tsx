@@ -95,48 +95,47 @@ function WebSocketInitializer() {
       
       // Detectar se a sessão foi invalidada (login em outro aparelho)
       if (message.type === 'session_invalidated') {
-        // Desconectar WebSocket imediatamente para evitar reconexão
-        disconnect();
-        
-        // Limpar localStorage imediatamente
+        // Limpar localStorage PRIMEIRO
         localStorage.removeItem('opus_clean_token');
         localStorage.removeItem('opus_clean_user');
         
+        // Desconectar WebSocket imediatamente
+        disconnect();
+        
+        // Mostrar toast
         toast({
           title: "Sessão encerrada",
           description: message.message || "Essa conta foi logada em outro aparelho",
           variant: "destructive",
-          duration: 2000,
+          duration: 1500,
         });
         
-        // Forçar reload completo da página após 2 segundos
-        setTimeout(() => {
-          window.location.replace('/login');
-        }, 2000);
+        // Forçar navegação IMEDIATA para /login (não esperar)
+        // Usando replace para limpar histórico
+        window.location.replace('/login');
         
         return;
       }
       
       // Detectar force logout
       if (message.type === 'force_logout') {
-        // Desconectar WebSocket imediatamente
-        disconnect();
-        
-        // Limpar localStorage imediatamente
+        // Limpar localStorage PRIMEIRO
         localStorage.removeItem('opus_clean_token');
         localStorage.removeItem('opus_clean_user');
         
+        // Desconectar WebSocket imediatamente
+        disconnect();
+        
+        // Mostrar toast
         toast({
           title: "Desconectado",
           description: message.message || "Você foi desconectado pelo sistema",
           variant: "destructive",
-          duration: 2000,
+          duration: 1500,
         });
         
-        // Forçar reload completo da página após 2 segundos
-        setTimeout(() => {
-          window.location.replace('/login');
-        }, 2000);
+        // Forçar navegação IMEDIATA para /login
+        window.location.replace('/login');
         
         return;
       }
