@@ -22,7 +22,7 @@ interface ServiceSelectionModalProps {
   onClose: () => void;
   resolvedContext: any;
   scannedQrCode: string;
-  onServiceSelect: (serviceId: string, workOrderId?: string, checklistTemplateId?: string) => void;
+  onServiceSelect: (serviceId: string, workOrderId?: string) => void;
 }
 
 // Helper para parsear data local sem conversão de timezone
@@ -54,13 +54,10 @@ export default function ServiceSelectionModal({
   const [isLoadingWorkOrders, setIsLoadingWorkOrders] = useState(false);
   const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('today');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
-  const [availableChecklists, setAvailableChecklists] = useState<any[]>([]);
-  const [selectedChecklist, setSelectedChecklist] = useState<string>("");
 
   useEffect(() => {
     if (isOpen && resolvedContext?.customer?.id) {
       loadServices();
-      loadChecklists();
     }
   }, [isOpen, resolvedContext]);
 
@@ -95,36 +92,6 @@ export default function ServiceSelectionModal({
       console.error('Erro ao carregar serviços:', error);
     } finally {
       setIsLoadingServices(false);
-    }
-  };
-
-  const loadChecklists = async () => {
-    try {
-      const module = resolvedContext?.qrPoint?.module || 'clean';
-      const baseUrl = getApiBaseUrl();
-      const token = localStorage.getItem("opus_clean_token");
-      
-      const response = await fetch(
-        `${baseUrl}/api/customers/${resolvedContext.customer.id}/checklist-templates?module=${module}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      
-      if (response.ok) {
-        const checklists = await response.json();
-        setAvailableChecklists(checklists || []);
-        console.log('[SERVICE MODAL] Checklists disponíveis:', checklists.length);
-        
-        // Auto-selecionar o primeiro checklist se houver
-        if (checklists && checklists.length > 0) {
-          setSelectedChecklist(checklists[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('[SERVICE MODAL] Erro ao carregar checklists:', error);
     }
   };
 
@@ -187,7 +154,7 @@ export default function ServiceSelectionModal({
       return;
     }
     console.log("✅ Executando OS existente:", selectedWorkOrder);
-    onServiceSelect(selectedService, selectedWorkOrder, selectedChecklist);
+    onServiceSelect(selectedService, selectedWorkOrder);
   };
 
   if (!isOpen) return null;
@@ -264,30 +231,6 @@ export default function ServiceSelectionModal({
             )}
           </div>
 
-          {/* Selecionar Checklist */}
-          {selectedService && availableChecklists.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-semibold text-slate-900">
-                Selecione o Checklist
-              </h3>
-              <Select value={selectedChecklist} onValueChange={setSelectedChecklist}>
-                <SelectTrigger data-testid="select-checklist" className="w-full">
-                  <SelectValue placeholder="Escolha o checklist para esta OS" />
-                </SelectTrigger>
-                <SelectContent className="z-[99999]">
-                  {availableChecklists.map((checklist) => (
-                    <SelectItem key={checklist.id} value={checklist.id}>
-                      {checklist.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-slate-500">
-                O checklist selecionado será usado na execução desta ordem de serviço
-              </p>
-            </div>
-          )}
-
           {/* Mostrar lista de work orders após selecionar serviço */}
           {selectedService && (
             <div className="space-y-4 border-t pt-4">
@@ -310,19 +253,13 @@ export default function ServiceSelectionModal({
                     </p>
                   </div>
                   <Button
-                    onClick={() => onServiceSelect(selectedService, undefined, selectedChecklist)}
+                    onClick={() => onServiceSelect(selectedService)}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     data-testid="button-create-corrective-os"
-                    disabled={!selectedChecklist}
                   >
                     <Wrench className="w-4 h-4 mr-2" />
                     Criar Nova OS Corretiva
                   </Button>
-                  {!selectedChecklist && (
-                    <p className="text-xs text-amber-600 mt-2">
-                      Selecione um checklist para continuar
-                    </p>
-                  )}
                 </div>
               ) : (
                 <div className="border rounded-lg p-4 space-y-3 bg-amber-50 border-amber-200">
@@ -436,11 +373,10 @@ export default function ServiceSelectionModal({
                       Executar OS
                     </Button>
                     <Button
-                      onClick={() => onServiceSelect(selectedService, undefined, selectedChecklist)}
+                      onClick={() => onServiceSelect(selectedService)}
                       variant="outline"
                       className="border-blue-600 text-blue-600 hover:bg-blue-50"
                       data-testid="button-create-new-os"
-                      disabled={!selectedChecklist}
                     >
                       Criar Nova OS
                     </Button>
