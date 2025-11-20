@@ -106,12 +106,12 @@ function WebSocketInitializer() {
           title: "Sessão encerrada",
           description: message.message || "Essa conta foi logada em outro aparelho",
           variant: "destructive",
-          duration: 3000,
+          duration: 2000,
         });
         
-        // Redirecionar para login após 2 segundos
+        // Forçar reload completo da página após 2 segundos
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.replace('/login');
         }, 2000);
         
         return;
@@ -130,12 +130,12 @@ function WebSocketInitializer() {
           title: "Desconectado",
           description: message.message || "Você foi desconectado pelo sistema",
           variant: "destructive",
-          duration: 3000,
+          duration: 2000,
         });
         
-        // Redirecionar para login após 2 segundos
+        // Forçar reload completo da página após 2 segundos
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.replace('/login');
         }, 2000);
         
         return;
