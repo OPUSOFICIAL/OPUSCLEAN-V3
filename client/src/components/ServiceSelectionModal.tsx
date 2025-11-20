@@ -103,7 +103,10 @@ export default function ServiceSelectionModal({
       const baseUrl = getApiBaseUrl();
       const response = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}`);
       if (response.ok) {
-        const allWorkOrders = await response.json();
+        const workOrdersResponse = await response.json();
+        
+        // Extrair work orders da estrutura paginada { data: [...], pagination: {...} }
+        const allWorkOrders = workOrdersResponse.data || workOrdersResponse;
         
         // Filtrar work orders da zona atual e módulo correto que estão pendentes ou pausadas
         // NOTA: Removida filtragem por serviceId para permitir que colaborador veja todas as OS pendentes
