@@ -3137,78 +3137,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const newCustomer = await storage.createCustomer(customer);
       
-      // Auto-create 3 default client roles for the new customer
+      // Auto-create 3 default client roles for the company (if not already exist)
       try {
         const companyId = newCustomer.companyId; // Company do cliente (não confundir com customer ID)
-        const timestamp = Date.now();
         
-        // 1. Operador (Mobile-only, 4 permissions)
-        const operadorRole = await storage.createCustomRole({
-          id: `role-operador-${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
-          companyId,
-          name: 'Operador',
-          description: 'Operador de campo - executa OS via aplicativo mobile',
-          isSystemRole: false,
-          isMobileOnly: true,
-          isActive: true
-        });
-        await storage.setRolePermissions(operadorRole.id, [
-          'dashboard_view',
-          'workorders_view',
-          'workorders_comment',
-          'checklists_view'
-        ]);
+        // Verificar se as funções padrão já existem para esta company
+        const allRoles = await storage.getCustomRoles();
+        const existingRoles = allRoles.filter((r: any) => r.companyId === companyId);
+        const hasOperador = existingRoles.some((r: any) => r.name === 'Operador' && r.isMobileOnly);
+        const hasCliente = existingRoles.some((r: any) => r.name === 'Cliente' && !r.isMobileOnly);
+        const hasAdmin = existingRoles.some((r: any) => r.name === 'Administrador');
         
-        // 2. Cliente (Web, 8 permissions)
-        const clienteRole = await storage.createCustomRole({
-          id: `role-cliente-${timestamp + 1}-${Math.random().toString(36).substr(2, 9)}`,
-          companyId,
-          name: 'Cliente',
-          description: 'Visualização de dashboards, relatórios, plantas dos locais e ordens de serviço. Pode comentar e avaliar OS.',
-          isSystemRole: false,
-          isMobileOnly: false,
-          isActive: true
-        });
-        await storage.setRolePermissions(clienteRole.id, [
-          'dashboard_view',
-          'workorders_view',
-          'workorders_comment',
-          'workorders_evaluate',
-          'floor_plan_view',
-          'heatmap_view',
-          'sites_view',
-          'reports_view'
-        ]);
-        
-        // 3. Administrador (Web, all client permissions except OPUS-only ones)
-        const allClientPermissions = [
-          'dashboard_view',
-          'workorders_view', 'workorders_create', 'workorders_edit', 'workorders_delete', 'workorders_comment', 'workorders_evaluate',
-          'schedule_view', 'schedule_create', 'schedule_edit', 'schedule_delete',
-          'checklists_view', 'checklists_create', 'checklists_edit', 'checklists_delete',
-          'qrcodes_view', 'qrcodes_create', 'qrcodes_edit', 'qrcodes_delete',
-          'floor_plan_view', 'floor_plan_edit',
-          'heatmap_view',
-          'sites_view', 'sites_create', 'sites_edit', 'sites_delete',
-          'users_view', 'users_create', 'users_edit', 'users_delete',
-          'client_users_view', 'client_users_create', 'client_users_edit', 'client_users_delete',
-          'reports_view',
-          'audit_logs_view',
-          'service_settings_view', 'service_settings_edit'
-        ];
-        
-        const adminRole = await storage.createCustomRole({
-          id: `role-admin-${timestamp + 2}-${Math.random().toString(36).substr(2, 9)}`,
-          companyId,
-          name: 'Administrador',
-          description: 'Acesso total ao sistema - para usuários OPUS',
-          isSystemRole: false,
-          isMobileOnly: false,
-          isActive: true
-        });
-        await storage.setRolePermissions(adminRole.id, allClientPermissions);
-        
-        console.log(`✅ Auto-created 3 default roles for customer: ${newCustomer.name} (Operador: 4 perms, Cliente: 8 perms, Administrador: ${allClientPermissions.length} perms)`);
+        // Se todas as 3 funções já existem, não criar duplicatas
+        if (hasOperador && hasCliente && hasAdmin) {
+          console.log(`ℹ️ Funções padrão já existem para company ${companyId}, pulando criação de duplicatas`);
+        } else {
+          const timestamp = Date.now();
+          
+          // 1. Operador (Mobile-only, 4 permissions) - criar apenas se não existir
+          if (!hasOperador) {
+            const operadorRole = await storage.createCustomRole({
+              id: `role-operador-${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
+              companyId,
+              name: 'Operador',
+              description: 'Operador de campo - executa OS via aplicativo mobile',
+              isSystemRole: false,
+              isMobileOnly: true,
+              isActive: true
+            });
+            await storage.setRolePermissions(operadorRole.id, [
+              'dashboard_view',
+              'workorders_view',
+              'workorders_comment',
+              'checklists_view'
+            ]);
+          }
+          
+          // 2. Cliente (Web, 8 permissions) - criar apenas se não existir
+          if (!hasCliente) {
+            const clienteRole = await storage.createCustomRole({
+              id: `role-cliente-${timestamp + 1}-${Math.random().toString(36).substr(2, 9)}`,
+              companyId,
+              name: 'Cliente',
+              description: 'Visualização de dashboards, relatórios, plantas dos locais e ordens de serviço. Pode comentar e avaliar OS.',
+              isSystemRole: false,
+              isMobileOnly: false,
+              isActive: true
+            });
+            await storage.setRolePermissions(clienteRole.id, [
+              'dashboard_view',
+              'workorders_view',
+              'workorders_comment',
+              'workorders_evaluate',
+              'floor_plan_view',
+              'heatmap_view',
+              'sites_view',
+              'reports_view'
+            ]);
+          }
+          
+          // 3. Administrador (Web, all client permissions except OPUS-only ones) - criar apenas se não existir
+          if (!hasAdmin) {
+            const allClientPermissions = [
+              'dashboard_view',
+              'workorders_view', 'workorders_create', 'workorders_edit', 'workorders_delete', 'workorders_comment', 'workorders_evaluate',
+              'schedule_view', 'schedule_create', 'schedule_edit', 'schedule_delete',
+              'checklists_view', 'checklists_create', 'checklists_edit', 'checklists_delete',
+              'qrcodes_view', 'qrcodes_create', 'qrcodes_edit', 'qrcodes_delete',
+              'floor_plan_view', 'floor_plan_edit',
+              'heatmap_view',
+              'sites_view', 'sites_create', 'sites_edit', 'sites_delete',
+              'users_view', 'users_create', 'users_edit', 'users_delete',
+              'client_users_view', 'client_users_create', 'client_users_edit', 'client_users_delete',
+              'reports_view',
+              'audit_logs_view',
+              'service_settings_view', 'service_settings_edit'
+            ];
+            
+            const adminRole = await storage.createCustomRole({
+              id: `role-admin-${timestamp + 2}-${Math.random().toString(36).substr(2, 9)}`,
+              companyId,
+              name: 'Administrador',
+              description: 'Acesso total ao sistema - para usuários OPUS',
+              isSystemRole: false,
+              isMobileOnly: false,
+              isActive: true
+            });
+            await storage.setRolePermissions(adminRole.id, allClientPermissions);
+          }
+          
+          console.log(`✅ Funções padrão criadas/verificadas para novo cliente: ${newCustomer.name}`);
+        }
       } catch (roleError) {
         console.error('⚠️ Warning: Failed to create default roles for customer:', roleError);
         // Continue anyway - don't fail customer creation if role creation fails
