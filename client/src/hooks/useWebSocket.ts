@@ -35,6 +35,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  
+  // Use refs for callbacks to avoid dependency issues
+  const onMessageRef = useRef(onMessage);
+  const onConnectRef = useRef(onConnect);
+  const onDisconnectRef = useRef(onDisconnect);
+  const onErrorRef = useRef(onError);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onConnectRef.current = onConnect;
+    onDisconnectRef.current = onDisconnect;
+    onErrorRef.current = onError;
+  });
 
   const getWebSocketUrl = useCallback(() => {
     const token = localStorage.getItem('opus_clean_token');
@@ -82,7 +96,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           }
         }, 25000); // Ping every 25 seconds
         
-        onConnect?.();
+        onConnectRef.current?.();
       };
 
       ws.onmessage = (event) => {
@@ -96,7 +110,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           }
 
           // Call custom handler
-          onMessage?.(message);
+          onMessageRef.current?.(message);
 
           // Auto-invalidate React Query cache based on resource
           if (message.resource && (message.type === 'update' || message.type === 'create' || message.type === 'delete')) {
@@ -110,7 +124,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       ws.onerror = (error) => {
         console.error('[WS Client] ❌ WebSocket error:', error);
         setConnectionStatus('error');
-        onError?.(error);
+        onErrorRef.current?.(error);
       };
 
       ws.onclose = () => {
@@ -124,7 +138,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           pingIntervalRef.current = null;
         }
         
-        onDisconnect?.();
+        onDisconnectRef.current?.();
         
         // Attempt to reconnect with exponential backoff
         if (enabled) {
@@ -142,7 +156,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       console.error('[WS Client] ❌ Error creating WebSocket:', error);
       setConnectionStatus('error');
     }
-  }, [enabled, getWebSocketUrl, onConnect, onDisconnect, onError, onMessage]);
+  }, [enabled, getWebSocketUrl]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
