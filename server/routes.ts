@@ -3859,6 +3859,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user.role === 'admin') {
         await storage.deleteCustomRole(req.params.id);
         console.log(`[ROLE DELETED] ✅ Admin OPUS ${req.user.username} deletou ${existingRole.isSystemRole ? 'role de sistema' : 'role de cliente'}: ${existingRole.name}`);
+        
+        // Broadcast role deletion to all connected clients
+        broadcast({
+          type: 'delete',
+          resource: 'roles',
+          id: req.params.id
+        });
+        
         return res.status(204).end();
       }
       
