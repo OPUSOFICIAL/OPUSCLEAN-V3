@@ -154,7 +154,7 @@ export default function ServiceSelectionModal({
       return;
     }
     console.log("✅ Executando OS existente:", selectedWorkOrder);
-    onServiceSelect(selectedService, undefined, selectedWorkOrder);
+    onServiceSelect(selectedService, selectedWorkOrder);
   };
 
   if (!isOpen) return null;
