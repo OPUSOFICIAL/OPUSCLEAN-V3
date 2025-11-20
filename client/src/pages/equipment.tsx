@@ -286,18 +286,29 @@ export default function Equipment({ customerId }: EquipmentProps) {
           }
         ]}
         actions={
-          <Button 
-            variant="default"
-            onClick={handleRefresh}
-            className={cn("flex items-center gap-2", theme.buttons.primary)}
-            style={theme.buttons.primaryStyle}
-            size="sm"
-            disabled={isRefreshing}
-            data-testid="button-refresh-equipment"
-          >
-            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-            Atualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="default"
+              className={cn("flex items-center gap-2", theme.buttons.primary)}
+              style={theme.buttons.primaryStyle}
+              size="sm"
+              onClick={() => setIsCreateDialogOpen(true)}
+              data-testid="button-create-equipment-header"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Equipamento
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={handleRefresh}
+              size="sm"
+              disabled={isRefreshing}
+              data-testid="button-refresh-equipment"
+            >
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+              Atualizar
+            </Button>
+          </div>
         }
       />
       
