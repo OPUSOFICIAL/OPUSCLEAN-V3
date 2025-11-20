@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { Capacitor } from '@capacitor/core';
 
 // ============================================================================
 // TYPES
@@ -150,6 +151,16 @@ export class OfflineStorageManager {
 
   private async initDB(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // ⚠️ CRITICAL: Offline storage is ONLY for mobile (Capacitor) apps
+      // Web version should NOT use IndexedDB offline storage
+      if (!Capacitor.isNativePlatform()) {
+        console.log('[OFFLINE STORAGE] ⏭️  Skipping initialization - Web version does not use offline storage (mobile-only feature)');
+        this.db = null; // Ensure db is null on web
+        resolve(); // Resolve immediately without opening database
+        return;
+      }
+
+      console.log('[OFFLINE STORAGE] 📱 Mobile app detected - initializing offline storage...');
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => {
