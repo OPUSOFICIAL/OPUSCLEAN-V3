@@ -460,10 +460,13 @@ export default function AdminMobile({ companyId }: AdminMobileProps) {
     enabled: !!activeClientId,
   });
 
-  const { data: workOrders = [] } = useQuery({
+  const { data: workOrdersResponse } = useQuery({
     queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule }],
     enabled: !!activeClientId,
   });
+  
+  // Extrair dados da resposta paginada
+  const workOrders = workOrdersResponse?.data || [];
 
   const { data: sites = [] } = useQuery({
     queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
