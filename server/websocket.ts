@@ -56,10 +56,13 @@ export function setupWebSocket(server: Server) {
         // Verificar se já existe uma sessão ativa para este usuário
         const existingSessionId = activeSessions.get(ws.userId);
         if (existingSessionId && existingSessionId !== ws.sessionId) {
-          // Invalidar sessão anterior
+          // Invalidar sessão anterior ANTES de adicionar novo cliente
           log(`[WS] 🔄 User ${ws.username} logged in from another device. Invalidating old session.`);
           invalidateUserSession(ws.userId, existingSessionId);
         }
+        
+        // ADICIONAR CLIENTE AO SET PRIMEIRO (antes de registrar sessão)
+        clients.add(ws);
         
         // Registrar nova sessão ativa
         activeSessions.set(ws.userId, ws.sessionId);
@@ -85,9 +88,8 @@ export function setupWebSocket(server: Server) {
       }
     } else {
       log(`[WS] ⚠️ Client connected without token`);
+      clients.add(ws);
     }
-    
-    clients.add(ws);
     
     // Handle pong responses
     ws.on('pong', () => {
