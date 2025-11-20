@@ -276,7 +276,7 @@ export default function ServiceSelectionModal({
                   
                   {/* Filtros por data */}
                   <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as any)} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="today" className="text-xs">
                         Hoje
                       </TabsTrigger>
@@ -285,9 +285,6 @@ export default function ServiceSelectionModal({
                       </TabsTrigger>
                       <TabsTrigger value="paused" className="text-xs">
                         Pausadas
-                      </TabsTrigger>
-                      <TabsTrigger value="all" className="text-xs">
-                        Todos
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
@@ -298,7 +295,6 @@ export default function ServiceSelectionModal({
                       {dateFilter === 'today' && 'Nenhuma ordem agendada para hoje'}
                       {dateFilter === 'upcoming' && 'Nenhuma ordem agendada'}
                       {dateFilter === 'paused' && 'Nenhuma ordem pausada'}
-                      {dateFilter === 'all' && 'Nenhuma ordem pendente'}
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-64 overflow-y-auto">
