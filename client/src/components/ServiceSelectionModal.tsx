@@ -52,7 +52,7 @@ export default function ServiceSelectionModal({
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [availableWorkOrders, setAvailableWorkOrders] = useState<any[]>([]);
   const [isLoadingWorkOrders, setIsLoadingWorkOrders] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('all');
+  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('today');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
 
   useEffect(() => {
