@@ -6,6 +6,7 @@ import {
   OfflineAttachment 
 } from '@/lib/offline-storage';
 import { useToast } from '@/hooks/use-toast';
+import { Capacitor } from '@capacitor/core';
 
 export function useOfflineStorage() {
   const { toast } = useToast();
@@ -21,6 +22,13 @@ export function useOfflineStorage() {
 
   // Initialize and load stats
   useEffect(() => {
+    // ⚠️ CRITICAL: Only initialize on mobile (Capacitor) apps
+    if (!Capacitor.isNativePlatform()) {
+      console.log('[USE OFFLINE STORAGE] ⏭️  Skipping hook initialization - Web version does not use offline storage');
+      setIsInitialized(false); // Keep as false on web
+      return;
+    }
+
     const init = async () => {
       try {
         await offlineStorage['initPromise']; // Wait for DB initialization
@@ -43,6 +51,7 @@ export function useOfflineStorage() {
 
   // Refresh stats
   const refreshStats = useCallback(async () => {
+    if (!Capacitor.isNativePlatform()) return stats;
     try {
       const currentStats = await offlineStorage.getStats();
       setStats(currentStats);
@@ -57,6 +66,10 @@ export function useOfflineStorage() {
   const createOfflineWorkOrder = useCallback(async (
     data: Omit<OfflineWorkOrder, 'localId' | 'createdAt' | 'updatedAt'>
   ) => {
+    if (!Capacitor.isNativePlatform()) {
+      console.warn('[USE OFFLINE STORAGE] createOfflineWorkOrder called on web - ignoring');
+      return null;
+    }
     try {
       const workOrder = await offlineStorage.createWorkOrder(data);
       await refreshStats();
@@ -79,6 +92,7 @@ export function useOfflineStorage() {
   }, [toast, refreshStats]);
 
   const getOfflineWorkOrders = useCallback(async (customerId?: string) => {
+    if (!Capacitor.isNativePlatform()) return [];
     try {
       return await offlineStorage.getAllWorkOrders(customerId);
     } catch (error) {
@@ -252,6 +266,7 @@ export function useOfflineStorage() {
   }, []);
 
   const getQRPoint = useCallback(async (code: string) => {
+    if (!Capacitor.isNativePlatform()) return null;
     try {
       return await offlineStorage.getQRPoint(code);
     } catch (error) {
@@ -282,6 +297,7 @@ export function useOfflineStorage() {
   }, []);
 
   const getZone = useCallback(async (id: string) => {
+    if (!Capacitor.isNativePlatform()) return null;
     try {
       return await offlineStorage.getZone(id);
     } catch (error) {
