@@ -614,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Work Orders by Customer - List (filtrado por cliente)
+  // Work Orders by Customer - List (filtrado por cliente) com paginação
   app.get("/api/customers/:customerId/work-orders", async (req, res) => {
     try {
       // Validate that the customer exists
@@ -660,7 +660,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => wo.serviceId === serviceId);
       }
       
-      res.json(workOrders);
+      // Paginação (aplicada DEPOIS dos filtros)
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50; // Padrão: 50 por página
+      const total = workOrders.length;
+      const totalPages = Math.ceil(total / limit);
+      
+      // Calcular skip e aplicar paginação
+      const skip = (page - 1) * limit;
+      const paginatedWorkOrders = workOrders.slice(skip, skip + limit);
+      
+      // Retornar dados com metadados de paginação
+      res.json({
+        data: paginatedWorkOrders,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        }
+      });
     } catch (error) {
       console.error("Error fetching customer work orders:", error);
       res.status(500).json({ message: "Failed to fetch customer work orders" });

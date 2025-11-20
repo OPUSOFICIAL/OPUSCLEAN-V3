@@ -142,13 +142,18 @@ export default function WorkOrders() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [workOrderToCancel, setWorkOrderToCancel] = useState<{ id: string; title: string } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: workOrders, isLoading, refetch } = useQuery({
-    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule, includeAll: 'true' }],
+  const { data: workOrdersResponse, isLoading, refetch } = useQuery({
+    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule, includeAll: 'true', page: currentPage, limit: 50 }],
     enabled: !!activeClientId,
   });
+
+  // Extrair dados e paginação da resposta
+  const workOrders = workOrdersResponse?.data || [];
+  const pagination = workOrdersResponse?.pagination;
 
   const { data: zones } = useQuery({
     queryKey: ["/api/customers", activeClientId, "zones", { module: currentModule }],
@@ -684,6 +689,38 @@ export default function WorkOrders() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Controles de Paginação */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} ordens de serviço
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={!pagination.hasPreviousPage}
+                      data-testid="button-prev-page"
+                    >
+                      Anterior
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Página {pagination.page} de {pagination.totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                      disabled={!pagination.hasNextPage}
+                      data-testid="button-next-page"
+                    >
+                      Próxima
+                    </Button>
+                  </div>
                 </div>
               )}
             </ModernCardContent>
