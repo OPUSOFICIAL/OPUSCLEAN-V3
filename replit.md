@@ -32,6 +32,15 @@ The frontend uses React, TypeScript, Wouter for routing, and TanStack Query for 
 - Substitui completamente polling e staleTime, eliminando requisições desnecessárias
 - Implementação: `server/websocket.ts` (servidor), `client/src/hooks/useWebSocket.ts` (hook do cliente), `client/src/App.tsx` (toasts), broadcasts em todos os endpoints CRUD em `server/routes.ts`
 
+**Controle de Sessão Única**: Sistema de autenticação com controle de sessão única, permitindo apenas um login ativo por conta. Quando um usuário faz login em um novo dispositivo/navegador, a sessão anterior é automaticamente invalidada via WebSocket. O sistema:
+- Gera `sessionId` único usando nanoid para cada login
+- Armazena sessionId no token JWT
+- Rastreia sessões ativas no WebSocket (`userId → sessionId`)
+- Detecta novo login e invalida sessão anterior automaticamente
+- Envia mensagem `session_invalidated` via WebSocket para o cliente antigo
+- Frontend detecta invalidação, mostra toast "Essa conta foi logada em outro aparelho", e redireciona para login em 2 segundos
+- Implementação: `server/routes.ts` (geração sessionId no login), `server/websocket.ts` (rastreamento e invalidação), `client/src/App.tsx` (detecção e redirecionamento)
+
 Performance optimizations include database indexing, parallel query execution, and accurate real-time data reporting. Photo uploads are optimized with automatic image compression and smaller batch sizes for improved performance on slow connections. An offline-first Android APK is supported by a comprehensive sync infrastructure, utilizing IndexedDB for offline storage, a priority-based sync queue, and robust error handling.
 
 ### System Design Choices
