@@ -6,6 +6,7 @@ import { ArrowLeft, Camera, Flashlight, FlashlightOff, RotateCcw, WifiOff } from
 import { useToast } from "@/hooks/use-toast";
 import QrScanner from "qr-scanner";
 import ServiceSelectionModal from "@/components/ServiceSelectionModal";
+import ChecklistSelectionModal from "@/components/ChecklistSelectionModal";
 import { useModule } from "@/contexts/ModuleContext";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useOfflineStorage } from "@/hooks/use-offline-storage";
@@ -42,6 +43,8 @@ export default function MobileQrScanner() {
 
   // Modal States
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showChecklistModal, setShowChecklistModal] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [resolvedContext, setResolvedContext] = useState<any>(null);
   const [scannedQrCode, setScannedQrCode] = useState<string>("");
 
@@ -416,8 +419,8 @@ export default function MobileQrScanner() {
     }
   };
 
-  const handleServiceSelection = async (serviceId: string, workOrderId?: string, checklistTemplateId?: string) => {
-    console.log('[QR SCANNER] handleServiceSelection chamado:', { serviceId, workOrderId, checklistTemplateId, hasResolvedContext: !!resolvedContext });
+  const handleServiceSelection = async (serviceId: string, workOrderId?: string) => {
+    console.log('[QR SCANNER] handleServiceSelection chamado:', { serviceId, workOrderId, hasResolvedContext: !!resolvedContext });
     
     if (!resolvedContext) {
       console.error('[QR SCANNER] Erro: resolvedContext está vazio!');
@@ -433,11 +436,32 @@ export default function MobileQrScanner() {
         return;
       }
 
-      // Criar nova work order com checklist selecionado
+      // Se está criando nova OS, abrir modal de seleção de checklist
+      console.log('[QR SCANNER] Abrindo modal de checklist para serviceId:', serviceId);
+      setSelectedServiceId(serviceId);
+      setShowServiceModal(false);
+      setShowChecklistModal(true);
+    } catch (error) {
+      console.error("[QR SCANNER] Erro ao processar serviço:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao processar seleção de serviço.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleChecklistConfirm = async (checklistTemplateId: string) => {
+    console.log('[QR SCANNER] Checklist confirmado:', checklistTemplateId);
+    
+    if (!resolvedContext || !selectedServiceId) {
+      console.error('[QR SCANNER] Erro: contexto ou serviceId ausente!');
+      return;
+    }
+
+    try {
       const customerId = resolvedContext.customer.id;
       const qrModule = resolvedContext.qrPoint?.module || 'clean';
-      
-      // Buscar o companyId do site
       const companyId = resolvedContext.site?.companyId || COMPANY_ID;
       
       const workOrderData = {
@@ -445,28 +469,24 @@ export default function MobileQrScanner() {
         module: qrModule,
         siteId: resolvedContext.site.id,
         zoneId: resolvedContext.zone.id,
-        serviceId: serviceId,
+        serviceId: selectedServiceId,
         type: 'corretiva_interna',
         priority: 'media',
         title: `Serviço via QR - ${resolvedContext.zone.name}`,
         description: `Work order criada via QR Code: ${scannedQrCode}`,
         origin: 'QR Scanner Mobile',
         qrCodePointId: resolvedContext.qrPoint?.id,
-        checklistTemplateId: checklistTemplateId || null,
+        checklistTemplateId: checklistTemplateId,
         checklistData: null
       };
-      
-      console.log('[QR SCANNER] Criando work order com módulo:', qrModule);
 
-      console.log('[QR SCANNER] Criando nova work order para customer:', customerId, workOrderData);
+      console.log('[QR SCANNER] Criando work order:', workOrderData);
 
       const response = await fetch(`/api/customers/${customerId}/work-orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(workOrderData),
       });
-
-      console.log('[QR SCANNER] Response status:', response.status);
 
       if (response.ok) {
         const workOrder = await response.json();
@@ -477,8 +497,7 @@ export default function MobileQrScanner() {
           description: `OS #${workOrder.number} criada com sucesso`,
         });
 
-        setShowServiceModal(false);
-        console.log('[QR SCANNER] Navegando para:', `/mobile/work-order/${workOrder.id}`);
+        setShowChecklistModal(false);
         setLocation(`/mobile/work-order/${workOrder.id}`);
       } else {
         const errorData = await response.text();
@@ -486,7 +505,7 @@ export default function MobileQrScanner() {
         throw new Error(`Erro ao criar work order: ${response.status}`);
       }
     } catch (error) {
-      console.error("[QR SCANNER] Erro ao processar serviço:", error);
+      console.error("[QR SCANNER] Erro ao criar work order:", error);
       toast({
         title: "Erro",
         description: "Não foi possível criar a work order.",
@@ -497,6 +516,15 @@ export default function MobileQrScanner() {
 
   const handleModalClose = () => {
     setShowServiceModal(false);
+    setResolvedContext(null);
+    setScannedQrCode("");
+    setIsProcessing(false);
+    setTimeout(() => startScanner(), 500);
+  };
+
+  const handleChecklistModalClose = () => {
+    setShowChecklistModal(false);
+    setSelectedServiceId("");
     setResolvedContext(null);
     setScannedQrCode("");
     setIsProcessing(false);
@@ -662,6 +690,17 @@ export default function MobileQrScanner() {
           resolvedContext={resolvedContext}
           scannedQrCode={scannedQrCode}
           onServiceSelect={handleServiceSelection}
+        />
+      )}
+
+      {/* Checklist Selection Modal */}
+      {showChecklistModal && resolvedContext && (
+        <ChecklistSelectionModal
+          isOpen={showChecklistModal}
+          onClose={handleChecklistModalClose}
+          customerId={resolvedContext.customer.id}
+          module={resolvedContext.qrPoint?.module || 'clean'}
+          onConfirm={handleChecklistConfirm}
         />
       )}
     </div>
