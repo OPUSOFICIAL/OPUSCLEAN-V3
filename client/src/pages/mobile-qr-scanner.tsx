@@ -436,8 +436,12 @@ export default function MobileQrScanner() {
       // Criar nova work order
       const customerId = resolvedContext.customer.id;
       const qrModule = resolvedContext.qrPoint?.module || 'clean';
+      
+      // Buscar o companyId do site
+      const companyId = resolvedContext.site?.companyId || COMPANY_ID;
+      
       const workOrderData = {
-        companyId: COMPANY_ID,
+        companyId: companyId,
         module: qrModule,
         siteId: resolvedContext.site.id,
         zoneId: resolvedContext.zone.id,
