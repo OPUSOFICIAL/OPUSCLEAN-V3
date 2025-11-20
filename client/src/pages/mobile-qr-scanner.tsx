@@ -416,8 +416,8 @@ export default function MobileQrScanner() {
     }
   };
 
-  const handleServiceSelection = async (serviceId: string, checklistAnswers?: any, workOrderId?: string) => {
-    console.log('[QR SCANNER] handleServiceSelection chamado:', { serviceId, workOrderId, hasResolvedContext: !!resolvedContext });
+  const handleServiceSelection = async (serviceId: string, checklistId?: string, workOrderId?: string) => {
+    console.log('[QR SCANNER] handleServiceSelection chamado:', { serviceId, checklistId, workOrderId, hasResolvedContext: !!resolvedContext });
     
     if (!resolvedContext) {
       console.error('[QR SCANNER] Erro: resolvedContext está vazio!');
@@ -452,7 +452,7 @@ export default function MobileQrScanner() {
         description: `Work order criada via QR Code: ${scannedQrCode}`,
         origin: 'QR Scanner Mobile',
         qrCodePointId: resolvedContext.qrPoint?.id,
-        checklistData: checklistAnswers || null
+        checklistData: checklistId ? { checklistTemplateId: checklistId } : null
       };
       
       console.log('[QR SCANNER] Criando work order com módulo:', qrModule);

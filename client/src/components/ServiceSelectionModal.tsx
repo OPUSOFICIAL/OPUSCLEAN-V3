@@ -22,7 +22,7 @@ interface ServiceSelectionModalProps {
   onClose: () => void;
   resolvedContext: any;
   scannedQrCode: string;
-  onServiceSelect: (serviceId: string, checklistAnswers?: any, workOrderId?: string) => void;
+  onServiceSelect: (serviceId: string, checklistId?: string, workOrderId?: string) => void;
 }
 
 // Helper para parsear data local sem conversão de timezone
@@ -54,6 +54,9 @@ export default function ServiceSelectionModal({
   const [isLoadingWorkOrders, setIsLoadingWorkOrders] = useState(false);
   const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('today');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
+  const [checklists, setChecklists] = useState<any[]>([]);
+  const [selectedChecklist, setSelectedChecklist] = useState<string>("");
+  const [isLoadingChecklists, setIsLoadingChecklists] = useState(false);
 
   useEffect(() => {
     if (isOpen && resolvedContext?.customer?.id) {
@@ -64,9 +67,12 @@ export default function ServiceSelectionModal({
   useEffect(() => {
     if (selectedService && resolvedContext?.zone?.id) {
       loadWorkOrdersForService(selectedService);
+      loadChecklists();
     } else {
       setAvailableWorkOrders([]);
       setSelectedWorkOrder(null);
+      setChecklists([]);
+      setSelectedChecklist("");
     }
   }, [selectedService, resolvedContext]);
 
@@ -92,6 +98,25 @@ export default function ServiceSelectionModal({
       console.error('Erro ao carregar serviços:', error);
     } finally {
       setIsLoadingServices(false);
+    }
+  };
+
+  const loadChecklists = async () => {
+    setIsLoadingChecklists(true);
+    try {
+      const module = resolvedContext?.qrPoint?.module || 'clean';
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/checklist-templates?module=${module}`);
+      
+      if (response.ok) {
+        const checklistsData = await response.json();
+        setChecklists(checklistsData || []);
+        console.log('[SERVICE MODAL] Checklists disponíveis:', checklistsData.length);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar checklists:', error);
+    } finally {
+      setIsLoadingChecklists(false);
     }
   };
 
@@ -231,6 +256,38 @@ export default function ServiceSelectionModal({
             )}
           </div>
 
+          {/* Selecionar Checklist (apenas se serviço estiver selecionado) */}
+          {selectedService && (
+            <div className="space-y-3 border-t pt-4">
+              <h3 className="font-semibold text-slate-900">
+                Selecione o Checklist
+              </h3>
+              
+              {isLoadingChecklists ? (
+                <div className="text-center py-4 text-slate-500">
+                  Carregando checklists...
+                </div>
+              ) : checklists.length === 0 ? (
+                <div className="text-center py-4 text-amber-600 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm">Nenhum checklist disponível para este serviço</p>
+                </div>
+              ) : (
+                <Select value={selectedChecklist} onValueChange={setSelectedChecklist}>
+                  <SelectTrigger data-testid="select-checklist" className="w-full">
+                    <SelectValue placeholder="Escolha o checklist (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[99999]">
+                    {checklists.map((checklist) => (
+                      <SelectItem key={checklist.id} value={checklist.id}>
+                        {checklist.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
           {/* Mostrar lista de work orders após selecionar serviço */}
           {selectedService && (
             <div className="space-y-4 border-t pt-4">
@@ -253,7 +310,7 @@ export default function ServiceSelectionModal({
                     </p>
                   </div>
                   <Button
-                    onClick={() => onServiceSelect(selectedService)}
+                    onClick={() => onServiceSelect(selectedService, selectedChecklist)}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     data-testid="button-create-corrective-os"
                   >
@@ -373,7 +430,7 @@ export default function ServiceSelectionModal({
                       Executar OS
                     </Button>
                     <Button
-                      onClick={() => onServiceSelect(selectedService)}
+                      onClick={() => onServiceSelect(selectedService, selectedChecklist)}
                       variant="outline"
                       className="border-blue-600 text-blue-600 hover:bg-blue-50"
                       data-testid="button-create-new-os"
