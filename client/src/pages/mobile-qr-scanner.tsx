@@ -442,7 +442,7 @@ export default function MobileQrScanner() {
         siteId: resolvedContext.site.id,
         zoneId: resolvedContext.zone.id,
         serviceId: serviceId,
-        orderType: 'corretiva_interna',
+        type: 'corretiva_interna',
         priority: 'media',
         title: `Serviço via QR - ${resolvedContext.zone.name}`,
         description: `Work order criada via QR Code: ${scannedQrCode}`,
