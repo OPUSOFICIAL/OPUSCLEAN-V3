@@ -150,8 +150,14 @@ export default function MobileWorkOrderExecute() {
         if (checklistResponse.ok) {
           checklistData = await checklistResponse.json();
         }
+      } else if (woData.module === 'clean' && woData.checklistTemplateId) {
+        // Para clean: buscar o checklist template selecionado na criação da OS
+        const checklistResponse = await authenticatedFetch(`/api/checklist-templates/${woData.checklistTemplateId}`);
+        if (checklistResponse.ok) {
+          checklistData = await checklistResponse.json();
+        }
       } else if (woData.module === 'clean' && woData.serviceId) {
-        // Para clean: buscar do service_types
+        // Fallback: buscar do service (caso OS antiga sem checklistTemplateId)
         const checklistResponse = await authenticatedFetch(`/api/services/${woData.serviceId}/checklist`);
         if (checklistResponse.ok) {
           checklistData = await checklistResponse.json();
