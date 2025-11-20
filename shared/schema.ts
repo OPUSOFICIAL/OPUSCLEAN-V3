@@ -398,6 +398,7 @@ export const dashboardGoals = pgTable("dashboard_goals", {
 export const customRoles = pgTable("custom_roles", {
   id: varchar("id").primaryKey(),
   companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").references(() => customers.id), // Null para funções de sistema, preenchido para funções de cliente
   name: varchar("name").notNull(),
   description: text("description"),
   isSystemRole: boolean("is_system_role").default(false),

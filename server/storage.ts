@@ -322,6 +322,7 @@ export interface IStorage {
 
   // Custom Roles
   getCustomRoles(): Promise<CustomRoleWithPermissions[]>;
+  getCustomRolesByCustomer(customerId: string): Promise<CustomRoleWithPermissions[]>;
   getCustomRoleById(id: string): Promise<CustomRoleWithPermissions | undefined>;
   createCustomRole(role: InsertCustomRole): Promise<CustomRoleWithPermissions>;
   updateCustomRole(id: string, role: Partial<InsertCustomRole>): Promise<CustomRoleWithPermissions>;
@@ -4823,6 +4824,33 @@ export class DatabaseStorage implements IStorage {
   // Custom Roles
   async getCustomRoles(): Promise<CustomRoleWithPermissions[]> {
     const roles = await db.select().from(customRoles).where(eq(customRoles.isActive, true));
+    
+    // Para cada role, buscar suas permissões
+    const rolesWithPermissions = await Promise.all(
+      roles.map(async (role) => {
+        const permissions = await db.select()
+          .from(rolePermissions)
+          .where(eq(rolePermissions.roleId, role.id));
+        
+        return {
+          ...role,
+          permissions: permissions.map(p => p.permission)
+        };
+      })
+    );
+    
+    return rolesWithPermissions;
+  }
+
+  async getCustomRolesByCustomer(customerId: string): Promise<CustomRoleWithPermissions[]> {
+    const roles = await db.select()
+      .from(customRoles)
+      .where(
+        and(
+          eq(customRoles.customerId, customerId),
+          eq(customRoles.isActive, true)
+        )
+      );
     
     // Para cada role, buscar suas permissões
     const rolesWithPermissions = await Promise.all(
