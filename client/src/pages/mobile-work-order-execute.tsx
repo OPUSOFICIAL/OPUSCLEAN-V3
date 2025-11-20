@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle, Image as ImageIcon, WifiOff, List } from "lucide-react";
+import { ArrowLeft, CheckCircle, MapPin, Building2, AlertCircle, Camera, X, PauseCircle, Image as ImageIcon, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNetwork } from "@/contexts/NetworkContext";
 import { useOfflineStorage } from "@/hooks/use-offline-storage";
@@ -59,8 +59,6 @@ export default function MobileWorkOrderExecute() {
   
   const [workOrder, setWorkOrder] = useState<any>(null);
   const [checklist, setChecklist] = useState<any>(null);
-  const [availableChecklists, setAvailableChecklists] = useState<any[]>([]);
-  const [selectedChecklistId, setSelectedChecklistId] = useState<string>("");
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -143,9 +141,6 @@ export default function MobileWorkOrderExecute() {
       
       setWorkOrder(woData);
 
-      // Carregar checklists disponíveis para o módulo
-      await loadAvailableChecklists(woData);
-
       // Buscar checklist - rota diferente para Clean vs Maintenance
       let checklistData = null;
       
@@ -154,16 +149,12 @@ export default function MobileWorkOrderExecute() {
         const checklistResponse = await authenticatedFetch(`/api/maintenance-checklist-templates/${woData.maintenanceChecklistTemplateId}`);
         if (checklistResponse.ok) {
           checklistData = await checklistResponse.json();
-          setSelectedChecklistId(checklistData.id);
         }
       } else if (woData.module === 'clean' && woData.serviceId) {
         // Para clean: buscar do service_types
         const checklistResponse = await authenticatedFetch(`/api/services/${woData.serviceId}/checklist`);
         if (checklistResponse.ok) {
           checklistData = await checklistResponse.json();
-          if (checklistData?.id) {
-            setSelectedChecklistId(checklistData.id);
-          }
         }
       }
       
@@ -200,67 +191,6 @@ export default function MobileWorkOrderExecute() {
     }
   };
 
-  const loadAvailableChecklists = async (woData: any) => {
-    try {
-      if (!woData.customerId) return;
-      
-      const module = woData.module || 'clean';
-      const response = await authenticatedFetch(`/api/customers/${woData.customerId}/checklist-templates?module=${module}`);
-      
-      if (response.ok) {
-        const checklistsData = await response.json();
-        setAvailableChecklists(checklistsData || []);
-        console.log('[CHECKLIST SELECTOR] Checklists disponíveis:', checklistsData.length);
-      }
-    } catch (error) {
-      console.error('[CHECKLIST SELECTOR] Erro ao carregar checklists:', error);
-    }
-  };
-
-  const handleChecklistChange = async (checklistId: string) => {
-    if (!checklistId) return;
-    
-    setSelectedChecklistId(checklistId);
-    
-    try {
-      // Buscar o novo checklist
-      const response = await authenticatedFetch(`/api/checklist-templates/${checklistId}`);
-      
-      if (response.ok) {
-        const newChecklist = await response.json();
-        setChecklist(newChecklist);
-        
-        // Resetar respostas com o novo checklist
-        const initialAnswers: Record<string, any> = {};
-        if (newChecklist?.items) {
-          newChecklist.items.forEach((item: any) => {
-            if (item.type === 'boolean') {
-              initialAnswers[item.id] = undefined;
-            } else if (item.type === 'photo') {
-              initialAnswers[item.id] = [];
-            } else if (item.type === 'checkbox') {
-              initialAnswers[item.id] = [];
-            } else {
-              initialAnswers[item.id] = '';
-            }
-          });
-        }
-        setAnswers(initialAnswers);
-        
-        toast({
-          title: "Checklist Atualizado",
-          description: `Checklist "${newChecklist.name}" selecionado com sucesso`,
-        });
-      }
-    } catch (error) {
-      console.error('[CHECKLIST SELECTOR] Erro ao trocar checklist:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar o checklist selecionado",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handlePhotoUpload = async (itemId: string) => {
     // Buscar o item do checklist para verificar o limite máximo
@@ -730,33 +660,6 @@ export default function MobileWorkOrderExecute() {
         </Card>
 
         {/* Seletor de Checklist */}
-        {availableChecklists.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <List className="w-5 h-5 text-blue-600" />
-                Selecionar Checklist
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={selectedChecklistId} onValueChange={handleChecklistChange}>
-                <SelectTrigger data-testid="select-checklist" className="w-full">
-                  <SelectValue placeholder="Escolha o checklist para esta OS" />
-                </SelectTrigger>
-                <SelectContent className="z-[99999]">
-                  {availableChecklists.map((checklistTemplate) => (
-                    <SelectItem key={checklistTemplate.id} value={checklistTemplate.id}>
-                      {checklistTemplate.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-slate-500 mt-2">
-                Selecione qual checklist deseja usar para executar esta ordem de serviço
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Checklist */}
         {checklist && checklist.items && checklist.items.length > 0 ? (
