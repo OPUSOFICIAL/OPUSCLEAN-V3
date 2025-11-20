@@ -2,9 +2,11 @@ import { useEffect, useRef } from 'react';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { syncQueueManager } from '@/lib/sync-queue-manager';
 import { useToast } from '@/hooks/use-toast';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Hook that automatically triggers sync when device reconnects to internet
+ * MOBILE-ONLY: This hook does nothing on web platform
  */
 export function useSyncOnReconnect() {
   const { isOnline, wasOffline } = useNetwork();
@@ -12,6 +14,11 @@ export function useSyncOnReconnect() {
   const isSyncingRef = useRef(false);
 
   useEffect(() => {
+    // MOBILE-ONLY: Skip sync on web platform
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+
     // Trigger sync when coming back online
     if (isOnline && wasOffline && !isSyncingRef.current) {
       console.log('[SYNC] Device reconnected, triggering automatic sync...');
