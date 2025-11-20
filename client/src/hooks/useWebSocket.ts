@@ -260,6 +260,7 @@ function invalidateQueriesByResource(resource: string, message: WebSocketMessage
     case 'sites':
     case 'site':
       queryClient.invalidateQueries({ queryKey: ['/api/sites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
       if (message.customerId) {
         queryClient.invalidateQueries({ queryKey: [`/api/customers/${message.customerId}/sites`] });
       }
@@ -269,13 +270,30 @@ function invalidateQueriesByResource(resource: string, message: WebSocketMessage
     case 'zones':
     case 'zone':
       queryClient.invalidateQueries({ queryKey: ['/api/zones'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
+      if (message.customerId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/customers/${message.customerId}/zones`] });
+      }
       break;
 
     // QR Codes
     case 'qrcodes':
     case 'qrcode':
       queryClient.invalidateQueries({ queryKey: ['/api/qrcodes'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/qr-points'] });
       queryClient.invalidateQueries({ queryKey: ['/api/zones'] });
+      if (message.customerId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/customers/${message.customerId}/qr-points`] });
+      }
+      break;
+
+    // Services
+    case 'services':
+    case 'service':
+      queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      if (message.customerId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/customers/${message.customerId}/services`] });
+      }
       break;
 
     // Checklists

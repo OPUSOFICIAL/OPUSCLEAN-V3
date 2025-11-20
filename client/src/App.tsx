@@ -51,6 +51,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useToast } from "@/hooks/use-toast";
 
 // Component to initialize sync hooks
 function SyncInitializer() {
@@ -61,6 +62,25 @@ function SyncInitializer() {
 // Component to initialize WebSocket connection for real-time updates
 function WebSocketInitializer() {
   const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  
+  // Mapeamento de recursos para nomes amigáveis
+  const getResourceLabel = (resource: string): string => {
+    const labels: Record<string, string> = {
+      'workorders': 'Ordem de Serviço',
+      'customers': 'Cliente',
+      'sites': 'Local',
+      'zones': 'Zona',
+      'users': 'Usuário',
+      'roles': 'Função',
+      'equipment': 'Equipamento',
+      'qrcodes': 'QR Code',
+      'services': 'Serviço',
+      'checklists': 'Checklist',
+      'maintenance-plans': 'Plano de Manutenção',
+    };
+    return labels[resource] || resource;
+  };
   
   const { isConnected, connectionStatus } = useWebSocket({
     enabled: isAuthenticated,
@@ -72,6 +92,23 @@ function WebSocketInitializer() {
     },
     onMessage: (message) => {
       console.log('[App] 📩 WebSocket message:', message);
+      
+      // Mostrar toast sutil para atualizações em tempo real
+      if (message.type && message.resource && (message.type === 'create' || message.type === 'update' || message.type === 'delete')) {
+        const resourceLabel = getResourceLabel(message.resource);
+        const actionLabels = {
+          create: 'criado(a)',
+          update: 'atualizado(a)',
+          delete: 'excluído(a)',
+        };
+        const action = actionLabels[message.type as keyof typeof actionLabels] || message.type;
+        
+        toast({
+          title: "Atualização em tempo real",
+          description: `${resourceLabel} ${action}`,
+          duration: 2000,
+        });
+      }
     }
   });
 

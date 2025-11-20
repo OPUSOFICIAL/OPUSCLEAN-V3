@@ -225,6 +225,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const site = insertSiteSchema.parse(dataToValidate);
       const newSite = await storage.createSite(site);
+      
+      // Broadcast site creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'sites',
+        data: newSite,
+        customerId: req.params.customerId,
+      });
+      
       res.status(201).json(newSite);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -255,6 +264,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         module: req.body.module || 'clean'
       });
       const newSite = await storage.createSite(site);
+      
+      // Broadcast site creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'sites',
+        data: newSite,
+        customerId: newSite.customerId,
+      });
+      
       res.status(201).json(newSite);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -268,6 +286,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const site = insertSiteSchema.partial().parse(req.body);
       const updatedSite = await storage.updateSite(req.params.id, site);
+      
+      // Broadcast site update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'sites',
+        data: updatedSite,
+        customerId: updatedSite.customerId,
+      });
+      
       res.json(updatedSite);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -279,7 +306,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/sites/:id", requirePermission('sites_delete'), async (req, res) => {
     try {
+      const site = await storage.getSite(req.params.id);
       await storage.deleteSite(req.params.id);
+      
+      // Broadcast site deletion to all connected clients
+      if (site) {
+        broadcast({
+          type: 'delete',
+          resource: 'sites',
+          data: { id: req.params.id },
+          customerId: site.customerId,
+        });
+      }
+      
       res.json({ message: "Site excluído com sucesso" });
     } catch (error) {
       console.error("Erro ao excluir site:", error);
@@ -1038,6 +1077,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         module: req.body.module || 'clean'
       });
       const newZone = await storage.createZone(zone);
+      
+      // Buscar o site para obter o customerId
+      const site = await storage.getSite(newZone.siteId);
+      
+      // Broadcast zone creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'zones',
+        data: newZone,
+        customerId: site?.customerId || undefined,
+      });
+      
       res.status(201).json(newZone);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1051,6 +1102,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const zone = insertZoneSchema.partial().parse(req.body);
       const updatedZone = await storage.updateZone(req.params.id, zone);
+      
+      // Buscar o site para obter o customerId
+      const site = await storage.getSite(updatedZone.siteId);
+      
+      // Broadcast zone update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'zones',
+        data: updatedZone,
+        customerId: site?.customerId || undefined,
+      });
+      
       res.json(updatedZone);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1064,6 +1127,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const zone = insertZoneSchema.partial().parse(req.body);
       const updatedZone = await storage.updateZone(req.params.id, zone);
+      
+      // Buscar o site para obter o customerId
+      const site = await storage.getSite(updatedZone.siteId);
+      
+      // Broadcast zone update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'zones',
+        data: updatedZone,
+        customerId: site?.customerId || undefined,
+      });
+      
       res.json(updatedZone);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1075,7 +1150,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/zones/:id", requirePermission('zones_delete'), async (req, res) => {
     try {
+      // Buscar a zone ANTES de deletar para ter o siteId e customerId
+      const zone = await storage.getZone(req.params.id);
+      const site = zone ? await storage.getSite(zone.siteId) : null;
+      
       await storage.deleteZone(req.params.id);
+      
+      // Broadcast zone deletion to all connected clients
+      if (zone && site) {
+        broadcast({
+          type: 'delete',
+          resource: 'zones',
+          data: { id: req.params.id },
+          customerId: site.customerId || undefined,
+        });
+      }
+      
       res.json({ message: "Zone deleted successfully" });
     } catch (error) {
       console.error("Error deleting zone:", error);
@@ -1237,6 +1327,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         qrPoint.code = crypto.randomUUID();
       }
       const newPoint = await storage.createQrCodePoint(qrPoint);
+      
+      // Buscar a zone para obter o customerId
+      const zone = await storage.getZone(newPoint.zoneId);
+      const site = zone ? await storage.getSite(zone.siteId) : null;
+      
+      // Broadcast QR code creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'qrcodes',
+        data: newPoint,
+        customerId: site?.customerId || undefined,
+      });
+      
       res.status(201).json(newPoint);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1250,6 +1353,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const qrPoint = insertQrCodePointSchema.partial().parse(req.body);
       const updatedPoint = await storage.updateQrCodePoint(req.params.id, qrPoint);
+      
+      // Buscar a zone para obter o customerId
+      const zone = await storage.getZone(updatedPoint.zoneId);
+      const site = zone ? await storage.getSite(zone.siteId) : null;
+      
+      // Broadcast QR code update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'qrcodes',
+        data: updatedPoint,
+        customerId: site?.customerId || undefined,
+      });
+      
       res.json(updatedPoint);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1261,7 +1377,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/qr-points/:id", async (req, res) => {
     try {
+      // Buscar o QR point ANTES de deletar para ter o zoneId e customerId
+      const qrPoint = await storage.getQrCodePoint(req.params.id);
+      const zone = qrPoint ? await storage.getZone(qrPoint.zoneId) : null;
+      const site = zone ? await storage.getSite(zone.siteId) : null;
+      
       await storage.deleteQrCodePoint(req.params.id);
+      
+      // Broadcast QR code deletion to all connected clients
+      if (qrPoint && site) {
+        broadcast({
+          type: 'delete',
+          resource: 'qrcodes',
+          data: { id: req.params.id },
+          customerId: site.customerId || undefined,
+        });
+      }
+      
       res.json({ message: "QR code point deleted successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete QR code point" });
@@ -1380,6 +1512,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Broadcast user creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'users',
+        data: sanitizeUser(newUser),
+        customerId: newUser.customerId || undefined,
+      });
+      
       res.status(201).json(sanitizeUser(newUser));
     } catch (error: any) {
       // Tratamento de erros do Zod (validação)
@@ -1472,6 +1612,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedUser = await storage.updateUser(req.params.id, user);
+      
+      // Broadcast user update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'users',
+        data: sanitizeUser(updatedUser),
+        customerId: updatedUser.customerId || undefined,
+      });
+      
       res.json(sanitizeUser(updatedUser));
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1515,6 +1664,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedUser = await storage.updateUser(req.params.id, user);
+      
+      // Broadcast user update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'users',
+        data: sanitizeUser(updatedUser),
+        customerId: updatedUser.customerId || undefined,
+      });
+      
       res.json(sanitizeUser(updatedUser));
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1526,7 +1684,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/users/:id", requirePermission('users_delete'), async (req, res) => {
     try {
+      // Buscar o usuário ANTES de deletar para ter o customerId
+      const user = await storage.getUser(req.params.id);
+      
       await storage.deleteUser(req.params.id);
+      
+      // Broadcast user deletion to all connected clients
+      if (user) {
+        broadcast({
+          type: 'delete',
+          resource: 'users',
+          data: { id: req.params.id },
+          customerId: user.customerId || undefined,
+        });
+      }
+      
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       console.error("Error deleting user:", error);
@@ -1567,6 +1739,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const service = insertServiceSchema.parse(dataWithModule);
       console.log("Validated service:", service);
       const newService = await storage.createService(service);
+      
+      // Broadcast service creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'services',
+        data: newService,
+        customerId: newService.customerId || undefined,
+      });
+      
       res.status(201).json(newService);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1582,6 +1763,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const service = insertServiceSchema.partial().parse(req.body);
       const updatedService = await storage.updateService(req.params.id, service);
+      
+      // Broadcast service update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'services',
+        data: updatedService,
+        customerId: updatedService.customerId || undefined,
+      });
+      
       res.json(updatedService);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1593,7 +1783,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/services/:id", async (req, res) => {
     try {
+      // Buscar o service ANTES de deletar para ter o customerId
+      const service = await storage.getService(req.params.id);
+      
       await storage.deleteService(req.params.id);
+      
+      // Broadcast service deletion to all connected clients
+      if (service) {
+        broadcast({
+          type: 'delete',
+          resource: 'services',
+          data: { id: req.params.id },
+          customerId: service.customerId || undefined,
+        });
+      }
+      
       res.json({ message: "Service deleted successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete service" });
@@ -4702,6 +4906,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const equipment = insertEquipmentSchema.parse(req.body);
       console.log("Validated equipment:", equipment);
       const newEquipment = await storage.createEquipment(equipment);
+      
+      // Buscar a zone para obter o customerId
+      const zone = await storage.getZone(newEquipment.zoneId);
+      const site = zone ? await storage.getSite(zone.siteId) : null;
+      
+      // Broadcast equipment creation to all connected clients
+      broadcast({
+        type: 'create',
+        resource: 'equipment',
+        data: newEquipment,
+        customerId: site?.customerId || undefined,
+      });
+      
       res.status(201).json(newEquipment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -4722,6 +4939,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const equipment = insertEquipmentSchema.partial().parse(req.body);
       const updatedEquipment = await storage.updateEquipment(req.params.id, equipment);
+      
+      // Buscar a zone para obter o customerId
+      const zone = await storage.getZone(updatedEquipment.zoneId);
+      const site = zone ? await storage.getSite(zone.siteId) : null;
+      
+      // Broadcast equipment update to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'equipment',
+        data: updatedEquipment,
+        customerId: site?.customerId || undefined,
+      });
+      
       res.json(updatedEquipment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -4739,7 +4969,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete equipment
   app.delete("/api/equipment/:id", async (req, res) => {
     try {
+      // Buscar o equipment ANTES de deletar para ter o zoneId e customerId
+      const equipment = await storage.getEquipment(req.params.id);
+      const zone = equipment ? await storage.getZone(equipment.zoneId) : null;
+      const site = zone ? await storage.getSite(zone.siteId) : null;
+      
       await storage.deleteEquipment(req.params.id);
+      
+      // Broadcast equipment deletion to all connected clients
+      if (equipment && site) {
+        broadcast({
+          type: 'delete',
+          resource: 'equipment',
+          data: { id: req.params.id },
+          customerId: site.customerId || undefined,
+        });
+      }
+      
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting equipment:", error);
