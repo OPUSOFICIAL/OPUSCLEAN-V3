@@ -142,10 +142,8 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   }, [currentModule, moduleConfig, activeClient]);
 
   const setModule = (module: ModuleType) => {
-    // 🔥 VALIDAÇÃO DUPLA: Verificar se usuário TEM ACESSO e se cliente POSSUI o módulo
+    // 🔥 VALIDAÇÃO: Verificar se usuário TEM ACESSO ao módulo
     const userHasAccess = canAccessModule(module);
-    const clientModules = (activeClient?.modules || []) as ModuleType[];
-    const clientHasModule = clientModules.includes(module);
     
     // Verificar se usuário tem acesso ao módulo
     if (!userHasAccess) {
@@ -153,13 +151,24 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
       return; // Não trocar
     }
     
-    // Verificar se cliente possui o módulo
+    // Se o cliente ainda não foi carregado (activeClient === undefined), permitir trocar
+    // A validação do módulo do cliente acontecerá no useEffect quando o cliente carregar
+    if (!activeClient) {
+      console.log(`[MODULE] ⏳ Cliente ainda não carregado - Permitindo seleção de módulo: ${module}`);
+      setCurrentModule(module);
+      return;
+    }
+    
+    // Se o cliente já está carregado, verificar se possui o módulo
+    const clientModules = (activeClient.modules || []) as ModuleType[];
+    const clientHasModule = clientModules.includes(module);
+    
     if (!clientHasModule) {
-      console.warn(`[MODULE] ❌ ACESSO NEGADO - Cliente "${activeClient?.name}" não possui módulo: ${module}`);
+      console.warn(`[MODULE] ❌ ACESSO NEGADO - Cliente "${activeClient.name}" não possui módulo: ${module}`);
       return; // Não trocar
     }
     
-    // ✅ Passou na validação dupla - PODE TROCAR
+    // ✅ Passou na validação - PODE TROCAR
     console.log(`[MODULE] ✅ Validação aprovada - Trocando para módulo: ${module}`);
     setCurrentModule(module);
     
