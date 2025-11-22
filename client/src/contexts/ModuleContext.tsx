@@ -100,26 +100,13 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
     
     const clientModules = activeClient.modules || [];
     
-    // Se o cliente só tem um módulo e é diferente do atual, trocar automaticamente
-    if (clientModules.length === 1) {
-      const clientModule = clientModules[0] as ModuleType;
-      
-      // Verificar se o usuário pode acessar esse módulo e se é diferente do atual
-      if (canAccessModule(clientModule) && clientModule !== currentModule) {
-        console.log(`[MODULE] Cliente "${activeClient.name}" possui apenas módulo "${clientModule}", trocando automaticamente...`);
-        setCurrentModule(clientModule);
-        
-        // Redirecionar para a tela inicial
-        console.log(`[MODULE] Redirecionando para tela inicial do módulo "${clientModule}"...`);
-        setLocation('/');
-      }
-    }
-    // Se o cliente tem múltiplos módulos mas o módulo atual não é suportado pelo cliente
-    else if (clientModules.length > 1 && !clientModules.includes(currentModule)) {
+    // Apenas validar se o módulo atual é suportado pelo cliente
+    // NÃO forçar troca automática, respeitar a escolha do usuário
+    if (clientModules.length > 0 && !clientModules.includes(currentModule)) {
       // Trocar para o primeiro módulo do cliente que o usuário pode acessar
       const validModule = clientModules.find(m => canAccessModule(m as ModuleType));
       if (validModule) {
-        console.log(`[MODULE] Módulo atual não suportado pelo cliente, trocando para "${validModule}"...`);
+        console.log(`[MODULE] ⚠️ Módulo "${currentModule}" não disponível para cliente "${activeClient.name}", trocando para "${validModule}"...`);
         setCurrentModule(validModule as ModuleType);
         
         // Redirecionar para a tela inicial

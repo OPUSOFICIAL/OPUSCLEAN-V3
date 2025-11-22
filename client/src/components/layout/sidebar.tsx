@@ -217,8 +217,8 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           </div>
         </div>
       )}
-      {/* Module/Platform Selector - mostrar se o CLIENTE ATIVO tem múltiplos módulos */}
-      {!isCollapsed && effectiveHasMultipleModules && (
+      {/* Module/Platform Selector - mostrar se o USUÁRIO tem múltiplos módulos disponíveis */}
+      {!isCollapsed && hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
           <label className="block text-sm font-semibold text-slate-700 mb-2">
             Plataforma
@@ -244,8 +244,8 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
           </Select>
         </div>
       )}
-      {/* Module Indicator - para clientes com módulo único */}
-      {!isCollapsed && !effectiveHasMultipleModules && (
+      {/* Module Indicator - para usuários com apenas um módulo */}
+      {!isCollapsed && !hasMultipleModules && (
         <div className="px-6 pt-1 pb-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-white">
           <label className="block text-sm font-semibold text-slate-500 mb-2">
             Plataforma
