@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
+import { useModuleTheme } from "@/hooks/use-module-theme";
 import { X, Save, Calendar, Timer, MapPin, User, Settings, AlertCircle, CheckSquare } from "lucide-react";
 
 interface CreateWorkOrderModalProps {
@@ -19,6 +20,7 @@ interface CreateWorkOrderModalProps {
 
 export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }: CreateWorkOrderModalProps) {
   const { currentModule } = useModule();
+  const theme = useModuleTheme();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -776,6 +778,8 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
             <Button 
               type="submit"
               disabled={createWorkOrderMutation.isPending}
+              className={theme.buttons.primary}
+              style={theme.buttons.primaryStyle}
               data-testid="button-create"
             >
               <Save className="w-4 h-4 mr-2" />
