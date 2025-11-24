@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModuleTheme } from "@/hooks/use-module-theme";
+import { usePermissions } from "@/hooks/usePermissions";
 import { 
   Plus, 
   Users as UsersIcon, 
@@ -56,6 +57,7 @@ export default function Users({ customerId }: UsersProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const theme = useModuleTheme();
+  const { can } = usePermissions();
 
   // Resetar campos do formulário quando o diálogo fechar
   useEffect(() => {
@@ -831,17 +833,19 @@ export default function Users({ customerId }: UsersProps) {
                           >
                             {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                            onClick={() => handleDeleteUser(user)}
-                            disabled={deleteUserMutation.isPending}
-                            data-testid={`button-delete-user-${user.id}`}
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {can.users.delete(customerId) && (
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={() => handleDeleteUser(user)}
+                              disabled={deleteUserMutation.isPending}
+                              data-testid={`button-delete-user-${user.id}`}
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
