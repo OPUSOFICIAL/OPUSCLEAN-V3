@@ -4679,7 +4679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: userData.name,
         role: 'admin' as const, // Default role para sistema
         userType: 'opus_user' as const,
-        companyId: 'company-opus-default',
+        companyId: 'a3e33b82-4f75-4f8d-86a2-2d67e61a9812', // OPUS Sistemas company ID
         customerId: null,
         authProvider: userData.authProvider || 'local',
         msTenantId: userData.msTenantId || null,
