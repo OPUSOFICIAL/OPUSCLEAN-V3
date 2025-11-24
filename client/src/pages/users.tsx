@@ -328,6 +328,13 @@ export default function Users({ customerId }: UsersProps) {
     });
   };
 
+  const handleToggleUserActive = (user: any) => {
+    const action = user.isActive ? "desativar" : "reativar";
+    if (window.confirm(`Tem certeza que deseja ${action} o usuário "${user.name}"?`)) {
+      deactivateUserMutation.mutate(user.id);
+    }
+  };
+
   const handleDeleteUser = (user: any) => {
     if (window.confirm(`Tem certeza que deseja excluir o usuário "${user.name}"?`)) {
       deleteUserMutation.mutate(user.id);
@@ -812,6 +819,17 @@ export default function Users({ customerId }: UsersProps) {
                             title="Trocar Senha"
                           >
                             <KeyRound className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            className={`h-8 w-8 ${user.isActive ? 'text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900' : 'text-green-600 hover:bg-green-100 dark:hover:bg-green-900'}`}
+                            onClick={() => handleToggleUserActive(user)}
+                            disabled={deactivateUserMutation.isPending}
+                            data-testid={`button-toggle-user-active-${user.id}`}
+                            title={user.isActive ? "Desativar" : "Reativar"}
+                          >
+                            {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                           </Button>
                           <Button 
                             variant="outline" 
