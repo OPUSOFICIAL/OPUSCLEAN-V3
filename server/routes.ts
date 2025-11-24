@@ -1954,7 +1954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/customers/:customerId/service-types", async (req, res) => {
+  app.post("/api/customers/:customerId/service-types", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       // Buscar customer para obter companyId
       const customer = await storage.getCustomer(req.params.customerId);
@@ -1991,7 +1991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/customers/:customerId/service-types/:id", async (req, res) => {
+  app.delete("/api/customers/:customerId/service-types/:id", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       await storage.deleteServiceType(req.params.id);
       res.json({ message: "Service type deleted successfully" });
@@ -2029,7 +2029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/service-types/:id", async (req, res) => {
+  app.delete("/api/service-types/:id", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       await storage.deleteServiceType(req.params.id);
       res.json({ message: "Service type deleted successfully" });
@@ -2049,7 +2049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/customers/:customerId/service-categories/:id", async (req, res) => {
+  app.delete("/api/customers/:customerId/service-categories/:id", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       await storage.deleteServiceCategory(req.params.id);
       res.json({ message: "Service category deleted successfully" });
@@ -2068,7 +2068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/customers/:customerId/service-categories", async (req, res) => {
+  app.post("/api/customers/:customerId/service-categories", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       // Generate code from name if not provided
       const code = req.body.code || req.body.name.toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
@@ -2101,7 +2101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/service-categories/:id", async (req, res) => {
+  app.delete("/api/service-categories/:id", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       await storage.deleteServiceCategory(req.params.id);
       res.json({ message: "Service category deleted successfully" });
@@ -2158,7 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/work-orders", async (req, res) => {
+  app.post("/api/work-orders", requirePermission('workorders_create'), async (req, res) => {
     try {
       const dataWithModule = {
         ...req.body,
@@ -2431,7 +2431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/work-orders/:workOrderId/comments", async (req, res) => {
+  app.post("/api/work-orders/:workOrderId/comments", requirePermission('workorders_comment'), async (req, res) => {
     try {
       const comment = {
         id: crypto.randomUUID(),
@@ -2448,7 +2448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/work-orders/:workOrderId/comments/:commentId", async (req, res) => {
+  app.delete("/api/work-orders/:workOrderId/comments/:commentId", requirePermission('workorders_comment'), async (req, res) => {
     try {
       await storage.deleteWorkOrderComment(req.params.commentId);
       res.json({ message: "Comment deleted successfully" });
@@ -2458,7 +2458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Work Order Rating (Customer Feedback)
-  app.post("/api/work-orders/:workOrderId/rating", async (req, res) => {
+  app.post("/api/work-orders/:workOrderId/rating", requirePermission('workorders_evaluate'), async (req, res) => {
     try {
       const { rating, comment, userId } = req.body;
       
@@ -2481,7 +2481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Work Order Reopen
-  app.post("/api/work-orders/:workOrderId/reopen", async (req, res) => {
+  app.post("/api/work-orders/:workOrderId/reopen", requirePermission('workorders_edit'), async (req, res) => {
     try {
       const { userId, reason, attachments } = req.body;
       const reopenedWorkOrder = await storage.reopenWorkOrder(
@@ -2819,7 +2819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/qr-public/:code/service-request", async (req, res) => {
+  app.post("/api/qr-public/:code/service-request", requireAuth, async (req, res) => {
     try {
       const point = await storage.getQrCodePointByCode(req.params.code);
       if (!point || point.type !== 'atendimento') {
@@ -2897,7 +2897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bathroom counter endpoints
-  app.post("/api/zones/:zoneId/bathroom-counter/increment", async (req, res) => {
+  app.post("/api/zones/:zoneId/bathroom-counter/increment", requirePermission('workorders_create'), async (req, res) => {
     try {
       const counter = await storage.incrementBathroomCounter(req.params.zoneId);
       res.json(counter);
@@ -2918,7 +2918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/bathroom-counters", async (req, res) => {
+  app.post("/api/bathroom-counters", requirePermission('workorders_create'), async (req, res) => {
     try {
       const counter = insertBathroomCounterSchema.parse(req.body);
       const newCounter = await storage.createBathroomCounter(counter);
@@ -2942,7 +2942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/companies/:companyId/dashboard-goals", async (req, res) => {
+  app.post("/api/companies/:companyId/dashboard-goals", requirePermission('dashboard_view'), async (req, res) => {
     try {
       const goal = insertDashboardGoalSchema.parse({
         ...req.body,
@@ -2972,7 +2972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/dashboard-goals/:id", async (req, res) => {
+  app.delete("/api/dashboard-goals/:id", requirePermission('dashboard_view'), async (req, res) => {
     try {
       await storage.deleteDashboardGoal(req.params.id);
       res.status(204).send();
@@ -2996,7 +2996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/customers/:customerId/dashboard-goals", async (req, res) => {
+  app.post("/api/customers/:customerId/dashboard-goals", requirePermission('dashboard_view'), async (req, res) => {
     try {
       console.log("Creating dashboard goal with data:", req.body, "customerId:", req.params.customerId);
       
@@ -3041,7 +3041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/customers/:customerId/dashboard-goals/:id", async (req, res) => {
+  app.delete("/api/customers/:customerId/dashboard-goals/:id", requirePermission('dashboard_view'), async (req, res) => {
     try {
       await storage.deleteDashboardGoal(req.params.id);
       res.json({ message: "Meta excluída com sucesso" });
@@ -4152,7 +4152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Atribuir role a um usuário (endpoint antigo mantido para compatibilidade)
-  app.post("/api/user-role-assignments", async (req, res) => {
+  app.post("/api/user-role-assignments", requirePermission('users_edit'), async (req, res) => {
     try {
       const assignmentData = insertUserRoleAssignmentSchema.parse(req.body);
       const assignment = await storage.createUserRoleAssignment(assignmentData);
@@ -4167,7 +4167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Remover role de um usuário
-  app.delete("/api/users/:userId/roles/:roleId", async (req, res) => {
+  app.delete("/api/users/:userId/roles/:roleId", requirePermission('users_edit'), async (req, res) => {
     try {
       await storage.deleteUserRoleAssignment(req.params.userId, req.params.roleId);
       res.status(204).end();
@@ -4206,7 +4206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create cleaning activity (SECURE - requires customerId in URL)
-  app.post("/api/customers/:customerId/cleaning-activities", async (req, res) => {
+  app.post("/api/customers/:customerId/cleaning-activities", requirePermission('schedule_create'), async (req, res) => {
     try {
       // Validate customer exists
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);

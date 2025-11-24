@@ -29,13 +29,14 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    middlewareMode: false,
     host: "0.0.0.0",
-    port: 5173,
+    port: 5000,
     strictPort: false,
-    hmr: {
-      host: "localhost",
-      port: 5173,
-      protocol: "wss"
+    hmr: process.env.REPL_ID ? undefined : {
+      protocol: 'wss',
+      host: 'localhost',
+      port: 5000
     },
     fs: {
       strict: true,
