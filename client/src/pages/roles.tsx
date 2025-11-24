@@ -116,12 +116,12 @@ export default function Roles() {
   }
 
   // Query para roles de cliente (isSystemRole=false)
-  const { data: clientRoles = [], isLoading: isLoadingClientRoles } = useQuery<CustomRole[]>({
+  const { data: clientRoles = [], isLoading: isLoadingClientRoles, refetch: refetchClientRoles } = useQuery<CustomRole[]>({
     queryKey: ['/api/roles?isSystemRole=false'],
   });
 
   // Query para roles de sistema (isSystemRole=true) - apenas se tiver permissão
-  const { data: systemRoles = [], isLoading: isLoadingSystemRoles } = useQuery<CustomRole[]>({
+  const { data: systemRoles = [], isLoading: isLoadingSystemRoles, refetch: refetchSystemRoles } = useQuery<CustomRole[]>({
     queryKey: ['/api/roles?isSystemRole=true'],
     enabled: can.viewSystemRoles(), // Só busca se tiver permissão
   });
@@ -130,9 +130,13 @@ export default function Roles() {
     mutationFn: async (data: CreateRoleForm & { isSystemRole?: boolean }) => {
       await apiRequest('POST', '/api/roles', data);
     },
-    onSuccess: () => {
-      // Invalidar todas as queries de roles
-      cache.invalidateRoles();
+    onSuccess: (_, variables) => {
+      // Refetch imediatamente a query correta baseado no tipo de role
+      if (variables.isSystemRole) {
+        refetchSystemRoles();
+      } else {
+        refetchClientRoles();
+      }
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -155,8 +159,9 @@ export default function Roles() {
       await apiRequest('PATCH', `/api/roles/${id}`, data);
     },
     onSuccess: () => {
-      // Invalidar todas as queries de roles
-      cache.invalidateRoles();
+      // Refetch imediatamente ambas as queries para garantir atualização
+      refetchClientRoles();
+      refetchSystemRoles();
       setIsCreateDialogOpen(false);
       setEditingRole(null);
       form.reset();
@@ -179,8 +184,9 @@ export default function Roles() {
       await apiRequest('DELETE', `/api/roles/${roleId}`);
     },
     onSuccess: () => {
-      // Invalidar todas as queries de roles
-      cache.invalidateRoles();
+      // Refetch imediatamente ambas as queries
+      refetchClientRoles();
+      refetchSystemRoles();
       toast({
         title: 'Sucesso',
         description: 'Função excluída com sucesso!',
