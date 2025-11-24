@@ -4272,7 +4272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete cleaning activity
-  app.delete("/api/cleaning-activities/:id", async (req, res) => {
+  app.delete("/api/cleaning-activities/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
       await storage.deleteCleaningActivity(req.params.id);
       res.json({ message: "Cleaning activity deleted successfully" });
@@ -4321,7 +4321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create maintenance activity
-  app.post("/api/maintenance-activities", async (req, res) => {
+  app.post("/api/maintenance-activities", requirePermission('schedule_create'), async (req, res) => {
     try {
       console.log("[DEBUG] Request body:", JSON.stringify(req.body, null, 2));
       
@@ -4413,7 +4413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete maintenance activity
-  app.delete("/api/maintenance-activities/:id", async (req, res) => {
+  app.delete("/api/maintenance-activities/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
       await storage.deleteMaintenanceActivity(req.params.id);
       res.json({ message: "Maintenance activity deleted successfully" });
@@ -4426,7 +4426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === SCHEDULER MANAGEMENT ===
   
   // Generate scheduled work orders from cleaning activities
-  app.post("/api/scheduler/generate-work-orders", async (req, res) => {
+  app.post("/api/scheduler/generate-work-orders", requirePermission('schedule_create'), async (req, res) => {
     try {
       const { companyId, windowStart, windowEnd } = req.body;
       
@@ -4476,7 +4476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate scheduled work orders from maintenance activities
-  app.post("/api/scheduler/generate-maintenance-work-orders", async (req, res) => {
+  app.post("/api/scheduler/generate-maintenance-work-orders", requirePermission('schedule_create'), async (req, res) => {
     try {
       const { companyId, windowStart, windowEnd } = req.body;
       
@@ -4512,7 +4512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Monthly regeneration of ALL work orders (cleaning + maintenance) - called automatically
-  app.post("/api/scheduler/regenerate-monthly-maintenance", async (req, res) => {
+  app.post("/api/scheduler/regenerate-monthly-maintenance", requirePermission('schedule_create'), async (req, res) => {
     try {
       console.log(`[MONTHLY SCHEDULER] Iniciando regeneração mensal automática de OSs (LIMPEZA + MANUTENÇÃO)`);
       
@@ -4745,7 +4745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Assign user to site
-  app.post("/api/user-site-assignments", async (req, res) => {
+  app.post("/api/user-site-assignments", requirePermission('users_edit'), async (req, res) => {
     try {
       const assignment = insertUserSiteAssignmentSchema.parse(req.body);
       const newAssignment = await storage.createUserSiteAssignment(assignment);
@@ -4760,7 +4760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Remove user from site
-  app.delete("/api/users/:userId/sites/:siteId", async (req, res) => {
+  app.delete("/api/users/:userId/sites/:siteId", requirePermission('users_edit'), async (req, res) => {
     try {
       await storage.deleteUserSiteAssignment(req.params.userId, req.params.siteId);
       res.json({ message: "User site assignment removed successfully" });
@@ -4799,7 +4799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new shift
-  app.post("/api/site-shifts", async (req, res) => {
+  app.post("/api/site-shifts", requirePermission('schedule_create'), async (req, res) => {
     try {
       const shift = insertSiteShiftSchema.parse(req.body);
       const newShift = await storage.createSiteShift(shift);
@@ -4829,7 +4829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete shift
-  app.delete("/api/site-shifts/:id", async (req, res) => {
+  app.delete("/api/site-shifts/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
       await storage.deleteSiteShift(req.params.id);
       res.json({ message: "Site shift deleted successfully" });
@@ -4870,7 +4870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create counter
-  app.post("/api/company-counters", async (req, res) => {
+  app.post("/api/company-counters", requirePermission('dashboard_view'), async (req, res) => {
     try {
       const counter = insertCompanyCounterSchema.parse(req.body);
       const newCounter = await storage.createCompanyCounter(counter);
@@ -4975,7 +4975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create equipment
-  app.post("/api/equipment", async (req, res) => {
+  app.post("/api/equipment", requirePermission('schedule_create'), async (req, res) => {
     try {
       console.log("Creating equipment with data:", req.body);
       const equipment = insertEquipmentSchema.parse(req.body);
@@ -5042,7 +5042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete equipment
-  app.delete("/api/equipment/:id", async (req, res) => {
+  app.delete("/api/equipment/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
       // Buscar o equipment ANTES de deletar para ter o zoneId e customerId
       const equipment = await storage.getEquipment(req.params.id);
@@ -5137,7 +5137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create checklist template
-  app.post("/api/maintenance-checklist-templates", async (req, res) => {
+  app.post("/api/maintenance-checklist-templates", requirePermission('checklists_create'), async (req, res) => {
     try {
       const template = insertMaintenanceChecklistTemplateSchema.parse(req.body);
       const newTemplate = await storage.createMaintenanceChecklistTemplate(template);
@@ -5167,7 +5167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete checklist template
-  app.delete("/api/maintenance-checklist-templates/:id", async (req, res) => {
+  app.delete("/api/maintenance-checklist-templates/:id", requirePermission('checklists_delete'), async (req, res) => {
     try {
       await storage.deleteMaintenanceChecklistTemplate(req.params.id);
       res.status(204).send();
@@ -5218,7 +5218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create execution
-  app.post("/api/maintenance-checklist-executions", async (req, res) => {
+  app.post("/api/maintenance-checklist-executions", requirePermission('checklists_create'), async (req, res) => {
     try {
       const execution = insertMaintenanceChecklistExecutionSchema.parse(req.body);
       const newExecution = await storage.createMaintenanceChecklistExecution(execution);
@@ -5248,7 +5248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete execution
-  app.delete("/api/maintenance-checklist-executions/:id", async (req, res) => {
+  app.delete("/api/maintenance-checklist-executions/:id", requirePermission('checklists_delete'), async (req, res) => {
     try {
       await storage.deleteMaintenanceChecklistExecution(req.params.id);
       res.status(204).send();
@@ -5289,7 +5289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create plan
-  app.post("/api/maintenance-plans", async (req, res) => {
+  app.post("/api/maintenance-plans", requirePermission('schedule_create'), async (req, res) => {
     try {
       const plan = insertMaintenancePlanSchema.parse(req.body);
       const newPlan = await storage.createMaintenancePlan(plan);
@@ -5319,7 +5319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete plan
-  app.delete("/api/maintenance-plans/:id", async (req, res) => {
+  app.delete("/api/maintenance-plans/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
       await storage.deleteMaintenancePlan(req.params.id);
       res.status(204).send();
@@ -5370,7 +5370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create plan equipment
-  app.post("/api/maintenance-plan-equipments", async (req, res) => {
+  app.post("/api/maintenance-plan-equipments", requirePermission('schedule_create'), async (req, res) => {
     try {
       const planEquipment = insertMaintenancePlanEquipmentSchema.parse(req.body);
       const newPlanEquipment = await storage.createMaintenancePlanEquipment(planEquipment);
@@ -5400,7 +5400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete plan equipment
-  app.delete("/api/maintenance-plan-equipments/:id", async (req, res) => {
+  app.delete("/api/maintenance-plan-equipments/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
       await storage.deleteMaintenancePlanEquipment(req.params.id);
       res.status(204).send();

@@ -33,10 +33,10 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5000,
     strictPort: false,
-    hmr: process.env.REPL_ID ? undefined : {
+    hmr: {
       protocol: 'wss',
-      host: 'localhost',
-      port: 5000
+      host: typeof window !== 'undefined' ? window.location.hostname : undefined,
+      port: 443
     },
     fs: {
       strict: true,
