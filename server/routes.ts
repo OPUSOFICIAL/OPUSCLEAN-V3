@@ -3811,7 +3811,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcast({
         type: 'create',
         resource: 'roles',
-        data: fullRole
+        data: fullRole,
+        customerId: fullRole.customerId
       });
       
       res.status(201).json(fullRole);
@@ -3900,7 +3901,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'update',
         resource: 'roles',
         data: fullRole,
-        id: req.params.id
+        id: req.params.id,
+        customerId: fullRole.customerId
       });
       
       res.json(fullRole);
@@ -3932,7 +3934,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         broadcast({
           type: 'delete',
           resource: 'roles',
-          id: req.params.id
+          id: req.params.id,
+          customerId: existingRole.customerId
         });
         
         return res.status(204).end();
