@@ -597,6 +597,15 @@ export default function SystemUsers() {
                   )}
                 />
 
+                {/* Aviso se função não estiver selecionada */}
+                {!form.watch('customRoleId') && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive font-medium">
+                      ⚠️ Função é obrigatória - Todo usuário do sistema deve ter uma função atribuída.
+                    </p>
+                  </div>
+                )}
+
                 {/* Clientes Permitidos - sempre exibir */}
                 <div className="space-y-3 border-t pt-4">
                     <div>
@@ -646,7 +655,7 @@ export default function SystemUsers() {
                   <Button 
                     type="submit" 
                     variant="default"
-                    disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                    disabled={createUserMutation.isPending || updateUserMutation.isPending || !form.watch('customRoleId')}
                     data-testid="button-save"
                     className={theme.buttons.primary}
                     style={theme.buttons.primaryStyle}

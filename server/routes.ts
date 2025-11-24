@@ -4652,6 +4652,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customRoleId, ...userData } = req.body;
       
+      // Validar que customRoleId é obrigatório
+      if (!customRoleId) {
+        return res.status(400).json({ 
+          message: "Função é obrigatória. Todo usuário do sistema deve ter uma função atribuída." 
+        });
+      }
+      
       // Hash password if provided
       let hashedPassword = userData.password;
       if (userData.password && (!userData.authProvider || userData.authProvider === 'local')) {
@@ -4679,14 +4686,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(userDataToInsert);
       
-      // Atribuir custom role ao usuário
-      if (customRoleId) {
-        await storage.createUserRoleAssignment({
-          userId,
-          roleId: customRoleId,
-          customerId: null,
-        });
-      }
+      // Atribuir custom role ao usuário (OBRIGATÓRIO)
+      await storage.createUserRoleAssignment({
+        userId,
+        roleId: customRoleId,
+        customerId: null,
+      });
       
       res.status(201).json(user);
     } catch (error: any) {
@@ -4709,7 +4714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { customRoleId, ...userData } = req.body;
       const user = await storage.updateUser(req.params.id, userData);
       
-      // Atualizar custom role do usuário se fornecido
+      // Validar que customRoleId é obrigatório quando fornecido ou já atribuído
       if (customRoleId) {
         // Remover atribuições antigas
         const oldAssignments = await storage.getUserRoleAssignments(req.params.id);
@@ -4722,6 +4727,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           roleId: customRoleId,
           customerId: null,
         });
+      } else {
+        // Se customRoleId não foi fornecido, verificar se usuário já tem uma função
+        const currentAssignments = await storage.getUserRoleAssignments(req.params.id);
+        if (currentAssignments.length === 0) {
+          return res.status(400).json({ 
+            message: "Função é obrigatória. Todo usuário do sistema deve ter uma função atribuída." 
+          });
+        }
       }
       
       res.json(sanitizeUser(user));
