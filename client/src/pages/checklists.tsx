@@ -98,12 +98,7 @@ function MultiSelect({
                 <div className="flex items-center space-x-2 p-2 border-b border-slate-200 mb-1">
                   <Checkbox
                     id={`checkbox-select-all`}
-                    checked={allSelected}
-                    ref={(elem) => {
-                      if (elem && someSelected) {
-                        elem.indeterminate = true;
-                      }
-                    }}
+                    checked={allSelected || someSelected}
                     onCheckedChange={() => {
                       if (allSelected) {
                         deselectAll();

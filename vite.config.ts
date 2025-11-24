@@ -33,8 +33,9 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     hmr: {
-      clientPort: 443,
-      protocol: 'wss',
+      host: undefined,
+      port: undefined,
+      protocol: undefined,
     },
     fs: {
       strict: true,
