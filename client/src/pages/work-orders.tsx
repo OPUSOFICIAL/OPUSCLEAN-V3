@@ -13,6 +13,7 @@ import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
 import { useModuleTheme } from "@/hooks/use-module-theme";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ModernCard, ModernCardHeader, ModernCardContent } from "@/components/ui/modern-card";
 import { ModernPageHeader } from "@/components/ui/modern-page-header";
 import { 
@@ -130,6 +131,7 @@ export default function WorkOrders() {
   const { currentModule } = useModule();
   const theme = useModuleTheme();
   const { canDeleteWorkOrders } = useAuth();
+  const { can } = usePermissions();
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -359,15 +361,17 @@ export default function WorkOrders() {
               <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
               Atualizar
             </Button>
-            <Button 
-              onClick={() => setShowCreateModal(true)} 
-              className={theme.buttons.primary}
-              style={theme.buttons.primaryStyle}
-              data-testid="button-create-work-order"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nova OS
-            </Button>
+            {can.createWorkOrders(activeClientId) && (
+              <Button 
+                onClick={() => setShowCreateModal(true)} 
+                className={theme.buttons.primary}
+                style={theme.buttons.primaryStyle}
+                data-testid="button-create-work-order"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova OS
+              </Button>
+            )}
           </>
         }
       />

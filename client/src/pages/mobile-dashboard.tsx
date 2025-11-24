@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
+import { useClient } from "@/contexts/ClientContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { MobileHeader } from "@/components/mobile-header";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { Capacitor } from "@capacitor/core";
@@ -33,6 +35,8 @@ interface WorkOrder {
 
 export default function MobileDashboard() {
   const { currentModule } = useModule();
+  const { activeClientId } = useClient();
+  const { can } = usePermissions();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = getAuthState();
@@ -590,26 +594,28 @@ export default function MobileDashboard() {
         </div>
 
         {/* QR Scanner Button */}
-        <Card className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-0 shadow-xl">
-          <CardContent className="p-6">
-            <Button 
-              onClick={handleQrScanner}
-              data-testid="button-qr-scanner"
-              className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 h-16 text-lg font-semibold"
-              size="lg"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center">
-                  <QrCode className="w-6 h-6" />
+        {can.createWorkOrders(activeClientId) && (
+          <Card className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-0 shadow-xl">
+            <CardContent className="p-6">
+              <Button 
+                onClick={handleQrScanner}
+                data-testid="button-qr-scanner"
+                className="w-full bg-white/20 hover:bg-white/30 text-white border-white/30 h-16 text-lg font-semibold"
+                size="lg"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center">
+                    <QrCode className="w-6 h-6" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-lg font-bold">Escanear QR Code</div>
+                    <div className="text-sm opacity-90">Iniciar nova ordem de serviço</div>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <div className="text-lg font-bold">Escanear QR Code</div>
-                  <div className="text-sm opacity-90">Iniciar nova ordem de serviço</div>
-                </div>
-              </div>
-            </Button>
-          </CardContent>
-        </Card>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Work Orders List - Minhas Pendentes */}
         <div className="space-y-4" id="pendentes-section">

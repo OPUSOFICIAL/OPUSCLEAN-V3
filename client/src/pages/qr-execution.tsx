@@ -11,6 +11,8 @@ import { useParams, useLocation } from "wouter";
 import { useModule } from "@/contexts/ModuleContext";
 import { useNetwork } from "@/contexts/NetworkContext";
 import { useOfflineStorage } from "@/hooks/use-offline-storage";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useClient } from "@/contexts/ClientContext";
 import { nanoid } from "nanoid";
 import { 
   QrCode, 
@@ -32,6 +34,8 @@ import { OfflineExecutionNormalizer } from "@/lib/offline-execution-normalizer";
 
 export default function QrExecution() {
   const { currentModule } = useModule();
+  const { activeClientId } = useClient();
+  const { can } = usePermissions();
   const { code } = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
   const [observations, setObservations] = useState("");
@@ -754,22 +758,24 @@ export default function QrExecution() {
               </Button>
 
               {/* Create Corrective Button */}
-              <Button 
-                onClick={handleCreateCorrectiveOrder}
-                disabled={!observations.trim() || createWorkOrderMutation.isPending}
-                className="w-full h-12"
-                variant="outline"
-                data-testid="button-create-corrective"
-              >
-                {createWorkOrderMutation.isPending ? (
-                  "Criando..."
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Abrir OS Corretiva
-                  </>
-                )}
-              </Button>
+              {can.createWorkOrders(activeClientId) && (
+                <Button 
+                  onClick={handleCreateCorrectiveOrder}
+                  disabled={!observations.trim() || createWorkOrderMutation.isPending}
+                  className="w-full h-12"
+                  variant="outline"
+                  data-testid="button-create-corrective"
+                >
+                  {createWorkOrderMutation.isPending ? (
+                    "Criando..."
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Abrir OS Corretiva
+                    </>
+                  )}
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
