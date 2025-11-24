@@ -231,6 +231,11 @@ export default function QrExecution() {
   const handleCreateCorrectiveOrder = async () => {
     if (!effectiveZone || !(effectiveQRData as any)?.point) return;
 
+    // Set scheduledDate to today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const scheduledDateString = today.toISOString().split('T')[0];
+
     const workOrderData = {
       companyId: (effectiveQRData as any)?.company?.id || 'company-opus-default',
       customerId: (effectiveQRData as any)?.customer?.id || (effectiveQRData as any)?.point?.customerId,
@@ -243,6 +248,7 @@ export default function QrExecution() {
       origin: "QR Execução",
       module: currentModule,
       status: "pendente" as const,
+      scheduledDate: scheduledDateString,
     };
 
     if (isOnline) {
