@@ -124,7 +124,12 @@ export default function SystemUsers() {
 
   const { data: systemRoles = [] } = useQuery({
     queryKey: ['/api/roles', { isSystemRole: 'true' }],
+    staleTime: 0, // Sempre buscar dados frescos, sem cache
+    enabled: true,
   });
+
+  // Debug: Log das funções do sistema
+  console.log('[SYSTEM-USERS] System Roles carregadas:', systemRoles);
 
   const createUserMutation = useMutation({
     mutationFn: async (data: CreateUserForm) => {
