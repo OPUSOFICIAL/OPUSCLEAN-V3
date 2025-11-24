@@ -155,7 +155,6 @@ export default function Roles() {
   const { data: systemRoles = [], isLoading: isLoadingSystemRoles, refetch: refetchSystemRoles } = useQuery<CustomRole[]>({
     queryKey: ['/api/roles?isSystemRole=true'],
     enabled: can.viewSystemRoles(), // Só busca se tiver permissão
-    refetchOnMount: 'stale', // Recarregar ao montar para pegar roles inicializadas
   });
 
   const createRoleMutation = useMutation({
@@ -234,7 +233,7 @@ export default function Roles() {
   });
 
   // Selecionar roles baseado na tab ativa
-  const currentRoles = activeTab === 'system' ? systemRoles : clientRoles;
+  const currentRoles: CustomRole[] = activeTab === 'system' ? systemRoles : clientRoles;
   const isLoading = activeTab === 'system' ? isLoadingSystemRoles : isLoadingClientRoles;
 
   const filteredRoles = currentRoles.filter((role: CustomRole) =>
@@ -527,11 +526,11 @@ export default function Roles() {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md" style={{ gridTemplateColumns: can.viewSystemRoles() && user?.userType === 'opus_user' && !user?.customRoles?.some(r => r.role?.name === 'Administrador') ? '1fr 1fr' : '1fr' }}>
+          <TabsList className="grid w-full max-w-md" style={{ gridTemplateColumns: can.viewSystemRoles() && user?.userType === 'opus_user' && !user?.customRoles?.some((r: any) => r.role?.name === 'Administrador') ? '1fr 1fr' : '1fr' }}>
             <TabsTrigger value="client" data-testid="tab-client-roles">
               Funções de Cliente
             </TabsTrigger>
-            {can.viewSystemRoles() && user?.userType === 'opus_user' && !user?.customRoles?.some(r => r.role?.name === 'Administrador') && (
+            {can.viewSystemRoles() && user?.userType === 'opus_user' && !user?.customRoles?.some((r: any) => r.role?.name === 'Administrador') && (
               <TabsTrigger value="system" data-testid="tab-system-roles">
                 Funções de Sistema
               </TabsTrigger>

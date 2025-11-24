@@ -4965,11 +4965,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCustomRole(roleData: InsertCustomRole): Promise<CustomRoleWithPermissions> {
+    // Se não tiver companyId (sistema roles), usar a company OPUS padrão
+    let companyId = roleData.companyId;
+    if (!companyId) {
+      const opusCompanies = await db.select()
+        .from(companies)
+        .where(sql`LOWER(name) = 'opus sistemas'`)
+        .limit(1);
+      companyId = opusCompanies?.[0]?.id;
+      
+      // Fallback se não encontrar
+      if (!companyId) {
+        companyId = 'a3e33b82-4f75-4f8d-86a2-2d67e61a9812'; // OPUS Sistemas ID
+      }
+    }
+    
     const [role] = await db.insert(customRoles)
       .values({
         ...roleData,
         id: roleData.id || `role-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        companyId: roleData.companyId || 'company-opus-default'
+        companyId
       })
       .returning();
     
