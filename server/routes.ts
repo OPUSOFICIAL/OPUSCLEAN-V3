@@ -4014,6 +4014,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Definir roles de sistema padrão
       const systemRoles = [
         {
+          name: 'Administrador',
+          description: 'Acesso total ao sistema (apenas OPUS)',
+          isSystemRole: true,
+          permissions: [
+            'dashboard_view',
+            'opus_users_view',
+            'opus_users_create',
+            'opus_users_edit',
+            'opus_users_delete',
+            'customers_view',
+            'customers_create',
+            'customers_edit',
+            'customers_delete',
+            'system_roles_view',
+            'system_roles_edit',
+            'system_roles_delete',
+            'reports_view',
+            'audit_logs_view'
+          ]
+        },
+        {
           name: 'Auditor',
           description: 'Auditoria e relatórios (apenas visualização)',
           isSystemRole: true,
