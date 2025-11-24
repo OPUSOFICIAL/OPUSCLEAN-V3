@@ -1739,7 +1739,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editi
 
   const updateActivityMutation = useMutation({
     mutationFn: async (data: any) => {
-      const submitData = {
+      const cleanedData = {
         name: data.name,
         description: data.description,
         frequency: data.frequency,
@@ -1749,12 +1749,12 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editi
         zoneIds: data.zoneIds,
         checklistTemplateId: data.checklistTemplateId,
         startDate: data.startDate,
-        startTime: data.startTime,
-        endTime: data.endTime,
+        startTime: data.startTime === "" ? null : data.startTime,
+        endTime: data.endTime === "" ? null : data.endTime,
         isActive: data.isActive,
       };
       
-      const response = await apiRequest("PATCH", `/api/customers/${activeClientId}/cleaning-activities/${editingActivity.id}`, submitData);
+      const response = await apiRequest("PATCH", `/api/customers/${activeClientId}/cleaning-activities/${editingActivity.id}`, cleanedData);
       return await response.json();
     },
     onSuccess: () => {
