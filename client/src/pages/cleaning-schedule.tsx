@@ -1452,7 +1452,6 @@ export default function CleaningSchedule() {
                                   size="sm"
                                   onClick={() => {
                                     setSelectedActivity(activity);
-                                    setEditingActivity(activity);
                                     setShowEditActivityModal(true);
                                     setShowMetricsModal(false);
                                   }}
