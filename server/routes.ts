@@ -3733,8 +3733,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roles = roles.filter(role => role.isSystemRole === true);
       }
       
-      // Filtrar por customerId se especificado (para usuários de cliente)
-      if (req.query.customerId !== undefined) {
+      // Filtrar por customerId - se é customer_user, filtrar automaticamente pelas roles do seu cliente
+      const fullUser = await storage.getUser(req.user.id);
+      if (fullUser?.userType === 'customer_user' && fullUser?.customerId) {
+        // Usuário de cliente só vê roles do seu cliente
+        roles = roles.filter(role => role.customerId === fullUser.customerId);
+      } else if (req.query.customerId !== undefined) {
+        // Se admin específicar customerId, usar esse
         roles = roles.filter(role => role.customerId === req.query.customerId);
       }
       
