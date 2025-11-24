@@ -351,25 +351,15 @@ export default function ServiceSelectionModal({
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      onClick={handleExecuteExisting}
-                      disabled={!selectedWorkOrder}
-                      className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50"
-                      data-testid="button-execute-existing"
-                    >
-                      <Wrench className="w-4 h-4 mr-2" />
-                      Executar OS
-                    </Button>
-                    <Button
-                      onClick={() => onServiceSelect(selectedService)}
-                      variant="outline"
-                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                      data-testid="button-create-new-os"
-                    >
-                      Criar Nova OS
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={handleExecuteExisting}
+                    disabled={!selectedWorkOrder}
+                    className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50"
+                    data-testid="button-execute-existing"
+                  >
+                    <Wrench className="w-4 h-4 mr-2" />
+                    Executar OS
+                  </Button>
                 </div>
               )}
             </div>
