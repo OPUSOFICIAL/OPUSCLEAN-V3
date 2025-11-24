@@ -3761,11 +3761,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Admin OPUS sempre tem acesso total
       if (req.user.role === 'admin') {
-        const role = await storage.createCustomRole(roleData);
+        // Adicionar isSystemRole ao roleData
+        const roleDataWithSystem = { ...roleData, isSystemRole };
+        const role = await storage.createCustomRole(roleDataWithSystem);
         if (permissions?.length) {
           await storage.setRolePermissions(role.id, permissions);
         }
-        console.log(`[ROLE CREATED] ✅ Admin OPUS ${req.user.username} criou role: ${role.name} com ${permissions?.length || 0} permissões`);
+        console.log(`[ROLE CREATED] ✅ Admin OPUS ${req.user.username} criou role: ${role.name} com ${permissions?.length || 0} permissões (isSystemRole: ${isSystemRole})`);
         const fullRole = await storage.getCustomRoleById(role.id);
         
         // Broadcast role creation to all connected clients
@@ -3813,15 +3815,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Criar a função
-      const role = await storage.createCustomRole(roleData);
+      // Criar a função (incluir isSystemRole)
+      const roleDataWithSystem = { ...roleData, isSystemRole };
+      const role = await storage.createCustomRole(roleDataWithSystem);
       
       // Adicionar permissões
       if (permissions?.length) {
         await storage.setRolePermissions(role.id, permissions);
       }
       
-      console.log(`[ROLE CREATED] ✅ User ${req.user.username} criou role: ${role.name} com ${permissions?.length || 0} permissões`);
+      console.log(`[ROLE CREATED] ✅ User ${req.user.username} criou role: ${role.name} com ${permissions?.length || 0} permissões (isSystemRole: ${isSystemRole})`);
       
       // Retornar função completa com permissões
       const fullRole = await storage.getCustomRoleById(role.id);
