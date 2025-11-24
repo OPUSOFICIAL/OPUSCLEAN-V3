@@ -182,6 +182,8 @@ function AuthenticatedAdminRouter() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { isMobileOnlyUser } = usePermissions();
+  const [location, setLocation] = useLocation();
   
   const companyId = user?.companyId || "company-opus-default";
 
@@ -191,6 +193,11 @@ function AuthenticatedAdminRouter() {
         <div>Carregando...</div>
       </div>
     );
+  }
+
+  // Operadores com acesso mobile-only não podem acessar Admin Router
+  if (isMobileOnlyUser) {
+    return <Redirect to="/mobile" />;
   }
 
   if (isMobile) {

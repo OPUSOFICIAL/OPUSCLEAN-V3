@@ -32,11 +32,7 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     strictPort: false,
-    hmr: {
-      host: undefined,
-      port: undefined,
-      protocol: undefined,
-    },
+    hmr: "auto",
     fs: {
       strict: true,
       deny: ["**/.*"],
