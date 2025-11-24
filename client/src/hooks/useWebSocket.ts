@@ -322,7 +322,12 @@ function invalidateQueriesByResource(resource: string, message: WebSocketMessage
       // Invalidate all role queries (with and without query params)
       queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
       queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=false'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
+      // Invalidate user permissions when roles change
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user-modules'] });
+      if (message.customerId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/customers/${message.customerId}/users`] });
+      }
       break;
 
     // Dashboard
