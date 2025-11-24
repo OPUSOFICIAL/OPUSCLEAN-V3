@@ -1748,6 +1748,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerId: user.customerId || undefined,
       });
       
+      // IMPORTANTE: Desconectar o usuário desativado em tempo real via WebSocket
+      // Procurar a sessão ativa do usuário e encerrar via closeClient
+      if (wsConnections.has(req.params.id)) {
+        const userSessions = wsConnections.get(req.params.id);
+        if (userSessions) {
+          userSessions.forEach((session) => {
+            session.client.close(1000, 'Account deactivated');
+          });
+        }
+      }
+      
       res.json(sanitizeUser(user));
     } catch (error) {
       console.error("Error deactivating user:", error);
