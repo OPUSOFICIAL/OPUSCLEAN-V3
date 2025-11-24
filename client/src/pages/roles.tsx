@@ -495,11 +495,11 @@ export default function Roles() {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md" style={{ gridTemplateColumns: can.viewSystemRoles() ? '1fr 1fr' : '1fr' }}>
+          <TabsList className="grid w-full max-w-md" style={{ gridTemplateColumns: can.viewSystemRoles() && user?.userType === 'opus_user' && !user?.customRoles?.some(r => r.role?.name === 'Administrador') ? '1fr 1fr' : '1fr' }}>
             <TabsTrigger value="client" data-testid="tab-client-roles">
               Funções de Cliente
             </TabsTrigger>
-            {can.viewSystemRoles() && (
+            {can.viewSystemRoles() && user?.userType === 'opus_user' && !user?.customRoles?.some(r => r.role?.name === 'Administrador') && (
               <TabsTrigger value="system" data-testid="tab-system-roles">
                 Funções de Sistema
               </TabsTrigger>
