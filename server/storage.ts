@@ -1277,7 +1277,10 @@ export class DatabaseStorage implements IStorage {
     // PARALELO: Buscar zones e users ao mesmo tempo
     const [customerZones, customerUsers] = await Promise.all([
       db.select().from(zones).where(zonesWhereCondition),
-      db.select().from(users).where(eq(users.companyId, companyId))
+      db.select().from(users).where(and(
+        eq(users.companyId, companyId),
+        eq(users.customerId, customerId)
+      ))
     ]);
 
     const zoneIds = customerZones.map(zone => zone.id);
