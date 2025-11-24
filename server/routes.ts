@@ -4691,6 +4691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Atribuir custom role ao usuário (OBRIGATÓRIO)
       await storage.createUserRoleAssignment({
+        id: `assignment-${nanoid()}`,
         userId,
         roleId: customRoleId,
         customerId: null,
@@ -4726,6 +4727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         // Atribuir nova role
         await storage.createUserRoleAssignment({
+          id: `assignment-${nanoid()}`,
           userId: req.params.id,
           roleId: customRoleId,
           customerId: null,
