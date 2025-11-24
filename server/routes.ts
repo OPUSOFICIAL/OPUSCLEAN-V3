@@ -4272,6 +4272,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update cleaning activity (PATCH with customer context)
+  app.patch("/api/customers/:customerId/cleaning-activities/:id", async (req, res) => {
+    try {
+      const activityData = insertCleaningActivitySchema.partial().parse(req.body);
+      const activity = await storage.updateCleaningActivity(req.params.id, activityData);
+      res.json(activity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating cleaning activity:", error);
+      res.status(500).json({ message: "Failed to update cleaning activity" });
+    }
+  });
+
   // Delete cleaning activity
   app.delete("/api/cleaning-activities/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
