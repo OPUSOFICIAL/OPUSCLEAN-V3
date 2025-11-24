@@ -23,7 +23,10 @@ import { useCacheInvalidation } from '@/hooks/use-cache-invalidation';
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username é obrigatório'),
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').or(z.literal('')),
+  password: z.string().refine(
+    (val) => val === '' || val.length >= 6,
+    'Senha deve ter no mínimo 6 caracteres'
+  ),
   name: z.string().min(1, 'Nome é obrigatório'),
   customRoleId: z.string().min(1, 'Função é obrigatória'),
   modules: z.array(z.enum(['clean', 'maintenance'])).min(1, 'Selecione pelo menos um módulo'),
