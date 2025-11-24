@@ -1447,6 +1447,30 @@ export default function CleaningSchedule() {
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedActivity(activity);
+                                    setEditingActivity(activity);
+                                    setShowEditActivityModal(true);
+                                    setShowMetricsModal(false);
+                                  }}
+                                  className="h-8 w-8 p-0"
+                                  data-testid={`button-edit-${activity.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleDeleteActivity(activity)}
+                                  disabled={deleteCleaningActivityMutation.isPending}
+                                  className="h-8 w-8 p-0"
+                                  data-testid={`button-delete-${activity.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
                           </CardContent>
