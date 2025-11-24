@@ -833,7 +833,7 @@ export default function Users({ customerId }: UsersProps) {
                           >
                             {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                           </Button>
-                          {can.users.delete(customerId) && (
+                          {can.deleteUsers(customerId) && (
                             <Button 
                               variant="outline" 
                               size="icon"
