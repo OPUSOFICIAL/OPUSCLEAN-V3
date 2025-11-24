@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +62,7 @@ export default function Roles() {
   const [activeTab, setActiveTab] = useState('client'); // 'client' ou 'system'
 
   // Inicializar funções de sistema automaticamente se tiver permissão
-  React.useEffect(() => {
+  useEffect(() => {
     const initializeSystemRoles = async () => {
       // Apenas opus_user com permissão pode inicializar
       if (user?.userType === 'opus_user') {
