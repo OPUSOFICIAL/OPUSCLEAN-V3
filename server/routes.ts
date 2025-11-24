@@ -3720,10 +3720,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar todas as roles
       const allRoles = await storage.getCustomRoles();
       
-      // Filtrar por isSystemRole se especificado
+      // Filtrar por isSystemRole se especificado - SEMPRE aplicar este filtro
       let roles = allRoles;
-      if (req.query.isSystemRole !== undefined) {
-        roles = allRoles.filter(role => role.isSystemRole === isSystemRole);
+      if (req.query.isSystemRole === 'false') {
+        // Se explicitamente pedir roles NÃO-sistema, filtrar
+        roles = roles.filter(role => !role.isSystemRole);
+      } else if (req.query.isSystemRole === 'true') {
+        // Se explicitamente pedir apenas roles de sistema, filtrar
+        roles = roles.filter(role => role.isSystemRole === true);
       }
       
       // Filtrar por customerId se especificado (para usuários de cliente)

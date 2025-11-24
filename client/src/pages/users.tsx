@@ -81,9 +81,9 @@ export default function Users({ customerId }: UsersProps) {
     enabled: !!customerId,
   });
 
-  // Buscar custom roles criados em "Funções" - apenas do cliente ativo
+  // Buscar custom roles do cliente ativo - excluir funções de sistema
   const { data: customRoles = [], isLoading: isLoadingRoles } = useQuery<any[]>({
-    queryKey: ["/api/roles", { customerId }],
+    queryKey: ["/api/roles", { customerId, isSystemRole: 'false' }],
     staleTime: 0, // Sempre buscar dados frescos, sem cache de 5 minutos
     enabled: !!customerId,
   });
