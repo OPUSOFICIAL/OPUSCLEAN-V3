@@ -3726,6 +3726,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roles = allRoles.filter(role => role.isSystemRole === isSystemRole);
       }
       
+      // Filtrar por customerId se especificado (para usuários de cliente)
+      if (req.query.customerId !== undefined) {
+        roles = roles.filter(role => role.customerId === req.query.customerId);
+      }
+      
       console.log(`[ROLES GET] ✅ User ${req.user.username} listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
       res.json(roles);
     } catch (error) {

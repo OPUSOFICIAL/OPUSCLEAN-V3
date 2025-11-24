@@ -81,9 +81,11 @@ export default function Users({ customerId }: UsersProps) {
     enabled: !!customerId,
   });
 
-  // Buscar custom roles criados em "Funções"
+  // Buscar custom roles criados em "Funções" - apenas do cliente ativo
   const { data: customRoles = [], isLoading: isLoadingRoles } = useQuery<any[]>({
-    queryKey: ["/api/roles"],
+    queryKey: ["/api/roles", { customerId }],
+    staleTime: 0, // Sempre buscar dados frescos, sem cache de 5 minutos
+    enabled: !!customerId,
   });
 
   const createUserMutation = useMutation({
