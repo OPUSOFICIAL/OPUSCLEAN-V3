@@ -248,18 +248,7 @@ export default function ServiceSelectionModal({
                     <p className="text-sm text-slate-600">
                       Não há ordens de serviço pendentes neste local ({resolvedContext?.zone?.name}).
                     </p>
-                    <p className="text-sm text-slate-600 mt-2">
-                      Você pode criar uma nova ordem de serviço corretiva de <strong>{selectedServiceData?.name}</strong> agora.
-                    </p>
                   </div>
-                  <Button
-                    onClick={() => onServiceSelect(selectedService)}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    data-testid="button-create-corrective-os"
-                  >
-                    <Wrench className="w-4 h-4 mr-2" />
-                    Criar Nova OS Corretiva
-                  </Button>
                 </div>
               ) : (
                 <div className="border rounded-lg p-4 space-y-3 bg-amber-50 border-amber-200">
