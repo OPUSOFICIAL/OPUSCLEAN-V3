@@ -537,7 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/customers/:customerId/checklist-templates", async (req, res) => {
+  app.post("/api/customers/:customerId/checklist-templates", requirePermission('checklists_create'), async (req, res) => {
     try {
       // Validate that the checklist belongs to the customer
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);
@@ -598,7 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/customers/:customerId/checklist-templates/:id", async (req, res) => {
+  app.delete("/api/customers/:customerId/checklist-templates/:id", requirePermission('checklists_delete'), async (req, res) => {
     try {
       // Validate that the customer exists
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);
@@ -761,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Work Orders by Customer - Create (filtrado por cliente)
-  app.post("/api/customers/:customerId/work-orders", async (req, res) => {
+  app.post("/api/customers/:customerId/work-orders", requirePermission('workorders_create'), async (req, res) => {
     try {
       // Validate that the customer exists
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);
@@ -851,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // QR Points by Customer - Create (filtrado por cliente)
-  app.post("/api/customers/:customerId/qr-points", async (req, res) => {
+  app.post("/api/customers/:customerId/qr-points", requirePermission('qrcodes_create'), async (req, res) => {
     try {
       // Validate that the customer exists
       const customerSites = await storage.getSitesByCustomer(req.params.customerId);
@@ -1369,7 +1369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/qr-points", async (req, res) => {
+  app.post("/api/qr-points", requirePermission('qrcodes_create'), async (req, res) => {
     try {
       const qrPoint = insertQrCodePointSchema.parse({
         ...req.body,
@@ -1428,7 +1428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/qr-points/:id", async (req, res) => {
+  app.delete("/api/qr-points/:id", requirePermission('qrcodes_delete'), async (req, res) => {
     try {
       // Buscar o QR point ANTES de deletar para ter o zoneId e customerId
       const qrPoint = await storage.getQrCodePoint(req.params.id);
@@ -1782,7 +1782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/services", async (req, res) => {
+  app.post("/api/services", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       const dataWithModule = {
         ...req.body,
@@ -1834,7 +1834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/services/:id", async (req, res) => {
+  app.delete("/api/services/:id", requirePermission('service_settings_edit'), async (req, res) => {
     try {
       // Buscar o service ANTES de deletar para ter o customerId
       const service = await storage.getService(req.params.id);
@@ -1876,7 +1876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create checklist template
-  app.post("/api/companies/:companyId/checklist-templates", async (req, res) => {
+  app.post("/api/companies/:companyId/checklist-templates", requirePermission('checklists_create'), async (req, res) => {
     try {
       const template = insertChecklistTemplateSchema.parse({
         ...req.body,
@@ -1909,7 +1909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete checklist template
-  app.delete("/api/companies/:companyId/checklist-templates/:id", async (req, res) => {
+  app.delete("/api/companies/:companyId/checklist-templates/:id", requirePermission('checklists_delete'), async (req, res) => {
     try {
       await storage.deleteChecklistTemplate(req.params.id);
       res.json({ message: "Checklist template deleted successfully" });
