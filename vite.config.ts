@@ -5,16 +5,9 @@ import path from "path";
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({ fastRefresh: false }),
     // runtimeErrorOverlay(), // Temporariamente desabilitado
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
-          ),
-        ]
-      : []),
+    // Cartographer desabilitado para Replit para evitar HMR issues
   ],
   resolve: {
     alias: {

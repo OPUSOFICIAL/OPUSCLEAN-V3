@@ -1602,7 +1602,16 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editi
       weekDays: [] as string[], // para semanal: ["domingo", "segunda", ...]
       monthDay: 1, // para mensal: dia do mês (1-31)
       turnShifts: [] as string[], // para turno: ["manha", "tarde", "noite"]
-      timesPerDay: 1 // para diaria: quantas vezes por dia
+      timesPerDay: 1, // para diaria: quantas vezes por dia
+      customFrequency: { // para personalizada: { "segunda": 5, "terca": 3, ... }
+        domingo: 0,
+        segunda: 0,
+        terca: 0,
+        quarta: 0,
+        quinta: 0,
+        sexta: 0,
+        sabado: 0
+      } as Record<string, number>
     },
     serviceId: editingActivity?.serviceId || "",
     siteIds: editingActivity?.siteIds || [] as string[], // MULTI-SELEÇÃO de locais
@@ -1661,7 +1670,16 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editi
           weekDays: [],
           monthDay: 1,
           turnShifts: [],
-          timesPerDay: 1
+          timesPerDay: 1,
+          customFrequency: {
+            domingo: 0,
+            segunda: 0,
+            terca: 0,
+            quarta: 0,
+            quinta: 0,
+            sexta: 0,
+            sabado: 0
+          }
         };
       }
       
@@ -1897,6 +1915,19 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editi
       return;
     }
 
+    if (formData.frequency === "custom") {
+      const customValues = Object.values(formData.frequencyConfig.customFrequency || {});
+      const hasAnyDay = customValues.some((v: number) => v > 0);
+      if (!hasAnyDay) {
+        toast({
+          title: "Frequência personalizada inválida",
+          description: "Configure pelo menos um dia com quantidade maior que zero",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     if (isEditMode) {
       updateActivityMutation.mutate(formData);
     } else {
@@ -1953,6 +1984,7 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editi
                     <SelectItem value="semestral">Semestral</SelectItem>
                     <SelectItem value="anual">Anual</SelectItem>
                     <SelectItem value="turno">Por Turno</SelectItem>
+                    <SelectItem value="custom">Personalizada</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2171,6 +2203,46 @@ function CreateCleaningActivityModal({ activeClientId, onClose, onSuccess, editi
                     </p>
                   </div>
                 </>
+              )}
+
+              {formData.frequency === "custom" && (
+                <div key="custom-config" className="md:col-span-2 space-y-3">
+                  <Label>Quantidade de Execuções por Dia da Semana *</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { key: "segunda", label: "Segunda" },
+                      { key: "terca", label: "Terça" },
+                      { key: "quarta", label: "Quarta" },
+                      { key: "quinta", label: "Quinta" },
+                      { key: "sexta", label: "Sexta" },
+                      { key: "sabado", label: "Sábado" },
+                      { key: "domingo", label: "Domingo" }
+                    ].map(day => (
+                      <div key={day.key} className="space-y-1">
+                        <Label className="text-xs">{day.label}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={formData.frequencyConfig.customFrequency?.[day.key] || 0}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            handleFrequencyConfigChange("customFrequency", {
+                              ...formData.frequencyConfig.customFrequency,
+                              [day.key]: value
+                            });
+                          }}
+                          placeholder="0"
+                          data-testid={`input-custom-${day.key}`}
+                          className="h-9"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Informe quantas vezes por semana a atividade deve ser realizada em cada dia (0 = não executar)
+                  </p>
+                </div>
               )}
             </div>
           </div>
