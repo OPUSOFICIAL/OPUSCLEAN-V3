@@ -53,6 +53,11 @@ export function setupWebSocket(server: Server) {
         ws.customerId = decoded.customerId;
         ws.sessionId = decoded.sessionId || token; // Use sessionId from token or fallback to token
         
+        // Validar que userId e sessionId foram setados corretamente
+        if (!ws.userId || !ws.sessionId) {
+          throw new Error('Missing userId or sessionId in token');
+        }
+        
         // Verificar se já existe uma sessão ativa para este usuário
         const existingSessionId = activeSessions.get(ws.userId);
         if (existingSessionId && existingSessionId !== ws.sessionId) {
