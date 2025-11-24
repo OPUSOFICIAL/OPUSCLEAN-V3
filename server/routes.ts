@@ -1852,8 +1852,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ message: "Service deleted successfully" });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete service" });
+    } catch (error: any) {
+      // Se a mensagem começa com "Não é possível excluir", é nosso erro controlado
+      if (error.message?.includes('Não é possível excluir porque existem OSs concluídas')) {
+        return res.status(400).json({ message: error.message });
+      }
+      
+      console.error("Error deleting service:", error);
+      res.status(500).json({ message: "Falha ao excluir serviço" });
     }
   });
 

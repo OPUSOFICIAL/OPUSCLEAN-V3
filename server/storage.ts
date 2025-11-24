@@ -2642,7 +2642,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteService(id: string): Promise<void> {
-    // Verificar se existem work orders concluídas vinculadas a este serviço
+    // 1. Verificar se existem work orders concluídas vinculadas a este serviço
     const completedWorkOrders = await db.select()
       .from(workOrders)
       .where(
@@ -2652,11 +2652,29 @@ export class DatabaseStorage implements IStorage {
         )
       );
     
+    // Se houver work orders concluídas, bloqueia o delete
     if (completedWorkOrders.length > 0) {
-      throw new Error('Não foi possível deletar as atividades');
+      const woNumbers = completedWorkOrders
+        .map(wo => `#${wo.number}`)
+        .slice(0, 5)
+        .join(', ');
+      
+      const moreCount = completedWorkOrders.length > 5 
+        ? ` e mais ${completedWorkOrders.length - 5}` 
+        : '';
+      
+      throw new Error(`Não é possível excluir porque existem OSs concluídas vinculadas: ${woNumbers}${moreCount}`);
     }
     
-    // Se não houver work orders concluídas, pode deletar o serviço
+    // 2. Cascade delete: deletar todas as work orders NÃO-concluídas deste serviço
+    await db.delete(workOrders).where(
+      and(
+        eq(workOrders.serviceId, id),
+        ne(workOrders.status, 'concluida')
+      )
+    );
+    
+    // 3. Deletar o serviço
     await db.delete(services).where(eq(services.id, id));
   }
 
