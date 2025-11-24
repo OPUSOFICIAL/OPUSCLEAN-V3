@@ -3301,6 +3301,44 @@ export class DatabaseStorage implements IStorage {
             });
           }
           break;
+          
+        case 'custom':
+          // Custom frequency: Gera múltiplas OSs conforme configurado para cada dia da semana
+          // Ex: { segunda: 5, terca: 3, quarta: 0, ... } = 5 OSs cada segunda, 3 cada terça, etc
+          const customFreq = (frequencyConfig as any)?.customFrequency || {};
+          const customDayMap = {
+            'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3,
+            'quinta': 4, 'sexta': 5, 'sabado': 6
+          };
+          const currentCustomDayOfWeek = current.getDay(); // 0 = Sunday
+          
+          // Find which day name corresponds to today
+          let dayNameForToday = '';
+          for (const [dayName, dayNum] of Object.entries(customDayMap)) {
+            if (dayNum === currentCustomDayOfWeek) {
+              dayNameForToday = dayName;
+              break;
+            }
+          }
+          
+          // Get quantity for today from customFrequency config
+          const quantityForToday = customFreq[dayNameForToday] || 0;
+          
+          // Generate that many occurrences
+          for (let i = 0; i < quantityForToday; i++) {
+            const occurrence = new Date(current);
+            // Distribute times evenly throughout the day (9 AM to 5 PM)
+            const hourOffset = 9 + Math.floor((8 / Math.max(1, quantityForToday)) * i);
+            occurrence.setHours(hourOffset, 0, 0, 0);
+            if (occurrence >= effectiveStart && occurrence <= effectiveEnd) {
+              occurrences.push({
+                date: new Date(occurrence),
+                occurrence: i + 1,
+                total: quantityForToday
+              });
+            }
+          }
+          break;
       }
       
       // Move to next day
