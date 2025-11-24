@@ -123,7 +123,7 @@ export default function SystemUsers() {
   });
 
   const { data: systemRoles = [] } = useQuery({
-    queryKey: ['/api/roles?isSystemRole=true'],
+    queryKey: ['/api/roles', { isSystemRole: 'true' }],
   });
 
   const createUserMutation = useMutation({
