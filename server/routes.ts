@@ -844,8 +844,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerId: req.params.customerId
       });
       
-      res.json({ success: true });
+      res.json({ message: "Ordem de serviço deletada com sucesso" });
     } catch (error) {
+      console.error("[DELETE WO ERROR]", error);
       res.status(500).json({ message: "Failed to delete customer work order" });
     }
   });

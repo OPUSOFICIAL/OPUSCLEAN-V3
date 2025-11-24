@@ -174,9 +174,11 @@ export default function WorkOrders() {
       toast({ title: "Ordem de serviço deletada com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("[DELETE WO MUTATION ERROR]", error);
       toast({ 
         title: "Erro ao deletar ordem de serviço", 
+        description: error?.message || "Tente novamente",
         variant: "destructive" 
       });
     },
