@@ -51,6 +51,19 @@ type User = {
   modules?: ('clean' | 'maintenance')[];
   createdAt: string;
   updatedAt: string;
+  customRoles?: Array<{
+    id: string;
+    userId: string;
+    roleId: string;
+    customerId: string | null;
+    role: {
+      id: string;
+      name: string;
+      description: string | null;
+      isSystemRole: boolean;
+      permissions: string[];
+    };
+  }>;
 };
 
 export default function SystemUsers() {
@@ -164,7 +177,27 @@ export default function SystemUsers() {
     },
   });
 
-  const handleEdit = (user: User & { customRoles?: any[] }) => {
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest('PATCH', `/api/system-users/${userId}/status`, { isActive: false });
+    },
+    onSuccess: () => {
+      cache.invalidateUsers();
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário desativado com sucesso!',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleEdit = (user: User) => {
     setEditingUser(user);
     const userCustomRoleId = user.customRoles?.[0]?.roleId || '';
     
@@ -177,6 +210,12 @@ export default function SystemUsers() {
       password: '',
     });
     setIsCreateDialogOpen(true);
+  };
+
+  const handleDelete = (userId: string, userName: string) => {
+    if (confirm(`Tem certeza que deseja desativar o usuário "${userName}"?`)) {
+      deleteUserMutation.mutate(userId);
+    }
   };
 
   const handleSubmit = async (data: CreateUserForm) => {
@@ -466,19 +505,42 @@ export default function SystemUsers() {
                   className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50"
                 >
                   <div className="flex-1">
-                    <p className="font-medium">{user.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{user.name}</p>
+                      {!user.isActive && (
+                        <Badge variant="destructive" className="text-xs">Inativo</Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
+                    {user.customRoles && user.customRoles.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Função: <span className="font-medium">{user.customRoles[0].role.name}</span>
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{user.username}</Badge>
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => handleEdit(user as any)}
+                      onClick={() => handleEdit(user)}
                       data-testid={`button-edit-${user.id}`}
+                      title="Editar usuário"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
+                    {can.deleteOpusUsers() && user.isActive && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete(user.id, user.name)}
+                        data-testid={`button-delete-${user.id}`}
+                        title="Desativar usuário"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
