@@ -51,10 +51,21 @@ function MultiSelect({
     }
   };
 
+  const selectAll = () => {
+    onChange(options.map(opt => opt.value));
+  };
+
+  const deselectAll = () => {
+    onChange([]);
+  };
+
   const selectedLabels = options
     .filter(opt => value.includes(opt.value))
     .map(opt => opt.label)
     .join(", ");
+
+  const allSelected = options.length > 0 && value.length === options.length;
+  const someSelected = value.length > 0 && value.length < options.length;
 
   return (
     <div className="space-y-2">
@@ -77,13 +88,38 @@ function MultiSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-white border border-slate-200 shadow-lg z-[100]" align="start" sideOffset={4}>
-          <div className="max-h-64 overflow-auto p-2">
+          <div className="max-h-72 overflow-auto p-2">
             {options.length === 0 ? (
               <div className="p-2 text-sm text-slate-500">
                 {placeholder || "Sem opções"}
               </div>
             ) : (
               <div className="space-y-1">
+                <div className="flex items-center space-x-2 p-2 border-b border-slate-200 mb-1">
+                  <Checkbox
+                    id={`checkbox-select-all`}
+                    checked={allSelected}
+                    ref={(elem) => {
+                      if (elem && someSelected) {
+                        elem.indeterminate = true;
+                      }
+                    }}
+                    onCheckedChange={() => {
+                      if (allSelected) {
+                        deselectAll();
+                      } else {
+                        selectAll();
+                      }
+                    }}
+                    className="border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <label 
+                    htmlFor={`checkbox-select-all`}
+                    className="flex-1 cursor-pointer text-sm font-medium text-slate-700 select-none"
+                  >
+                    Selecionar Todas
+                  </label>
+                </div>
                 {options.map((option) => (
                   <div
                     key={option.value}
