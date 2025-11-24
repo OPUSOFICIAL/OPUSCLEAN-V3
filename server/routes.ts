@@ -1736,6 +1736,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/users/:id/deactivate", requirePermission('users_edit'), async (req, res) => {
+    try {
+      const user = await storage.deactivateUser(req.params.id);
+      
+      // Broadcast user deactivation to all connected clients
+      broadcast({
+        type: 'update',
+        resource: 'users',
+        data: sanitizeUser(user),
+        customerId: user.customerId || undefined,
+      });
+      
+      res.json(sanitizeUser(user));
+    } catch (error) {
+      console.error("Error deactivating user:", error);
+      res.status(500).json({ message: "Failed to deactivate user" });
+    }
+  });
+
   app.delete("/api/users/:id", requirePermission('users_delete'), async (req, res) => {
     try {
       // Buscar o usuário ANTES de deletar para ter o customerId

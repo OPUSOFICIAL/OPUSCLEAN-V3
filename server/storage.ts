@@ -2572,6 +2572,15 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
+  async deactivateUser(id: string): Promise<User> {
+    // Desativar usuário sem deletar dados
+    const [updatedUser] = await db.update(users)
+      .set({ isActive: false, updatedAt: sql`now()` })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
   async deleteUser(id: string): Promise<void> {
     // Deletar registros relacionados primeiro para evitar violação de chave estrangeira
     

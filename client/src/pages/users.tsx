@@ -111,6 +111,22 @@ export default function Users({ customerId }: UsersProps) {
     },
   });
 
+  const deactivateUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest("PATCH", `/api/users/${userId}/deactivate`);
+    },
+    onSuccess: () => {
+      toast({ title: "Usuário desativado com sucesso" });
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "users"] });
+    },
+    onError: () => {
+      toast({ 
+        title: "Erro ao desativar usuário", 
+        variant: "destructive" 
+      });
+    },
+  });
+
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
       return await apiRequest("DELETE", `/api/users/${userId}`);
