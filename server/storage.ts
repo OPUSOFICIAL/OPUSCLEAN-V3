@@ -3875,6 +3875,10 @@ export class DatabaseStorage implements IStorage {
     // Get work order info before deletion for audit log
     const workOrder = await this.getWorkOrder(id);
     
+    // Delete related comments first (cascade delete manually)
+    await db.delete(workOrderComments).where(eq(workOrderComments.workOrderId, id));
+    
+    // Then delete the work order
     await db.delete(workOrders).where(eq(workOrders.id, id));
     
     // Create audit log for work order deletion
