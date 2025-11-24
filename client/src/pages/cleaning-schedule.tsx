@@ -370,6 +370,23 @@ export default function CleaningSchedule() {
           dayMap[weekDay as keyof typeof dayMap] === dayOfWeek
         );
       }
+      if (activity.frequency === 'custom') {
+        // Frequência personalizada: verificar se existe quantidade > 0 para este dia
+        const customFreq = activity.frequencyConfig?.customFrequency || {};
+        const dayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay();
+        const dayMap = {
+          'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3,
+          'quinta': 4, 'sexta': 5, 'sabado': 6
+        };
+        
+        // Encontrar o nome do dia da semana
+        for (const [dayName, dayNum] of Object.entries(dayMap)) {
+          if (dayNum === dayOfWeek && customFreq[dayName as keyof typeof customFreq] && customFreq[dayName as keyof typeof customFreq] > 0) {
+            return true;
+          }
+        }
+        return false;
+      }
       return false;
     });
   };
