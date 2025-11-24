@@ -61,6 +61,37 @@ export default function Roles() {
   const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
   const [activeTab, setActiveTab] = useState('client'); // 'client' ou 'system'
 
+  // Inicializar funções de sistema automaticamente se tiver permissão
+  React.useEffect(() => {
+    const initializeSystemRoles = async () => {
+      // Apenas opus_user com permissão pode inicializar
+      if (user?.userType === 'opus_user') {
+        try {
+          const response = await fetch('/api/roles/init-system-roles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[System Roles] Initialized:', data.created?.length || 0, 'new roles');
+            // Se foram criadas novas roles, recarregar a query
+            if (data.created?.length > 0) {
+              // Aguardar um pouco e recarregar
+              setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ['/api/roles?isSystemRole=true'] });
+              }, 500);
+            }
+          }
+        } catch (error) {
+          console.debug('[System Roles] Already initialized or error:', error);
+        }
+      }
+    };
+    
+    initializeSystemRoles();
+  }, [user?.userType]);
+
   // Filtrar permissões disponíveis baseado no userType e contexto (tab ativa)
   const filteredAvailablePermissions = availablePermissions.filter(permission => {
     // Se estiver na tab de Sistema (editando/criando role de sistema)
@@ -124,6 +155,7 @@ export default function Roles() {
   const { data: systemRoles = [], isLoading: isLoadingSystemRoles, refetch: refetchSystemRoles } = useQuery<CustomRole[]>({
     queryKey: ['/api/roles?isSystemRole=true'],
     enabled: can.viewSystemRoles(), // Só busca se tiver permissão
+    refetchOnMount: 'stale', // Recarregar ao montar para pegar roles inicializadas
   });
 
   const createRoleMutation = useMutation({
