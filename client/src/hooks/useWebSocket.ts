@@ -56,7 +56,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     if (!token) return null;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
+    const host = window.location.host || 'localhost:5000';
+    if (!host || host === 'undefined') {
+      console.error('[WS Client] Invalid host:', host);
+      return null;
+    }
     return `${protocol}//${host}/ws?token=${encodeURIComponent(token)}`;
   }, []);
 
