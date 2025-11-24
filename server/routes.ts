@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { broadcast } from "./websocket";
+import { broadcast, forceLogoutUser } from "./websocket";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
@@ -270,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'create',
         resource: 'sites',
         data: newSite,
-        customerId: newSite.customerId,
+        customerId: newSite.customerId ?? undefined,
       });
       
       res.status(201).json(newSite);
@@ -292,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'update',
         resource: 'sites',
         data: updatedSite,
-        customerId: updatedSite.customerId,
+        customerId: updatedSite.customerId ?? undefined,
       });
       
       res.json(updatedSite);
@@ -315,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'delete',
           resource: 'sites',
           data: { id: req.params.id },
-          customerId: site.customerId,
+          customerId: site.customerId ?? undefined,
         });
       }
       
@@ -1383,7 +1383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newPoint = await storage.createQrCodePoint(qrPoint);
       
       // Buscar a zone para obter o customerId
-      const zone = await storage.getZone(newPoint.zoneId);
+      const zone = newPoint.zoneId ? await storage.getZone(newPoint.zoneId) : null;
       const site = zone ? await storage.getSite(zone.siteId) : null;
       
       // Broadcast QR code creation to all connected clients
@@ -1391,7 +1391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'create',
         resource: 'qrcodes',
         data: newPoint,
-        customerId: site?.customerId || undefined,
+        customerId: site?.customerId ?? undefined,
       });
       
       res.status(201).json(newPoint);
@@ -1409,7 +1409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedPoint = await storage.updateQrCodePoint(req.params.id, qrPoint);
       
       // Buscar a zone para obter o customerId
-      const zone = await storage.getZone(updatedPoint.zoneId);
+      const zone = updatedPoint.zoneId ? await storage.getZone(updatedPoint.zoneId) : null;
       const site = zone ? await storage.getSite(zone.siteId) : null;
       
       // Broadcast QR code update to all connected clients
@@ -1417,7 +1417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'update',
         resource: 'qrcodes',
         data: updatedPoint,
-        customerId: site?.customerId || undefined,
+        customerId: site?.customerId ?? undefined,
       });
       
       res.json(updatedPoint);
@@ -1433,7 +1433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Buscar o QR point ANTES de deletar para ter o zoneId e customerId
       const qrPoint = await storage.getQrCodePoint(req.params.id);
-      const zone = qrPoint ? await storage.getZone(qrPoint.zoneId) : null;
+      const zone = qrPoint && qrPoint.zoneId ? await storage.getZone(qrPoint.zoneId) : null;
       const site = zone ? await storage.getSite(zone.siteId) : null;
       
       await storage.deleteQrCodePoint(req.params.id);
@@ -1444,7 +1444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'delete',
           resource: 'qrcodes',
           data: { id: req.params.id },
-          customerId: site.customerId || undefined,
+          customerId: site.customerId ?? undefined,
         });
       }
       
@@ -1749,15 +1749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // IMPORTANTE: Desconectar o usuário desativado em tempo real via WebSocket
-      // Procurar a sessão ativa do usuário e encerrar via closeClient
-      if (wsConnections.has(req.params.id)) {
-        const userSessions = wsConnections.get(req.params.id);
-        if (userSessions) {
-          userSessions.forEach((session) => {
-            session.client.close(1000, 'Account deactivated');
-          });
-        }
-      }
+      forceLogoutUser(req.params.id);
       
       res.json(sanitizeUser(user));
     } catch (error) {
@@ -3854,7 +3846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'create',
         resource: 'roles',
         data: fullRole,
-        customerId: fullRole.customerId
+        customerId: fullRole?.customerId ?? undefined
       });
       
       res.status(201).json(fullRole);
@@ -3944,7 +3936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resource: 'roles',
         data: fullRole,
         id: req.params.id,
-        customerId: fullRole.customerId
+        customerId: fullRole?.customerId ?? undefined
       });
       
       res.json(fullRole);
@@ -3976,8 +3968,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         broadcast({
           type: 'delete',
           resource: 'roles',
-          id: req.params.id,
-          customerId: existingRole.customerId
+          data: { id: req.params.id },
+          customerId: existingRole.customerId ?? undefined
         });
         
         return res.status(204).end();
@@ -4001,7 +3993,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       broadcast({
         type: 'delete',
         resource: 'roles',
-        id: req.params.id
+        data: { id: req.params.id },
+        customerId: existingRole.customerId ?? undefined
       });
       
       res.status(204).end();
@@ -4115,7 +4108,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Criar a role
         const { permissions, ...roleInfo } = roleData;
-        const role = await storage.createCustomRole(roleInfo);
+        const roleWithIds = {
+          ...roleInfo,
+          id: crypto.randomUUID(),
+          companyId: 'a3e33b82-4f75-4f8d-86a2-2d67e61a9812' // OPUS company ID
+        };
+        const role = await storage.createCustomRole(roleWithIds);
         
         // Adicionar permissões
         if (permissions?.length) {
