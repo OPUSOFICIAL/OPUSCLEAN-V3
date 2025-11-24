@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,10 +23,21 @@ import { useCacheInvalidation } from '@/hooks/use-cache-invalidation';
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username é obrigatório'),
   email: z.string().email('Email inválido'),
-  password: z.string().refine(
-    (val) => val === '' || val.length >= 6,
-    'Senha deve ter no mínimo 6 caracteres'
-  ),
+  password: z.string().superRefine((val, ctx) => {
+    // Aceitar string vazia
+    if (val === '') {
+      return;
+    }
+    // Validar comprimento mínimo
+    if (val.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_small,
+        minimum: 6,
+        type: "string",
+        message: 'Senha deve ter no mínimo 6 caracteres'
+      });
+    }
+  }),
   name: z.string().min(1, 'Nome é obrigatório'),
   customRoleId: z.string().min(1, 'Função é obrigatória'),
   modules: z.array(z.enum(['clean', 'maintenance'])).min(1, 'Selecione pelo menos um módulo'),
@@ -491,19 +502,28 @@ export default function SystemUsers() {
                 <FormField
                   control={form.control}
                   name="password"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>
                         {editingUser ? 'Nova Senha (deixe vazio para manter)' : 'Senha'}
                       </FormLabel>
                       <FormControl>
-                        <Input 
-                          type="password"
-                          placeholder={editingUser ? "Nova senha (opcional)" : "Digite uma senha"}
-                          data-testid="input-password"
-                          {...field} 
-                        />
+                        <div>
+                          <Input 
+                            type="password"
+                            placeholder={editingUser ? "Nova senha (opcional)" : "Digite uma senha"}
+                            data-testid="input-password"
+                            {...field}
+                            className={fieldState.error ? 'border-red-500' : ''}
+                          />
+                          {field.value && field.value.length > 0 && field.value.length < 6 && (
+                            <p className="text-xs text-red-500 mt-1 font-medium">
+                              ⚠️ Senha deve ter no mínimo 6 caracteres ({field.value.length}/6)
+                            </p>
+                          )}
+                        </div>
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
