@@ -671,14 +671,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      // Filter by status if provided (single or multiple)
-      if (status) {
-        workOrders = workOrders.filter(wo => wo.status === status);
-      } else if (statusList) {
-        const statusArray = (statusList as string).split(',');
-        workOrders = workOrders.filter(wo => statusArray.includes(wo.status || ''));
-      }
-      
       // Filter by orderType (tipo de OS: programada, corretiva_interna, corretiva_publica)
       if (orderType && orderType !== 'todos') {
         workOrders = workOrders.filter((wo: any) => wo.type === orderType);
@@ -700,6 +692,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => wo.serviceId === serviceId);
       }
       
+      // IMPORTANTE: Calcular contadores por status ANTES de aplicar o filtro de status
+      // Isso garante que os contadores sempre mostrem os totais gerais
+      const statusCounts = {
+        abertas: workOrders.filter((wo: any) => wo.status === 'aberta').length,
+        vencidas: workOrders.filter((wo: any) => wo.status === 'vencida').length,
+        pausadas: workOrders.filter((wo: any) => wo.status === 'pausada').length,
+        concluidas: workOrders.filter((wo: any) => wo.status === 'concluida').length,
+      };
+      
+      // AGORA aplicar o filtro de status (depois de calcular os contadores)
+      if (status) {
+        workOrders = workOrders.filter(wo => wo.status === status);
+      } else if (statusList) {
+        const statusArray = (statusList as string).split(',');
+        workOrders = workOrders.filter(wo => statusArray.includes(wo.status || ''));
+      }
+      
       // Ordenação por ID (ascendente = mais antigos primeiro)
       workOrders.sort((a: any, b: any) => {
         const idA = parseInt(a.number || a.id);
@@ -712,14 +721,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 50; // Padrão: 50 por página
       const total = workOrders.length;
       const totalPages = Math.ceil(total / limit);
-      
-      // Calcular contadores por status (ANTES da paginação)
-      const statusCounts = {
-        abertas: workOrders.filter((wo: any) => wo.status === 'aberta').length,
-        vencidas: workOrders.filter((wo: any) => wo.status === 'vencida').length,
-        pausadas: workOrders.filter((wo: any) => wo.status === 'pausada').length,
-        concluidas: workOrders.filter((wo: any) => wo.status === 'concluida').length,
-      };
       
       // Calcular skip e aplicar paginação
       const skip = (page - 1) * limit;
