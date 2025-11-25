@@ -24,7 +24,8 @@ import {
   MapPin,
   FileText,
   WifiOff,
-  Wifi
+  Wifi,
+  ClipboardList
 } from "lucide-react";
 import { pickMultipleImages, type CapturedPhoto } from "@/lib/camera-utils";
 import type { CachedQRPoint, CachedZone } from "@/lib/offline-storage";
@@ -114,6 +115,20 @@ export default function QrExecution() {
   const { data: zone } = useQuery({
     queryKey: ["/api/zones", (qrData as any)?.point?.zoneId, { module: currentModule }],
     enabled: !!(qrData as any)?.point?.zoneId && isOnline,
+  });
+
+  // Get ALL work orders for this zone (available for this operator)
+  const { data: zoneWorkOrders } = useQuery({
+    queryKey: ["/api/customers", (qrData as any)?.point?.customerId, "work-orders", { zoneId: (qrData as any)?.point?.zoneId, module: currentModule }],
+    enabled: !!(qrData as any)?.point?.zoneId && !!(qrData as any)?.point?.customerId && isOnline,
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/customers/${(qrData as any)?.point?.customerId}/work-orders?zoneId=${(qrData as any)?.point?.zoneId}&module=${currentModule}&assignedTo=nao_atribuido`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}` } }
+      );
+      if (!response.ok) throw new Error('Failed to fetch zone work orders');
+      return response.json();
+    }
   });
 
   // Cache QR point when fetched from API (TanStack Query v5 pattern)
@@ -458,15 +473,8 @@ export default function QrExecution() {
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('current-location', JSON.stringify(locationContext));
-      console.log('[QR EXECUTION] 💾 Zona salva em localStorage:', locationContext.zoneId);
-      
-      // Invalidar cache das queries de work orders para forçar refetch
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/customers"]
-      });
-      console.log('[QR EXECUTION] 🔄 Cache de work orders invalidado');
     }
-  }, [effectiveQRData, code, currentUser.id, effectiveZone, queryClient]);
+  }, [effectiveQRData, code, currentUser.id, effectiveZone]);
 
   // Use normalized offline data (from OfflineExecutionNormalizer) or fallback to basic cache
   const normalizedCacheData = normalizedOfflineData || (cachedQRData ? {
@@ -714,19 +722,45 @@ export default function QrExecution() {
             </CardContent>
           </Card>
         ) : (
-          // No scheduled activity - offer corrective option
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-chart-4" />
-                <span>Nenhuma Atividade Programada</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Não há atividades programadas para este local no momento. 
-                Você pode abrir uma ordem de serviço corretiva se necessário.
-              </p>
+          <>
+            {/* Show available work orders for this zone */}
+            {zoneWorkOrders && (zoneWorkOrders as any).length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <ClipboardList className="w-5 h-5 text-primary" />
+                    <span>Ordens Disponíveis</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(zoneWorkOrders as any).map((wo: any) => (
+                    <div key={wo.id} className="border border-border rounded-lg p-3 cursor-pointer hover:bg-muted/50" onClick={() => {
+                      localStorage.setItem('selected-work-order', JSON.stringify(wo));
+                      setLocation(`/mobile/work-orders/${wo.id}`);
+                    }}>
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-foreground">#{wo.number} - {wo.title}</h4>
+                        <Badge className={wo.priority === 'Alta' ? 'bg-destructive' : 'bg-chart-3'}>{wo.priority}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{wo.description}</p>
+                      <p className="text-xs text-muted-foreground">Status: {wo.status}</p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ) : (
+              // No work orders for this zone
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <AlertTriangle className="w-5 h-5 text-chart-4" />
+                    <span>Nenhuma Ordem Disponível</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Não há ordens de serviço disponíveis para este local no momento.
+                  </p>
 
               {/* Observations for corrective */}
               <div>
