@@ -3634,7 +3634,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get list of customers that the authenticated user is allowed to manage
   // For admin: returns all customers they are linked to via userAllowedCustomers
   // For opus_user non-admin: returns their allowed customers
-  // For customer_user: returns their own customer if set
+  // For customer_user admin: returns customers linked via userAllowedCustomers
+  // For customer_user non-admin: returns their own customer if set
   app.get("/api/auth/my-customers", requireAuth, async (req, res) => {
     try {
       if (!req.user) {
@@ -3643,7 +3644,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[MY-CUSTOMERS] 📊 Fetching for: ${req.user.id} (${req.user.username}) type: ${req.user.userType} role: ${req.user.role}`);
 
-      // customer_user: retorna o cliente dele mesmo (customerId)
+      // customer_user admin: buscar clientes permitidos via userAllowedCustomers (mesmo que opus_user)
+      if (req.user.userType === 'customer_user' && req.user.role === 'admin') {
+        const allowed = await storage.getUserAllowedCustomers(req.user.id);
+        console.log(`[MY-CUSTOMERS] 📋 customer_user admin found ${allowed.length} links:`, allowed.map(a => a.customerId));
+        
+        if (allowed.length > 0) {
+          const customers = await storage.getCustomersByUser(req.user.id);
+          console.log(`[MY-CUSTOMERS] ✅ Returning ${customers.length} managed customers`);
+          return res.json(customers);
+        }
+        
+        // Fallback: retornar cliente próprio se não tiver links gerenciados
+        if (req.user.customerId) {
+          const customer = await storage.getCustomer(req.user.customerId);
+          console.log(`[MY-CUSTOMERS] ✅ Fallback: returning own customer`);
+          return res.json(customer ? [customer] : []);
+        }
+        
+        return res.json([]);
+      }
+
+      // customer_user não-admin: retorna o cliente dele mesmo (customerId)
       if (req.user.userType === 'customer_user' && req.user.customerId) {
         const customer = await storage.getCustomer(req.user.customerId);
         console.log(`[MY-CUSTOMERS] ✅ customer_user returned:`, customer?.name);
@@ -3652,7 +3674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // opus_user: buscar clientes permitidos via userAllowedCustomers
       const allowed = await storage.getUserAllowedCustomers(req.user.id);
-      console.log(`[MY-CUSTOMERS] 📋 Found ${allowed.length} allowed customer links:`, allowed.map(a => a.customerId));
+      console.log(`[MY-CUSTOMERS] 📋 opus_user found ${allowed.length} links:`, allowed.map(a => a.customerId));
       
       const customers = await storage.getCustomersByUser(req.user.id);
       console.log(`[MY-CUSTOMERS] ✅ Returning ${customers.length} customers:`, customers.map(c => ({ id: c.id, name: c.name })));

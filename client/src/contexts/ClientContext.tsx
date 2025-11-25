@@ -96,9 +96,10 @@ export function ClientProvider({ children }: ClientProviderProps) {
 
   // Buscar clientes do usuário (funciona para admin e opus_user não-admin)
   // Usa /api/auth/my-customers que busca via userAllowedCustomers
+  // IMPORTANTE: Permite customer_user admins também (role === 'admin')
   const { data: myCustomers = [], isLoading: isLoadingMyCustomers, isError: myCustomersError, error: myCustomersErrorDetail } = useQuery({
     queryKey: ["/api/auth/my-customers"],
-    enabled: !isCustomerUser && !!user?.id,
+    enabled: (!isCustomerUser || (isCustomerUser && isAdmin)) && !!user?.id,
     staleTime: 0,  // Não usar cache
     gcTime: 0,  // Desabilitar garbage collection também
     refetchOnWindowFocus: true,  // Refetch ao focar na janela
@@ -127,11 +128,11 @@ export function ClientProvider({ children }: ClientProviderProps) {
 
   // Filtrar clientes baseado em permissões
   let customers: Customer[];
-  if (isCustomerUser) {
-    // customer_user não usa essa lista
+  if (isCustomerUser && !isAdmin) {
+    // customer_user não-admin não vê lista de clientes
     customers = [];
   } else if (isAdmin) {
-    // Admin vê seus clientes vinculados (via userAllowedCustomers)
+    // Admin (opus_user ou customer_user) vê seus clientes vinculados (via userAllowedCustomers)
     customers = (myCustomers as Customer[]).filter(customer => customer.isActive);
   } else {
     // Usuários não-admin veem apenas clientes permitidos e ativos
