@@ -104,6 +104,9 @@ export default function MobileDashboard() {
   // Extrair dados da resposta paginada
   const workOrders = workOrdersResponse?.data || [];
   
+  // 🔥 CORREÇÃO: Usar statusCounts do backend (totais reais, não da página atual)
+  const statusCounts = workOrdersResponse?.statusCounts || { abertas: 0, vencidas: 0, pausadas: 0, concluidas: 0 };
+  
   // Verificar se o usuário é colaborador
   if (!user || !canOnlyViewOwnWorkOrders(user)) {
     return (
@@ -539,7 +542,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <ClipboardList className="w-5 h-5 text-blue-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{myPendingOrders.length}</p>
+                  <p className="text-xl font-bold text-slate-900">{statusCounts.abertas}</p>
                   <p className="text-xs text-slate-600 text-center">Pendentes</p>
                 </div>
               </CardContent>
@@ -560,7 +563,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                     <Clock className="w-5 h-5 text-amber-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{myPausedOrders.length}</p>
+                  <p className="text-xl font-bold text-slate-900">{statusCounts.pausadas}</p>
                   <p className="text-xs text-slate-600 text-center">Pausadas</p>
                 </div>
               </CardContent>
@@ -581,7 +584,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{myCompletedOrders.length}</p>
+                  <p className="text-xl font-bold text-slate-900">{statusCounts.concluidas}</p>
                   <p className="text-xs text-slate-600 text-center">Concluídas</p>
                 </div>
               </CardContent>
