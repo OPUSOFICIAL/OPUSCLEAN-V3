@@ -45,67 +45,75 @@ export default function MobileDashboard() {
   // Get current location context from localStorage (set by QR scanner)
   const currentLocation = JSON.parse(localStorage.getItem('current-location') || 'null');
   
-  // Buscar as OS - o hook precisa ser chamado antes de qualquer return
-  const { data: workOrdersResponse, isLoading } = useQuery({
-    queryKey: ["/api/customers", effectiveCustomerId, "work-orders", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
-    enabled: !!effectiveCustomerId && !!user,
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      
-      // Add module filter
-      if (currentModule) {
-        params.append('module', currentModule);
-      }
-      
-      // If we have a current location (from QR scan), filter by zone
-      if (currentLocation?.zoneId) {
-        params.append('zoneId', currentLocation.zoneId);
-      }
-      
-      // If user is an operator, filter by assignedTo
-      // Backend will return: assigned to this user + unassigned (null) + paused
-      if (user?.id) {
-        params.append('assignedTo', user.id);
-      }
-      
-      let url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
-      
-      // 🔥 FIX: No APK, usar URL absoluta do servidor
-      if (Capacitor.isNativePlatform()) {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
-        url = baseUrl + url;
-      }
-      
-      // Get token for authentication
-      const token = localStorage.getItem("opus_clean_token");
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-      
-      console.log('[MOBILE DASHBOARD] Fetching work orders:', url);
-      
-      const response = await fetch(url, {
-        headers,
-        credentials: "include"
-      });
-      
-      console.log('[MOBILE DASHBOARD] Response status:', response.status);
-      
-      if (!response.ok) throw new Error('Failed to fetch work orders');
-      const responseData = await response.json();
-      
-      console.log('[MOBILE DASHBOARD] Work orders received:', responseData?.data?.length || 0);
-      
-      return responseData;
+  // Helper function to fetch work orders with specific params
+  const fetchWorkOrders = async (assignedToValue: string) => {
+    const params = new URLSearchParams();
+    
+    if (currentModule) {
+      params.append('module', currentModule);
     }
+    if (currentLocation?.zoneId) {
+      params.append('zoneId', currentLocation.zoneId);
+    }
+    params.append('assignedTo', assignedToValue);
+    
+    let url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
+    
+    if (Capacitor.isNativePlatform()) {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
+      url = baseUrl + url;
+    }
+    
+    const token = localStorage.getItem("opus_clean_token");
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(url, {
+      headers,
+      credentials: "include"
+    });
+    
+    if (!response.ok) throw new Error('Failed to fetch work orders');
+    return response.json();
+  };
+  
+  // Query 1: Disponíveis (não atribuídas)
+  const { data: availableResponse, isLoading: isLoadingAvailable } = useQuery({
+    queryKey: ["/api/customers", effectiveCustomerId, "work-orders-available", { module: currentModule, zoneId: currentLocation?.zoneId }],
+    enabled: !!effectiveCustomerId && !!user,
+    queryFn: () => fetchWorkOrders('nao_atribuido')
   });
   
-  // Extrair dados da resposta paginada
-  const workOrders = workOrdersResponse?.data || [];
+  // Query 2: Minhas (atribuídas ao usuário)
+  const { data: myResponse, isLoading: isLoadingMy } = useQuery({
+    queryKey: ["/api/customers", effectiveCustomerId, "work-orders-my", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
+    enabled: !!effectiveCustomerId && !!user,
+    queryFn: () => fetchWorkOrders(user!.id)
+  });
   
-  // 🔥 CORREÇÃO: Usar statusCounts do backend (totais reais, não da página atual)
-  const statusCounts = workOrdersResponse?.statusCounts || { abertas: 0, vencidas: 0, pausadas: 0, concluidas: 0 };
+  const isLoading = isLoadingAvailable || isLoadingMy;
+  
+  // Combinar dados das duas queries
+  const allWorkOrders = [
+    ...(availableResponse?.data || []),
+    ...(myResponse?.data || [])
+  ];
+  
+  // Usar statusCounts da query de "minhas" (pendentes + em execução + pausadas)
+  const myStatusCounts = myResponse?.statusCounts || { abertas: 0, vencidas: 0, pausadas: 0, concluidas: 0 };
+  const availableStatusCounts = availableResponse?.statusCounts || { abertas: 0, vencidas: 0, pausadas: 0, concluidas: 0 };
+  
+  // Status counts combinados: total de abertas = disponíveis + minhas abertas
+  const statusCounts = {
+    abertas: (availableStatusCounts.abertas || 0) + (myStatusCounts.abertas || 0),
+    vencidas: (myStatusCounts.vencidas || 0),
+    pausadas: (myStatusCounts.pausadas || 0),
+    concluidas: (myStatusCounts.concluidas || 0)
+  };
+  
+  const workOrders = allWorkOrders;
   
   // Verificar se o usuário é colaborador
   if (!user || !canOnlyViewOwnWorkOrders(user)) {
@@ -201,9 +209,15 @@ export default function MobileDashboard() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await queryClient.invalidateQueries({ 
-      queryKey: ["/api/customers", effectiveCustomerId, "work-orders"] 
-    });
+    // Invalidar ambas as queries
+    await Promise.all([
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers", effectiveCustomerId, "work-orders-available"] 
+      }),
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers", effectiveCustomerId, "work-orders-my"] 
+      })
+    ]);
     setTimeout(() => setIsRefreshing(false), 1000);
     toast({
       title: "Atualizado!",

@@ -58,7 +58,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const hostname = window.location.hostname;
-      const port = window.location.port;
+      const port = window.location.port || ''; // CRITICAL: Ensure port is never undefined
       
       // Validação: hostname não pode estar vazio
       if (!hostname) {
