@@ -231,7 +231,7 @@ function getEffectiveRole(baseRole: UserRole, permissions: string[]): UserRole {
 /**
  * Helper function to extract user from Authorization header
  */
-async function getUserFromToken(req: Request): Promise<SessionUser | null> {
+export async function getUserFromToken(req: Request): Promise<SessionUser | null> {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {

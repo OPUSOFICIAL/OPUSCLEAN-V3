@@ -40,6 +40,7 @@ import {
   requireCustomerAccessOrPermission,
   getUserPermissions,
   validatePermissionsByUserType,
+  getUserFromToken,
   ALL_PERMISSIONS,
   CLIENT_ALLOWED_PERMISSIONS
 } from "./middleware/auth";
