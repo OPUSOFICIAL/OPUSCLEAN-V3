@@ -1573,7 +1573,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           validatedData.customerId) {
         try {
           await storage.addUserAllowedCustomer({
-            id: `user-allowed-customer-${newUser.id}-${validatedData.customerId}-${Date.now()}`,
             userId: newUser.id,
             customerId: validatedData.customerId,
           });
