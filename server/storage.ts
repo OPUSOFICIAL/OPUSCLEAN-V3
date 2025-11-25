@@ -689,7 +689,7 @@ export class DatabaseStorage implements IStorage {
     
     // Get zones for customer sites only (filter by module if provided)
     const zonesWhereCondition = module
-      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      ? and(inArray(zones.siteId, siteIds), or(isNull(zones.module), eq(zones.module, module)))
       : inArray(zones.siteId, siteIds);
     
     const customerZones = await db.select().from(zones)
@@ -829,7 +829,7 @@ export class DatabaseStorage implements IStorage {
     const companyId = customerSites[0].companyId;
 
     const zonesWhereCondition = module
-      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      ? and(inArray(zones.siteId, siteIds), or(isNull(zones.module), eq(zones.module, module)))
       : inArray(zones.siteId, siteIds);
 
     // PARALELO: Buscar zones e users ao mesmo tempo
@@ -846,7 +846,7 @@ export class DatabaseStorage implements IStorage {
 
     // Filter by module if provided
     const whereConditions = module 
-      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      ? and(inArray(workOrders.zoneId, zoneIds), or(isNull(workOrders.module), eq(workOrders.module, module)))
       : inArray(workOrders.zoneId, zoneIds);
       
     const customerWorkOrders = await db.select().from(workOrders).where(whereConditions);
@@ -957,7 +957,7 @@ export class DatabaseStorage implements IStorage {
     const siteIds = customerSites.map(site => site.id);
 
     const zonesWhereCondition = module
-      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      ? and(inArray(zones.siteId, siteIds), or(isNull(zones.module), eq(zones.module, module)))
       : inArray(zones.siteId, siteIds);
 
     // Buscar zones e work orders pode ser paralelizado se usarmos siteIds diretamente
@@ -970,7 +970,7 @@ export class DatabaseStorage implements IStorage {
 
     // Filter by module if provided
     const whereConditions = module 
-      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      ? and(inArray(workOrders.zoneId, zoneIds), or(isNull(workOrders.module), eq(workOrders.module, module)))
       : inArray(workOrders.zoneId, zoneIds);
       
     const customerWorkOrders = await db.select().from(workOrders).where(whereConditions);
@@ -1102,7 +1102,7 @@ export class DatabaseStorage implements IStorage {
     const siteIds = customerSites.map(site => site.id);
 
     const zonesWhereCondition = module
-      ? and(inArray(zones.siteId, siteIds), eq(zones.module, module))
+      ? and(inArray(zones.siteId, siteIds), or(isNull(zones.module), eq(zones.module, module)))
       : inArray(zones.siteId, siteIds);
 
     const customerZones = await db.select().from(zones).where(zonesWhereCondition);
@@ -1119,7 +1119,7 @@ export class DatabaseStorage implements IStorage {
 
     // Filter by module if provided
     const whereConditions = module 
-      ? and(inArray(workOrders.zoneId, zoneIds), eq(workOrders.module, module))
+      ? and(inArray(workOrders.zoneId, zoneIds), or(isNull(workOrders.module), eq(workOrders.module, module)))
       : inArray(workOrders.zoneId, zoneIds);
 
     // Buscar WOs no período
