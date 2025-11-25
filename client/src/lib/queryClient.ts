@@ -127,7 +127,11 @@ export const getQueryFn: <T>(options: {
 
     await throwIfResNotOk(res);
     const data = await res.json();
-    console.log('[QUERY FN] Data received:', data.length || Object.keys(data).length, 'items');
+    // Melhor log: se for resposta paginada (com data.data), mostra o tamanho correto
+    const itemCount = Array.isArray(data) 
+      ? data.length 
+      : (Array.isArray(data?.data) ? data.data.length : Object.keys(data).length);
+    console.log('[QUERY FN] Data received:', itemCount, 'items');
     return data;
   };
 
