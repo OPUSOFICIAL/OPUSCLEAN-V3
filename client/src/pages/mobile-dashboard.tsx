@@ -95,23 +95,28 @@ export default function MobileDashboard() {
   
   const isLoading = isLoadingAvailable || isLoadingMy;
   
-  // Combinar dados das duas queries
-  const allWorkOrders = [
-    ...(availableResponse?.data || []),
-    ...(myResponse?.data || [])
-  ];
+  // Dados das queries separados
+  const availableData = (availableResponse?.data || []) as WorkOrder[];
+  const myData = (myResponse?.data || []) as WorkOrder[];
   
-  // Usar statusCounts da query de "minhas" (pendentes + em execução + pausadas)
-  const myStatusCounts = myResponse?.statusCounts || { abertas: 0, vencidas: 0, pausadas: 0, concluidas: 0 };
-  const availableStatusCounts = availableResponse?.statusCounts || { abertas: 0, vencidas: 0, pausadas: 0, concluidas: 0 };
+  // Contar manualmente de myData pq precisa filtrar por status específico
+  const myPendingCount = myData.filter((wo: WorkOrder) => wo.status === 'aberta' || wo.status === 'vencida').length;
+  const myPausedCount = myData.filter((wo: WorkOrder) => wo.status === 'pausada').length;
+  const myCompletedCount = myData.filter((wo: WorkOrder) => wo.status === 'concluida').length;
   
-  // Status counts combinados: total de abertas = disponíveis + minhas abertas
+  // Status counts: Disponíveis = abertas não atribuídas, Pendentes = minhas abertas, Pausadas = minhas pausadas, Concluídas = minhas concluídas
   const statusCounts = {
-    abertas: (availableStatusCounts.abertas || 0) + (myStatusCounts.abertas || 0),
-    vencidas: (myStatusCounts.vencidas || 0),
-    pausadas: (myStatusCounts.pausadas || 0),
-    concluidas: (myStatusCounts.concluidas || 0)
+    abertas: availableResponse?.statusCounts?.abertas || 0,  // TODAS as abertas sem atribuição
+    vencidas: 0,
+    pausadas: myPausedCount,
+    concluidas: myCompletedCount
   };
+  
+  // Combinar dados: disponíveis + minhas para exibição nos cards
+  const allWorkOrders = [
+    ...availableData,
+    ...myData
+  ];
   
   const workOrders = allWorkOrders;
   
