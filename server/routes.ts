@@ -662,13 +662,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => zoneIdList.includes(wo.zoneId || ''));
       }
       
-      // Filter by assignedTo if provided (include unassigned work orders and paused ones)
+      // Filter by assignedTo if provided
       if (assignedTo) {
-        workOrders = workOrders.filter(wo => 
-          wo.assignedUserId === assignedTo || 
-          wo.assignedUserId === null || 
-          wo.status === 'pausada' // Operadores podem ver O.S. pausadas por qualquer colaborador
-        );
+        const assignedToStr = assignedTo as string;
+        if (assignedToStr === 'nao_atribuido') {
+          // Filtrar apenas ordens sem responsável atribuído
+          workOrders = workOrders.filter(wo => 
+            wo.assignedUserId === null && 
+            (!wo.assignedUserIds || wo.assignedUserIds.length === 0)
+          );
+        } else {
+          // Filtrar por um responsável específico (verifica tanto assignedUserId quanto assignedUserIds)
+          workOrders = workOrders.filter(wo => 
+            wo.assignedUserId === assignedToStr || 
+            (wo.assignedUserIds && wo.assignedUserIds.includes(assignedToStr))
+          );
+        }
       }
       
       // Filter by orderType (tipo de OS: programada, corretiva_interna, corretiva_publica)

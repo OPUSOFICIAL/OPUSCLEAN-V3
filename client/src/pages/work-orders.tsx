@@ -134,6 +134,7 @@ export default function WorkOrders() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [zoneFilter, setZoneFilter] = useState<string[]>([]);
+  const [responsibleFilter, setResponsibleFilter] = useState<string>("todos");
   const [typeFilter, setTypeFilter] = useState<string>("todos");
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -149,7 +150,7 @@ export default function WorkOrders() {
   // Resetar página para 1 quando qualquer filtro mudar
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, zoneFilter, typeFilter, searchTerm]);
+  }, [statusFilter, zoneFilter, responsibleFilter, typeFilter, searchTerm]);
 
   // Construir query params com filtros para enviar ao backend
   const queryParams: Record<string, string> = {
@@ -165,6 +166,9 @@ export default function WorkOrders() {
   }
   if (zoneFilter.length > 0) {
     queryParams.zoneIds = zoneFilter.join(',');
+  }
+  if (responsibleFilter !== 'todos') {
+    queryParams.assignedTo = responsibleFilter;
   }
   if (typeFilter !== 'todos') {
     queryParams.orderType = typeFilter;
@@ -525,7 +529,7 @@ export default function WorkOrders() {
               </div>
 
               {/* Filters Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-4 border-t">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t">
                 <Select 
                   value={statusFilter.length === 0 ? "todos" : statusFilter.length === 1 ? statusFilter[0] : "multiplos"}
                   onValueChange={(value) => {
@@ -573,9 +577,24 @@ export default function WorkOrders() {
                   </SelectContent>
                 </Select>
 
+                <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
+                  <SelectTrigger className="w-full" data-testid="select-responsible-filter">
+                    <SelectValue placeholder="Todos os Responsáveis" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Responsáveis</SelectItem>
+                    <SelectItem value="nao_atribuido">Não Atribuído</SelectItem>
+                    {(users as any[] || []).map((user: any) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name || user.email || user.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
+                  <SelectTrigger className="w-full" data-testid="select-type-filter">
+                    <SelectValue placeholder="Todos os Tipos" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os Tipos</SelectItem>
