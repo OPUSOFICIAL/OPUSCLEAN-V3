@@ -37,6 +37,7 @@ import {
   requireOwnCustomer,
   requireOpusUser,
   requirePermission,
+  requireCustomerAccessOrPermission,
   getUserPermissions,
   validatePermissionsByUserType
 } from "./middleware/auth";
@@ -3137,7 +3138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/customers/:id", requirePermission('customers_view'), async (req, res) => {
+  app.get("/api/customers/:id", requireCustomerAccessOrPermission, async (req, res) => {
     try {
       const customer = await storage.getCustomer(req.params.id);
       if (!customer) {
@@ -3677,7 +3678,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(customer ? [customer] : []);
       }
 
-      // opus_user: buscar clientes permitidos via userAllowedCustomers
+      // opus_user admin: retornar TODOS os clientes da empresa
+      if (req.user.userType === 'opus_user' && req.user.role === 'admin') {
+        const allCustomers = await storage.getCustomersByCompany(req.user.companyId);
+        console.log(`[MY-CUSTOMERS] ✅ opus_user admin returning all ${allCustomers.length} company customers`);
+        return res.json(allCustomers);
+      }
+
+      // opus_user não-admin: buscar clientes permitidos via userAllowedCustomers
       const allowed = await storage.getUserAllowedCustomers(req.user.id);
       console.log(`[MY-CUSTOMERS] 📋 opus_user found ${allowed.length} links:`, allowed.map(a => a.customerId));
       
