@@ -36,12 +36,6 @@ declare global {
  * Customer users NUNCA podem ter essas permissões
  */
 export const OPUS_ONLY_PERMISSIONS = [
-  // Gerenciamento de Clientes
-  'customers_view',
-  'customers_create',
-  'customers_edit',
-  'customers_delete',
-  
   // Gerenciamento de Usuários OPUS
   'opus_users_view',
   'opus_users_create',
@@ -103,6 +97,12 @@ export const CLIENT_ALLOWED_PERMISSIONS = [
   'sites_create',
   'sites_edit',
   'sites_delete',
+  
+  // Gerenciamento de Clientes (para customer_user admins gerenciarem seus clientes)
+  'customers_view',
+  'customers_create',
+  'customers_edit',
+  'customers_delete',
   
   // Usuários de Cliente (gerenciar seus próprios usuários)
   'users_view',
