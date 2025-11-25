@@ -130,6 +130,15 @@ export const CLIENT_ALLOWED_PERMISSIONS = [
 ] as const;
 
 /**
+ * TODAS as permissões disponíveis no sistema (OPUS + CLIENT)
+ * Usadas para Administrador e para listar permissões disponíveis
+ */
+export const ALL_PERMISSIONS = [
+  ...OPUS_ONLY_PERMISSIONS,
+  ...CLIENT_ALLOWED_PERMISSIONS
+] as const;
+
+/**
  * Busca todas as permissões de um usuário consolidadas de seus custom roles
  * @param userId - ID do usuário
  * @returns Array de strings com todas as permissões

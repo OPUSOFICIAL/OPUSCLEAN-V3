@@ -39,7 +39,8 @@ import {
   requirePermission,
   requireCustomerAccessOrPermission,
   getUserPermissions,
-  validatePermissionsByUserType
+  validatePermissionsByUserType,
+  ALL_PERMISSIONS
 } from "./middleware/auth";
 import { sanitizeUser, sanitizeUsers } from "./utils/security";
 import { serializeForAI } from "./utils/serialization";
@@ -3229,25 +3230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'reports_view'
         ]);
         
-        // 3. Administrador (Web, all client permissions except OPUS-only ones)
-        const allClientPermissions = [
-          'dashboard_view',
-          'workorders_view', 'workorders_create', 'workorders_edit', 'workorders_delete', 'workorders_comment', 'workorders_evaluate',
-          'schedule_view', 'schedule_create', 'schedule_edit', 'schedule_delete',
-          'checklists_view', 'checklists_create', 'checklists_edit', 'checklists_delete',
-          'qrcodes_view', 'qrcodes_create', 'qrcodes_edit', 'qrcodes_delete',
-          'floor_plan_view', 'floor_plan_edit',
-          'heatmap_view',
-          'sites_view', 'sites_create', 'sites_edit', 'sites_delete',
-          'zones_view', 'zones_create', 'zones_edit', 'zones_delete',
-          'customers_view', 'customers_create', 'customers_edit', 'customers_delete',
-          'users_view', 'users_create', 'users_edit', 'users_delete',
-          'client_users_view', 'client_users_create', 'client_users_edit', 'client_users_delete',
-          'reports_view',
-          'audit_logs_view',
-          'service_settings_view', 'service_settings_edit'
-        ];
-        
+        // 3. Administrador (TODAS as permissões - OPUS + CLIENT)
         const adminRole = await storage.createCustomRole({
           id: `role-admin-${customerId}-${timestamp + 2}`,
           companyId,
@@ -3258,9 +3241,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isMobileOnly: false,
           isActive: true
         });
-        await storage.setRolePermissions(adminRole.id, allClientPermissions);
+        // Administrador tem TODAS as permissões do sistema
+        await storage.setRolePermissions(adminRole.id, Array.from(ALL_PERMISSIONS));
         
-        console.log(`✅ Criadas 3 funções específicas para cliente ${newCustomer.name} (Operador: 4 perms, Cliente: 8 perms, Administrador: ${allClientPermissions.length} perms)`);
+        console.log(`✅ Criadas 3 funções específicas para cliente ${newCustomer.name} (Operador: 4 perms, Cliente: 8 perms, Administrador: ${ALL_PERMISSIONS.length} perms)`);
       } catch (roleError) {
         console.error('⚠️ Warning: Failed to create default roles for customer:', roleError);
         // Continue anyway - don't fail customer creation if role creation fails
