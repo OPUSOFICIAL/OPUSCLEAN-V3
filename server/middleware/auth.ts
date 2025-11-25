@@ -97,6 +97,10 @@ export const CLIENT_ALLOWED_PERMISSIONS = [
   'sites_create',
   'sites_edit',
   'sites_delete',
+  'zones_view',
+  'zones_create',
+  'zones_edit',
+  'zones_delete',
   
   // Gerenciamento de Clientes (para customer_user admins gerenciarem seus clientes)
   'customers_view',

@@ -3239,6 +3239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'floor_plan_view', 'floor_plan_edit',
           'heatmap_view',
           'sites_view', 'sites_create', 'sites_edit', 'sites_delete',
+          'zones_view', 'zones_create', 'zones_edit', 'zones_delete',
           'customers_view', 'customers_create', 'customers_edit', 'customers_delete',
           'users_view', 'users_create', 'users_edit', 'users_delete',
           'client_users_view', 'client_users_create', 'client_users_edit', 'client_users_delete',
