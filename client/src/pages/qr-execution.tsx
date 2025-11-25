@@ -749,7 +749,7 @@ export default function QrExecution() {
                 </CardContent>
               </Card>
             ) : (
-              // No work orders for this zone
+              // No work orders for this zone - show corrective option
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -759,60 +759,62 @@ export default function QrExecution() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Não há ordens de serviço disponíveis para este local no momento.
+                    Não há ordens de serviço disponíveis para este local no momento. Você pode abrir uma ordem corretiva se necessário.
                   </p>
 
-              {/* Observations for corrective */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Motivo da Limpeza Corretiva
-                </label>
-                <Textarea
-                  placeholder="Descreva o que foi observado que requer limpeza..."
-                  value={observations}
-                  onChange={(e) => setObservations(e.target.value)}
-                  className="min-h-[120px] max-h-[200px] overflow-y-auto resize-none"
-                  data-testid="textarea-corrective-reason"
-                />
-              </div>
+                  {/* Observations for corrective */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Motivo da Limpeza Corretiva
+                    </label>
+                    <Textarea
+                      placeholder="Descreva o que foi observado que requer limpeza..."
+                      value={observations}
+                      onChange={(e) => setObservations(e.target.value)}
+                      className="min-h-[120px] max-h-[200px] overflow-y-auto resize-none"
+                      data-testid="textarea-corrective-reason"
+                    />
+                  </div>
 
-              {/* Photo Upload for corrective */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-auto py-6"
-                onClick={handlePhotoUpload}
-                disabled={createWorkOrderMutation.isPending}
-                data-testid="button-upload-corrective-photos"
-              >
-                <div className="text-center">
-                  <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Anexar fotos (opcional)</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {photos.length > 0 ? `${photos.length} foto(s) selecionada(s)` : "Evidências da necessidade de limpeza"}
-                  </p>
-                </div>
-              </Button>
+                  {/* Photo Upload for corrective */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-auto py-6"
+                    onClick={handlePhotoUpload}
+                    disabled={createWorkOrderMutation.isPending}
+                    data-testid="button-upload-corrective-photos"
+                  >
+                    <div className="text-center">
+                      <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Anexar fotos (opcional)</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {photos.length > 0 ? `${photos.length} foto(s) selecionada(s)` : "Evidências da necessidade de limpeza"}
+                      </p>
+                    </div>
+                  </Button>
 
-              {/* Create Corrective Button */}
-              <Button 
-                onClick={handleCreateCorrectiveOrder}
-                disabled={!observations.trim() || createWorkOrderMutation.isPending}
-                className="w-full h-12"
-                variant="outline"
-                data-testid="button-create-corrective"
-              >
-                {createWorkOrderMutation.isPending ? (
-                  "Criando..."
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Abrir OS Corretiva
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+                  {/* Create Corrective Button */}
+                  <Button 
+                    onClick={handleCreateCorrectiveOrder}
+                    disabled={!observations.trim() || createWorkOrderMutation.isPending}
+                    className="w-full h-12"
+                    variant="outline"
+                    data-testid="button-create-corrective"
+                  >
+                    {createWorkOrderMutation.isPending ? (
+                      "Criando..."
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Abrir OS Corretiva
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
         {/* Quick Actions */}
