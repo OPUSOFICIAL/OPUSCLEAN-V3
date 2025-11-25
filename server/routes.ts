@@ -3696,54 +3696,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const isSystemRole = req.query.isSystemRole === 'true';
-      console.log('[ROLES GET DEBUG] isSystemRole:', isSystemRole, 'user.role:', req.user.role);
+      console.log('[ROLES GET DEBUG] isSystemRole:', isSystemRole, 'user.role:', req.user.role, 'customerId param:', req.query.customerId);
       const userPermissions = await getUserPermissions(req.user.id);
-      
-      // Admin OPUS sempre tem acesso total
-      if (req.user.role === 'admin') {
-        const allRoles = await storage.getCustomRoles();
-        let roles = allRoles;
-        if (req.query.isSystemRole !== undefined) {
-          roles = allRoles.filter(role => role.isSystemRole === isSystemRole);
-        }
-        console.log(`[ROLES GET] ✅ Admin OPUS ${req.user.username} listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
-        return res.json(roles);
-      }
-      
-      // Para não-admin, validar permissões
-      const requiredPermission = isSystemRole ? 'system_roles_view' : 'roles_manage';
-      
-      if (!userPermissions.includes(requiredPermission)) {
-        console.log(`[ROLES GET DENIED] User ${req.user.username} sem permissão ${requiredPermission} para listar ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
-        return res.status(403).json({ 
-          message: "Você não tem permissão para visualizar essas funções" 
-        });
-      }
       
       // Buscar todas as roles
       const allRoles = await storage.getCustomRoles();
       
-      // Filtrar por isSystemRole se especificado - SEMPRE aplicar este filtro
+      // Filtrar por isSystemRole se especificado
       let roles = allRoles;
       if (req.query.isSystemRole === 'false') {
-        // Se explicitamente pedir roles NÃO-sistema, filtrar
         roles = roles.filter(role => !role.isSystemRole);
       } else if (req.query.isSystemRole === 'true') {
-        // Se explicitamente pedir apenas roles de sistema, filtrar
         roles = roles.filter(role => role.isSystemRole === true);
       }
       
-      // Filtrar por customerId - se é customer_user, filtrar automaticamente pelas roles do seu cliente
+      // CRÍTICO: Sempre filtrar por customerId para garantir isolamento de dados
       const fullUser = await storage.getUser(req.user.id);
+      
+      // Caso 1: customer_user SEMPRE vê APENAS as roles do seu cliente
       if (fullUser?.userType === 'customer_user' && fullUser?.customerId) {
-        // Usuário de cliente só vê roles do seu cliente
+        console.log(`[ROLES FILTER] Customer user ${req.user.username} filtrando por seu customerId: ${fullUser.customerId}`);
         roles = roles.filter(role => role.customerId === fullUser.customerId);
-      } else if (req.query.customerId !== undefined) {
-        // Se admin específicar customerId, usar esse
-        roles = roles.filter(role => role.customerId === req.query.customerId);
+      }
+      // Caso 2: Admin OPUS pedindo roles de cliente (isSystemRole=false)
+      else if (req.user.role === 'admin' && isSystemRole === false) {
+        // Admin OPUS SÓ pode ver roles de cliente se especificar o customerId
+        if (req.query.customerId) {
+          console.log(`[ROLES FILTER] Admin ${req.user.username} pedindo roles do cliente: ${req.query.customerId}`);
+          roles = roles.filter(role => role.customerId === req.query.customerId);
+        } else {
+          // Se não especificar customerId, retornar vazio ou erro
+          console.log(`[ROLES GET] Admin OPUS ${req.user.username} tentou listar roles de cliente SEM especificar customerId - retornando vazio`);
+          return res.json([]);
+        }
+      }
+      // Caso 3: Admin OPUS pedindo roles de sistema
+      else if (req.user.role === 'admin' && isSystemRole === true) {
+        // Admin pode ver todas as system roles
+        console.log(`[ROLES GET] Admin OPUS ${req.user.username} listou ${roles.length} system roles`);
       }
       
-      console.log(`[ROLES GET] ✅ User ${req.user.username} listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
+      console.log(`[ROLES GET] ✅ User ${req.user.username} (type: ${fullUser?.userType}) listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
       res.json(roles);
     } catch (error) {
       console.error("Error fetching roles:", error);
