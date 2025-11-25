@@ -57,12 +57,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const hostname = window.location.hostname || '';
-      const port = window.location.port || '';
+      const hostname = window.location.hostname;
+      const port = window.location.port;
       
       // Validação: hostname não pode estar vazio
-      if (!hostname || hostname === 'undefined') {
-        console.error('[WS Client] Invalid hostname:', hostname);
+      if (!hostname) {
+        console.error('[WS Client] Invalid hostname');
         return null;
       }
       
@@ -72,15 +72,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       if (hostname.includes('.replit.dev')) {
         wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
       }
-      // Caso 2: localhost ou 127.0.0.1 - SEMPRE usar porta 5000 (nunca vem porta do location.port)
+      // Caso 2: localhost ou 127.0.0.1 - usar porta 5000
       else if (hostname === 'localhost' || hostname === '127.0.0.1') {
         wsUrl = `${protocol}//${hostname}:5000/ws?token=${encodeURIComponent(token)}`;
       }
       // Caso 3: Qualquer outro hostname - usar porta se existir
+      else if (port) {
+        wsUrl = `${protocol}//${hostname}:${port}/ws?token=${encodeURIComponent(token)}`;
+      }
+      // Caso 4: Sem porta
       else {
-        wsUrl = port 
-          ? `${protocol}//${hostname}:${port}/ws?token=${encodeURIComponent(token)}`
-          : `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
+        wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
       }
       
       console.log('[WS Client] WebSocket URL:', wsUrl.replace(token, '***'));
