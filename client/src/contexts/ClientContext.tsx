@@ -141,14 +141,15 @@ export function ClientProvider({ children }: ClientProviderProps) {
     customers = [];
   } else if (isAdmin) {
     // Admin (opus_user ou customer_user) vê seus clientes vinculados (via userAllowedCustomers)
-    customers = (myCustomers as Customer[]).filter(customer => customer.isActive);
+    customers = (myCustomers as Customer[]);
+    console.log(`[CLIENT CONTEXT] Admin customers received:`, customers.length, customers.map(c => ({ id: c.id, name: c.name })));
   } else {
     // Usuários não-admin veem apenas clientes permitidos e ativos
     const myCustomersArray = (myCustomers as unknown as Customer[]) || [];
     const allowedCustomersArray = (allowedCustomers as unknown as Customer[]) || [];
     const customersToUse = myCustomersArray.length > 0 ? myCustomersArray : allowedCustomersArray;
     const allowedCustomerIds = new Set(customersToUse.map(c => c.id));
-    customers = customersToUse.filter(customer => customer.isActive && allowedCustomerIds.has(customer.id));
+    customers = customersToUse.filter(customer => allowedCustomerIds.has(customer.id));
   }
 
   // Buscar cliente ativo específico
