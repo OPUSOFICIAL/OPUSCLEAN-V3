@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useModuleTheme } from "@/hooks/use-module-theme";
+import { useAuth } from "@/hooks/useAuth";
+import { useClient } from "@/contexts/ClientContext";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Customer, InsertCustomer } from "@shared/schema";
 import { CustomerBrandingConfig } from "@/components/customer-branding-config";
@@ -51,6 +53,8 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const theme = useModuleTheme();
+  const { user } = useAuth();
+  const { customers: contextCustomers, isLoading: isContextLoading } = useClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -58,11 +62,17 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [brandingCustomer, setBrandingCustomer] = useState<Customer | null>(null);
 
-  // Company ID comes from props
-
-  const { data: customers = [], isLoading } = useQuery<Customer[]>({
+  // Para customer_user admin, usar dados do contexto; para opus_user, usar API da empresa
+  const isCustomerUserAdmin = user?.userType === 'customer_user' && user?.role === 'admin';
+  
+  const { data: apiCustomers = [], isLoading: isApiLoading } = useQuery<Customer[]>({
     queryKey: ["/api/companies", companyId, "customers"],
+    enabled: !isCustomerUserAdmin, // Desabilitar para customer_user admin
   });
+
+  // Usar contexto para customer_user admin, senão usar API
+  const customers = isCustomerUserAdmin ? contextCustomers : apiCustomers;
+  const isLoading = isCustomerUserAdmin ? isContextLoading : isApiLoading;
 
   const createCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
