@@ -529,14 +529,9 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Get zones for these sites (filter by module if provided)
-    let siteWhereCondition = eq(zones.siteId, siteIds[0]);
-    for (let i = 1; i < siteIds.length; i++) {
-      siteWhereCondition = sql`${siteWhereCondition} OR ${zones.siteId} = ${siteIds[i]}`;
-    }
-    
     const zonesWhereCondition = module
-      ? and(siteWhereCondition, or(isNull(zones.module), eq(zones.module, module)))
-      : siteWhereCondition;
+      ? and(inArray(zones.siteId, siteIds), or(isNull(zones.module), eq(zones.module, module)))
+      : inArray(zones.siteId, siteIds);
     
     const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
@@ -546,14 +541,9 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Get work orders for these zones (filter by module if provided)
-    let zoneWhereCondition = eq(workOrders.zoneId, zoneIds[0]);
-    for (let i = 1; i < zoneIds.length; i++) {
-      zoneWhereCondition = sql`${zoneWhereCondition} OR ${workOrders.zoneId} = ${zoneIds[i]}`;
-    }
-    
     const whereConditions = module 
-      ? and(zoneWhereCondition, or(isNull(workOrders.module), eq(workOrders.module, module)))
-      : zoneWhereCondition;
+      ? and(inArray(workOrders.zoneId, zoneIds), or(isNull(workOrders.module), eq(workOrders.module, module)))
+      : inArray(workOrders.zoneId, zoneIds);
     
     // Get work orders with zone and site names via JOIN
     const results = await db.select({
