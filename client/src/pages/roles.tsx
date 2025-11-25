@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import { ModernCard } from '@/components/ui/modern-card';
 import { useModuleTheme } from '@/hooks/use-module-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useCacheInvalidation } from '@/hooks/use-cache-invalidation';
-import { ClientContext } from '@/contexts/ClientContext';
+import { useClient } from '@/contexts/ClientContext';
 
 // Permissões exclusivas OPUS (sincronizar com backend)
 const OPUS_ONLY_PERMISSIONS: PermissionKey[] = [
@@ -56,6 +56,7 @@ export default function Roles() {
   const cache = useCacheInvalidation();
   const { user } = useAuth();
   const { availablePermissions, can } = usePermissions();
+  const { activeClientId } = useClient();
   const theme = useModuleTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -147,9 +148,10 @@ export default function Roles() {
     );
   }
 
-  // Query para roles de cliente (isSystemRole=false)
+  // Query para roles de cliente (isSystemRole=false) - FILTRADO POR CLIENTE ATIVO
   const { data: clientRoles = [], isLoading: isLoadingClientRoles, refetch: refetchClientRoles } = useQuery<CustomRole[]>({
-    queryKey: ['/api/roles?isSystemRole=false'],
+    queryKey: ['/api/roles', { isSystemRole: false, customerId: activeClientId }],
+    enabled: !!activeClientId, // Só faz a query se tiver um cliente ativo
   });
 
   // Query para roles de sistema (isSystemRole=true) - apenas se tiver permissão

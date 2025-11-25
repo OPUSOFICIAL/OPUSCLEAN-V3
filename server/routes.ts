@@ -3718,15 +3718,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[ROLES FILTER] Customer user ${req.user.username} filtrando por seu customerId: ${fullUser.customerId}`);
         roles = roles.filter(role => role.customerId === fullUser.customerId);
       }
-      // Caso 2: Admin OPUS pode ver roles de cliente
+      // Caso 2: Admin OPUS pedindo roles de cliente
       else if (req.user.role === 'admin' && isSystemRole === false) {
-        // Se especificar customerId, filtrar por esse cliente
+        // Se especificar customerId, SEMPRE filtrar por esse cliente (even for admin)
         if (req.query.customerId) {
           console.log(`[ROLES FILTER] Admin ${req.user.username} pedindo roles do cliente: ${req.query.customerId}`);
           roles = roles.filter(role => role.customerId === req.query.customerId);
+        } else {
+          // Se não especificar customerId, retornar vazio (Admin OPUS deve sempre especificar qual cliente)
+          console.log(`[ROLES GET] Admin OPUS ${req.user.username} tentou listar roles SEM especificar customerId - retornando vazio`);
+          return res.json([]);
         }
-        // Senão, admin OPUS vê TODAS as roles de cliente de todos os clientes
-        console.log(`[ROLES GET] Admin OPUS ${req.user.username} listou ${roles.length} roles de cliente`);
       }
       
       console.log(`[ROLES GET] ✅ User ${req.user.username} (type: ${fullUser?.userType}) listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);

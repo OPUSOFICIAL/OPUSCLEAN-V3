@@ -55,37 +55,43 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     const token = localStorage.getItem('opus_clean_token');
     if (!token) return null;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const hostname = window.location.hostname;
-    let port = window.location.port;
-    
-    // Construir host:port
-    if (!hostname || hostname === 'undefined' || hostname === 'localhost' && !port) {
-      console.error('[WS Client] Invalid hostname:', hostname);
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const hostname = window.location.hostname;
+      const port = window.location.port;
+      
+      // Validação: hostname não pode estar vazio ou ser undefined
+      if (!hostname || hostname === 'undefined' || hostname.length === 0) {
+        console.error('[WS Client] Invalid hostname:', hostname);
+        return null;
+      }
+      
+      let wsUrl: string;
+      
+      // Caso 1: Replit subdomain (.replit.dev) - sempre sem porta na URL
+      if (hostname.includes('.replit.dev')) {
+        wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
+      }
+      // Caso 2: localhost ou 127.0.0.1 - usar porta 5000
+      else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        const portStr = port && port !== '' && port !== 'undefined' ? port : '5000';
+        wsUrl = `${protocol}//${hostname}:${portStr}/ws?token=${encodeURIComponent(token)}`;
+      }
+      // Caso 3: Qualquer outro hostname
+      else {
+        if (port && port !== '' && port !== 'undefined') {
+          wsUrl = `${protocol}//${hostname}:${port}/ws?token=${encodeURIComponent(token)}`;
+        } else {
+          wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
+        }
+      }
+      
+      console.log('[WS Client] WebSocket URL constructed:', wsUrl.replace(token, '***'));
+      return wsUrl;
+    } catch (error) {
+      console.error('[WS Client] Error constructing WebSocket URL:', error);
       return null;
     }
-    
-    // Para Replit subdomain URL (xxx-xx-xxx.janeway.replit.dev)
-    if (hostname && hostname.includes('.replit.dev')) {
-      const fullHost = hostname;
-      const url = `${protocol}//${fullHost}/ws?token=${encodeURIComponent(token)}`;
-      console.log('[WS Client] WebSocket URL constructed:', url.replace(token, '***'));
-      return url;
-    }
-    
-    // Para localhost em desenvolvimento
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      port = port || '5000';
-      const fullHost = `${hostname}:${port}`;
-      const url = `${protocol}//${fullHost}/ws?token=${encodeURIComponent(token)}`;
-      console.log('[WS Client] WebSocket URL constructed:', url.replace(token, '***'));
-      return url;
-    }
-    
-    // Fallback: usar host completo como está
-    const url = `${protocol}//${hostname}${port ? ':' + port : ''}/ws?token=${encodeURIComponent(token)}`;
-    console.log('[WS Client] WebSocket URL constructed:', url.replace(token, '***'));
-    return url;
   }, []);
 
   const connect = useCallback(() => {
