@@ -3638,6 +3638,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // For customer_user non-admin: returns their own customer if set
   app.get("/api/auth/my-customers", requireAuth, async (req, res) => {
     try {
+      // Force fresh data - no cache!
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       if (!req.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }

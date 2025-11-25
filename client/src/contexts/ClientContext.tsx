@@ -97,13 +97,26 @@ export function ClientProvider({ children }: ClientProviderProps) {
   // Buscar clientes do usuário (funciona para admin e opus_user não-admin)
   // Usa /api/auth/my-customers que busca via userAllowedCustomers
   // IMPORTANTE: Permite customer_user admins também (role === 'admin')
-  const { data: myCustomers = [], isLoading: isLoadingMyCustomers, isError: myCustomersError, error: myCustomersErrorDetail } = useQuery({
-    queryKey: ["/api/auth/my-customers"],
+  const { data: myCustomers = [], isLoading: isLoadingMyCustomers, isError: myCustomersError, error: myCustomersErrorDetail, refetch: refetchMyCustomers } = useQuery({
+    queryKey: ["/api/auth/my-customers", user?.id],  // Add user?.id to key para re-fetch quando user muda
     enabled: (!isCustomerUser || (isCustomerUser && isAdmin)) && !!user?.id,
     staleTime: 0,  // Não usar cache
     gcTime: 0,  // Desabilitar garbage collection também
     refetchOnWindowFocus: true,  // Refetch ao focar na janela
   });
+
+  // Force refetch quando user muda (para garantir dados fresh)
+  useEffect(() => {
+    if ((!isCustomerUser || (isCustomerUser && isAdmin)) && user?.id) {
+      console.log(`[CLIENT CONTEXT] 🔄 Forcing refetch myCustomers for:`, user.id, `isAdmin: ${isAdmin}`);
+      refetchMyCustomers();
+    }
+  }, [user?.id, isCustomerUser, isAdmin, refetchMyCustomers]);
+
+  // Debug: Log quando myCustomers muda
+  useEffect(() => {
+    console.log(`[CLIENT CONTEXT] 📊 myCustomers updated:`, myCustomers, `loading: ${isLoadingMyCustomers}`, `error: ${myCustomersError}`);
+  }, [myCustomers, isLoadingMyCustomers, myCustomersError]);
 
   // Debug log - MUITO VERBOSE
   useEffect(() => {
