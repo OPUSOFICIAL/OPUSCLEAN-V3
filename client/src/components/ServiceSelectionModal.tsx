@@ -182,15 +182,17 @@ export default function ServiceSelectionModal({
                          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
                          String(today.getDate()).padStart(2, '0');
       
-      // Se scheduledDate contém a data de hoje (YYYY-MM-DD)
-      const isToday = wo.scheduledDate && wo.scheduledDate.includes(todayString);
+      // Extrair apenas YYYY-MM-DD da scheduledDate (ignora hora/timezone)
+      const scheduledDateOnly = wo.scheduledDate ? wo.scheduledDate.substring(0, 10) : '';
+      const isToday = scheduledDateOnly === todayString;
       
       console.log('[TODAY FILTER]', {
         wo_id: wo.id,
         number: wo.number,
         scheduledDate: wo.scheduledDate,
+        scheduledDateOnly: scheduledDateOnly,
         todayString: todayString,
-        isToday: isToday
+        match: isToday
       });
       
       return isToday;
