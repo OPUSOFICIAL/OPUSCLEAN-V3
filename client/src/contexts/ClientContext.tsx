@@ -99,7 +99,13 @@ export function ClientProvider({ children }: ClientProviderProps) {
   const { data: myCustomers = [], isLoading: isLoadingMyCustomers } = useQuery({
     queryKey: ["/api/auth/my-customers"],
     enabled: !isCustomerUser && !!user?.id,
+    staleTime: 0,  // Não usar cache
   });
+
+  // Debug log
+  if (myCustomers && Array.isArray(myCustomers) && !isCustomerUser) {
+    console.log(`[CLIENT CONTEXT] myCustomers query result:`, myCustomers);
+  }
 
   // Buscar clientes permitidos para usuários do sistema não-admin (fallback)
   const { data: allowedCustomers = [], isLoading: isLoadingAllowedCustomers } = useQuery({
