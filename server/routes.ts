@@ -3614,6 +3614,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get list of customers that the authenticated user is allowed to manage
+  // For admin: returns all customers they are linked to via userAllowedCustomers
+  // For opus_user non-admin: returns their allowed customers
+  // For customer_user: returns empty array (they use /api/auth/my-customer instead)
+  app.get("/api/auth/my-customers", requireAuth, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // customer_user não deve usar este endpoint
+      if (req.user.userType === 'customer_user') {
+        return res.json([]);
+      }
+
+      // Buscar clientes permitidos para o usuário via userAllowedCustomers
+      const customers = await storage.getCustomersByUser(req.user.id);
+      
+      res.json(customers);
+    } catch (error) {
+      console.error("Get my customers error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get available modules for the authenticated user
   app.get("/api/auth/available-modules", async (req, res) => {
     try {

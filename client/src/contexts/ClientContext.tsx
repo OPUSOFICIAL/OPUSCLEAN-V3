@@ -94,16 +94,17 @@ export function ClientProvider({ children }: ClientProviderProps) {
     fetchCustomerBySubdomain();
   }, []); // Executa apenas uma vez ao montar
 
-  // Buscar todos os clientes da empresa do usuário (apenas para admin/opus users)
-  const { data: allCustomers = [], isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ["/api/companies", companyId, "customers"],
-    enabled: !isCustomerUser && !!companyId, // Só buscar se não for customer_user e tiver companyId
+  // Buscar clientes do usuário (funciona para admin e opus_user não-admin)
+  // Usa /api/auth/my-customers que busca via userAllowedCustomers
+  const { data: myCustomers = [], isLoading: isLoadingMyCustomers } = useQuery({
+    queryKey: ["/api/auth/my-customers"],
+    enabled: !isCustomerUser && !!user?.id,
   });
 
-  // Buscar clientes permitidos para usuários do sistema não-admin
+  // Buscar clientes permitidos para usuários do sistema não-admin (fallback)
   const { data: allowedCustomers = [], isLoading: isLoadingAllowedCustomers } = useQuery({
     queryKey: ["/api/system-users", user?.id, "allowed-customers"],
-    enabled: !isCustomerUser && !isAdmin && !!user?.id,
+    enabled: !isCustomerUser && !isAdmin && !!user?.id && (myCustomers as any[]).length === 0,
   });
 
   // Filtrar clientes baseado em permissões
@@ -112,13 +113,15 @@ export function ClientProvider({ children }: ClientProviderProps) {
     // customer_user não usa essa lista
     customers = [];
   } else if (isAdmin) {
-    // Admin vê todos os clientes ativos
-    customers = (allCustomers as Customer[]).filter(customer => customer.isActive);
+    // Admin vê seus clientes vinculados (via userAllowedCustomers)
+    customers = (myCustomers as Customer[]).filter(customer => customer.isActive);
   } else {
     // Usuários não-admin veem apenas clientes permitidos e ativos
-    const allowedCustomerIds = new Set((allowedCustomers as Customer[]).map(c => c.id));
-    customers = (allCustomers as Customer[])
-      .filter(customer => customer.isActive && allowedCustomerIds.has(customer.id));
+    const myCustomersArray = (myCustomers as unknown as Customer[]) || [];
+    const allowedCustomersArray = (allowedCustomers as unknown as Customer[]) || [];
+    const customersToUse = myCustomersArray.length > 0 ? myCustomersArray : allowedCustomersArray;
+    const allowedCustomerIds = new Set(customersToUse.map(c => c.id));
+    customers = customersToUse.filter(customer => customer.isActive && allowedCustomerIds.has(customer.id));
   }
 
   // Buscar cliente ativo específico
@@ -171,7 +174,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
   // Para opus_user não-admin, considerar também o loading dos clientes permitidos
   const isLoading = isCustomerUser 
     ? !activeClientId 
-    : (isLoadingCustomers || (!isAdmin && isLoadingAllowedCustomers));
+    : (isLoadingMyCustomers || (!isAdmin && isLoadingAllowedCustomers));
 
   // Sincronizar activeClientId com localStorage
   useEffect(() => {
