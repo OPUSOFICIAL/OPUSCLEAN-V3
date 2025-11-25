@@ -111,17 +111,24 @@ export const getQueryFn: <T>(options: {
     // Convert to absolute URL if in Capacitor
     const fullUrl = getFullUrl(url);
     
+    console.log('[QUERY FN] Fetching:', fullUrl, 'Headers:', Object.keys(headers));
+    
     const res = await fetch(fullUrl, {
       headers,
       credentials: "include",
     });
 
+    console.log('[QUERY FN] Response status:', res.status, 'URL:', fullUrl);
+
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      console.log('[QUERY FN] Returning null for 401');
       return null;
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const data = await res.json();
+    console.log('[QUERY FN] Data received:', data.length || Object.keys(data).length, 'items');
+    return data;
   };
 
 export const queryClient = new QueryClient({
