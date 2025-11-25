@@ -66,24 +66,21 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         return null;
       }
       
-      let wsUrl: string;
-      
-      // Caso 1: Replit subdomain (.replit.dev) - sempre sem porta
+      // Determinar a porta apropriada
+      let urlPort = '';
       if (hostname.includes('.replit.dev')) {
-        wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
+        // Ambiente Replit - sem porta
+        urlPort = '';
+      } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        // Localhost - usar porta 5000
+        urlPort = ':5000';
+      } else if (port) {
+        // Outros hostnames com porta explícita
+        urlPort = `:${port}`;
       }
-      // Caso 2: localhost ou 127.0.0.1 - usar porta 5000
-      else if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        wsUrl = `${protocol}//${hostname}:5000/ws?token=${encodeURIComponent(token)}`;
-      }
-      // Caso 3: Qualquer outro hostname - usar porta se existir
-      else if (port) {
-        wsUrl = `${protocol}//${hostname}:${port}/ws?token=${encodeURIComponent(token)}`;
-      }
-      // Caso 4: Sem porta
-      else {
-        wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
-      }
+      // else: sem porta
+      
+      const wsUrl = `${protocol}//${hostname}${urlPort}/ws?token=${encodeURIComponent(token)}`;
       
       console.log('[WS Client] WebSocket URL:', wsUrl.replace(token, '***'));
       return wsUrl;
