@@ -29,14 +29,29 @@ interface ServiceSelectionModalProps {
 const parseLocalDate = (dateString: string | null): Date | null => {
   if (!dateString) return null;
   
-  // Se a data já tem horário, use parseISO normal
-  if (dateString.includes('T') || dateString.includes(' ')) {
-    return parseISO(dateString);
+  // Se a data já tem horário (ISO format com T)
+  if (dateString.includes('T')) {
+    const date = parseISO(dateString);
+    console.log('[PARSE DATE ISO]', { input: dateString, output: date.toISOString() });
+    return date;
+  }
+  
+  // Se tem espaço e hora (timestamp com espaço)
+  if (dateString.includes(' ')) {
+    try {
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        console.log('[PARSE DATE SPACE]', { input: dateString, output: date.toISOString() });
+        return date;
+      }
+    } catch (e) {}
   }
   
   // Para datas sem horário (YYYY-MM-DD), criar data local
   const [year, month, day] = dateString.split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const date = new Date(year, month - 1, day);
+  console.log('[PARSE DATE YMDH]', { input: dateString, output: date.toISOString() });
+  return date;
 };
 
 export default function ServiceSelectionModal({
@@ -52,7 +67,7 @@ export default function ServiceSelectionModal({
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [availableWorkOrders, setAvailableWorkOrders] = useState<any[]>([]);
   const [isLoadingWorkOrders, setIsLoadingWorkOrders] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('all');
+  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('today');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
 
   useEffect(() => {
@@ -161,10 +176,24 @@ export default function ServiceSelectionModal({
     if (dateFilter === 'paused') {
       return wo.status === 'pausada';
     } else if (dateFilter === 'today') {
+      // Obter hoje em formato local
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const scheduledDate = parseLocalDate(wo.scheduledDate);
-      return scheduledDate && scheduledDate.toDateString() === today.toDateString();
+      const todayString = today.getFullYear() + '-' + 
+                         String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(today.getDate()).padStart(2, '0');
+      
+      // Se scheduledDate contém a data de hoje (YYYY-MM-DD)
+      const isToday = wo.scheduledDate && wo.scheduledDate.includes(todayString);
+      
+      console.log('[TODAY FILTER]', {
+        wo_id: wo.id,
+        number: wo.number,
+        scheduledDate: wo.scheduledDate,
+        todayString: todayString,
+        isToday: isToday
+      });
+      
+      return isToday;
     } else if (dateFilter === 'upcoming') {
       const scheduledDate = parseLocalDate(wo.scheduledDate);
       return scheduledDate && scheduledDate >= new Date();
