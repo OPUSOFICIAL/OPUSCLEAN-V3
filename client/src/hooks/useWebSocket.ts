@@ -56,12 +56,31 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     if (!token) return null;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host || 'localhost:5000';
-    if (!host || host === 'undefined') {
-      console.error('[WS Client] Invalid host:', host);
+    
+    // Construir host:port corretamente
+    let host = window.location.hostname;
+    let port = window.location.port;
+    
+    // Se não tiver porta explícita, usar a padrão baseada no protocolo
+    if (!port) {
+      port = window.location.protocol === 'https:' ? '443' : '80';
+    }
+    
+    // Se for localhost, sempre usar porta 5000 (development)
+    if (host === 'localhost' || host === '127.0.0.1') {
+      port = '5000';
+    }
+    
+    const fullHost = port && port !== '80' && port !== '443' ? `${host}:${port}` : host;
+    
+    if (!fullHost || fullHost === 'undefined' || fullHost.includes('undefined')) {
+      console.error('[WS Client] Invalid host:', fullHost);
       return null;
     }
-    return `${protocol}//${host}/ws?token=${encodeURIComponent(token)}`;
+    
+    const url = `${protocol}//${fullHost}/ws?token=${encodeURIComponent(token)}`;
+    console.log('[WS Client] WebSocket URL constructed:', url.replace(token, '***'));
+    return url;
   }, []);
 
   const connect = useCallback(() => {
