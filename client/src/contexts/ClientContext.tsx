@@ -98,7 +98,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
   // Usa /api/auth/my-customers que busca via userAllowedCustomers
   // IMPORTANTE: Permite customer_user admins também (role === 'admin')
   const { data: myCustomers = [], isLoading: isLoadingMyCustomers, isError: myCustomersError, error: myCustomersErrorDetail, refetch: refetchMyCustomers } = useQuery({
-    queryKey: ["/api/auth/my-customers", user?.id],  // Add user?.id to key para re-fetch quando user muda
+    queryKey: ["/api/auth/my-customers"],  // Simples - queryKey é apenas para cache, não para URL
     enabled: (!isCustomerUser || (isCustomerUser && isAdmin)) && !!user?.id,
     staleTime: 0,  // Não usar cache
     gcTime: 0,  // Desabilitar garbage collection também
@@ -112,11 +112,6 @@ export function ClientProvider({ children }: ClientProviderProps) {
       refetchMyCustomers();
     }
   }, [user?.id, isCustomerUser, isAdmin, refetchMyCustomers]);
-
-  // Debug: Log quando myCustomers muda
-  useEffect(() => {
-    console.log(`[CLIENT CONTEXT] 📊 myCustomers updated:`, myCustomers, `loading: ${isLoadingMyCustomers}`, `error: ${myCustomersError}`);
-  }, [myCustomers, isLoadingMyCustomers, myCustomersError]);
 
   // Debug log - MUITO VERBOSE
   useEffect(() => {
