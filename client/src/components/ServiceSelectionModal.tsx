@@ -110,22 +110,21 @@ export default function ServiceSelectionModal({
     try {
       const module = resolvedContext?.qrPoint?.module || 'clean';
       const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}&zoneId=${resolvedContext.zone?.id}&assignedTo=nao_atribuido`);
+      const response = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}&zoneId=${resolvedContext.zone?.id}`);
       if (response.ok) {
         const workOrdersResponse = await response.json();
         
         // Extrair work orders da estrutura paginada { data: [...], pagination: {...} }
         const allWorkOrders = workOrdersResponse.data || workOrdersResponse;
         
-        // Filtrar work orders da zona atual, não atribuídas, que estão abertas
+        // Filtrar work orders da zona atual com qualquer status (aberta, em_execucao, pausada)
         const filtered = allWorkOrders.filter((wo: any) => 
           wo.zoneId === resolvedContext.zone.id &&
           wo.module === module &&
-          wo.status === 'aberta' &&
-          !wo.assignedUserId
+          (wo.status === 'aberta' || wo.status === 'em_execucao' || wo.status === 'pausada')
         );
         
-        console.log('[SERVICE MODAL] Work orders disponíveis - Zona:', resolvedContext.zone.name, 'Módulo:', module, 'Total:', filtered.length);
+        console.log('[SERVICE MODAL] Work orders disponíveis - Zona:', resolvedContext.zone.name, 'Módulo:', module, 'Total:', filtered.length, 'Raw totals:', allWorkOrders.length);
         setAvailableWorkOrders(filtered);
       }
     } catch (error) {
@@ -136,35 +135,9 @@ export default function ServiceSelectionModal({
   };
 
   const loadWorkOrdersForService = async (serviceId: string) => {
-    setIsLoadingWorkOrders(true);
+    // Quando um serviço é selecionado, não recarregue - use os que já foram carregados
+    // Apenas reset a seleção de work order individual
     setSelectedWorkOrder(null);
-    try {
-      const module = resolvedContext?.qrPoint?.module || 'clean';
-      const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}`);
-      if (response.ok) {
-        const workOrdersResponse = await response.json();
-        
-        // Extrair work orders da estrutura paginada { data: [...], pagination: {...} }
-        const allWorkOrders = workOrdersResponse.data || workOrdersResponse;
-        
-        // Filtrar work orders da zona atual e módulo correto que estão pendentes ou pausadas
-        // NOTA: Removida filtragem por serviceId para permitir que colaborador veja todas as OS pendentes
-        // independente do service (resolve problema de OS clean linkadas a services maintenance)
-        const filtered = allWorkOrders.filter((wo: any) => 
-          wo.zoneId === resolvedContext.zone.id &&
-          wo.module === module &&
-          (wo.status === 'aberta' || wo.status === 'em_execucao' || wo.status === 'pausada')
-        );
-        
-        console.log('[SERVICE MODAL] Work orders filtradas - Zona:', resolvedContext.zone.name, 'Módulo:', module, 'Total:', filtered.length);
-        setAvailableWorkOrders(filtered);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar work orders:', error);
-    } finally {
-      setIsLoadingWorkOrders(false);
-    }
   };
 
   const filteredWorkOrders = availableWorkOrders.filter((wo) => {
