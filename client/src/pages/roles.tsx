@@ -242,15 +242,21 @@ export default function Roles() {
     } else {
       const isSystemRole = activeTab === 'system';
       
-      // Para funções de cliente, adicionar companyId do usuário
+      // Para funções de cliente, adicionar companyId e customerId
       const roleData: any = {
         ...data,
         isSystemRole,
       };
       
-      // Se for função de cliente e o usuário tiver companyId, adicioná-lo
-      if (!isSystemRole && user?.companyId) {
-        roleData.companyId = user.companyId;
+      // Se for função de cliente, adicionar companyId e customerId
+      if (!isSystemRole) {
+        if (user?.companyId) {
+          roleData.companyId = user.companyId;
+        }
+        // CRÍTICO: Adicionar customerId para que a função seja associada ao cliente ativo
+        if (activeClientId) {
+          roleData.customerId = activeClientId;
+        }
       }
       
       createRoleMutation.mutate(roleData);
