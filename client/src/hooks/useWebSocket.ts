@@ -68,13 +68,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       
       // Determinar a porta apropriada
       let urlPort = '';
-      if (hostname.includes('.replit.dev')) {
+      if (hostname.includes('.replit.dev') || hostname.includes('janeway.replit.dev')) {
         // Ambiente Replit - sem porta
         urlPort = '';
       } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
         // Localhost - usar porta 5000
         urlPort = ':5000';
-      } else if (port) {
+      } else if (port && port !== '') {
         // Outros hostnames com porta explícita
         urlPort = `:${port}`;
       }

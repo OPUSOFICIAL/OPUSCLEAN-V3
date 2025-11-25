@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             (!wo.assignedUserIds || wo.assignedUserIds.length === 0)
           );
         } else {
-          // Filtrar por um responsável específico (verifica tanto assignedUserId quanto assignedUserIds)
+          // Filtrar por um responsável específico (APENAS as O.S. atribuídas a ele)
           workOrders = workOrders.filter(wo => 
             wo.assignedUserId === assignedToStr || 
             (wo.assignedUserIds && wo.assignedUserIds.includes(assignedToStr))
