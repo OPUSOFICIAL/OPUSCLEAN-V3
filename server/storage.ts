@@ -524,6 +524,8 @@ export class DatabaseStorage implements IStorage {
     const customerSites = await db.select().from(sites).where(sitesWhereCondition);
     const siteIds = customerSites.map(site => site.id);
     
+    console.log(`[getWorkOrdersByCustomer] Customer: ${customerId}, Module: ${module}, Sites: ${siteIds.length}`);
+    
     if (siteIds.length === 0) {
       return [];
     }
@@ -535,6 +537,8 @@ export class DatabaseStorage implements IStorage {
     
     const customerZones = await db.select().from(zones).where(zonesWhereCondition);
     const zoneIds = customerZones.map(zone => zone.id);
+    
+    console.log(`[getWorkOrdersByCustomer] Zones found: ${zoneIds.length}, Zone IDs: ${zoneIds.slice(0, 5).join(',')}`);
     
     if (zoneIds.length === 0) {
       return [];
@@ -557,6 +561,8 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(sites, eq(zones.siteId, sites.id))
       .where(whereConditions)
       .orderBy(desc(workOrders.createdAt));
+    
+    console.log(`[getWorkOrdersByCustomer] Work orders found: ${results.length}`);
     
     // Transform results to include zone and site names in the work order object
     return results.map(r => ({
