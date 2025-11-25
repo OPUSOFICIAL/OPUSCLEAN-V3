@@ -458,8 +458,15 @@ export default function QrExecution() {
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('current-location', JSON.stringify(locationContext));
+      console.log('[QR EXECUTION] 💾 Zona salva em localStorage:', locationContext.zoneId);
+      
+      // Invalidar cache das queries de work orders para forçar refetch
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers"]
+      });
+      console.log('[QR EXECUTION] 🔄 Cache de work orders invalidado');
     }
-  }, [effectiveQRData, code, currentUser.id, effectiveZone]);
+  }, [effectiveQRData, code, currentUser.id, effectiveZone, queryClient]);
 
   // Use normalized offline data (from OfflineExecutionNormalizer) or fallback to basic cache
   const normalizedCacheData = normalizedOfflineData || (cachedQRData ? {

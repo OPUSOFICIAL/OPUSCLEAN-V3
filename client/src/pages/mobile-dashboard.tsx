@@ -80,29 +80,28 @@ export default function MobileDashboard() {
   };
   
   // Query 1: Minhas (atribuídas ao usuário)
-  const { data: myResponse, isLoading: isLoadingMy, refetch: refetchMy } = useQuery({
+  const { data: myResponse, isLoading: isLoadingMy } = useQuery({
     queryKey: ["/api/customers", effectiveCustomerId, "work-orders-my", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
     queryFn: () => fetchWorkOrders(user!.id),
-    staleTime: 30000
+    staleTime: 0
   });
   
   // Query 2: Disponíveis (não atribuídas)
-  const { data: availableResponse, isLoading: isLoadingAvailable, refetch: refetchAvailable } = useQuery({
+  const { data: availableResponse, isLoading: isLoadingAvailable } = useQuery({
     queryKey: ["/api/customers", effectiveCustomerId, "work-orders-available", { module: currentModule, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
     queryFn: () => fetchWorkOrders('nao_atribuido'),
-    staleTime: 30000
+    staleTime: 0
   });
   
   // AUTO-REFETCH quando location muda (após escanear QR code)
   useEffect(() => {
+    console.log('[MOBILE DASHBOARD] 📍 Zona atual:', currentLocation?.zoneId, 'Timestamp:', currentLocation?.timestamp);
     if (currentLocation?.zoneId) {
-      console.log('[MOBILE DASHBOARD] 🔍 Zona alterada para:', currentLocation.zoneId, '- Refetchando queries...');
-      refetchMy();
-      refetchAvailable();
+      console.log('[MOBILE DASHBOARD] 🔍 Zona alterada para:', currentLocation.zoneId, '- Queries com queryKey atualizado disparando...');
     }
-  }, [currentLocation?.zoneId, refetchMy, refetchAvailable]);
+  }, [currentLocation?.zoneId]);
   
   const isLoading = isLoadingAvailable || isLoadingMy;
   
