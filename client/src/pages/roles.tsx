@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import { ModernCard } from '@/components/ui/modern-card';
 import { useModuleTheme } from '@/hooks/use-module-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useCacheInvalidation } from '@/hooks/use-cache-invalidation';
+import { ClientContext } from '@/contexts/ClientContext';
 
 // Permissões exclusivas OPUS (sincronizar com backend)
 const OPUS_ONLY_PERMISSIONS: PermissionKey[] = [

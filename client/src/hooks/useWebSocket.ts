@@ -56,29 +56,34 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     if (!token) return null;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    
-    // Construir host:port corretamente
-    let host = window.location.hostname;
+    const hostname = window.location.hostname;
     let port = window.location.port;
     
-    // Se não tiver porta explícita, usar a padrão baseada no protocolo
-    if (!port) {
-      port = window.location.protocol === 'https:' ? '443' : '80';
-    }
-    
-    // Se for localhost, sempre usar porta 5000 (development)
-    if (host === 'localhost' || host === '127.0.0.1') {
-      port = '5000';
-    }
-    
-    const fullHost = port && port !== '80' && port !== '443' ? `${host}:${port}` : host;
-    
-    if (!fullHost || fullHost === 'undefined' || fullHost.includes('undefined')) {
-      console.error('[WS Client] Invalid host:', fullHost);
+    // Construir host:port
+    if (!hostname || hostname === 'undefined' || hostname === 'localhost' && !port) {
+      console.error('[WS Client] Invalid hostname:', hostname);
       return null;
     }
     
-    const url = `${protocol}//${fullHost}/ws?token=${encodeURIComponent(token)}`;
+    // Para Replit subdomain URL (xxx-xx-xxx.janeway.replit.dev)
+    if (hostname && hostname.includes('.replit.dev')) {
+      const fullHost = hostname;
+      const url = `${protocol}//${fullHost}/ws?token=${encodeURIComponent(token)}`;
+      console.log('[WS Client] WebSocket URL constructed:', url.replace(token, '***'));
+      return url;
+    }
+    
+    // Para localhost em desenvolvimento
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      port = port || '5000';
+      const fullHost = `${hostname}:${port}`;
+      const url = `${protocol}//${fullHost}/ws?token=${encodeURIComponent(token)}`;
+      console.log('[WS Client] WebSocket URL constructed:', url.replace(token, '***'));
+      return url;
+    }
+    
+    // Fallback: usar host completo como está
+    const url = `${protocol}//${hostname}${port ? ':' + port : ''}/ws?token=${encodeURIComponent(token)}`;
     console.log('[WS Client] WebSocket URL constructed:', url.replace(token, '***'));
     return url;
   }, []);
