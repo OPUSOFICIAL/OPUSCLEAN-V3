@@ -96,16 +96,28 @@ export function ClientProvider({ children }: ClientProviderProps) {
 
   // Buscar clientes do usuário (funciona para admin e opus_user não-admin)
   // Usa /api/auth/my-customers que busca via userAllowedCustomers
-  const { data: myCustomers = [], isLoading: isLoadingMyCustomers } = useQuery({
+  const { data: myCustomers = [], isLoading: isLoadingMyCustomers, isError: myCustomersError, error: myCustomersErrorDetail } = useQuery({
     queryKey: ["/api/auth/my-customers"],
     enabled: !isCustomerUser && !!user?.id,
     staleTime: 0,  // Não usar cache
+    gcTime: 0,  // Desabilitar garbage collection também
+    refetchOnWindowFocus: true,  // Refetch ao focar na janela
   });
 
-  // Debug log
-  if (myCustomers && Array.isArray(myCustomers) && !isCustomerUser) {
-    console.log(`[CLIENT CONTEXT] myCustomers query result:`, myCustomers);
-  }
+  // Debug log - MUITO VERBOSE
+  useEffect(() => {
+    if (!isCustomerUser) {
+      console.log(`[CLIENT CONTEXT] 🔍 Query estado:`, {
+        isCustomerUser,
+        userId: user?.id,
+        enabled: !isCustomerUser && !!user?.id,
+        isLoading: isLoadingMyCustomers,
+        isError: myCustomersError,
+        dataLength: (myCustomers as any[])?.length || 0,
+        data: myCustomers
+      });
+    }
+  }, [myCustomers, isLoadingMyCustomers, myCustomersError, user?.id, isCustomerUser]);
 
   // Buscar clientes permitidos para usuários do sistema não-admin (fallback)
   const { data: allowedCustomers = [], isLoading: isLoadingAllowedCustomers } = useQuery({

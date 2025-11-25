@@ -3641,18 +3641,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      console.log(`[MY-CUSTOMERS] 📊 Fetching customers for user: ${req.user.id} (${req.user.username}) type: ${req.user.userType}`);
+      console.log(`[MY-CUSTOMERS] 📊 Fetching for: ${req.user.id} (${req.user.username}) type: ${req.user.userType} role: ${req.user.role}`);
 
       // customer_user: retorna o cliente dele mesmo (customerId)
       if (req.user.userType === 'customer_user' && req.user.customerId) {
         const customer = await storage.getCustomer(req.user.customerId);
-        console.log(`[MY-CUSTOMERS] ✅ customer_user: ${customer?.name || 'not found'}`);
+        console.log(`[MY-CUSTOMERS] ✅ customer_user returned:`, customer?.name);
         return res.json(customer ? [customer] : []);
       }
 
       // opus_user: buscar clientes permitidos via userAllowedCustomers
+      const allowed = await storage.getUserAllowedCustomers(req.user.id);
+      console.log(`[MY-CUSTOMERS] 📋 Found ${allowed.length} allowed customer links:`, allowed.map(a => a.customerId));
+      
       const customers = await storage.getCustomersByUser(req.user.id);
-      console.log(`[MY-CUSTOMERS] ✅ opus_user found ${customers.length} customers:`, customers.map(c => c.name));
+      console.log(`[MY-CUSTOMERS] ✅ Returning ${customers.length} customers:`, customers.map(c => ({ id: c.id, name: c.name })));
       
       res.json(customers);
     } catch (error) {
