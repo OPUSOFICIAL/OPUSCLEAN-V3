@@ -3641,14 +3641,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      console.log(`[MY-CUSTOMERS] 📊 Fetching customers for user: ${req.user.id} (${req.user.username}) type: ${req.user.userType}`);
+
       // customer_user: retorna o cliente dele mesmo (customerId)
       if (req.user.userType === 'customer_user' && req.user.customerId) {
         const customer = await storage.getCustomer(req.user.customerId);
+        console.log(`[MY-CUSTOMERS] ✅ customer_user: ${customer?.name || 'not found'}`);
         return res.json(customer ? [customer] : []);
       }
 
       // opus_user: buscar clientes permitidos via userAllowedCustomers
       const customers = await storage.getCustomersByUser(req.user.id);
+      console.log(`[MY-CUSTOMERS] ✅ opus_user found ${customers.length} customers:`, customers.map(c => c.name));
       
       res.json(customers);
     } catch (error) {
