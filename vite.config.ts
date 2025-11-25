@@ -26,11 +26,7 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5000,
     strictPort: false,
-    hmr: {
-      protocol: "wss",
-      host: typeof window !== "undefined" ? window.location.hostname : "localhost",
-      port: 443,
-    },
+    hmr: false,
     fs: {
       strict: true,
       deny: ["**/.*"],
