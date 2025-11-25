@@ -58,15 +58,14 @@ export default function ServiceSelectionModal({
   useEffect(() => {
     if (isOpen && resolvedContext?.customer?.id) {
       loadServices();
+      // Load work orders automatically when modal opens (don't wait for service selection)
+      loadWorkOrdersForZone();
     }
   }, [isOpen, resolvedContext]);
 
   useEffect(() => {
     if (selectedService && resolvedContext?.zone?.id) {
       loadWorkOrdersForService(selectedService);
-    } else {
-      setAvailableWorkOrders([]);
-      setSelectedWorkOrder(null);
     }
   }, [selectedService, resolvedContext]);
 
@@ -92,6 +91,37 @@ export default function ServiceSelectionModal({
       console.error('Erro ao carregar serviços:', error);
     } finally {
       setIsLoadingServices(false);
+    }
+  };
+
+  const loadWorkOrdersForZone = async () => {
+    setIsLoadingWorkOrders(true);
+    setSelectedWorkOrder(null);
+    try {
+      const module = resolvedContext?.qrPoint?.module || 'clean';
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/api/customers/${resolvedContext.customer.id}/work-orders?module=${module}&zoneId=${resolvedContext.zone?.id}&assignedTo=nao_atribuido`);
+      if (response.ok) {
+        const workOrdersResponse = await response.json();
+        
+        // Extrair work orders da estrutura paginada { data: [...], pagination: {...} }
+        const allWorkOrders = workOrdersResponse.data || workOrdersResponse;
+        
+        // Filtrar work orders da zona atual, não atribuídas, que estão abertas
+        const filtered = allWorkOrders.filter((wo: any) => 
+          wo.zoneId === resolvedContext.zone.id &&
+          wo.module === module &&
+          wo.status === 'aberta' &&
+          !wo.assignedUserId
+        );
+        
+        console.log('[SERVICE MODAL] Work orders disponíveis - Zona:', resolvedContext.zone.name, 'Módulo:', module, 'Total:', filtered.length);
+        setAvailableWorkOrders(filtered);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar work orders:', error);
+    } finally {
+      setIsLoadingWorkOrders(false);
     }
   };
 
