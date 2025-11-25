@@ -2307,8 +2307,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/work-orders/:id", requireAuth, async (req, res) => {
+  app.patch("/api/work-orders/:id", async (req, res) => {
     try {
+      // Extrair usuário do token se disponível (sem rejeitar se não houver)
+      const user = await getUserFromToken(req);
+      if (user) {
+        req.user = user;
+      }
+      
       const workOrder = insertWorkOrderSchema.partial().parse(req.body);
       
       // Se está sendo cancelada, adicionar timestamp e usuário
