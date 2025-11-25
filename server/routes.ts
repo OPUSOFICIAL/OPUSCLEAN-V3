@@ -646,17 +646,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let workOrders = await storage.getWorkOrdersByCustomer(req.params.customerId, module);
       
       // Apply filters from query params
-      const { zoneId, assignedTo, status, serviceId, includeAll } = req.query;
+      const { zoneId, zoneIds, assignedTo, status, statusList, serviceId, includeAll, orderType, searchTerm } = req.query;
       
       // Automatically filter out canceled work orders for mobile/collaborators
       // unless explicitly requesting all statuses or a specific status
-      if (!status && includeAll !== 'true') {
+      if (!status && !statusList && includeAll !== 'true') {
         workOrders = workOrders.filter(wo => wo.status !== 'cancelada');
       }
       
-      // Filter by zone if provided
+      // Filter by zone if provided (single or multiple)
       if (zoneId) {
         workOrders = workOrders.filter(wo => wo.zoneId === zoneId);
+      } else if (zoneIds) {
+        const zoneIdList = (zoneIds as string).split(',');
+        workOrders = workOrders.filter(wo => zoneIdList.includes(wo.zoneId || ''));
       }
       
       // Filter by assignedTo if provided (include unassigned work orders and paused ones)
@@ -668,9 +671,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      // Filter by status if provided
+      // Filter by status if provided (single or multiple)
       if (status) {
         workOrders = workOrders.filter(wo => wo.status === status);
+      } else if (statusList) {
+        const statusArray = (statusList as string).split(',');
+        workOrders = workOrders.filter(wo => statusArray.includes(wo.status || ''));
+      }
+      
+      // Filter by orderType (tipo de OS: programada, corretiva_interna, corretiva_publica)
+      if (orderType && orderType !== 'todos') {
+        workOrders = workOrders.filter((wo: any) => wo.type === orderType);
+      }
+      
+      // Filter by searchTerm (busca por número, título ou descrição)
+      if (searchTerm) {
+        const term = (searchTerm as string).toLowerCase();
+        workOrders = workOrders.filter((wo: any) => {
+          const matchesNumber = wo.number?.toString().includes(term);
+          const matchesTitle = wo.title?.toLowerCase().includes(term);
+          const matchesDescription = wo.description?.toLowerCase().includes(term);
+          return matchesNumber || matchesTitle || matchesDescription;
+        });
       }
       
       // Filter by serviceId if provided
