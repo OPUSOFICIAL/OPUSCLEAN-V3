@@ -535,7 +535,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     const zonesWhereCondition = module
-      ? and(siteWhereCondition, eq(zones.module, module))
+      ? and(siteWhereCondition, or(isNull(zones.module), eq(zones.module, module)))
       : siteWhereCondition;
     
     const customerZones = await db.select().from(zones).where(zonesWhereCondition);
@@ -552,7 +552,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     const whereConditions = module 
-      ? and(zoneWhereCondition, eq(workOrders.module, module))
+      ? and(zoneWhereCondition, or(isNull(workOrders.module), eq(workOrders.module, module)))
       : zoneWhereCondition;
     
     // Get work orders with zone and site names via JOIN
