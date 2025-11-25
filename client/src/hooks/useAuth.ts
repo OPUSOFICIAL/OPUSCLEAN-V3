@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 export interface User {
   id: string;
   companyId: string;
+  customerId?: string; // Para customer_user, vincula com cliente
   username: string;
   email: string;
   name: string;

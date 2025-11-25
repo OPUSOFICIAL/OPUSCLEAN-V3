@@ -57,39 +57,36 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const hostname = window.location.hostname;
-      const port = window.location.port;
+      const hostname = window.location.hostname || '';
+      const port = window.location.port || '';
       
-      // Validação: hostname não pode estar vazio ou ser undefined
-      if (!hostname || hostname === 'undefined' || hostname.length === 0) {
+      // Validação: hostname não pode estar vazio
+      if (!hostname || hostname === 'undefined') {
         console.error('[WS Client] Invalid hostname:', hostname);
         return null;
       }
       
       let wsUrl: string;
       
-      // Caso 1: Replit subdomain (.replit.dev) - sempre sem porta na URL
+      // Caso 1: Replit subdomain (.replit.dev) - sempre sem porta
       if (hostname.includes('.replit.dev')) {
         wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
       }
-      // Caso 2: localhost ou 127.0.0.1 - usar porta 5000
+      // Caso 2: localhost ou 127.0.0.1 - SEMPRE usar porta 5000 (nunca vem porta do location.port)
       else if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        const portStr = port && port !== '' && port !== 'undefined' ? port : '5000';
-        wsUrl = `${protocol}//${hostname}:${portStr}/ws?token=${encodeURIComponent(token)}`;
+        wsUrl = `${protocol}//${hostname}:5000/ws?token=${encodeURIComponent(token)}`;
       }
-      // Caso 3: Qualquer outro hostname
+      // Caso 3: Qualquer outro hostname - usar porta se existir
       else {
-        if (port && port !== '' && port !== 'undefined') {
-          wsUrl = `${protocol}//${hostname}:${port}/ws?token=${encodeURIComponent(token)}`;
-        } else {
-          wsUrl = `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
-        }
+        wsUrl = port 
+          ? `${protocol}//${hostname}:${port}/ws?token=${encodeURIComponent(token)}`
+          : `${protocol}//${hostname}/ws?token=${encodeURIComponent(token)}`;
       }
       
-      console.log('[WS Client] WebSocket URL constructed:', wsUrl.replace(token, '***'));
+      console.log('[WS Client] WebSocket URL:', wsUrl.replace(token, '***'));
       return wsUrl;
     } catch (error) {
-      console.error('[WS Client] Error constructing WebSocket URL:', error);
+      console.error('[WS Client] Error constructing URL:', error);
       return null;
     }
   }, []);
