@@ -40,7 +40,8 @@ import {
   requireCustomerAccessOrPermission,
   getUserPermissions,
   validatePermissionsByUserType,
-  ALL_PERMISSIONS
+  ALL_PERMISSIONS,
+  CLIENT_ALLOWED_PERMISSIONS
 } from "./middleware/auth";
 import { sanitizeUser, sanitizeUsers } from "./utils/security";
 import { serializeForAI } from "./utils/serialization";
@@ -3774,6 +3775,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === ROLES MANAGEMENT ===
+  
+  // Endpoint para listar TODAS as permissões disponíveis
+  app.get("/api/permissions", requireAuth, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const fullUser = await storage.getUser(req.user.id);
+      if (!fullUser) {
+        return res.status(401).json({ message: "Usuário não encontrado" });
+      }
+
+      // opus_user vê TODAS as permissões
+      // customer_user vê apenas CLIENT_ALLOWED_PERMISSIONS
+      const permissions = fullUser.userType === 'opus_user' 
+        ? Array.from(ALL_PERMISSIONS)
+        : Array.from(CLIENT_ALLOWED_PERMISSIONS);
+
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      res.status(500).json({ message: "Failed to fetch permissions" });
+    }
+  });
   
   // Listar todas as funções
   app.get("/api/roles", requireAuth, async (req, res) => {
