@@ -179,7 +179,19 @@ export default function ServiceSelectionModal({
       
       // Extrair apenas YYYY-MM-DD da scheduledDate (ignora hora/timezone)
       const scheduledDateOnly = wo.scheduledDate ? wo.scheduledDate.substring(0, 10) : '';
-      return scheduledDateOnly === todayString;
+      const match = scheduledDateOnly === todayString;
+      
+      if (availableWorkOrders.length <= 5) {
+        console.log('[FILTER TODAY]', {
+          wo_number: wo.number,
+          wo_scheduledDate: wo.scheduledDate,
+          scheduledDateOnly,
+          todayString,
+          match
+        });
+      }
+      
+      return match;
     } else if (dateFilter === 'upcoming') {
       const scheduledDate = parseLocalDate(wo.scheduledDate);
       return scheduledDate && scheduledDate >= new Date();
@@ -188,6 +200,15 @@ export default function ServiceSelectionModal({
     }
     return true;
   });
+  
+  // Debug: Log resultado da filtragem
+  if (selectedService && availableWorkOrders.length > 0) {
+    console.log('[FILTER RESULT]', {
+      dateFilter,
+      availableCount: availableWorkOrders.length,
+      filteredCount: filteredWorkOrders.length
+    });
+  }
 
   const selectedServiceData = services.find(s => s.id === selectedService);
 
