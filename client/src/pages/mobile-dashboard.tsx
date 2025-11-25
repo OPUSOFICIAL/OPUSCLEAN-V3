@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthState, canOnlyViewOwnWorkOrders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,18 +80,29 @@ export default function MobileDashboard() {
   };
   
   // Query 1: Minhas (atribuídas ao usuário)
-  const { data: myResponse, isLoading: isLoadingMy } = useQuery({
+  const { data: myResponse, isLoading: isLoadingMy, refetch: refetchMy } = useQuery({
     queryKey: ["/api/customers", effectiveCustomerId, "work-orders-my", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
-    queryFn: () => fetchWorkOrders(user!.id)
+    queryFn: () => fetchWorkOrders(user!.id),
+    staleTime: 30000
   });
   
   // Query 2: Disponíveis (não atribuídas)
-  const { data: availableResponse, isLoading: isLoadingAvailable } = useQuery({
+  const { data: availableResponse, isLoading: isLoadingAvailable, refetch: refetchAvailable } = useQuery({
     queryKey: ["/api/customers", effectiveCustomerId, "work-orders-available", { module: currentModule, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
-    queryFn: () => fetchWorkOrders('nao_atribuido')
+    queryFn: () => fetchWorkOrders('nao_atribuido'),
+    staleTime: 30000
   });
+  
+  // AUTO-REFETCH quando location muda (após escanear QR code)
+  useEffect(() => {
+    if (currentLocation?.zoneId) {
+      console.log('[MOBILE DASHBOARD] 🔍 Zona alterada para:', currentLocation.zoneId, '- Refetchando queries...');
+      refetchMy();
+      refetchAvailable();
+    }
+  }, [currentLocation?.zoneId, refetchMy, refetchAvailable]);
   
   const isLoading = isLoadingAvailable || isLoadingMy;
   
