@@ -106,7 +106,8 @@ export default function MobileDashboard() {
   
   // Status counts: Disponíveis = abertas não atribuídas, Pendentes = minhas abertas, Pausadas = minhas pausadas, Concluídas = minhas concluídas
   const statusCounts = {
-    abertas: availableResponse?.statusCounts?.abertas || 0,  // TODAS as abertas sem atribuição
+    abertas: availableResponse?.statusCounts?.abertas || 0,  // TODAS as abertas sem atribuição (para card de Disponíveis)
+    pendentes: myPendingCount,  // Minhas abertas/vencidas (para card de Pendentes)
     vencidas: 0,
     pausadas: myPausedCount,
     concluidas: myCompletedCount
@@ -540,7 +541,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                     <AlertCircle className="w-5 h-5 text-orange-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{availableOrders.length}</p>
+                  <p className="text-xl font-bold text-slate-900">{statusCounts.abertas}</p>
                   <p className="text-xs text-slate-600 text-center">Disponíveis</p>
                 </div>
               </CardContent>
@@ -561,7 +562,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <ClipboardList className="w-5 h-5 text-blue-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{statusCounts.abertas}</p>
+                  <p className="text-xl font-bold text-slate-900">{statusCounts.pendentes}</p>
                   <p className="text-xs text-slate-600 text-center">Pendentes</p>
                 </div>
               </CardContent>
