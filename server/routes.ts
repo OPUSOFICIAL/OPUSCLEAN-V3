@@ -1566,6 +1566,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // AUTO-VINCULAR admin do cliente ao cliente via userAllowedCustomers
+      // Se é customer_user, admin, e tem customerId -> vincular automaticamente
+      if (validatedData.userType === 'customer_user' && 
+          baseRole === 'admin' && 
+          validatedData.customerId) {
+        try {
+          await storage.addUserAllowedCustomer({
+            id: `user-allowed-customer-${newUser.id}-${validatedData.customerId}-${Date.now()}`,
+            userId: newUser.id,
+            customerId: validatedData.customerId,
+          });
+          console.log(`[AUTO-LINK] ✅ Admin ${newUser.username} vinculado ao cliente ${validatedData.customerId}`);
+        } catch (linkError) {
+          console.log(`[AUTO-LINK] ℹ️ Admin ${newUser.username} já estava vinculado ao cliente`);
+        }
+      }
+      
       // Broadcast user creation to all connected clients
       broadcast({
         type: 'create',
@@ -3617,19 +3634,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get list of customers that the authenticated user is allowed to manage
   // For admin: returns all customers they are linked to via userAllowedCustomers
   // For opus_user non-admin: returns their allowed customers
-  // For customer_user: returns empty array (they use /api/auth/my-customer instead)
+  // For customer_user: returns their own customer if set
   app.get("/api/auth/my-customers", requireAuth, async (req, res) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // customer_user não deve usar este endpoint
-      if (req.user.userType === 'customer_user') {
-        return res.json([]);
+      // customer_user: retorna o cliente dele mesmo (customerId)
+      if (req.user.userType === 'customer_user' && req.user.customerId) {
+        const customer = await storage.getCustomer(req.user.customerId);
+        return res.json(customer ? [customer] : []);
       }
 
-      // Buscar clientes permitidos para o usuário via userAllowedCustomers
+      // opus_user: buscar clientes permitidos via userAllowedCustomers
       const customers = await storage.getCustomersByUser(req.user.id);
       
       res.json(customers);
