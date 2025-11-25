@@ -79,25 +79,25 @@ export default function MobileDashboard() {
     return response.json();
   };
   
-  // Query 1: Disponíveis (não atribuídas)
-  const { data: availableResponse, isLoading: isLoadingAvailable } = useQuery({
-    queryKey: ["/api/customers", effectiveCustomerId, "work-orders-available", { module: currentModule, zoneId: currentLocation?.zoneId }],
-    enabled: !!effectiveCustomerId && !!user,
-    queryFn: () => fetchWorkOrders('nao_atribuido')
-  });
-  
-  // Query 2: Minhas (atribuídas ao usuário)
+  // Query 1: Minhas (atribuídas ao usuário)
   const { data: myResponse, isLoading: isLoadingMy } = useQuery({
     queryKey: ["/api/customers", effectiveCustomerId, "work-orders-my", { module: currentModule, userId: user?.id, zoneId: currentLocation?.zoneId }],
     enabled: !!effectiveCustomerId && !!user,
     queryFn: () => fetchWorkOrders(user!.id)
   });
   
+  // Query 2: Disponíveis (não atribuídas)
+  const { data: availableResponse, isLoading: isLoadingAvailable } = useQuery({
+    queryKey: ["/api/customers", effectiveCustomerId, "work-orders-available", { module: currentModule, zoneId: currentLocation?.zoneId }],
+    enabled: !!effectiveCustomerId && !!user,
+    queryFn: () => fetchWorkOrders('nao_atribuido')
+  });
+  
   const isLoading = isLoadingAvailable || isLoadingMy;
   
   // Dados das queries separados
-  const availableData = (availableResponse?.data || []) as WorkOrder[];
   const myData = (myResponse?.data || []) as WorkOrder[];
+  const availableData = (availableResponse?.data || []) as WorkOrder[];
   
   // Contar manualmente de myData pq precisa filtrar por status específico
   const myPendingCount = myData.filter((wo: WorkOrder) => wo.status === 'aberta' || wo.status === 'vencida').length;
