@@ -3710,30 +3710,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roles = roles.filter(role => role.isSystemRole === true);
       }
       
-      // CRÍTICO: Sempre filtrar por customerId para garantir isolamento de dados
+      // CRÍTICO: Aplicar isolamento de dados por customerId
       const fullUser = await storage.getUser(req.user.id);
       
-      // Caso 1: customer_user SEMPRE vê APENAS as roles do seu cliente
+      // Caso 1: customer_user SEMPRE vê APENAS as roles do seu cliente (isolamento total)
       if (fullUser?.userType === 'customer_user' && fullUser?.customerId) {
         console.log(`[ROLES FILTER] Customer user ${req.user.username} filtrando por seu customerId: ${fullUser.customerId}`);
         roles = roles.filter(role => role.customerId === fullUser.customerId);
       }
-      // Caso 2: Admin OPUS pedindo roles de cliente (isSystemRole=false)
+      // Caso 2: Admin OPUS pode ver roles de cliente
       else if (req.user.role === 'admin' && isSystemRole === false) {
-        // Admin OPUS SÓ pode ver roles de cliente se especificar o customerId
+        // Se especificar customerId, filtrar por esse cliente
         if (req.query.customerId) {
           console.log(`[ROLES FILTER] Admin ${req.user.username} pedindo roles do cliente: ${req.query.customerId}`);
           roles = roles.filter(role => role.customerId === req.query.customerId);
-        } else {
-          // Se não especificar customerId, retornar vazio ou erro
-          console.log(`[ROLES GET] Admin OPUS ${req.user.username} tentou listar roles de cliente SEM especificar customerId - retornando vazio`);
-          return res.json([]);
         }
-      }
-      // Caso 3: Admin OPUS pedindo roles de sistema
-      else if (req.user.role === 'admin' && isSystemRole === true) {
-        // Admin pode ver todas as system roles
-        console.log(`[ROLES GET] Admin OPUS ${req.user.username} listou ${roles.length} system roles`);
+        // Senão, admin OPUS vê TODAS as roles de cliente de todos os clientes
+        console.log(`[ROLES GET] Admin OPUS ${req.user.username} listou ${roles.length} roles de cliente`);
       }
       
       console.log(`[ROLES GET] ✅ User ${req.user.username} (type: ${fullUser?.userType}) listou ${roles.length} ${isSystemRole ? 'roles de sistema' : 'roles de cliente'}`);
