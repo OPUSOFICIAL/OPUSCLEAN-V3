@@ -94,28 +94,9 @@ export default function Roles() {
     initializeSystemRoles();
   }, [user?.userType]);
 
-  // Filtrar permissões disponíveis baseado no userType e contexto (tab ativa)
-  const filteredAvailablePermissions = availablePermissions.filter(permission => {
-    // Se estiver na tab de Sistema (editando/criando role de sistema)
-    if (activeTab === 'system' || editingRole?.isSystemRole) {
-      // Apenas opus_user pode ver todas as permissões para roles de sistema
-      return user?.userType === 'opus_user';
-    }
-    
-    // Se estiver na tab de Cliente (editando/criando role de cliente)
-    // Opus_user vê todas as permissões exceto OPUS-only
-    if (user?.userType === 'opus_user') {
-      return !OPUS_ONLY_PERMISSIONS.includes(permission.key);
-    }
-    
-    // Customer_user vê apenas permissões não-OPUS
-    if (user?.userType === 'customer_user') {
-      return !OPUS_ONLY_PERMISSIONS.includes(permission.key);
-    }
-    
-    // Fallback: se userType não definido, assumir customer_user (mais restritivo)
-    return !OPUS_ONLY_PERMISSIONS.includes(permission.key);
-  });
+  // ✅ MOSTRAR TODAS AS PERMISSÕES DISPONÍVEIS NO FORMULÁRIO
+  // Sem filtros - o usuário deve ver e poder selecionar TODAS as permissões
+  const filteredAvailablePermissions = availablePermissions;
 
   const form = useForm<CreateRoleForm>({
     resolver: zodResolver(createRoleSchema),

@@ -11,6 +11,7 @@ export type PermissionKey =
   | 'floor_plan_view' | 'floor_plan_edit'
   | 'heatmap_view'
   | 'sites_view' | 'sites_create' | 'sites_edit' | 'sites_delete'
+  | 'zones_view' | 'zones_create' | 'zones_edit' | 'zones_delete'
   | 'users_view' | 'users_create' | 'users_edit' | 'users_delete'
   | 'customers_view' | 'customers_create' | 'customers_edit' | 'customers_delete'
   | 'reports_view'
@@ -269,6 +270,12 @@ export function usePermissions() {
     { key: 'sites_create', label: 'Criar Locais', category: 'Locais' },
     { key: 'sites_edit', label: 'Editar Locais', category: 'Locais' },
     { key: 'sites_delete', label: 'Excluir Locais', category: 'Locais' },
+    
+    // Zonas
+    { key: 'zones_view', label: 'Visualizar Zonas', category: 'Zonas' },
+    { key: 'zones_create', label: 'Criar Zonas', category: 'Zonas' },
+    { key: 'zones_edit', label: 'Editar Zonas', category: 'Zonas' },
+    { key: 'zones_delete', label: 'Excluir Zonas', category: 'Zonas' },
     
     // Usuários
     { key: 'users_view', label: 'Visualizar Usuários', category: 'Usuários' },
