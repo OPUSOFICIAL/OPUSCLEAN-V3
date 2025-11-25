@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule } from "@/contexts/ModuleContext";
@@ -146,12 +146,39 @@ export default function WorkOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Resetar página para 1 quando qualquer filtro mudar
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, zoneFilter, typeFilter, searchTerm]);
+
+  // Construir query params com filtros para enviar ao backend
+  const queryParams: Record<string, string> = {
+    module: currentModule,
+    includeAll: 'true',
+    page: currentPage.toString(),
+    limit: '50'
+  };
+  
+  // Adicionar filtros se estiverem ativos
+  if (statusFilter.length > 0) {
+    queryParams.statusList = statusFilter.join(',');
+  }
+  if (zoneFilter.length > 0) {
+    queryParams.zoneIds = zoneFilter.join(',');
+  }
+  if (typeFilter !== 'todos') {
+    queryParams.orderType = typeFilter;
+  }
+  if (searchTerm.trim()) {
+    queryParams.searchTerm = searchTerm.trim();
+  }
+
   const { data: workOrdersResponse, isLoading, refetch } = useQuery<{
     data: any[];
     pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean; hasPreviousPage: boolean };
     statusCounts: { abertas: number; vencidas: number; pausadas: number; concluidas: number };
   }>({
-    queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule, includeAll: 'true', page: currentPage, limit: 50 }],
+    queryKey: ["/api/customers", activeClientId, "work-orders", queryParams],
     enabled: !!activeClientId,
   });
 
@@ -281,35 +308,10 @@ export default function WorkOrders() {
     }
   };
 
-  // Aplicar filtros do frontend aos workOrders recebidos do backend
+  // Os filtros (status, zona, tipo, busca) agora são aplicados no BACKEND
+  // Apenas o filtro por período ainda é aplicado no frontend
   const filteredWorkOrders = (workOrders || []).filter((wo: any) => {
-    // Filtro por status
-    if (statusFilter.length > 0 && !statusFilter.includes(wo.status)) {
-      return false;
-    }
-    
-    // Filtro por zona
-    if (zoneFilter.length > 0 && !zoneFilter.includes(wo.zoneId)) {
-      return false;
-    }
-    
-    // Filtro por tipo
-    if (typeFilter !== 'todos' && wo.orderType !== typeFilter) {
-      return false;
-    }
-    
-    // Filtro por busca (número, título, descrição)
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const matchesNumber = wo.number?.toString().includes(term);
-      const matchesTitle = wo.title?.toLowerCase().includes(term);
-      const matchesDescription = wo.description?.toLowerCase().includes(term);
-      if (!matchesNumber && !matchesTitle && !matchesDescription) {
-        return false;
-      }
-    }
-    
-    // Filtro por período (data agendada)
+    // Filtro por período (data agendada) - ainda no frontend
     if (startDate && wo.scheduledDate) {
       const woDate = new Date(wo.scheduledDate);
       const filterStart = new Date(startDate);
