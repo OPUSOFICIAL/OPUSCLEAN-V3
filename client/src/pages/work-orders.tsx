@@ -146,7 +146,11 @@ export default function WorkOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: workOrdersResponse, isLoading, refetch } = useQuery({
+  const { data: workOrdersResponse, isLoading, refetch } = useQuery<{
+    data: any[];
+    pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean; hasPreviousPage: boolean };
+    statusCounts: { abertas: number; vencidas: number; pausadas: number; concluidas: number };
+  }>({
     queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule, includeAll: 'true', page: currentPage, limit: 50 }],
     enabled: !!activeClientId,
   });
@@ -277,8 +281,50 @@ export default function WorkOrders() {
     }
   };
 
-  // workOrders já vem filtrado e ordenado do backend com paginação
-  const filteredWorkOrders = workOrders || [];
+  // Aplicar filtros do frontend aos workOrders recebidos do backend
+  const filteredWorkOrders = (workOrders || []).filter((wo: any) => {
+    // Filtro por status
+    if (statusFilter.length > 0 && !statusFilter.includes(wo.status)) {
+      return false;
+    }
+    
+    // Filtro por zona
+    if (zoneFilter.length > 0 && !zoneFilter.includes(wo.zoneId)) {
+      return false;
+    }
+    
+    // Filtro por tipo
+    if (typeFilter !== 'todos' && wo.orderType !== typeFilter) {
+      return false;
+    }
+    
+    // Filtro por busca (número, título, descrição)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const matchesNumber = wo.number?.toString().includes(term);
+      const matchesTitle = wo.title?.toLowerCase().includes(term);
+      const matchesDescription = wo.description?.toLowerCase().includes(term);
+      if (!matchesNumber && !matchesTitle && !matchesDescription) {
+        return false;
+      }
+    }
+    
+    // Filtro por período (data agendada)
+    if (startDate && wo.scheduledDate) {
+      const woDate = new Date(wo.scheduledDate);
+      const filterStart = new Date(startDate);
+      if (woDate < filterStart) return false;
+    }
+    
+    if (endDate && wo.scheduledDate) {
+      const woDate = new Date(wo.scheduledDate);
+      const filterEnd = new Date(endDate);
+      filterEnd.setHours(23, 59, 59, 999);
+      if (woDate > filterEnd) return false;
+    }
+    
+    return true;
+  });
 
   // Usar contadores do backend (já considera TODOS os registros, não apenas a página atual)
   const totalAbertas = statusCounts.abertas;

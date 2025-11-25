@@ -67,7 +67,11 @@ export default function Dashboard() {
     enabled: !!activeClientId,
   });
 
-  const { data: workOrdersResponse } = useQuery({
+  const { data: workOrdersResponse } = useQuery<{
+    data: any[];
+    pagination?: any;
+    statusCounts?: any;
+  }>({
     queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule }],
     enabled: !!activeClientId,
   });
