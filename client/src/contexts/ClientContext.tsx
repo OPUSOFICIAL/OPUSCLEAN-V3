@@ -121,10 +121,12 @@ export function ClientProvider({ children }: ClientProviderProps) {
       .filter(customer => customer.isActive && allowedCustomerIds.has(customer.id));
   }
 
-  // Buscar cliente ativo específico  
+  // Buscar cliente ativo específico
+  // Para customer_user: usa /api/auth/my-customer (sem permissão requerida)
+  // Para opus_user: usa /api/customers/:id (requer permissão customers_view)
   const { data: activeClient } = useQuery({
-    queryKey: ["/api/customers", activeClientId],
-    enabled: !!activeClientId,
+    queryKey: isCustomerUser ? ["/api/auth/my-customer"] : ["/api/customers", activeClientId],
+    enabled: isCustomerUser ? true : !!activeClientId,
   });
 
   // Resetar activeClientId quando o companyId mudar (quando user loga)

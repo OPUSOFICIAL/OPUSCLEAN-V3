@@ -3594,6 +3594,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user's customer data (for customer_user to load their own client)
+  // This endpoint does NOT require opus permissions - customer can access their own data
+  app.get("/api/auth/my-customer", requireAuth, async (req, res) => {
+    try {
+      if (!req.user?.customerId) {
+        return res.status(404).json({ message: "User is not associated with a customer" });
+      }
+      
+      const customer = await storage.getCustomer(req.user.customerId);
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      
+      res.json(customer);
+    } catch (error) {
+      console.error("Get my customer error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Get available modules for the authenticated user
   app.get("/api/auth/available-modules", async (req, res) => {
     try {
