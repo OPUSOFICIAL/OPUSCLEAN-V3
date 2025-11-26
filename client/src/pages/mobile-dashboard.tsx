@@ -190,7 +190,7 @@ export default function MobileDashboard() {
   // Separar as OS em categorias
   const availableOrders = filteredWorkOrders.filter(wo => 
     !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
-  ).sort((a, b) => b.id.localeCompare(a.id));
+  ).sort((a, b) => b.number - a.number);
 
   // Paginação para OS Disponíveis
   const totalPagesAvailable = Math.ceil(availableOrders.length / ITEMS_PER_PAGE);
@@ -204,7 +204,7 @@ export default function MobileDashboard() {
     const assignedIds = (wo as any).assignedUserIds || [];
     const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
     return isAssignedToMe && wo.status === 'em_execucao';
-  }).sort((a, b) => b.id.localeCompare(a.id));
+  }).sort((a, b) => b.number - a.number);
   
   const myPendingOrders = filteredWorkOrders.filter(wo => {
     const assignedIds = (wo as any).assignedUserIds || [];
@@ -214,11 +214,11 @@ export default function MobileDashboard() {
       wo.status !== 'cancelada' && 
       wo.status !== 'pausada' && 
       wo.status !== 'em_execucao'; // Excluir as que já estão em execução
-  }).sort((a, b) => b.id.localeCompare(a.id));
+  }).sort((a, b) => b.number - a.number);
   
   const myPausedOrders = filteredWorkOrders.filter(wo => 
     wo.status === 'pausada'
-  ).sort((a, b) => b.id.localeCompare(a.id));
+  ).sort((a, b) => b.number - a.number);
   
   // Filtrar O.S. concluídas - usar filterWorkOrdersByDate com completion date
   const completedOrdersFiltered = filterWorkOrdersByDate(workOrders, true);
@@ -226,7 +226,7 @@ export default function MobileDashboard() {
     const assignedIds = (wo as any).assignedUserIds || [];
     const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
     return isAssignedToMe && wo.status === 'concluida';
-  }).sort((a, b) => b.id.localeCompare(a.id));
+  }).sort((a, b) => b.number - a.number);
   
   // Debug logging
   console.log(`[COMPLETED ORDERS] Total in filtered list: ${completedOrdersFiltered.length}, My completed: ${myCompletedOrders.length}, workOrders total: ${workOrders.length}`);
