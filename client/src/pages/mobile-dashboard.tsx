@@ -104,15 +104,31 @@ export default function MobileDashboard() {
   // Contar manualmente de myData pq precisa filtrar por status específico
   const myPendingCount = myData.filter((wo: WorkOrder) => wo.status === 'aberta' || wo.status === 'vencida').length;
   const myPausedCount = myData.filter((wo: WorkOrder) => wo.status === 'pausada').length;
-  const myCompletedCount = myData.filter((wo: WorkOrder) => wo.status === 'concluida').length;
   
-  // Status counts: Disponíveis = abertas não atribuídas, Pendentes = minhas abertas, Pausadas = minhas pausadas, Concluídas = minhas concluídas
+  // ✅ CORRIGIDO: Contar TODAS as O.S. concluídas do mês atual, independente do filtro de data
+  const getCurrentMonthCompletedCount = () => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    return myData.filter((wo: WorkOrder) => {
+      if (wo.status !== 'concluida') return false;
+      if (!wo.completedAt) return false;
+      
+      const completedDate = new Date(wo.completedAt);
+      return completedDate >= firstDayOfMonth && completedDate <= lastDayOfMonth;
+    }).length;
+  };
+  
+  const myCompletedCount = getCurrentMonthCompletedCount();
+  
+  // Status counts: Disponíveis = abertas não atribuídas, Pendentes = minhas abertas, Pausadas = minhas pausadas, Concluídas = minhas concluídas do mês
   const statusCounts = {
     abertas: availableResponse?.statusCounts?.abertas || 0,  // TODAS as abertas sem atribuição (para card de Disponíveis)
     pendentes: myPendingCount,  // Minhas abertas/vencidas (para card de Pendentes)
     vencidas: 0,
     pausadas: myPausedCount,
-    concluidas: myCompletedCount
+    concluidas: myCompletedCount  // TODAS as concluídas do mês atual
   };
   
   // Combinar dados: disponíveis + minhas para exibição nos cards
@@ -220,25 +236,13 @@ export default function MobileDashboard() {
     wo.status === 'pausada'
   ).sort((a, b) => b.number - a.number);
   
-  // Filtrar O.S. concluídas - usar filterWorkOrdersByDate com completion date
+  // Filtrar O.S. concluídas pelo filtro de data (para exibição na seção)
   const completedOrdersFiltered = filterWorkOrdersByDate(workOrders, true);
   const myCompletedOrders = completedOrdersFiltered.filter(wo => {
     const assignedIds = (wo as any).assignedUserIds || [];
     const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
     return isAssignedToMe && wo.status === 'concluida';
   }).sort((a, b) => b.number - a.number);
-  
-  // Debug logging - mostrar quais ordens estão sendo excluídas
-  const excludedOrders = completedOrdersFiltered.filter(wo => {
-    const assignedIds = (wo as any).assignedUserIds || [];
-    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
-    return !(isAssignedToMe && wo.status === 'concluida');
-  });
-  
-  console.log(`[COMPLETED ORDERS] Total in filtered list: ${completedOrdersFiltered.length}, My completed: ${myCompletedOrders.length}, workOrders total: ${workOrders.length}`);
-  if (excludedOrders.length > 0) {
-    console.log(`[EXCLUDED ORDERS] ${excludedOrders.length} ordens foram excluídas:`, excludedOrders.map(wo => ({ number: wo.number, status: wo.status, assignedUserId: wo.assignedUserId, assignedUserIds: (wo as any).assignedUserIds })));
-  }
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
