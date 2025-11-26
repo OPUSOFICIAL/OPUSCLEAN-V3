@@ -220,18 +220,16 @@ export default function MobileDashboard() {
     wo.status === 'pausada'
   );
   
-  // Filtrar O.S. concluídas usando data de conclusão (completedAt) - SEMPRE mostra apenas de hoje
-  const myCompletedOrders = workOrders.filter(wo => {
-    const today = new Date().toISOString().substring(0, 10);
-    // Para O.S. concluídas, usar completedAt
-    const dateToCheck = wo.completedAt || wo.createdAt;
-    const orderDateOnly = dateToCheck.substring(0, 10);
-    const isTodayDate = orderDateOnly === today;
-    
+  // Filtrar O.S. concluídas - usar filterWorkOrdersByDate com completion date
+  const completedOrdersFiltered = filterWorkOrdersByDate(workOrders, true);
+  const myCompletedOrders = completedOrdersFiltered.filter(wo => {
     const assignedIds = (wo as any).assignedUserIds || [];
     const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
-    return isAssignedToMe && wo.status === 'concluida' && isTodayDate;
+    return isAssignedToMe && wo.status === 'concluida';
   });
+  
+  // Debug logging
+  console.log(`[COMPLETED ORDERS] Total in filtered list: ${completedOrdersFiltered.length}, My completed: ${myCompletedOrders.length}, workOrders total: ${workOrders.length}`);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
