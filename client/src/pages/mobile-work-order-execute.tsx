@@ -311,9 +311,20 @@ export default function MobileWorkOrderExecute() {
 
   const handlePausePhotoUpload = async () => {
     try {
-      const photos = await pickMultipleImages({ limit: 10 });
+      const remainingSlots = 5 - pausePhotos.length;
+      if (remainingSlots <= 0) {
+        toast({
+          title: "Limite de fotos atingido",
+          description: "Você já selecionou o máximo de 5 fotos.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const photos = await pickMultipleImages({ limit: remainingSlots });
       if (photos && photos.length > 0) {
-        setPausePhotos([...pausePhotos, ...photos]);
+        const newPhotos = [...pausePhotos, ...photos].slice(0, 5);
+        setPausePhotos(newPhotos);
       }
     } catch (error) {
       console.error('[PAUSE PHOTO] Error:', error);
@@ -978,10 +989,11 @@ export default function MobileWorkOrderExecute() {
                       variant="outline"
                       className="w-full text-sm"
                       onClick={handlePausePhotoUpload}
+                      disabled={pausePhotos.length >= 5}
                       data-testid="button-add-more-photos"
                     >
                       <Camera className="w-4 h-4 mr-2" />
-                      Adicionar mais fotos ({pausePhotos.length})
+                      Adicionar mais fotos ({pausePhotos.length}/5)
                     </Button>
                   </div>
                 ) : (
