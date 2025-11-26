@@ -1740,8 +1740,8 @@ function CreateMaintenanceActivityModal({ activeClientId, editingActivity, onClo
     return (equipment as any[]).filter((equip: any) => equip.status === 'operacional');
   }, [equipment]);
 
-  // Filtrar checklists baseado nos equipamentos selecionados (interseção)
-  // Só mostra checklists que estão vinculados a TODOS os equipamentos selecionados
+  // Filtrar checklists baseado nos equipamentos selecionados
+  // Mostra checklists que são genéricos (sem equipmentId) ou que estão vinculados a um dos equipamentos selecionados
   const availableChecklistTemplates = useMemo(() => {
     // Se nenhum equipamento selecionado, não mostrar checklists
     if (!formData.equipmentIds || formData.equipmentIds.length === 0) {
@@ -1752,16 +1752,15 @@ function CreateMaintenanceActivityModal({ activeClientId, editingActivity, onClo
       return [];
     }
 
-    // Filtrar checklists que contêm TODOS os equipamentos selecionados
+    // Filtrar checklists que são genéricos OU vinculados a um dos equipamentos selecionados
     return (checklistTemplates as any[]).filter((template: any) => {
-      if (!template.equipmentIds || !Array.isArray(template.equipmentIds)) {
-        return false;
+      // Se não tem equipmentId, é um checklist genérico - mostrar para qualquer equipamento
+      if (!template.equipmentId) {
+        return true;
       }
       
-      // Verifica se o template contém TODOS os equipamentos selecionados
-      return formData.equipmentIds.every((equipId: string) => 
-        template.equipmentIds.includes(equipId)
-      );
+      // Se tem equipmentId, mostrar apenas se corresponde a um dos equipamentos selecionados
+      return formData.equipmentIds.includes(template.equipmentId);
     });
   }, [checklistTemplates, formData.equipmentIds]);
 
