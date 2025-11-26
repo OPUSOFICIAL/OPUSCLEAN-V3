@@ -330,7 +330,7 @@ export default function WorkOrders() {
     }
     
     return true;
-  });
+  }).sort((a: any, b: any) => b.number - a.number);
 
   // Usar contadores do backend (já considera TODOS os registros, não apenas a página atual)
   const totalAbertas = statusCounts.abertas;
