@@ -561,6 +561,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                     <TableHead>Nome</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Local</TableHead>
+                    <TableHead>Zona</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Fabricante</TableHead>
                     <TableHead>Modelo</TableHead>
@@ -583,6 +584,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
                           : "-"}
                       </TableCell>
                       <TableCell>{getSiteName(equip.siteId)}</TableCell>
+                      <TableCell>{getZoneName(equip.zoneId)}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                           equip.status === 'operacional' ? 'bg-green-100 text-green-800' :
