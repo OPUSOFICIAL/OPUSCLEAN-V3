@@ -549,12 +549,11 @@ export class DatabaseStorage implements IStorage {
       ? and(inArray(workOrders.zoneId, zoneIds), or(isNull(workOrders.module), eq(workOrders.module, module)))
       : inArray(workOrders.zoneId, zoneIds);
     
-    // Get work orders with zone and site names via JOIN
+    // Get work orders with zone and site objects via JOIN
     const results = await db.select({
       workOrder: workOrders,
-      zoneName: zones.name,
-      siteName: sites.name,
-      siteId: sites.id
+      zone: zones,
+      site: sites
     })
       .from(workOrders)
       .leftJoin(zones, eq(workOrders.zoneId, zones.id))
@@ -564,12 +563,11 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[getWorkOrdersByCustomer] Work orders found: ${results.length}`);
     
-    // Transform results to include zone and site names in the work order object
+    // Transform results to include zone and site objects in the work order object
     return results.map(r => ({
       ...r.workOrder,
-      zoneName: r.zoneName || '-',
-      siteName: r.siteName || '-',
-      siteId: r.siteId
+      zone: r.zone || null,
+      site: r.site || null
     })) as any;
   }
 
@@ -609,12 +607,11 @@ export class DatabaseStorage implements IStorage {
       sql`${workOrders.scheduledDate} <= ${sevenDaysFromNow.toISOString()}`
     );
     
-    // Get work orders with zone and site names via JOIN
+    // Get work orders with zone and site objects via JOIN
     const results = await db.select({
       workOrder: workOrders,
-      zoneName: zones.name,
-      siteName: sites.name,
-      siteId: sites.id,
+      zone: zones,
+      site: sites,
       qrCode: qrCodePoints.code
     })
       .from(workOrders)
@@ -627,9 +624,8 @@ export class DatabaseStorage implements IStorage {
     // Transform results to include all metadata
     return results.map(r => ({
       ...r.workOrder,
-      zoneName: r.zoneName || '-',
-      siteName: r.siteName || '-',
-      siteId: r.siteId,
+      zone: r.zone || null,
+      site: r.site || null,
       qrCode: r.qrCode
     })) as any;
   }
