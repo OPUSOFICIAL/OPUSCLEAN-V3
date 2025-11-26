@@ -163,9 +163,10 @@ export const zones = pgTable("zones", {
 // 5. TABELA: users (Usuários do Sistema)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
+  userNumber: integer("user_number").unique(),
   companyId: varchar("company_id").references(() => companies.id),
   customerId: varchar("customer_id").references(() => customers.id),
-  username: varchar("username").notNull().unique(),
+  username: varchar("username").notNull(),
   email: varchar("email").notNull().unique(),
   password: varchar("password"),
   name: varchar("name").notNull(),
