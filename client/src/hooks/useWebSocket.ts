@@ -315,7 +315,13 @@ function invalidateQueriesByResource(resource: string, message: WebSocketMessage
       queryClient.invalidateQueries({ queryKey: ['/api/sites'] });
       queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
       if (message.customerId) {
-        queryClient.invalidateQueries({ queryKey: [`/api/customers/${message.customerId}/sites`] });
+        // Invalidate all site queries for this customer, including those with filters
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return Array.isArray(key) && key[0] === `/api/customers/${message.customerId}/sites`;
+          }
+        });
       }
       break;
 
@@ -325,7 +331,13 @@ function invalidateQueriesByResource(resource: string, message: WebSocketMessage
       queryClient.invalidateQueries({ queryKey: ['/api/zones'] });
       queryClient.invalidateQueries({ queryKey: ['/api/companies'] });
       if (message.customerId) {
-        queryClient.invalidateQueries({ queryKey: [`/api/customers/${message.customerId}/zones`] });
+        // Invalidate all zone queries for this customer, including those with filters
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return Array.isArray(key) && key[0] === `/api/customers/${message.customerId}/zones`;
+          }
+        });
       }
       break;
 
