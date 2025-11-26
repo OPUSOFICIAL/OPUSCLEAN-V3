@@ -79,6 +79,12 @@ export default function Equipment({ customerId }: EquipmentProps) {
     enabled: !!selectedSiteId,
   });
 
+  // Fetch all zones for the customer (to display zone names in equipment list)
+  const { data: allZones } = useQuery({
+    queryKey: [`/api/customers/${customerId}/zones`],
+    enabled: !!customerId,
+  });
+
   // Fetch equipment
   const { data: equipment, isLoading } = useQuery({
     queryKey: [`/api/customers/${customerId}/equipment`],
@@ -275,8 +281,8 @@ export default function Equipment({ customerId }: EquipmentProps) {
 
   const getZoneName = (zoneId: string | null) => {
     if (!zoneId) return "N/A";
-    // We need to fetch all zones for this
-    return zoneId;
+    if (!Array.isArray(allZones)) return "N/A";
+    return allZones.find((z: any) => z.id === zoneId)?.name || "N/A";
   };
 
   return (
