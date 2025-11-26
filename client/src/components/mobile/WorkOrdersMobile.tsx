@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, AlertTriangle, CheckCircle2, Search, Plus, Eye, Filter, RefreshCw, ChevronDown, X } from "lucide-react";
+import { Clock, AlertTriangle, CheckCircle2, Search, Plus, Eye, Filter, RefreshCw, ChevronDown, X, MapPin, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -319,6 +319,22 @@ export default function WorkOrdersMobile({ customerId }: WorkOrdersMobileProps) 
                     </div>
                   </div>
 
+                  {/* Local (Zona) - Destaque */}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t">
+                    {wo.site?.name && (
+                      <Badge variant="outline" className="flex items-center gap-1 text-xs" data-testid={`badge-site-${wo.id}`}>
+                        <Building2 className="w-3 h-3" />
+                        {wo.site.name}
+                      </Badge>
+                    )}
+                    {wo.zone?.name && (
+                      <Badge variant="outline" className="flex items-center gap-1 text-xs" data-testid={`badge-zone-${wo.id}`}>
+                        <MapPin className="w-3 h-3" />
+                        {wo.zone.name}
+                      </Badge>
+                    )}
+                  </div>
+
                   {/* Detalhes */}
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
@@ -335,15 +351,18 @@ export default function WorkOrdersMobile({ customerId }: WorkOrdersMobileProps) 
                       </div>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs">Local</p>
-                      <p className="font-medium" data-testid={`text-workorder-zone-${wo.id}`}>
-                        {getZoneName(wo.zoneId)}
+                      <p className="text-gray-500 text-xs">Data</p>
+                      <p className="font-medium text-blue-600" data-testid={`text-workorder-date-${wo.id}`}>
+                        {wo.scheduledDate ? parseLocalDate(wo.scheduledDate)?.toLocaleDateString('pt-BR') : '-'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs">Agendado</p>
-                      <p className="font-medium text-blue-600" data-testid={`text-workorder-date-${wo.id}`}>
-                        {wo.scheduledDate ? parseLocalDate(wo.scheduledDate)?.toLocaleDateString('pt-BR') : '-'}
+                      <p className="text-gray-500 text-xs">Status</p>
+                      <p className="font-medium" data-testid={`text-workorder-status-${wo.id}`}>
+                        {wo.status === 'aberta' ? 'Aberta' : 
+                         wo.status === 'pausada' ? 'Pausada' :
+                         wo.status === 'concluida' ? 'Concluída' : 
+                         wo.status === 'vencida' ? 'Vencida' : wo.status}
                       </p>
                     </div>
                   </div>
