@@ -625,7 +625,7 @@ export default function WorkOrders() {
                       <tr className="border-b border-gray-200">
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">ID</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tipo</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Local</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Zona</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Título</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Responsável</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Prioridade</th>
