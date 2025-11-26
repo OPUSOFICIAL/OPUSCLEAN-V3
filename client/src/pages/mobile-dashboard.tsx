@@ -152,7 +152,7 @@ export default function MobileDashboard() {
   }
 
   // Função para filtrar OS por data
-  const filterWorkOrdersByDate = (orders: WorkOrder[]) => {
+  const filterWorkOrdersByDate = (orders: WorkOrder[], useCompletionDate: boolean = false) => {
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
@@ -162,17 +162,21 @@ export default function MobileDashboard() {
     switch (dateFilter) {
       case 'hoje':
         return orders.filter(wo => {
-          const orderDate = new Date(wo.dueDate || wo.createdAt);
+          // Para O.S. concluídas, usar completedAt; para outras, usar dueDate ou createdAt
+          const dateToCheck = useCompletionDate && wo.completedAt ? wo.completedAt : (wo.dueDate || wo.createdAt);
+          const orderDate = new Date(dateToCheck);
           return orderDate.toDateString() === today.toDateString();
         });
       case 'ontem':
         return orders.filter(wo => {
-          const orderDate = new Date(wo.dueDate || wo.createdAt);
+          const dateToCheck = useCompletionDate && wo.completedAt ? wo.completedAt : (wo.dueDate || wo.createdAt);
+          const orderDate = new Date(dateToCheck);
           return orderDate.toDateString() === yesterday.toDateString();
         });
       case 'semana':
         return orders.filter(wo => {
-          const orderDate = new Date(wo.dueDate || wo.createdAt);
+          const dateToCheck = useCompletionDate && wo.completedAt ? wo.completedAt : (wo.dueDate || wo.createdAt);
+          const orderDate = new Date(dateToCheck);
           return orderDate >= oneWeekAgo && orderDate <= today;
         });
       case 'todos':
@@ -216,7 +220,8 @@ export default function MobileDashboard() {
     wo.status === 'pausada'
   );
   
-  const myCompletedOrders = filteredWorkOrders.filter(wo => {
+  // Filtrar O.S. concluídas usando data de conclusão (completedAt)
+  const myCompletedOrders = filterWorkOrdersByDate(workOrders, true).filter(wo => {
     const assignedIds = (wo as any).assignedUserIds || [];
     const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
     return isAssignedToMe && wo.status === 'concluida';

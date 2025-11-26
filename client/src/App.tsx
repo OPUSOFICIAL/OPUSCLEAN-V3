@@ -8,6 +8,7 @@ import { ModuleProvider, useModule } from "@/contexts/ModuleContext";
 import { BrandingProvider } from "@/contexts/BrandingContext";
 import { NetworkProvider } from "@/contexts/NetworkContext";
 import { logout } from "@/lib/auth";
+import { useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import WorkOrders from "@/pages/work-orders";
@@ -53,6 +54,20 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { useSyncOnReconnect } from "@/hooks/use-sync-on-reconnect";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useToast } from "@/hooks/use-toast";
+
+// Suppress Vite HMR WebSocket errors in Replit environment
+useEffect(() => {
+  const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+    if (event.reason?.message?.includes("Failed to construct 'WebSocket'") || 
+        event.reason?.message?.includes("localhost:undefined")) {
+      event.preventDefault();
+      console.log("[App] Suppressed Vite HMR WebSocket error in development environment");
+    }
+  };
+  
+  window.addEventListener('unhandledrejection', handleUnhandledRejection);
+  return () => window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+}, []);
 
 // Component to initialize sync hooks
 function SyncInitializer() {
