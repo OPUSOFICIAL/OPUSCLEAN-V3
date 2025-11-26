@@ -4,7 +4,7 @@ import { getAuthState, canOnlyViewOwnWorkOrders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, Play, Zap } from "lucide-react";
+import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, Play, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
@@ -38,6 +38,8 @@ export default function MobileDashboard() {
   const { user } = getAuthState();
   const [dateFilter, setDateFilter] = useState<'hoje' | 'ontem' | 'semana' | 'todos'>('todos');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentPageAvailable, setCurrentPageAvailable] = useState(0);
+  const ITEMS_PER_PAGE = 5;
   
   // Get customerId - some users may not have customerId, use assignedClientId as fallback
   const effectiveCustomerId = user ? ((user as any).customerId || (user as any).assignedClientId) : null;
@@ -184,6 +186,13 @@ export default function MobileDashboard() {
   // Separar as OS em categorias
   const availableOrders = filteredWorkOrders.filter(wo => 
     !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
+  );
+
+  // Paginação para OS Disponíveis
+  const totalPagesAvailable = Math.ceil(availableOrders.length / ITEMS_PER_PAGE);
+  const paginatedAvailableOrders = availableOrders.slice(
+    currentPageAvailable * ITEMS_PER_PAGE,
+    (currentPageAvailable + 1) * ITEMS_PER_PAGE
   );
   
   // 🔥 ATUALIZADO: Minhas em Execução - O.S que o colaborador trabalhou
@@ -708,7 +717,7 @@ export default function MobileDashboard() {
               OS Disponíveis ({availableOrders.length})
             </h2>
 
-            {availableOrders.map((workOrder) => (
+            {paginatedAvailableOrders.map((workOrder) => (
               <Card key={workOrder.id} className="bg-orange-50/80 backdrop-blur-sm border-orange-200 shadow-lg">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
@@ -751,6 +760,52 @@ export default function MobileDashboard() {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Pagination Controls */}
+            {totalPagesAvailable > 1 && (
+              <div className="flex items-center justify-between gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageAvailable(Math.max(0, currentPageAvailable - 1))}
+                  disabled={currentPageAvailable === 0}
+                  className="bg-white/80 border-orange-200 hover:bg-orange-50"
+                  data-testid="button-prev-available"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Anterior
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPagesAvailable }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentPageAvailable(index)}
+                      className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                        currentPageAvailable === index
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-white/80 text-orange-900 hover:bg-orange-100'
+                      }`}
+                      data-testid={`button-page-available-${index}`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageAvailable(Math.min(totalPagesAvailable - 1, currentPageAvailable + 1))}
+                  disabled={currentPageAvailable === totalPagesAvailable - 1}
+                  className="bg-white/80 border-orange-200 hover:bg-orange-50"
+                  data-testid="button-next-available"
+                >
+                  Próximo
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 

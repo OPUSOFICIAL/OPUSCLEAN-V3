@@ -87,7 +87,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       const wsUrl = `${protocol}//${hostname}${urlPort}/ws?token=${encodeURIComponent(token)}`;
       
       // Dupla validação: garantir que não tem 'undefined' ou 'localhost' na URL
-      if (wsUrl.includes('undefined') || wsUrl.includes('localhost') || wsUrl.includes('://')) {
+      if (wsUrl.includes('undefined') || wsUrl.includes('localhost')) {
         console.warn('[WS Client] Invalid WebSocket URL - skipping connection:', wsUrl.substring(0, 50));
         return null;
       }
