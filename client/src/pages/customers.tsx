@@ -83,8 +83,13 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
       setIsCreateDialogOpen(false);
       toast({ title: "Cliente criado com sucesso!" });
     },
-    onError: () => {
-      toast({ title: "Erro ao criar cliente", variant: "destructive" });
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || "Erro ao criar cliente";
+      toast({ 
+        title: errorMessage, 
+        variant: "destructive",
+        duration: 5000 // Show longer for detailed messages
+      });
     },
   });
 

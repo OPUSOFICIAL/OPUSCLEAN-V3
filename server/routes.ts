@@ -3303,8 +3303,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
+      
+      // Check for database constraint violations
+      if (error instanceof Error) {
+        // PostgreSQL error for duplicate subdomain
+        if (error.message.includes('duplicate key value violates unique constraint') && 
+            error.message.includes('customers_subdomain_unique')) {
+          const subdomainMatch = error.message.match(/Key \(subdomain\)=\(([^)]+)\)/);
+          const subdomain = subdomainMatch ? subdomainMatch[1] : 'deste cliente';
+          return res.status(409).json({ 
+            message: `Erro ao criar cliente: o subdomínio "${subdomain}" já existe. Por favor, escolha outro nome para o cliente.`
+          });
+        }
+      }
+      
       console.error("Error creating customer:", error);
-      res.status(500).json({ message: "Failed to create customer" });
+      res.status(500).json({ message: "Erro ao criar cliente. Por favor, tente novamente." });
     }
   });
 
