@@ -935,7 +935,7 @@ export default function MobileWorkOrderExecute() {
 
         {/* Modal de Pausa */}
         <Dialog open={isPauseModalOpen} onOpenChange={setIsPauseModalOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <PauseCircle className="w-5 h-5 text-orange-600" />
@@ -946,7 +946,7 @@ export default function MobileWorkOrderExecute() {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1 overflow-y-auto pr-4">
               <div className="space-y-2">
                 <Label htmlFor="pause-reason">Motivo da Pausa *</Label>
                 <Textarea
@@ -1009,38 +1009,38 @@ export default function MobileWorkOrderExecute() {
                   </Button>
                 )}
               </div>
+            </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsPauseModalOpen(false);
-                    setPauseReason("");
-                    setPausePhotos([]);
-                  }}
-                  disabled={isPausing}
-                  className="flex-1"
-                  data-testid="button-cancel-pause"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handlePause}
-                  disabled={isPausing || !pauseReason.trim()}
-                  className="flex-1 bg-orange-600 hover:bg-orange-700"
-                  data-testid="button-confirm-pause"
-                >
-                  {isPausing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Pausando...
-                    </>
-                  ) : (
-                    "Confirmar Pausa"
-                  )}
-                </Button>
-              </div>
+            <div className="flex gap-2 pt-4 border-t mt-4 sticky bottom-0 bg-white">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsPauseModalOpen(false);
+                  setPauseReason("");
+                  setPausePhotos([]);
+                }}
+                disabled={isPausing}
+                className="flex-1"
+                data-testid="button-cancel-pause"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handlePause}
+                disabled={isPausing || !pauseReason.trim()}
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                data-testid="button-confirm-pause"
+              >
+                {isPausing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Pausando...
+                  </>
+                ) : (
+                  "Confirmar Pausa"
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
