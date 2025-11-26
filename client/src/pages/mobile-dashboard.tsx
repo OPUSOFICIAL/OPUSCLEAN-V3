@@ -39,6 +39,7 @@ export default function MobileDashboard() {
   const [dateFilter, setDateFilter] = useState<'hoje' | 'ontem' | 'semana' | 'todos'>('todos');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPageAvailable, setCurrentPageAvailable] = useState(0);
+  const [currentPageCompleted, setCurrentPageCompleted] = useState(0);
   const ITEMS_PER_PAGE = 5;
   
   // Get customerId - some users may not have customerId, use assignedClientId as fallback
@@ -239,11 +240,19 @@ export default function MobileDashboard() {
   
   // Filtrar O.S. concluídas pelo filtro de data (para exibição na seção)
   const completedOrdersFiltered = filterWorkOrdersByDate(workOrders, true);
-  const myCompletedOrders = completedOrdersFiltered.filter(wo => {
+  const myCompletedOrdersAll = completedOrdersFiltered.filter(wo => {
     const assignedIds = (wo as any).assignedUserIds || [];
     const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
     return isAssignedToMe && wo.status === 'concluida';
   }).sort((a, b) => b.number - a.number);
+  
+  // Paginação para O.S. Concluídas
+  const totalPagesCompleted = Math.ceil(myCompletedOrdersAll.length / ITEMS_PER_PAGE);
+  const paginatedCompletedOrders = myCompletedOrdersAll.slice(
+    currentPageCompleted * ITEMS_PER_PAGE,
+    (currentPageCompleted + 1) * ITEMS_PER_PAGE
+  );
+  const myCompletedOrders = paginatedCompletedOrders;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -887,11 +896,11 @@ export default function MobileDashboard() {
         )}
 
         {/* Work Orders List - Minhas Concluídas */}
-        {myCompletedOrders.length > 0 && (
+        {myCompletedOrdersAll.length > 0 && (
           <div className="space-y-4" id="concluidas-section">
             <h2 className="text-xl font-bold text-emerald-900 flex items-center gap-2">
               <CheckCircle className="w-6 h-6" />
-              Minhas Concluídas ({myCompletedOrders.length})
+              Minhas Concluídas ({myCompletedOrdersAll.length})
             </h2>
 
             {myCompletedOrders.map((workOrder) => (
@@ -926,6 +935,52 @@ export default function MobileDashboard() {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Pagination Controls for Completed Orders */}
+            {totalPagesCompleted > 1 && (
+              <div className="flex items-center justify-between gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageCompleted(Math.max(0, currentPageCompleted - 1))}
+                  disabled={currentPageCompleted === 0}
+                  className="bg-white/80 border-emerald-200 hover:bg-emerald-50"
+                  data-testid="button-prev-completed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Anterior
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPagesCompleted }).map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentPageCompleted(index)}
+                      className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                        currentPageCompleted === index
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-white/80 text-emerald-900 hover:bg-emerald-100'
+                      }`}
+                      data-testid={`button-page-completed-${index}`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPageCompleted(Math.min(totalPagesCompleted - 1, currentPageCompleted + 1))}
+                  disabled={currentPageCompleted === totalPagesCompleted - 1}
+                  className="bg-white/80 border-emerald-200 hover:bg-emerald-50"
+                  data-testid="button-next-completed"
+                >
+                  Próximo
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
