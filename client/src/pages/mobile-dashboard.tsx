@@ -58,6 +58,7 @@ export default function MobileDashboard() {
       params.append('zoneId', currentLocation.zoneId);
     }
     params.append('assignedTo', assignedToValue);
+    params.append('limit', '1000'); // Buscar até 1000 registros para garantir que todas as O.S. sejam retornadas
     
     let url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
     
