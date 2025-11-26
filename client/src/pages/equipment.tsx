@@ -108,10 +108,14 @@ export default function Equipment({ customerId }: EquipmentProps) {
       setIsCreateDialogOpen(false);
       resetForm();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Erro ao criar equipamento";
+      console.error('[CREATE EQUIPMENT ERROR]', { error, message: errorMessage });
       toast({ 
-        title: "Erro ao criar equipamento", 
-        variant: "destructive" 
+        title: "Erro ao criar equipamento",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 6000
       });
     },
   });
@@ -127,10 +131,14 @@ export default function Equipment({ customerId }: EquipmentProps) {
       setEditingEquipment(null);
       resetForm();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Erro ao atualizar equipamento";
+      console.error('[UPDATE EQUIPMENT ERROR]', { error, message: errorMessage });
       toast({ 
-        title: "Erro ao atualizar equipamento", 
-        variant: "destructive" 
+        title: "Erro ao atualizar equipamento",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 6000
       });
     },
   });
@@ -143,10 +151,14 @@ export default function Equipment({ customerId }: EquipmentProps) {
       toast({ title: "Equipamento excluído com sucesso" });
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/equipment`] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Erro ao excluir equipamento";
+      console.error('[DELETE EQUIPMENT ERROR]', { error, message: errorMessage });
       toast({ 
-        title: "Erro ao excluir equipamento", 
-        variant: "destructive" 
+        title: "Erro ao excluir equipamento",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 6000
       });
     },
   });
