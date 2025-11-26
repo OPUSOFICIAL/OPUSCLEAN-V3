@@ -201,6 +201,7 @@ export async function selectFromGallery(): Promise<CapturedPhoto> {
 }
 
 export async function promptForPicture(): Promise<CapturedPhoto> {
+  console.log('[PROMPT_FOR_PICTURE] Starting photo capture/selection');
   try {
     const image = await Camera.getPhoto({
       quality: 60,
@@ -232,19 +233,31 @@ export async function promptForPicture(): Promise<CapturedPhoto> {
     };
   } catch (error) {
     console.warn('[CAMERA] Native prompt unavailable, falling back to file input:', error);
+    console.log('[PROMPT_FOR_PICTURE] Showing file picker fallback');
     
     return new Promise<CapturedPhoto>((resolve, reject) => {
-      createFileInputFallback(
-        false,
-        (photos) => {
-          if (photos.length > 0) {
-            resolve(photos[0]);
-          } else {
-            reject(new Error('No photo selected'));
+      try {
+        createFileInputFallback(
+          false,
+          (photos) => {
+            console.log('[PROMPT_FOR_PICTURE] Photos received:', photos.length);
+            if (photos.length > 0) {
+              console.log('[PROMPT_FOR_PICTURE] Resolving with first photo');
+              resolve(photos[0]);
+            } else {
+              console.log('[PROMPT_FOR_PICTURE] No photos selected');
+              reject(new Error('No photo selected'));
+            }
+          },
+          () => {
+            console.log('[PROMPT_FOR_PICTURE] User cancelled');
+            reject(new Error('User cancelled photo selection'));
           }
-        },
-        () => reject(new Error('User cancelled photo selection'))
-      );
+        );
+      } catch (fallbackError) {
+        console.error('[PROMPT_FOR_PICTURE] Fallback error:', fallbackError);
+        reject(fallbackError);
+      }
     });
   }
 }
@@ -311,6 +324,8 @@ export function createFileInputFallback(
   onPhotosSelected: (photos: CapturedPhoto[]) => void,
   onCancel?: () => void
 ): void {
+  console.log('[FILE_INPUT_FALLBACK] Creating file input picker, multiple:', multiple);
+  
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
@@ -321,18 +336,23 @@ export function createFileInputFallback(
   let hasInteracted = false;
 
   input.onchange = async (e: Event) => {
+    console.log('[FILE_INPUT_FALLBACK] onChange triggered');
     hasInteracted = true;
     const target = e.target as HTMLInputElement;
     const files = target.files;
     
     if (!files || files.length === 0) {
+      console.log('[FILE_INPUT_FALLBACK] No files selected');
       onPhotosSelected([]);
       return;
     }
 
+    console.log('[FILE_INPUT_FALLBACK] Files selected:', files.length);
+
     try {
       const photos = await Promise.all(
         Array.from(files).map(async (file) => {
+          console.log('[FILE_INPUT_FALLBACK] Processing file:', file.name, file.type);
           const base64 = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -363,17 +383,23 @@ export function createFileInputFallback(
         })
       );
 
+      console.log('[FILE_INPUT_FALLBACK] Photos processed:', photos.length);
       onPhotosSelected(photos);
     } catch (error) {
-      console.error('[CAMERA FALLBACK] Error converting files:', error);
+      console.error('[FILE_INPUT_FALLBACK] Error converting files:', error);
       onPhotosSelected([]);
     }
+  };
+
+  input.onerror = (error) => {
+    console.error('[FILE_INPUT_FALLBACK] Input error:', error);
+    if (onCancel) onCancel();
   };
 
   window.addEventListener('focus', () => {
     setTimeout(() => {
       if (!hasInteracted) {
-        console.log('[CAMERA FALLBACK] User cancelled file selection');
+        console.log('[FILE_INPUT_FALLBACK] User cancelled file selection (focus event)');
         if (onCancel) {
           onCancel();
         } else {
@@ -383,5 +409,11 @@ export function createFileInputFallback(
     }, 300);
   }, { once: true });
 
-  input.click();
+  console.log('[FILE_INPUT_FALLBACK] Triggering file picker click()');
+  try {
+    input.click();
+  } catch (clickError) {
+    console.error('[FILE_INPUT_FALLBACK] Error triggering click:', clickError);
+    if (onCancel) onCancel();
+  }
 }
