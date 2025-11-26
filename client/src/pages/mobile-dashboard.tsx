@@ -220,11 +220,17 @@ export default function MobileDashboard() {
     wo.status === 'pausada'
   );
   
-  // Filtrar O.S. concluídas usando data de conclusão (completedAt)
-  const myCompletedOrders = filterWorkOrdersByDate(workOrders, true).filter(wo => {
+  // Filtrar O.S. concluídas usando data de conclusão (completedAt) - SEMPRE mostra apenas de hoje
+  const myCompletedOrders = workOrders.filter(wo => {
+    const today = new Date().toISOString().substring(0, 10);
+    // Para O.S. concluídas, usar completedAt
+    const dateToCheck = wo.completedAt || wo.createdAt;
+    const orderDateOnly = dateToCheck.substring(0, 10);
+    const isTodayDate = orderDateOnly === today;
+    
     const assignedIds = (wo as any).assignedUserIds || [];
     const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
-    return isAssignedToMe && wo.status === 'concluida';
+    return isAssignedToMe && wo.status === 'concluida' && isTodayDate;
   });
 
   const handleRefresh = async () => {
