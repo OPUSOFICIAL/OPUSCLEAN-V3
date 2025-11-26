@@ -228,8 +228,17 @@ export default function MobileDashboard() {
     return isAssignedToMe && wo.status === 'concluida';
   }).sort((a, b) => b.number - a.number);
   
-  // Debug logging
+  // Debug logging - mostrar quais ordens estão sendo excluídas
+  const excludedOrders = completedOrdersFiltered.filter(wo => {
+    const assignedIds = (wo as any).assignedUserIds || [];
+    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+    return !(isAssignedToMe && wo.status === 'concluida');
+  });
+  
   console.log(`[COMPLETED ORDERS] Total in filtered list: ${completedOrdersFiltered.length}, My completed: ${myCompletedOrders.length}, workOrders total: ${workOrders.length}`);
+  if (excludedOrders.length > 0) {
+    console.log(`[EXCLUDED ORDERS] ${excludedOrders.length} ordens foram excluídas:`, excludedOrders.map(wo => ({ number: wo.number, status: wo.status, assignedUserId: wo.assignedUserId, assignedUserIds: (wo as any).assignedUserIds })));
+  }
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
