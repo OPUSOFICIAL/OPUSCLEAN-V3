@@ -177,12 +177,27 @@ export async function selectFromGallery(): Promise<CapturedPhoto> {
 export async function promptForPicture(): Promise<CapturedPhoto> {
   console.log('[PROMPT_FOR_PICTURE] Starting photo capture/selection');
   try {
-    const image = await Camera.getPhoto({
-      quality: 60,
-      allowEditing: false,
-      resultType: CameraResultType.Base64,
-      source: CameraSource.Prompt,
+    let resolved = false;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        if (!resolved) {
+          console.log('[PROMPT_FOR_PICTURE] Timeout - switching to web fallback');
+          reject(new Error('Camera API timeout - using fallback'));
+        }
+      }, 1000);
     });
+
+    const image = await Promise.race([
+      Camera.getPhoto({
+        quality: 60,
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        source: CameraSource.Prompt,
+      }),
+      timeoutPromise
+    ]);
+    
+    resolved = true;
 
     if (!image.base64String) {
       throw new Error('Failed to capture/select image');
