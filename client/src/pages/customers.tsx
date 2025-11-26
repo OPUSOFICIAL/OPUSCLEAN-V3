@@ -84,11 +84,25 @@ export default function CustomersPage({ companyId }: CustomersPageProps) {
       toast({ title: "Cliente criado com sucesso!" });
     },
     onError: (error: any) => {
-      const errorMessage = error?.response?.data?.message || "Erro ao criar cliente";
+      // Extract error message from different possible error structures
+      let errorMessage = "Erro ao criar cliente";
+      
+      // Try to get message from error message property
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      // Try from response data
+      else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      console.error('[CREATE CUSTOMER ERROR]', { error, message: errorMessage });
+      
       toast({ 
-        title: errorMessage, 
+        title: "Erro ao criar cliente",
+        description: errorMessage,
         variant: "destructive",
-        duration: 5000 // Show longer for detailed messages
+        duration: 6000 // Show longer for detailed messages
       });
     },
   });
