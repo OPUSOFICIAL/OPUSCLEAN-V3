@@ -60,18 +60,41 @@ function SyncInitializer() {
   return null;
 }
 
-// Component to suppress Vite HMR WebSocket errors
+// Component to suppress Vite HMR WebSocket errors and disable HMR attempts
 function ErrorSuppressor() {
   useEffect(() => {
+    // Suppress unhandled rejections from Vite HMR WebSocket failures
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       if (event.reason?.message?.includes("Failed to construct 'WebSocket'") || 
-          event.reason?.message?.includes("localhost:undefined")) {
+          event.reason?.message?.includes("localhost:undefined") ||
+          event.reason?.message?.includes("Invalid URL")) {
         event.preventDefault();
       }
     };
     
+    // Intercept WebSocket constructor to block invalid connections
+    const OriginalWebSocket = window.WebSocket;
+    (window as any).WebSocket = class extends OriginalWebSocket {
+      constructor(url: string | URL, ...args: any[]) {
+        // Block invalid Vite HMR URLs
+        if (typeof url === 'string' && 
+            (url.includes('localhost:undefined') || 
+             url.includes('://undefined') ||
+             url === '')) {
+          console.warn('[ERROR SUPPRESSOR] Blocking invalid WebSocket URL:', url);
+          // Return a fake WebSocket that does nothing
+          super('about:blank', ...args);
+          return this;
+        }
+        super(url, ...args);
+      }
+    };
+    
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    return () => window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      (window as any).WebSocket = OriginalWebSocket;
+    };
   }, []);
   
   return null;

@@ -409,8 +409,9 @@ export function requireViewReports(req: Request, res: Response, next: NextFuncti
 
 /**
  * Middleware para permitir acesso a um cliente se:
- * 1. Usuário tem permissão customers_view, OU
- * 2. Usuário é customer_user admin que gerencia esse cliente via userAllowedCustomers
+ * 1. Usuário é admin (opus_user ou customer_user), OU
+ * 2. Usuário tem permissão customers_view, OU
+ * 3. Usuário é customer_user gerenciando seus clientes via userAllowedCustomers
  */
 export async function requireCustomerAccessOrPermission(req: Request, res: Response, next: NextFunction) {
   const user = await getUserFromToken(req);
@@ -420,7 +421,13 @@ export async function requireCustomerAccessOrPermission(req: Request, res: Respo
     return res.status(401).json({ error: 'Não autenticado' });
   }
   
-  // Se user é opus_user, verifica permissão customers_view
+  // Se user é admin (opus_user ou customer_user), permite acesso total
+  if (user.role === 'admin') {
+    req.user = user;
+    return next();
+  }
+  
+  // Se user é opus_user não-admin, verifica permissão customers_view
   if (user.userType === 'opus_user') {
     const userPermissions = await getUserPermissions(user.id);
     if (!userPermissions.includes('customers_view')) {
