@@ -1168,15 +1168,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const newZone = await storage.createZone(zone);
       
-      // Buscar o site para obter o customerId
-      const site = await storage.getSite(newZone.siteId);
-      
-      // Broadcast zone creation to all connected clients
+      // Broadcast zone creation to all connected clients (no customer filter needed)
       broadcast({
         type: 'create',
         resource: 'zones',
         data: newZone,
-        customerId: site?.customerId || undefined,
       });
       
       res.status(201).json(newZone);
@@ -1193,15 +1189,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const zone = insertZoneSchema.partial().parse(req.body);
       const updatedZone = await storage.updateZone(req.params.id, zone);
       
-      // Buscar o site para obter o customerId
-      const site = await storage.getSite(updatedZone.siteId);
-      
-      // Broadcast zone update to all connected clients
+      // Broadcast zone update to all connected clients (no customer filter needed)
       broadcast({
         type: 'update',
         resource: 'zones',
         data: updatedZone,
-        customerId: site?.customerId || undefined,
       });
       
       res.json(updatedZone);
@@ -1218,15 +1210,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const zone = insertZoneSchema.partial().parse(req.body);
       const updatedZone = await storage.updateZone(req.params.id, zone);
       
-      // Buscar o site para obter o customerId
-      const site = await storage.getSite(updatedZone.siteId);
-      
-      // Broadcast zone update to all connected clients
+      // Broadcast zone update to all connected clients (no customer filter needed)
       broadcast({
         type: 'update',
         resource: 'zones',
         data: updatedZone,
-        customerId: site?.customerId || undefined,
       });
       
       res.json(updatedZone);
