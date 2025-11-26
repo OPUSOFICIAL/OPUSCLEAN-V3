@@ -631,7 +631,7 @@ export default function WorkOrders() {
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Prioridade</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Status</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Data Agendada</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Criada em</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Data de Conclusão</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Ações</th>
                       </tr>
                     </thead>
@@ -666,8 +666,8 @@ export default function WorkOrders() {
                           <td className="py-3 px-4 text-sm text-gray-600" data-testid={`text-date-${wo.id}`}>
                             {formatDateOnly(wo.scheduledDate)}
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-600" data-testid={`text-created-${wo.id}`}>
-                            {wo.createdAt ? new Date(wo.createdAt).toLocaleDateString('pt-BR') : '-'}
+                          <td className="py-3 px-4 text-sm text-gray-600" data-testid={`text-completed-${wo.id}`}>
+                            {wo.completedAt ? new Date(wo.completedAt).toLocaleDateString('pt-BR') : ''}
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
