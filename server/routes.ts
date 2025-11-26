@@ -718,11 +718,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrders = workOrders.filter(wo => statusArray.includes(wo.status || ''));
       }
       
-      // Ordenação por ID (ascendente = mais antigos primeiro)
+      // Ordenação por número (descendente = maiores números primeiro)
       workOrders.sort((a: any, b: any) => {
-        const idA = parseInt(a.number || a.id);
-        const idB = parseInt(b.number || b.id);
-        return idA - idB; // Ascendente
+        const numberA = parseInt(a.number || a.id);
+        const numberB = parseInt(b.number || b.id);
+        return numberB - numberA; // Descendente - maiores números primeiro
       });
       
       // Paginação (aplicada DEPOIS dos filtros e ordenação)
