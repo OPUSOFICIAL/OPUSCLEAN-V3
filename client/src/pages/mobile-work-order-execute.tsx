@@ -64,7 +64,7 @@ export default function MobileWorkOrderExecute() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [pauseReason, setPauseReason] = useState("");
-  const [pausePhoto, setPausePhoto] = useState<any>(null);
+  const [pausePhotos, setPausePhotos] = useState<CapturedPhoto[]>([]);
   const [isPausing, setIsPausing] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -311,19 +311,18 @@ export default function MobileWorkOrderExecute() {
 
   const handlePausePhotoUpload = async () => {
     try {
-      const photo = await promptForPicture();
-      if (photo) {
-        setPausePhoto(photo);
+      const photos = await pickMultipleImages({ limit: 10 });
+      if (photos && photos.length > 0) {
+        setPausePhotos([...pausePhotos, ...photos]);
       }
     } catch (error) {
       console.error('[PAUSE PHOTO] Error:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Erro ao capturar foto';
+      const errorMsg = error instanceof Error ? error.message : 'Erro ao capturar fotos';
       
-      // Mostrar erro ao usuário apenas se não for cancelamento
       if (!errorMsg.includes('cancelled') && !errorMsg.includes('cancelled photo')) {
         toast({
-          title: "Erro ao capturar foto",
-          description: errorMsg || "Não foi possível capturar ou selecionar a foto.",
+          title: "Erro ao capturar fotos",
+          description: errorMsg || "Não foi possível capturar ou selecionar as fotos.",
           variant: "destructive",
         });
       }
@@ -342,8 +341,8 @@ export default function MobileWorkOrderExecute() {
 
     setIsPausing(true);
     try {
-      // Foto de pausa já está em Base64
-      const photoBase64 = pausePhoto ? pausePhoto.dataUrl : null;
+      // Fotos de pausa já estão em Base64
+      const photosBase64 = pausePhotos.length > 0 ? pausePhotos.map(p => p.dataUrl) : null;
 
       // Atualizar status da OS para pausada
       const response = await authenticatedFetch(`/api/work-orders/${workOrder.id}`, {
@@ -358,14 +357,14 @@ export default function MobileWorkOrderExecute() {
         throw new Error('Erro ao pausar ordem de serviço');
       }
 
-      // Criar comentário com motivo e foto
+      // Criar comentário com motivo e fotos
       await authenticatedFetch(`/api/work-orders/${workOrder.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser?.id,
           comment: `⏸️ ${currentUser?.name || 'Operador'} pausou a OS\n\n📝 Motivo: ${pauseReason}`,
-          attachments: photoBase64 ? [photoBase64] : null,
+          attachments: photosBase64,
         }),
       });
 
@@ -389,7 +388,7 @@ export default function MobileWorkOrderExecute() {
       setIsPausing(false);
       setIsPauseModalOpen(false);
       setPauseReason("");
-      setPausePhoto(null);
+      setPausePhotos([]);
     }
   };
 
@@ -950,23 +949,39 @@ export default function MobileWorkOrderExecute() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pause-photo">Foto (opcional)</Label>
-                {pausePhoto ? (
-                  <div className="relative">
-                    <img 
-                      src={pausePhoto.dataUrl} 
-                      alt="Foto da pausa"
-                      className="w-full h-48 object-cover rounded-lg border"
-                    />
+                <Label htmlFor="pause-photos">Fotos (opcional)</Label>
+                {pausePhotos.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      {pausePhotos.map((photo, idx) => (
+                        <div key={idx} className="relative">
+                          <img 
+                            src={photo.dataUrl} 
+                            alt={`Foto ${idx + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => setPausePhotos(pausePhotos.filter((_, i) => i !== idx))}
+                            data-testid={`button-remove-pause-photo-${idx}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                     <Button
                       type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() => setPausePhoto(null)}
-                      data-testid="button-remove-pause-photo"
+                      variant="outline"
+                      className="w-full text-sm"
+                      onClick={handlePausePhotoUpload}
+                      data-testid="button-add-more-photos"
                     >
-                      <X className="w-4 h-4" />
+                      <Camera className="w-4 h-4 mr-2" />
+                      Adicionar mais fotos ({pausePhotos.length})
                     </Button>
                   </div>
                 ) : (
@@ -978,7 +993,7 @@ export default function MobileWorkOrderExecute() {
                     data-testid="button-add-pause-photo"
                   >
                     <Camera className="w-4 h-4 mr-2" />
-                    Tirar/Anexar Foto
+                    Tirar/Anexar Fotos
                   </Button>
                 )}
               </div>
@@ -990,7 +1005,7 @@ export default function MobileWorkOrderExecute() {
                   onClick={() => {
                     setIsPauseModalOpen(false);
                     setPauseReason("");
-                    setPausePhoto(null);
+                    setPausePhotos([]);
                   }}
                   disabled={isPausing}
                   className="flex-1"
