@@ -58,17 +58,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       let hostname = window.location.hostname;
-      const port = window.location.port || '';
+      let port = window.location.port;
       
       // CRITICAL: Early validation - reject localhost and invalid hostnames immediately
-      if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') {
+      if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '' || hostname === 'undefined') {
         console.warn('[WS Client] Skipping WebSocket connection - invalid hostname in Replit environment:', hostname);
         return null;
       }
       
-      // Validação adicional: se port é string 'undefined', hostname está corrompido
-      if (port === 'undefined' || hostname.includes('undefined')) {
-        console.warn('[WS Client] Invalid port or hostname detected:', { hostname, port });
+      // Validação adicional: se port é string 'undefined' ou port é undefined
+      if (port === 'undefined' || typeof port === 'undefined' || hostname.includes('undefined')) {
+        console.warn('[WS Client] Invalid port or hostname detected:', { hostname, port: typeof port });
         return null;
       }
       
@@ -77,7 +77,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       if (hostname.includes('.replit.dev') || hostname.includes('janeway.replit.dev')) {
         // Ambiente Replit - sem porta
         urlPort = '';
-      } else if (port && port !== '') {
+      } else if (port && port !== '' && port !== '0') {
         // Outros hostnames com porta explícita
         urlPort = `:${port}`;
       }
@@ -87,7 +87,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       const wsUrl = `${protocol}//${hostname}${urlPort}/ws?token=${encodeURIComponent(token)}`;
       
       // Dupla validação: garantir que não tem 'undefined' ou 'localhost' na URL
-      if (wsUrl.includes('undefined') || wsUrl.includes('localhost')) {
+      if (wsUrl.includes('undefined') || wsUrl.includes('localhost') || wsUrl.includes('//undefined')) {
         console.warn('[WS Client] Invalid WebSocket URL - skipping connection:', wsUrl.substring(0, 50));
         return null;
       }

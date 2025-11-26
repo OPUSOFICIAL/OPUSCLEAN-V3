@@ -312,10 +312,21 @@ export default function MobileWorkOrderExecute() {
   const handlePausePhotoUpload = async () => {
     try {
       const photo = await promptForPicture();
-      setPausePhoto(photo);
+      if (photo) {
+        setPausePhoto(photo);
+      }
     } catch (error) {
       console.error('[PAUSE PHOTO] Error:', error);
-      // Cancelamento silencioso
+      const errorMsg = error instanceof Error ? error.message : 'Erro ao capturar foto';
+      
+      // Mostrar erro ao usuário apenas se não for cancelamento
+      if (!errorMsg.includes('cancelled') && !errorMsg.includes('cancelled photo')) {
+        toast({
+          title: "Erro ao capturar foto",
+          description: errorMsg || "Não foi possível capturar ou selecionar a foto.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
