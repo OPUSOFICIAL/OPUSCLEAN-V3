@@ -62,7 +62,7 @@ export default function ServiceSelectionModal({
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [availableWorkOrders, setAvailableWorkOrders] = useState<any[]>([]);
   const [isLoadingWorkOrders, setIsLoadingWorkOrders] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'today' | 'upcoming' | 'all' | 'paused'>('today');
+  const [dateFilter, setDateFilter] = useState<'today' | 'paused'>('today');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<string | null>(null);
 
   useEffect(() => {
@@ -165,11 +165,6 @@ export default function ServiceSelectionModal({
       }
       
       return match;
-    } else if (dateFilter === 'upcoming') {
-      const scheduledDate = parseLocalDate(wo.scheduledDate);
-      return scheduledDate && scheduledDate >= new Date();
-    } else if (dateFilter === 'all') {
-      return true;
     }
     return true;
   });
@@ -306,15 +301,9 @@ export default function ServiceSelectionModal({
                   
                   {/* Filtros por data */}
                   <Tabs value={dateFilter} onValueChange={(v) => setDateFilter(v as any)} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="all" className="text-xs">
-                        Todas
-                      </TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="today" className="text-xs">
                         Hoje
-                      </TabsTrigger>
-                      <TabsTrigger value="upcoming" className="text-xs">
-                        Próximas
                       </TabsTrigger>
                       <TabsTrigger value="paused" className="text-xs">
                         Pausadas
@@ -326,9 +315,7 @@ export default function ServiceSelectionModal({
                   {filteredWorkOrders.length === 0 ? (
                     <div className="text-center py-6 text-slate-500 text-sm">
                       {dateFilter === 'today' && 'Nenhuma ordem agendada para hoje'}
-                      {dateFilter === 'upcoming' && 'Nenhuma ordem agendada'}
                       {dateFilter === 'paused' && 'Nenhuma ordem pausada'}
-                      {dateFilter === 'all' && 'Nenhuma ordem disponível'}
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-64 overflow-y-auto">

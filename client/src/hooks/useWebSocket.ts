@@ -57,12 +57,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const hostname = window.location.hostname;
-      const port = window.location.port || ''; // CRITICAL: Ensure port is never undefined
+      let hostname = window.location.hostname;
+      const port = window.location.port || '';
       
-      // Validação: hostname não pode estar vazio
-      if (!hostname) {
-        console.error('[WS Client] Invalid hostname');
+      // Validação: hostname não pode estar vazio ou ser 'localhost' no Replit
+      if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+        console.error('[WS Client] Invalid hostname in Replit environment:', hostname);
         return null;
       }
       
@@ -71,16 +71,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       if (hostname.includes('.replit.dev') || hostname.includes('janeway.replit.dev')) {
         // Ambiente Replit - sem porta
         urlPort = '';
-      } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        // Localhost - usar porta 5000
-        urlPort = ':5000';
       } else if (port && port !== '') {
         // Outros hostnames com porta explícita
         urlPort = `:${port}`;
       }
       // else: sem porta
       
+      // Validar URL antes de usar
       const wsUrl = `${protocol}//${hostname}${urlPort}/ws?token=${encodeURIComponent(token)}`;
+      
+      // Dupla validação: garantir que não tem 'undefined' ou 'localhost' na URL
+      if (wsUrl.includes('undefined') || wsUrl.includes('localhost')) {
+        console.error('[WS Client] Invalid WebSocket URL constructed:', wsUrl);
+        return null;
+      }
       
       console.log('[WS Client] WebSocket URL:', wsUrl.replace(token, '***'));
       return wsUrl;
