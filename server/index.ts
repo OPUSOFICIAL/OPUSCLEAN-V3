@@ -18,16 +18,46 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: [
-    'https://facilities.grupoopus.com',
-    process.env.REPLIT_DOMAIN || 'https://*.replit.dev',
-    'http://localhost:5000',
-    'http://localhost:3000',
-    'http://localhost:3007',
-  ],
+  origin: function(origin, callback) {
+    // Lista de origens permitidas
+    const allowedOrigins = [
+      'https://facilities.grupoopus.com',
+      'https://grupoopus.com',
+      process.env.REPLIT_DOMAIN,
+      'http://localhost:5000',
+      'http://localhost:3000',
+      'http://localhost:3007',
+    ].filter(Boolean);
+    
+    // Capacitor envia requisições sem origem (null/undefined) ou com capacitor://
+    // Permitir requisições sem origem (apps nativos, Postman, etc)
+    if (!origin) {
+      console.log('[CORS] Permitindo requisição sem origem (app nativo/Capacitor)');
+      return callback(null, true);
+    }
+    
+    // Permitir origens do Capacitor (capacitor://localhost, ionic://localhost)
+    if (origin.startsWith('capacitor://') || origin.startsWith('ionic://') || origin.startsWith('http://localhost')) {
+      console.log('[CORS] Permitindo origem Capacitor/Ionic:', origin);
+      return callback(null, true);
+    }
+    
+    // Verificar se está na lista de origens permitidas
+    if (allowedOrigins.some(allowed => allowed && origin.includes(allowed.replace('https://', '').replace('http://', '')))) {
+      return callback(null, true);
+    }
+    
+    // Permitir qualquer subdomínio replit.dev
+    if (origin.includes('replit.dev') || origin.includes('replit.app')) {
+      return callback(null, true);
+    }
+    
+    console.log('[CORS] Origem bloqueada:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Origin', 'Accept'],
   exposedHeaders: ['Content-Type', 'Authorization'],
 }));
 

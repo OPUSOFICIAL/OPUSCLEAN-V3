@@ -59,14 +59,17 @@ export async function apiRequest(
   
   // Convert to absolute URL if in Capacitor
   const fullUrl = getFullUrl(url);
+  const isNative = Capacitor.isNativePlatform();
   
-  console.log('[API REQUEST]', method, fullUrl, Capacitor.isNativePlatform() ? '(Capacitor)' : '(Web)');
+  console.log('[API REQUEST]', method, fullUrl, isNative ? '(Capacitor)' : '(Web)');
   
+  // Em ambiente nativo (Capacitor), não usar credentials pois usamos Bearer token
+  // Em ambiente web, usar credentials para sessão/cookies
   const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: isNative ? "omit" : "include",
   });
 
   await throwIfResNotOk(res);
@@ -109,12 +112,14 @@ export const getQueryFn: <T>(options: {
     
     // Convert to absolute URL if in Capacitor
     const fullUrl = getFullUrl(url);
+    const isNative = Capacitor.isNativePlatform();
     
     console.log('[QUERY FN] Fetching:', fullUrl, 'Headers:', Object.keys(headers));
     
+    // Em ambiente nativo (Capacitor), não usar credentials pois usamos Bearer token
     const res = await fetch(fullUrl, {
       headers,
-      credentials: "include",
+      credentials: isNative ? "omit" : "include",
     });
 
     console.log('[QUERY FN] Response status:', res.status, 'URL:', fullUrl);
