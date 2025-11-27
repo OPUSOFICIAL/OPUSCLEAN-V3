@@ -10,10 +10,11 @@
         </trust-anchors>
     </domain-config>
     
-    <!-- CONFIGURAÇÃO PARA DESENVOLVIMENTO (Replit) -->
+    <!-- CONFIGURAÇÃO PARA REPLIT (Produção atual) -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">replit.dev</domain>
-        <domain includeSubdomains="true">janeway.replit.dev</domain>
+        <domain includeSubdomains="true">picard.replit.dev</domain>
+        <domain includeSubdomains="true">replit.app</domain>
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />

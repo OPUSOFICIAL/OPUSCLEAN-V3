@@ -4,9 +4,17 @@ const config: CapacitorConfig = {
   appId: 'com.acelerait.facilities',
   appName: 'Acelera Facilities',
   webDir: 'dist/public',
-  // OFFLINE-FIRST: Assets are bundled and served locally via capacitor://
-  // API calls use relative paths (/api/*) which resolve to bundled backend
-  // or use full URL when needed (login, sync)
+  // Conexão com backend Replit - API completa
+  // O app mobile conecta via HTTPS ao servidor Replit
+  server: {
+    // Permite acesso a qualquer host HTTPS
+    allowNavigation: [
+      'replit.dev',
+      '*.replit.dev',
+      'picard.replit.dev',
+      'facilities.grupoopus.com',
+    ],
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -14,6 +22,11 @@ const config: CapacitorConfig = {
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
     },
+  },
+  android: {
+    allowMixedContent: false,
+    captureInput: true,
+    webContentsDebuggingEnabled: true, // Para debug - desativar em produção final
   },
 };
 
