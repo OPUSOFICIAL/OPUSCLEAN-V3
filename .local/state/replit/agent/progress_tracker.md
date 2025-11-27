@@ -443,3 +443,17 @@
 [x] 373. Verified landing page displaying correctly (Acelera Full Facilities)
 [x] 374. ✅ DATABASE IMPORT COMPLETED SUCCESSFULLY - System fully operational
 [x] 375. Admin login ready: admin / admin123 (modules: clean, maintenance)
+
+## MOBILE APK CONFIGURATION (27/11/2025 09:00 PM)
+[x] 376. Configured VITE_API_BASE_URL environment variable for Replit server
+[x] 377. Updated network_security_config.xml to allow replit.dev and picard.replit.dev domains
+[x] 378. Configured Capacitor for REMOTE MODE - app loads directly from server
+[x] 379. Updated capacitor.config.ts with server URL and navigation settings
+[x] 380. Synchronized Capacitor with Android project (npx cap sync android)
+[x] 381. Verified plugins: @capacitor/camera@7.0.2, @capacitor/network@7.0.2
+[x] 382. Installed Java GraalVM 22.3 for Gradle compatibility
+[x] 383. Downloaded Gradle 8.11.1 wrapper
+[x] 384. Created android-project.tar.gz (215K) for easy download
+[x] 385. Created INSTRUCOES_APK.md with detailed compilation instructions
+[x] 386. ✅ MOBILE APK PROJECT READY FOR COMPILATION
+[x] 387. Note: Android SDK too large for Replit - compile locally with Android Studio
