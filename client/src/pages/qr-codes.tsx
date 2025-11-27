@@ -26,12 +26,46 @@ import {
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import { cn } from "@/lib/utils";
+import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 const QR_SIZES_CM = [3, 4, 5, 6, 7, 8, 10, 12, 15];
 const cmToPixels = (cm: number) => Math.round(cm * 28.35);
 
+const DEFAULT_MODULE_COLORS = {
+  clean: { primary: '#1e3a8a', secondary: '#3b82f6', accent: '#60a5fa' },
+  maintenance: { primary: '#FF9800', secondary: '#FB8C00', accent: '#FFB74D' }
+};
+
+const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
+    : { r: 30, g: 58, b: 138 };
+};
+
+const loadImage = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } else {
+        reject(new Error('Could not get canvas context'));
+      }
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
 export default function QrCodes() {
-  const { activeClientId } = useClient();
+  const { activeClientId, activeClient } = useClient();
   const { currentModule } = useModule();
   const theme = useModuleTheme();
   const [selectedSite, setSelectedSite] = useState("");
@@ -160,6 +194,17 @@ export default function QrCodes() {
     generateAllQrCodes();
   }, [qrPoints]);
 
+  const getModuleColor = (): { r: number; g: number; b: number } => {
+    const moduleColors = activeClient?.moduleColors;
+    const moduleKey = currentModule as 'clean' | 'maintenance';
+    
+    if (moduleColors?.[moduleKey]?.primary) {
+      return hexToRgb(moduleColors[moduleKey].primary);
+    }
+    
+    return hexToRgb(DEFAULT_MODULE_COLORS[moduleKey]?.primary || DEFAULT_MODULE_COLORS.clean.primary);
+  };
+
   const downloadPDF = async (point: any) => {
     const url = generateQrCodeUrl(point.type, point.code);
     const sizeCm = point.sizeCm || 5;
@@ -169,40 +214,51 @@ export default function QrCodes() {
     const pageWidth = 210;
     const pageHeight = 297;
     
-    // QR Code padrão centralizado
+    const moduleColor = getModuleColor();
+    
     const qrSizeMM = sizeCm * 10;
-    const borderMM = 5;
-    const qrWithBorderMM = qrSizeMM + (borderMM * 2);
-    const qrX = (pageWidth - qrWithBorderMM) / 2;
+    const borderMM = 8;
+    const logoHeaderMM = 12;
+    const qrWithBorderWidthMM = qrSizeMM + (borderMM * 2);
+    const qrWithBorderHeightMM = qrSizeMM + (borderMM * 2) + logoHeaderMM;
+    const qrX = (pageWidth - qrWithBorderWidthMM) / 2;
     const qrY = 50;
     
-    // Borda simples cinza
-    pdf.setFillColor(240, 240, 240);
-    pdf.roundedRect(qrX, qrY, qrWithBorderMM, qrWithBorderMM, 3, 3, 'F');
+    pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
+    pdf.roundedRect(qrX, qrY, qrWithBorderWidthMM, qrWithBorderHeightMM, 4, 4, 'F');
     
-    // Fundo branco para QR
+    try {
+      const logoDataUrl = await loadImage(aceleraLogo);
+      const logoAspectRatio = 4;
+      const logoWidth = qrWithBorderWidthMM - 10;
+      const logoHeight = logoWidth / logoAspectRatio;
+      const logoX = qrX + (qrWithBorderWidthMM - logoWidth) / 2;
+      const logoY = qrY + 3;
+      pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, Math.min(logoHeight, 10));
+    } catch (error) {
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ACELERA FULL FACILITIES', qrX + qrWithBorderWidthMM / 2, qrY + 8, { align: 'center' });
+    }
+    
     pdf.setFillColor(255, 255, 255);
-    pdf.rect(qrX + borderMM, qrY + borderMM, qrSizeMM, qrSizeMM, 'F');
+    pdf.roundedRect(qrX + borderMM, qrY + logoHeaderMM + 2, qrSizeMM, qrSizeMM, 2, 2, 'F');
     
-    // QR Code
-    pdf.addImage(qrCodeDataUrl, 'PNG', qrX + borderMM, qrY + borderMM, qrSizeMM, qrSizeMM);
+    pdf.addImage(qrCodeDataUrl, 'PNG', qrX + borderMM, qrY + logoHeaderMM + 2, qrSizeMM, qrSizeMM);
     
-    // Informações abaixo do QR code
-    const textStartY = qrY + qrWithBorderMM + 15;
+    const textStartY = qrY + qrWithBorderHeightMM + 12;
     
-    // Nome
     pdf.setTextColor(30, 41, 59);
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text(point.name, pageWidth / 2, textStartY, { align: 'center' });
     
-    // Código
     pdf.setTextColor(100, 116, 139);
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.text(`Código: ${point.code}`, pageWidth / 2, textStartY + 8, { align: 'center' });
     
-    // Local
     if (point.zoneName) {
       pdf.setFontSize(9);
       pdf.text(`Local: ${point.zoneName}`, pageWidth / 2, textStartY + 15, { align: 'center' });
@@ -221,32 +277,41 @@ export default function QrCodes() {
     const selectedPoints = (qrPoints as any[]).filter(point => selectedQrCodes.includes(point.id));
     const pdf = new jsPDF();
     
-    const pageWidth = 210; // mm A4
-    const pageHeight = 297; // mm A4
+    const pageWidth = 210;
+    const pageHeight = 297;
     const margin = 8;
     const spacing = 5;
+    
+    const moduleColor = getModuleColor();
+    
+    let logoDataUrl: string | null = null;
+    try {
+      logoDataUrl = await loadImage(aceleraLogo);
+    } catch (error) {
+      console.warn('Could not load logo for PDF');
+    }
     
     let currentY = margin;
     let currentX = margin;
     let maxRowHeight = 0;
-    const borderMM = 5;
-    const textHeight = 25;
+    const borderMM = 6;
+    const logoHeaderMM = 8;
+    const textHeight = 18;
     
     for (let i = 0; i < selectedPoints.length; i++) {
       const point = selectedPoints[i];
       const sizeCm = point.sizeCm || 5;
       const qrSizeMM = sizeCm * 10;
-      const qrWithBorderMM = qrSizeMM + (borderMM * 2);
-      const totalItemHeight = qrWithBorderMM + textHeight;
+      const qrWithBorderWidthMM = qrSizeMM + (borderMM * 2);
+      const qrWithBorderHeightMM = qrSizeMM + (borderMM * 2) + logoHeaderMM;
+      const totalItemHeight = qrWithBorderHeightMM + textHeight;
       
-      // Se não cabe na linha atual, vai para próxima linha
-      if (currentX + qrWithBorderMM > pageWidth - margin && currentX > margin) {
+      if (currentX + qrWithBorderWidthMM > pageWidth - margin && currentX > margin) {
         currentY += maxRowHeight + spacing;
         currentX = margin;
         maxRowHeight = 0;
       }
       
-      // Se não cabe na página atual, cria nova página
       if (currentY + totalItemHeight > pageHeight - margin) {
         pdf.addPage();
         currentY = margin;
@@ -257,36 +322,42 @@ export default function QrCodes() {
       const url = generateQrCodeUrl(point.type, point.code);
       const qrCodeDataUrl = await generateQrCodeImage(url, sizeCm);
       
-      // Borda simples cinza
-      pdf.setFillColor(240, 240, 240);
-      pdf.roundedRect(currentX, currentY, qrWithBorderMM, qrWithBorderMM, 3, 3, 'F');
+      pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
+      pdf.roundedRect(currentX, currentY, qrWithBorderWidthMM, qrWithBorderHeightMM, 3, 3, 'F');
       
-      // Fundo branco para QR
+      if (logoDataUrl) {
+        const logoWidth = qrWithBorderWidthMM - 6;
+        const logoHeight = logoWidth / 4;
+        const logoX = currentX + (qrWithBorderWidthMM - logoWidth) / 2;
+        const logoY = currentY + 1.5;
+        pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, Math.min(logoHeight, 6));
+      } else {
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('ACELERA', currentX + qrWithBorderWidthMM / 2, currentY + 5, { align: 'center' });
+      }
+      
       pdf.setFillColor(255, 255, 255);
-      pdf.rect(currentX + borderMM, currentY + borderMM, qrSizeMM, qrSizeMM, 'F');
+      pdf.roundedRect(currentX + borderMM, currentY + logoHeaderMM + 1, qrSizeMM, qrSizeMM, 1, 1, 'F');
       
-      // QR Code
-      pdf.addImage(qrCodeDataUrl, 'PNG', currentX + borderMM, currentY + borderMM, qrSizeMM, qrSizeMM);
+      pdf.addImage(qrCodeDataUrl, 'PNG', currentX + borderMM, currentY + logoHeaderMM + 1, qrSizeMM, qrSizeMM);
       
-      // Texto abaixo do QR
-      const textY = currentY + qrWithBorderMM + 5;
+      const textY = currentY + qrWithBorderHeightMM + 4;
       
-      // Nome
       pdf.setTextColor(30, 41, 59);
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'bold');
-      const maxNameWidth = qrWithBorderMM - 2;
+      const maxNameWidth = qrWithBorderWidthMM - 2;
       const nameParts = pdf.splitTextToSize(point.name, maxNameWidth);
-      pdf.text(nameParts[0], currentX + qrWithBorderMM / 2, textY, { align: 'center' });
+      pdf.text(nameParts[0], currentX + qrWithBorderWidthMM / 2, textY, { align: 'center' });
       
-      // Código
       pdf.setTextColor(100, 116, 139);
       pdf.setFontSize(6);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${point.code}`, currentX + qrWithBorderMM / 2, textY + 6, { align: 'center' });
+      pdf.text(`${point.code}`, currentX + qrWithBorderWidthMM / 2, textY + 5, { align: 'center' });
       
-      // Atualiza posição X e altura máxima da linha
-      currentX += qrWithBorderMM + spacing;
+      currentX += qrWithBorderWidthMM + spacing;
       maxRowHeight = Math.max(maxRowHeight, totalItemHeight);
     }
     
