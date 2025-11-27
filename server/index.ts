@@ -37,7 +37,7 @@ app.use(cors({
     }
     
     // Permitir origens do Capacitor (capacitor://localhost, ionic://localhost)
-    if (origin.startsWith('capacitor://') || origin.startsWith('ionic://') || origin.startsWith('http://localhost')) {
+    if (origin.startsWith('capacitor://') || origin.startsWith('ionic://') || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
       console.log('[CORS] Permitindo origem Capacitor/Ionic:', origin);
       return callback(null, true);
     }
