@@ -18,9 +18,13 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.REPLIT_DOMAIN || 'https://*.replit.dev'] 
-    : true,
+  origin: [
+    'https://facilities.grupoopus.com',
+    process.env.REPLIT_DOMAIN || 'https://*.replit.dev',
+    'http://localhost:5000',
+    'http://localhost:3000',
+    'http://localhost:3007',
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma'],
