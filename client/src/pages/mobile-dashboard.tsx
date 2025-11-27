@@ -64,7 +64,7 @@ export default function MobileDashboard() {
     let url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
     
     if (Capacitor.isNativePlatform()) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://52e46882-1982-4c39-ac76-706d618e696f-00-ga4lr9ry58vz.spock.replit.dev';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://c8f90883-b888-4535-9c0c-86ec4eb5f583-00-2pznlwckufqhz.janeway.replit.dev';
       url = baseUrl + url;
     }
     
