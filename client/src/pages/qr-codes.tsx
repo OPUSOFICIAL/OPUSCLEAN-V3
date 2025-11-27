@@ -77,9 +77,25 @@ export default function QrCodes() {
   const [selectedQrCodes, setSelectedQrCodes] = useState<string[]>([]);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [moduleColor, setModuleColor] = useState({ r: 30, g: 58, b: 138 });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Update moduleColor whenever activeClient or currentModule changes
+  useEffect(() => {
+    const moduleColors = activeClient?.moduleColors;
+    const moduleKey = currentModule as 'clean' | 'maintenance';
+    
+    let color = DEFAULT_MODULE_COLORS[moduleKey]?.primary || DEFAULT_MODULE_COLORS.clean.primary;
+    
+    if (moduleColors?.[moduleKey]?.primary) {
+      color = moduleColors[moduleKey].primary;
+    }
+    
+    setModuleColor(hexToRgb(color));
+    console.log(`[QR PDF] Cor do módulo ${moduleKey} atualizada:`, hexToRgb(color));
+  }, [activeClient, currentModule]);
 
   const { data: sites } = useQuery({
     queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
@@ -214,55 +230,85 @@ export default function QrCodes() {
     const pageWidth = 210;
     const pageHeight = 297;
     
-    const moduleColor = getModuleColor();
-    
     const qrSizeMM = sizeCm * 10;
     const borderMM = 8;
-    const logoHeaderMM = 12;
+    const padding = 6;
+    
+    // Dimensões melhoradas
     const qrWithBorderWidthMM = qrSizeMM + (borderMM * 2);
-    const qrWithBorderHeightMM = qrSizeMM + (borderMM * 2) + logoHeaderMM;
+    const headerHeightMM = 28;
+    const qrWithBorderHeightMM = qrSizeMM + (borderMM * 2) + headerHeightMM;
     const qrX = (pageWidth - qrWithBorderWidthMM) / 2;
-    const qrY = 50;
+    const qrY = 35;
     
+    // Background colorido com bordas arredondadas
     pdf.setFillColor(moduleColor.r, moduleColor.g, moduleColor.b);
-    pdf.roundedRect(qrX, qrY, qrWithBorderWidthMM, qrWithBorderHeightMM, 4, 4, 'F');
+    pdf.roundedRect(qrX, qrY, qrWithBorderWidthMM, qrWithBorderHeightMM, 3, 3, 'F');
     
+    // Header com logo
+    const headerBgY = qrY;
+    const headerBgHeight = headerHeightMM;
+    
+    // Logo e texto no header
     try {
       const logoDataUrl = await loadImage(aceleraLogo);
-      const logoAspectRatio = 4;
-      const logoWidth = qrWithBorderWidthMM - 10;
-      const logoHeight = logoWidth / logoAspectRatio;
-      const logoX = qrX + (qrWithBorderWidthMM - logoWidth) / 2;
-      const logoY = qrY + 3;
-      pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, Math.min(logoHeight, 10));
+      const logoMaxWidth = qrWithBorderWidthMM - (padding * 2);
+      const logoMaxHeight = headerBgHeight - (padding * 2);
+      const logoHeight = logoMaxHeight * 0.8;
+      const logoWidth = logoHeight * 4;
+      const logoX = qrX + (qrWithBorderWidthMM - Math.min(logoWidth, logoMaxWidth)) / 2;
+      const logoY = headerBgY + padding;
+      pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, Math.min(logoWidth, logoMaxWidth), logoHeight);
+      console.log('[QR PDF] Logo adicionada com sucesso ao header');
     } catch (error) {
+      console.log('[QR PDF] Usando texto em vez de logo');
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(8);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('ACELERA FULL FACILITIES', qrX + qrWithBorderWidthMM / 2, qrY + 8, { align: 'center' });
+      pdf.text('ACELERA FULL FACILITIES', qrX + qrWithBorderWidthMM / 2, headerBgY + headerBgHeight / 2 + 2, { align: 'center' });
     }
     
+    // QR Code em fundo branco
+    const qrInnerY = qrY + headerHeightMM;
     pdf.setFillColor(255, 255, 255);
-    pdf.roundedRect(qrX + borderMM, qrY + logoHeaderMM + 2, qrSizeMM, qrSizeMM, 2, 2, 'F');
+    pdf.rect(qrX + borderMM - 1, qrInnerY + borderMM - 1, qrSizeMM + 2, qrSizeMM + 2);
     
-    pdf.addImage(qrCodeDataUrl, 'PNG', qrX + borderMM, qrY + logoHeaderMM + 2, qrSizeMM, qrSizeMM);
+    pdf.addImage(qrCodeDataUrl, 'PNG', qrX + borderMM, qrInnerY + borderMM, qrSizeMM, qrSizeMM);
     
-    const textStartY = qrY + qrWithBorderHeightMM + 12;
+    // Informações abaixo do QR
+    const infoStartY = qrY + qrWithBorderHeightMM + 10;
+    const lineHeight = 6;
     
+    // Nome do ponto
     pdf.setTextColor(30, 41, 59);
-    pdf.setFontSize(14);
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(point.name, pageWidth / 2, textStartY, { align: 'center' });
+    pdf.text(point.name, pageWidth / 2, infoStartY, { align: 'center' });
     
-    pdf.setTextColor(100, 116, 139);
-    pdf.setFontSize(10);
+    // Código
+    pdf.setTextColor(80, 92, 110);
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Código: ${point.code}`, pageWidth / 2, textStartY + 8, { align: 'center' });
+    pdf.text(`Código: ${point.code}`, pageWidth / 2, infoStartY + lineHeight + 3, { align: 'center' });
     
+    // Zona/Local
     if (point.zoneName) {
-      pdf.setFontSize(9);
-      pdf.text(`Local: ${point.zoneName}`, pageWidth / 2, textStartY + 15, { align: 'center' });
+      pdf.setTextColor(120, 130, 145);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text(`Local: ${point.zoneName}`, pageWidth / 2, infoStartY + (lineHeight + 3) * 2, { align: 'center' });
     }
+    
+    // Separador visual inferior
+    pdf.setDrawColor(moduleColor.r, moduleColor.g, moduleColor.b);
+    pdf.setLineWidth(0.5);
+    const separatorY = pageHeight - 15;
+    pdf.line(20, separatorY, pageWidth - 20, separatorY);
+    
+    pdf.setTextColor(150, 160, 170);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Acelera Full Facilities', pageWidth / 2, separatorY + 5, { align: 'center' });
     
     pdf.save(`qr_${point.name.replace(/\s+/g, '_')}_${sizeCm}cm.pdf`);
   };
