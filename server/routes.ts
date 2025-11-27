@@ -3520,7 +3520,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
       
+      // Debug log para diagnosticar problemas de login no APK
+      console.log('[LOGIN DEBUG] Origin:', req.get('origin'));
+      console.log('[LOGIN DEBUG] User-Agent:', req.get('user-agent'));
+      console.log('[LOGIN DEBUG] Body received:', { username: username || '(empty)', hasPassword: !!password });
+      
       if (!username || !password) {
+        console.log('[LOGIN DEBUG] Missing credentials - username:', !!username, 'password:', !!password);
         return res.status(400).json({ message: "Username and password are required" });
       }
 
@@ -3530,12 +3536,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.getUserByEmail(username);
       }
       
+      console.log('[LOGIN DEBUG] User found:', !!user, user ? `(id: ${user.id}, authProvider: ${user.authProvider})` : '');
+      
       // Always hash even if user not found (prevent timing attacks)
       const dummyHash = '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqR.NvJ8Om';
       const hashToCompare = user?.password || dummyHash;
       const isValidPassword = await bcrypt.compare(password, hashToCompare);
       
+      console.log('[LOGIN DEBUG] Password valid:', isValidPassword);
+      
       if (!user || !isValidPassword) {
+        console.log('[LOGIN DEBUG] FAILED - user found:', !!user, 'password valid:', isValidPassword);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
