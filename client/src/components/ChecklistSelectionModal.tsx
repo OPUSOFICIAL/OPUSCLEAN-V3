@@ -9,7 +9,7 @@ import { Capacitor } from "@capacitor/core";
 // Get API base URL for mobile
 function getApiBaseUrl(): string {
   if (Capacitor.isNativePlatform()) {
-    return import.meta.env.VITE_API_BASE_URL || 'https://c8f90883-b888-4535-9c0c-86ec4eb5f583-00-2pznlwckufqhz.janeway.replit.dev';
+    return import.meta.env.VITE_API_BASE_URL || 'https://facilities.grupoopus.com';
   }
   return '';
 }

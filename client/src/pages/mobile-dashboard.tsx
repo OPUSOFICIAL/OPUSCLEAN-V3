@@ -64,7 +64,7 @@ export default function MobileDashboard() {
     let url = `/api/customers/${effectiveCustomerId}/work-orders?${params.toString()}`;
     
     if (Capacitor.isNativePlatform()) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://c8f90883-b888-4535-9c0c-86ec4eb5f583-00-2pznlwckufqhz.janeway.replit.dev';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://facilities.grupoopus.com';
       url = baseUrl + url;
     }
     
