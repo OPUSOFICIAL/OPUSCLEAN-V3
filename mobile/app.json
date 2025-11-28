@@ -56,7 +56,8 @@
           "cameraPermission": "Permitir acesso a camera para tirar fotos nas ordens de servico"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-asset"
     ],
     "extra": {
       "apiUrl": "https://facilities.grupoopus.com",
