@@ -66,30 +66,54 @@ O app móvel foi reconstruído usando Expo React Native para melhor experiência
 
 **Estrutura do projeto mobile:**
 - `/mobile` - Projeto Expo separado
-- `/mobile/src/db/database.ts` - Schema SQLite e operações CRUD
-- `/mobile/src/services/syncService.ts` - Sincronização com servidor
+- `/mobile/App.tsx` - Navegação principal e gerenciamento de estado
+- `/mobile/src/db/database.ts` - Schema SQLite completo e operações CRUD
+- `/mobile/src/services/syncService.ts` - Sincronização bidirecional com servidor
+- `/mobile/src/api/client.ts` - Cliente HTTP para todas as operações da API
 - `/mobile/src/hooks/` - Hooks (useAuth, useNetwork, useSync, useWorkOrders)
-- `/mobile/src/screens/` - Telas (Login, CustomerSelect, WorkOrders)
+- `/mobile/src/screens/` - Telas completas:
+  - `LoginScreen.tsx` - Autenticação
+  - `CustomerSelectScreen.tsx` - Seleção de cliente (multi-tenant)
+  - `WorkOrdersScreen.tsx` - Lista de OSs com status de sync
+  - `WorkOrderExecuteScreen.tsx` - Execução de OS com checklist dinâmico
+  - `QRScannerScreen.tsx` - Scanner QR para identificação de pontos
+- `/mobile/src/utils/imageUtils.ts` - Captura e compressão de fotos
 
 **Tecnologias:**
 - Expo SDK 52
 - Expo SQLite (armazenamento local)
 - Expo Network (detecção de conectividade)
 - Expo Secure Store (credenciais)
+- Expo Image Picker (captura de fotos)
 - React Native
 - TypeScript
 
-**Funcionalidades offline:**
-- SQLite local com tabelas: work_orders, qr_codes, users, pending_sync
-- Sincronização automática a cada 1 minuto quando online
-- Fila de pendências para alterações offline (concluir/pausar OS)
-- Baixa OSs abertas/pausadas de hoje + próximo dia
-- Exclui OSs concluídas após sincronização
+**Funcionalidades implementadas:**
+- Checklist dinâmico com tipos: boolean, text, number, select, checkbox, photo
+- Captura de fotos com compressão automática (max 1200x1200, quality 0.7)
+- Pausar OS com motivo obrigatório e fotos opcionais
+- Retomar OS pausada
+- Scanner QR para identificar pontos/zonas e listar OSs associadas
+- Validação de campos obrigatórios no checklist
 
-**Build APK:**
-- Instruções: `/mobile/INSTRUCOES_BUILD_APK.md`
-- Scripts: `gerar-apk.bat` (Windows), `gerar-apk.sh` (Mac/Linux)
+**Funcionalidades offline:**
+- SQLite local com tabelas: work_orders, qr_codes, users, pending_sync, checklist_templates, checklist_executions, work_order_photos, work_order_comments
+- Sincronização automática a cada 1 minuto quando online
+- Fila de pendências para alterações offline (iniciar/concluir/pausar/retomar OS)
+- Sincronização de fotos, execuções de checklist e comentários
+- Baixa OSs abertas/pausadas de hoje + próximo dia
+- Baixa checklists templates associados às OSs
+- Exclui dados sincronizados para liberar espaço
+
+**Build APK (Local no PC - Recomendado):**
+- Instruções completas: `/mobile/INSTRUCOES_BUILD_APK.md`
+- Requer: Node.js 18-20 LTS, Java JDK 17, Android SDK 34/35
+- Passos: `npm install` → `npx expo prebuild` → `./gradlew assembleDebug`
+- APK gerado em: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+**Build APK (Nuvem - Alternativa):**
 - Requer: Node.js 18+, conta Expo gratuita
+- Passos: `npm install -g eas-cli` → `eas login` → `eas build --platform android --profile preview`
 - Build na nuvem via EAS Build (5-15 min)
 
 ### Frontend Framework

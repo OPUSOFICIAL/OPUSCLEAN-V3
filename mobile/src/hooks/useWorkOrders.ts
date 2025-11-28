@@ -23,7 +23,7 @@ export function useWorkOrders() {
 
   const completeWorkOrder = useCallback(async (id: string, notes?: string) => {
     try {
-      await db.updateWorkOrderStatus(id, 'completed', notes);
+      await db.updateWorkOrderStatus(id, 'completed', 'complete', { notes });
       await loadWorkOrders();
       return true;
     } catch (err) {
@@ -34,11 +34,33 @@ export function useWorkOrders() {
 
   const pauseWorkOrder = useCallback(async (id: string, notes?: string) => {
     try {
-      await db.updateWorkOrderStatus(id, 'paused', notes);
+      await db.updateWorkOrderStatus(id, 'paused', 'pause', { notes });
       await loadWorkOrders();
       return true;
     } catch (err) {
       console.error('Erro ao pausar OS:', err);
+      return false;
+    }
+  }, [loadWorkOrders]);
+
+  const startWorkOrder = useCallback(async (id: string) => {
+    try {
+      await db.updateWorkOrderStatus(id, 'in_progress', 'start');
+      await loadWorkOrders();
+      return true;
+    } catch (err) {
+      console.error('Erro ao iniciar OS:', err);
+      return false;
+    }
+  }, [loadWorkOrders]);
+
+  const resumeWorkOrder = useCallback(async (id: string) => {
+    try {
+      await db.updateWorkOrderStatus(id, 'in_progress', 'resume');
+      await loadWorkOrders();
+      return true;
+    } catch (err) {
+      console.error('Erro ao retomar OS:', err);
       return false;
     }
   }, [loadWorkOrders]);
@@ -62,6 +84,8 @@ export function useWorkOrders() {
     refresh,
     completeWorkOrder,
     pauseWorkOrder,
+    startWorkOrder,
+    resumeWorkOrder,
     getOrdersByStatus,
     getOrdersByDate,
   };
