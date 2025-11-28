@@ -1,64 +1,78 @@
 # Instruções para Gerar o APK - Acelera Facilities
 
-## Resumo
-O projeto Android está configurado para carregar a aplicação diretamente do servidor Replit.
-O APK conectará automaticamente ao banco de dados atual.
+## Configuração Atual
+- **Modo:** LOCAL (assets embutidos no APK)
+- **API de Produção:** `https://facilities.grupoopus.com`
+- **Funcionamento Offline:** Sim (dados salvos em cache local)
 
-## URL do Servidor
-```
-https://b33715f7-23a2-49e4-bc36-d68327f21b3d-00-1ehjl4tukkmmt.picard.replit.dev
-```
+## Credenciais de Teste
+- **Usuário:** admin
+- **Senha:** admin123
 
-## Opção 1: Compilar no Android Studio (Recomendado)
+---
 
-### Pré-requisitos
-- Android Studio (versão mais recente)
-- JDK 17 ou superior
-- Android SDK (API 35)
+## PASSO 1: Baixar o Projeto
 
-### Passos
+1. No Replit, clique nos três pontos (...) no painel de arquivos
+2. Selecione "Download as zip"
+3. Extraia o arquivo no seu computador
 
-1. **Baixe o projeto Android**
-   - Faça download do arquivo `android-project.tar.gz` deste projeto
-   - Ou copie a pasta `android/` inteira
+---
 
-2. **Abra no Android Studio**
-   ```bash
-   # Extraia o arquivo
-   tar -xzvf android-project.tar.gz
-   
-   # Abra o Android Studio e selecione:
-   # File > Open > Selecione a pasta "android"
-   ```
+## PASSO 2: Compilar o Frontend
 
-3. **Aguarde o Gradle sincronizar**
-   - O Android Studio vai baixar todas as dependências automaticamente
-   - Isso pode levar alguns minutos na primeira vez
-
-4. **Gere o APK Debug (para testes)**
-   - Menu: Build > Build Bundle(s) / APK(s) > Build APK(s)
-   - O APK será gerado em: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-5. **Gere o APK Release (para produção)**
-   - Menu: Build > Generate Signed Bundle / APK
-   - Selecione APK
-   - Crie ou use uma keystore existente
-   - O APK será gerado em: `android/app/build/outputs/apk/release/app-release.apk`
-
-## Opção 2: Compilar via Linha de Comando
+Abra o terminal na pasta do projeto e execute:
 
 ```bash
-# Entre na pasta android
-cd android
+# Instalar dependências
+npm install
 
-# Dê permissão ao gradlew
-chmod +x gradlew
-
-# Compile APK Debug
-./gradlew assembleDebug
-
-# APK estará em: app/build/outputs/apk/debug/app-debug.apk
+# Compilar o frontend
+npm run build
 ```
+
+Isso vai gerar a pasta `dist/public` com os arquivos do app.
+
+---
+
+## PASSO 3: Sincronizar o Android
+
+```bash
+# Sincronizar com o projeto Android
+npx cap sync android
+```
+
+Isso copia os arquivos compilados para dentro do projeto Android.
+
+---
+
+## PASSO 4: Abrir no Android Studio
+
+```bash
+# Abrir projeto no Android Studio (opcional)
+npx cap open android
+```
+
+Ou abra manualmente a pasta `android/` no Android Studio.
+
+---
+
+## PASSO 5: Gerar o APK
+
+No Android Studio:
+
+1. Aguarde o Gradle sincronizar
+2. Vá em: **Build** → **Build Bundle(s) / APK(s)** → **Build APK(s)**
+3. O APK estará em: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+### Para APK de Produção (Assinado):
+
+1. Vá em: **Build** → **Generate Signed Bundle / APK**
+2. Selecione **APK**
+3. Crie uma keystore ou use uma existente
+4. O APK estará em: `android/app/build/outputs/apk/release/app-release.apk`
+
+---
 
 ## Configurações do App
 
@@ -69,39 +83,50 @@ chmod +x gradlew
 | Min SDK | 23 (Android 6.0) |
 | Target SDK | 35 (Android 14) |
 | Versão | 1.0 |
+| API | https://facilities.grupoopus.com |
 
-## Credenciais de Teste
-
-- **Usuário:** admin
-- **Senha:** admin123
+---
 
 ## Funcionalidades do APK
 
-O APK terá as mesmas funcionalidades da versão web:
 - Login com autenticação JWT
 - Dashboard de ordens de serviço
 - Criação e edição de OS
 - QR Code scanner
 - Gestão de locais e zonas
 - Módulos Clean e Maintenance
-- Sincronização em tempo real
+- **Modo Offline:** Dados salvos localmente e sincronizados quando online
+
+---
 
 ## Troubleshooting
 
-### Erro de conexão
-- Verifique se o dispositivo tem acesso à internet
-- Certifique-se que o servidor Replit está rodando
+### Erro: "SDK not found"
+- Clique em "Install" quando o Android Studio pedir para baixar o SDK
 
-### Tela branca
-- Aguarde alguns segundos para carregar
-- Verifique a conexão de rede
+### Erro: "Gradle sync failed"
+- Verifique se o Android Studio está atualizado
+- Tente: **File** → **Sync Project with Gradle Files**
 
-### Erro de certificado SSL
-- O app está configurado para aceitar certificados do Replit
-- Se persistir, verifique o arquivo `network_security_config.xml`
+### Erro: "Unable to resolve dependency"
+- Verifique sua conexão de internet
+- Tente: **File** → **Invalidate Caches / Restart**
 
-## Suporte
+### App não conecta à API
+- Verifique se o servidor `https://facilities.grupoopus.com` está online
+- O app precisa de internet para sincronizar dados
 
-Para alterar a URL do servidor, edite o arquivo:
-- `capacitor.config.ts` - linha com `REPLIT_SERVER_URL`
-- Execute `npx cap sync android` após a alteração
+---
+
+## Resumo dos Comandos
+
+```bash
+# No seu computador local:
+npm install
+npm run build
+npx cap sync android
+npx cap open android
+```
+
+Depois, no Android Studio:
+**Build** → **Build APK(s)**
