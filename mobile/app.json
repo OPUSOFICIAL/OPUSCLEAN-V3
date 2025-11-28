@@ -48,9 +48,11 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://facilities.grupoopus.com"
+      "apiUrl": "https://facilities.grupoopus.com",
+      "eas": {
+        "projectId": "COLE_SEU_PROJECT_ID_AQUI"
+      }
     },
-    "owner": null,
     "scheme": "opus-facilities"
   }
 }
