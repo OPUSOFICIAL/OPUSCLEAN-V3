@@ -38,6 +38,13 @@
         {
           "cameraPermission": "Permitir acesso a camera para escanear QR codes"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir acesso as fotos para anexar nas ordens de servico",
+          "cameraPermission": "Permitir acesso a camera para tirar fotos nas ordens de servico"
+        }
       ]
     ],
     "extra": {
