@@ -31,8 +31,6 @@
       ]
     },
     "plugins": [
-      "expo-sqlite",
-      "expo-secure-store",
       [
         "expo-camera",
         {
@@ -56,3 +54,4 @@
     "scheme": "acelera-facilities"
   }
 }
+e
