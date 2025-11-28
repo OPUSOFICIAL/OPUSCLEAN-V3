@@ -64,6 +64,15 @@ The project is configured for the Replit cloud environment, with automated Postg
 ### Mobile (Android APK - Expo React Native)
 O app móvel foi reconstruído usando Expo React Native para melhor experiência offline e build simplificado.
 
+**Versões (Expo SDK 54 - Novembro 2025):**
+- Expo SDK 54.0.0
+- React Native 0.81.2
+- React 19.1.0
+- Kotlin 2.0.21
+- compileSdkVersion/targetSdkVersion: 35 (Android 16)
+- minSdkVersion: 24
+- Suporte a 16KB page size (obrigatório Google Play Nov/2025)
+
 **Estrutura do projeto mobile:**
 - `/mobile` - Projeto Expo separado
 - `/mobile/App.tsx` - Navegação principal e gerenciamento de estado
@@ -80,17 +89,18 @@ O app móvel foi reconstruído usando Expo React Native para melhor experiência
 - `/mobile/src/utils/imageUtils.ts` - Captura e compressão de fotos
 
 **Tecnologias:**
-- Expo SDK 52
-- Expo SQLite (armazenamento local)
-- Expo Network (detecção de conectividade)
-- Expo Secure Store (credenciais)
-- Expo Image Picker (captura de fotos)
-- React Native
-- TypeScript
+- Expo SDK 54 (React Native 0.81, React 19)
+- Expo SQLite v16 (armazenamento local)
+- @react-native-community/netinfo (detecção de conectividade)
+- Expo Secure Store v15 (credenciais)
+- Expo Image Picker v17 (captura de fotos)
+- Expo Image Manipulator v14 (compressão)
+- Expo File System v19 (legacy API)
+- TypeScript 5.8
 
 **Funcionalidades implementadas:**
 - Checklist dinâmico com tipos: boolean, text, number, select, checkbox, photo
-- Captura de fotos com compressão automática (max 1200x1200, quality 0.7)
+- Captura de fotos com compressão automática (max 1920x1920, quality 0.6)
 - Pausar OS com motivo obrigatório e fotos opcionais
 - Retomar OS pausada
 - Scanner QR para identificar pontos/zonas e listar OSs associadas
@@ -107,12 +117,12 @@ O app móvel foi reconstruído usando Expo React Native para melhor experiência
 
 **Build APK (Local no PC - Recomendado):**
 - Instruções completas: `/mobile/INSTRUCOES_BUILD_APK.md`
-- Requer: Node.js 18-20 LTS, Java JDK 17, Android SDK 34/35
-- Passos: `npm install` → `npx expo prebuild` → `./gradlew assembleDebug`
-- APK gerado em: `android/app/build/outputs/apk/debug/app-debug.apk`
+- Requer: Node.js 20+ LTS, Java JDK 17, Android SDK 35
+- Passos: `npm install` → `npx expo install --fix` → `npx expo prebuild --clean` → `./gradlew assembleRelease`
+- APK gerado em: `android/app/build/outputs/apk/release/app-release.apk`
 
 **Build APK (Nuvem - Alternativa):**
-- Requer: Node.js 18+, conta Expo gratuita
+- Requer: Node.js 20+, conta Expo gratuita
 - Passos: `npm install -g eas-cli` → `eas login` → `eas build --platform android --profile preview`
 - Build na nuvem via EAS Build (5-15 min)
 

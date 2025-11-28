@@ -2,10 +2,11 @@
   "expo": {
     "name": "Acelera Facilities",
     "slug": "acelera-facilities",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -32,10 +33,13 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "1.9.25",
+            "kotlinVersion": "2.0.21",
             "compileSdkVersion": 35,
-            "targetSdkVersion": 34,
-            "buildToolsVersion": "35.0.0"
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "buildToolsVersion": "35.0.0",
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
           }
         }
       ],
@@ -51,7 +55,8 @@
           "photosPermission": "Permitir acesso as fotos para anexar nas ordens de servico",
           "cameraPermission": "Permitir acesso a camera para tirar fotos nas ordens de servico"
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "extra": {
       "apiUrl": "https://facilities.grupoopus.com",

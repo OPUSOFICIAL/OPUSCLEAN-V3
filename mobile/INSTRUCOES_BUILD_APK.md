@@ -1,15 +1,28 @@
 # Acelera Facilities - Instrucoes para Gerar APK
 
+## Expo SDK 54 | React Native 0.81 | React 19
+
+Este projeto usa as versoes mais recentes do Expo, garantindo:
+- Suporte a 16KB page size (obrigatorio Google Play a partir de Nov/2025)
+- Builds iOS 10x mais rapidos
+- React 19 com melhorias de performance
+- Kotlin 2.0 e Android 16 support
+
+---
+
 ## Opcao 1: Build LOCAL no seu PC (Recomendado)
 
 ### Pre-requisitos
 
-1. **Node.js 18 ou 20 LTS** - https://nodejs.org/ (NAO use Node 22+)
+1. **Node.js 20 LTS** - https://nodejs.org/
+   - NAO use Node 18 (end of life) ou Node 22+ (experimental)
+   
 2. **Java JDK 17** - https://adoptium.net/ (Temurin 17)
+
 3. **Android Studio** - https://developer.android.com/studio
    - Abra o Android Studio
-   - Vá em Tools → SDK Manager
-   - Instale: Android SDK 34 ou 35, Build Tools 35.0.0
+   - Va em Tools > SDK Manager
+   - Instale: Android SDK 35, Build Tools 35.0.0, NDK 27.1.x
 
 ### Configuracao das Variaveis de Ambiente
 
@@ -42,7 +55,7 @@ Execute: `source ~/.bashrc`
 ### Passo a Passo Completo
 
 **1. Baixar o projeto do Replit:**
-- Clique nos 3 pontinhos no topo → "Download as zip"
+- Clique nos 3 pontinhos no topo > "Download as zip"
 - Extraia o zip
 
 **2. Abrir terminal na pasta mobile:**
@@ -53,39 +66,47 @@ cd caminho/para/pasta/mobile
 **3. Limpar e instalar dependencias:**
 ```bash
 # Remover arquivos antigos se existirem
-rm -rf node_modules package-lock.json android ios
+rm -rf node_modules package-lock.json android ios .expo
 
 # Instalar dependencias
 npm install
 
-# Corrigir versoes (IMPORTANTE!)
+# Corrigir versoes automaticamente
 npx expo install --fix
 ```
 
-**4. Gerar projeto Android nativo:**
+**4. Gerar projeto Android nativo (Expo SDK 54):**
 ```bash
 npx expo prebuild --platform android --clean
 ```
 
-Isso cria a pasta `android/` com todo o codigo nativo.
+Isso cria a pasta `android/` com todo o codigo nativo, incluindo:
+- Kotlin 2.0.21 configurado automaticamente
+- NDK 27 para suporte a 16KB page size
+- AGP 8.5+ para Android 16
+- New Architecture habilitada
+
+**IMPORTANTE:** Os arquivos `android/gradle.properties` e `android/build.gradle` que estao no repositorio servem apenas como referencia. O comando `expo prebuild --clean` regenera tudo usando as configuracoes do `app.json`.
 
 **5. Compilar o APK:**
 
 **Windows:**
 ```bash
 cd android
-.\gradlew.bat assembleDebug
+.\gradlew.bat clean
+.\gradlew.bat assembleRelease
 ```
 
 **Mac/Linux:**
 ```bash
 cd android
-./gradlew assembleDebug
+./gradlew clean
+./gradlew assembleRelease
 ```
 
 **6. APK gerado em:**
 ```
-android/app/build/outputs/apk/debug/app-debug.apk
+android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ---
@@ -119,72 +140,27 @@ which java
 /usr/libexec/java_home -V
 ```
 
-### Erro: "compileReleaseKotlin FAILED" ou "Kotlin version 1.9.25"
+### Erro: "compileReleaseKotlin FAILED" ou versao do Kotlin
 
-**IMPORTANTE:** O Compose Compiler 1.5.14 EXIGE Kotlin 1.9.24 exatamente.
-
-O projeto ja vem configurado com Kotlin 1.9.24 em:
+O Expo SDK 54 usa **Kotlin 2.0.21** por padrao. Isso ja esta configurado em:
 - `app.json` (expo-build-properties)
-- `android/build.gradle` (fallback)
 - `android/gradle.properties`
 
-**Se ainda aparecer erro de versao 1.9.25, faca isso:**
-
-1. **Apague a pasta android completamente:**
-```bash
-rm -rf android
-```
-
-2. **Verifique se gradle.properties esta correto antes do prebuild:**
-```bash
-mkdir -p android
-cat > android/gradle.properties << 'EOF'
-org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
-org.gradle.daemon=true
-org.gradle.parallel=true
-android.useAndroidX=true
-android.enableJetifier=true
-android.kotlinVersion=1.9.24
-android.compileSdkVersion=35
-android.targetSdkVersion=34
-android.minSdkVersion=24
-android.buildToolsVersion=35.0.0
-android.nonTransitiveRClass=true
-EOF
-```
-
-3. **Gere o projeto Android:**
-```bash
-npx expo prebuild --platform android --clean
-```
-
-4. **Verifique se a versao esta correta:**
-```bash
-grep -r "1.9.25" android/
-# Se encontrar algo, substitua por 1.9.24:
-# Windows: Use "Localizar e Substituir" do VS Code
-# Mac/Linux: sed -i 's/1.9.25/1.9.24/g' android/build.gradle
-```
-
-5. **Compile:**
-```bash
-cd android
-./gradlew clean
-./gradlew assembleDebug
-```
+Se houver conflito:
+1. Apague a pasta android: `rm -rf android`
+2. Rode: `npx expo prebuild --platform android --clean`
+3. Compile novamente
 
 ### Erro de memoria durante build
 
-Edite `android/gradle.properties` e adicione:
+O projeto ja esta configurado com memoria aumentada em `android/gradle.properties`:
 ```properties
 org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m
-org.gradle.daemon=true
-org.gradle.parallel=true
 ```
 
 ### Erro: "Unable to find expo package"
 
-Execute novamente:
+Execute:
 ```bash
 npx expo install --fix
 ```
@@ -193,7 +169,7 @@ npx expo install --fix
 
 ## Build de Release (Producao)
 
-Para gerar APK assinado para distribuir:
+Para gerar APK assinado para distribuir na Play Store:
 
 **1. Gerar keystore:**
 ```bash
@@ -250,14 +226,18 @@ android/app/build/outputs/apk/release/app-release.apk
 
 ## Opcao 2: Build na Nuvem (EAS Build)
 
-Se nao quiser instalar Android Studio:
+Se nao quiser instalar Android Studio no PC:
 
 ```bash
 cd mobile
 rm -rf node_modules package-lock.json
 npm install
+
+# Instalar e logar no EAS
 npm install -g eas-cli
 eas login
+
+# Build na nuvem
 eas build --platform android --profile preview --clear-cache
 ```
 
@@ -282,7 +262,7 @@ O app conecta automaticamente em:
 https://facilities.grupoopus.com
 ```
 
-Para alterar, edite `app.json` → `extra.apiUrl`
+Para alterar, edite `app.json` > `extra.apiUrl`
 
 ---
 
@@ -293,3 +273,33 @@ O app funciona 100% offline:
 - Armazena OSs localmente em SQLite
 - Permite concluir/pausar OSs offline
 - Envia tudo ao servidor quando reconectar
+
+---
+
+## Especificacoes Tecnicas
+
+| Item | Versao |
+|------|--------|
+| Expo SDK | 54 |
+| React Native | 0.81.2 |
+| React | 19.1.0 |
+| Kotlin | 2.0.21 |
+| compileSdkVersion | 35 |
+| targetSdkVersion | 35 |
+| minSdkVersion | 24 |
+| Java | 17 |
+| Node.js | 20+ |
+
+---
+
+## Recursos do App
+
+- Login com autenticacao JWT
+- Lista de Ordens de Servico
+- Execucao de OS com checklist dinamico
+- Tipos de checklist: boolean, text, number, select, checkbox, photo
+- Pausar/Retomar OS com motivo e fotos
+- Scanner QR para identificar pontos/zonas
+- Upload de fotos com compressao automatica
+- Sincronizacao offline-first com SQLite
+- Fila de pendencias para envio quando online

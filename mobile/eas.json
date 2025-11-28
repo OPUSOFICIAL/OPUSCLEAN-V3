@@ -1,20 +1,35 @@
 {
   "cli": {
-    "version": ">= 13.0.0"
+    "version": ">= 15.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "preview": {
       "android": {
         "buildType": "apk",
-        "image": "latest"
+        "image": "latest",
+        "env": {
+          "NODE_ENV": "production"
+        }
       },
       "distribution": "internal"
     },
     "production": {
       "android": {
         "buildType": "app-bundle",
-        "image": "latest"
+        "image": "latest",
+        "env": {
+          "NODE_ENV": "production"
+        }
       }
+    },
+    "development": {
+      "android": {
+        "buildType": "apk",
+        "developmentClient": true,
+        "image": "latest"
+      },
+      "distribution": "internal"
     }
   }
 }
