@@ -15,11 +15,6 @@
     "db:import": "tsx scripts/import-dump.ts"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.4",
-    "@capacitor/camera": "^7.0.2",
-    "@capacitor/cli": "^7.4.4",
-    "@capacitor/core": "^7.4.4",
-    "@capacitor/network": "^7.0.2",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@radix-ui/react-accordion": "^1.2.4",
