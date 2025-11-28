@@ -1,4 +1,4 @@
-import * as Network from 'expo-network';
+import NetInfo from '@react-native-community/netinfo';
 import * as db from '../db/database';
 import * as api from '../api/client';
 import { SyncStatus, User, ChecklistAnswer, CapturedPhoto } from '../types';
@@ -8,7 +8,7 @@ let syncInterval: ReturnType<typeof setInterval> | null = null;
 
 export async function checkConnectivity(): Promise<boolean> {
   try {
-    const state = await Network.getNetworkStateAsync();
+    const state = await NetInfo.fetch();
     return state.isConnected === true && state.isInternetReachable === true;
   } catch {
     return false;

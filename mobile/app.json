@@ -20,9 +20,6 @@
         "backgroundColor": "#3B82F6"
       },
       "package": "com.opusfacilities",
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
-      "minSdkVersion": 24,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.INTERNET",
@@ -54,4 +51,3 @@
     "scheme": "acelera-facilities"
   }
 }
-e
