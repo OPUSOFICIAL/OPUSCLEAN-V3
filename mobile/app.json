@@ -20,10 +20,14 @@
         "backgroundColor": "#3B82F6"
       },
       "package": "com.opusfacilities",
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE"
       ]
     },
     "plugins": [
