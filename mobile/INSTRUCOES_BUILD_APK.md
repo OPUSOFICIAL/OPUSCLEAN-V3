@@ -1,248 +1,257 @@
-# OPUS Facilities - Instrucoes para Gerar APK
+# Acelera Facilities - Instrucoes para Gerar APK
 
 ## Opcao 1: Build LOCAL no seu PC (Recomendado)
 
-### Pre-requisitos para Build Local
+### Pre-requisitos
 
 1. **Node.js 18 ou 20 LTS** - https://nodejs.org/ (NAO use Node 22+)
 2. **Java JDK 17** - https://adoptium.net/ (Temurin 17)
 3. **Android Studio** - https://developer.android.com/studio
-   - Instale o Android SDK (API 34/35)
-   - Configure a variavel ANDROID_HOME
+   - Abra o Android Studio
+   - Vá em Tools → SDK Manager
+   - Instale: Android SDK 34 ou 35, Build Tools 35.0.0
 
 ### Configuracao das Variaveis de Ambiente
 
-#### Windows
+#### Windows (PowerShell como Admin)
 
-Adicione ao PATH do sistema:
-```
-JAVA_HOME = C:\Program Files\Eclipse Adoptium\jdk-17.x.x.x-hotspot
-ANDROID_HOME = C:\Users\SEU_USUARIO\AppData\Local\Android\Sdk
+```powershell
+# Definir variaveis de ambiente permanentemente
+[System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot", "User")
+[System.Environment]::SetEnvironmentVariable("ANDROID_HOME", "$env:LOCALAPPDATA\Android\Sdk", "User")
+
+# Adicionar ao PATH
+$currentPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+$newPath = "$currentPath;%JAVA_HOME%\bin;%ANDROID_HOME%\platform-tools"
+[System.Environment]::SetEnvironmentVariable("Path", $newPath, "User")
 ```
 
-Adicione ao PATH:
-```
-%JAVA_HOME%\bin
-%ANDROID_HOME%\platform-tools
-```
+Reinicie o terminal depois!
 
 #### Mac/Linux
 
-Adicione ao `.bashrc` ou `.zshrc`:
+Adicione ao `~/.bashrc` ou `~/.zshrc`:
 ```bash
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
 export ANDROID_HOME=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools
+export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools/bin
 ```
 
-### Passo a Passo - Build Local
+Execute: `source ~/.bashrc`
 
-1. **Baixar o projeto** do Replit (Menu → Download as zip)
+### Passo a Passo Completo
 
-2. **Extrair e entrar na pasta mobile:**
+**1. Baixar o projeto do Replit:**
+- Clique nos 3 pontinhos no topo → "Download as zip"
+- Extraia o zip
+
+**2. Abrir terminal na pasta mobile:**
 ```bash
-cd mobile
-npm install
+cd caminho/para/pasta/mobile
 ```
 
-3. **Gerar o projeto Android nativo:**
+**3. Limpar e instalar dependencias:**
+```bash
+# Remover arquivos antigos se existirem
+rm -rf node_modules package-lock.json android ios
+
+# Instalar dependencias
+npm install
+
+# Corrigir versoes (IMPORTANTE!)
+npx expo install --fix
+```
+
+**4. Gerar projeto Android nativo:**
 ```bash
 npx expo prebuild --platform android --clean
 ```
 
-4. **Compilar o APK de Debug (para testes):**
+Isso cria a pasta `android/` com todo o codigo nativo.
+
+**5. Compilar o APK:**
+
+**Windows:**
+```bash
+cd android
+.\gradlew.bat assembleDebug
+```
+
+**Mac/Linux:**
 ```bash
 cd android
 ./gradlew assembleDebug
 ```
 
-No Windows, use:
-```bash
-cd android
-gradlew.bat assembleDebug
-```
-
-5. **O APK estara em:**
+**6. APK gerado em:**
 ```
 android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-### Build de Release (Producao)
+---
 
-Para gerar um APK de producao assinado:
+## Solucao de Problemas Comuns
 
-1. **Gere uma keystore:**
-```bash
-keytool -genkeypair -v -storetype PKCS12 -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
-```
+### Erro: "SDK location not found"
 
-2. **Mova a keystore para android/app/**
-
-3. **Edite android/gradle.properties:**
+Crie o arquivo `android/local.properties`:
 ```properties
-MYAPP_UPLOAD_STORE_FILE=my-upload-key.keystore
-MYAPP_UPLOAD_KEY_ALIAS=my-key-alias
-MYAPP_UPLOAD_STORE_PASSWORD=sua_senha
-MYAPP_UPLOAD_KEY_PASSWORD=sua_senha
+sdk.dir=C:\\Users\\SEU_USUARIO\\AppData\\Local\\Android\\Sdk
 ```
 
-4. **Compile o release:**
+No Mac:
+```properties
+sdk.dir=/Users/SEU_USUARIO/Library/Android/sdk
+```
+
+### Erro: "JAVA_HOME is set to an invalid directory"
+
+Verifique o caminho correto do Java:
+
+**Windows:**
+```powershell
+where java
+```
+
+**Mac/Linux:**
+```bash
+which java
+/usr/libexec/java_home -V
+```
+
+### Erro: "compileReleaseKotlin FAILED"
+
+O plugin `expo-build-properties` ja esta configurado no `app.json` com:
+- kotlinVersion: 1.9.24
+- compileSdkVersion: 35
+
+Se ainda der erro, limpe e reconstrua:
+```bash
+cd android
+./gradlew clean
+cd ..
+npx expo prebuild --platform android --clean
+cd android
+./gradlew assembleDebug
+```
+
+### Erro de memoria durante build
+
+Edite `android/gradle.properties` e adicione:
+```properties
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m
+org.gradle.daemon=true
+org.gradle.parallel=true
+```
+
+### Erro: "Unable to find expo package"
+
+Execute novamente:
+```bash
+npx expo install --fix
+```
+
+---
+
+## Build de Release (Producao)
+
+Para gerar APK assinado para distribuir:
+
+**1. Gerar keystore:**
+```bash
+keytool -genkeypair -v -storetype PKCS12 -keystore acelera-facilities.keystore -alias acelera-key -keyalg RSA -keysize 2048 -validity 10000
+```
+Guarde a senha que voce definir!
+
+**2. Mover keystore:**
+```bash
+mv acelera-facilities.keystore android/app/
+```
+
+**3. Configurar em `android/gradle.properties`:**
+```properties
+MYAPP_UPLOAD_STORE_FILE=acelera-facilities.keystore
+MYAPP_UPLOAD_KEY_ALIAS=acelera-key
+MYAPP_UPLOAD_STORE_PASSWORD=SUA_SENHA
+MYAPP_UPLOAD_KEY_PASSWORD=SUA_SENHA
+```
+
+**4. Editar `android/app/build.gradle`:**
+
+Procure a secao `android {` e adicione dentro dela:
+```gradle
+signingConfigs {
+    release {
+        storeFile file(MYAPP_UPLOAD_STORE_FILE)
+        storePassword MYAPP_UPLOAD_STORE_PASSWORD
+        keyAlias MYAPP_UPLOAD_KEY_ALIAS
+        keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+    }
+}
+buildTypes {
+    release {
+        signingConfig signingConfigs.release
+        minifyEnabled true
+        proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    }
+}
+```
+
+**5. Compilar release:**
 ```bash
 cd android
 ./gradlew assembleRelease
 ```
 
-5. **APK gerado em:**
+**6. APK em:**
 ```
 android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ---
 
-## Opcao 2: Build na Nuvem (Alternativa sem Android Studio)
+## Opcao 2: Build na Nuvem (EAS Build)
 
-### Pre-requisitos
+Se nao quiser instalar Android Studio:
 
-1. **Node.js 18+** - https://nodejs.org/
-2. **Conta Expo** - Criar em https://expo.dev/signup (gratis)
-
-### Passo a Passo
-
-1. **Baixar o projeto** do Replit
-
-2. **Preparar o projeto:**
 ```bash
 cd mobile
+rm -rf node_modules package-lock.json
 npm install
 npm install -g eas-cli
-```
-
-3. **Login no Expo:**
-```bash
 eas login
+eas build --platform android --profile preview --clear-cache
 ```
 
-4. **Configurar o projeto:**
-```bash
-eas build:configure
-```
-
-5. **Gerar APK na nuvem:**
-```bash
-eas build --platform android --profile preview
-```
-
-O APK sera gerado nos servidores do Expo (5-15 min) e voce recebera um link para download.
+O APK sera gerado na nuvem (5-15 min) e voce recebe link para download.
 
 ---
 
 ## Instalar no Celular
 
-1. Transfira o arquivo `.apk` para o celular
+1. Transfira o `.apk` para o celular (email, drive, cabo USB)
 2. Abra o arquivo no celular
-3. Permita instalacao de fontes desconhecidas se solicitado
+3. Permita "Fontes desconhecidas" se solicitado
 4. Instale e abra o app
+5. Faca login com suas credenciais
 
 ---
 
-## Funcionalidades do App
+## Servidor
 
-### Telas Disponveis
-
-1. **Login**: Autenticacao com usuario e senha
-2. **Selecao de Cliente**: Para usuarios multi-cliente
-3. **Lista de OSs**: Ordens de servico do dia
-4. **Execucao de OS**: 
-   - Checklist dinamico (boolean, texto, select, checkbox, foto)
-   - Captura de fotos com compressao automatica
-   - Pausar/retomar com motivo e fotos
-5. **Scanner QR**: Identificacao de pontos/zonas
-
-### Funcionalidades Offline
-
-O app funciona 100% offline:
-
-#### Quando ONLINE:
-- Sincroniza automaticamente a cada 1 minuto
-- Baixa OSs abertas/pausadas de hoje e amanha
-- Baixa QR codes e checklists do cliente
-- Envia alteracoes pendentes para o servidor
-
-#### Quando OFFLINE:
-- Exibe OSs salvas localmente
-- Permite concluir ou pausar OSs
-- Captura fotos e preenche checklists
-- Armazena tudo para sincronizar depois
-- Mostra indicador "Offline" e contagem de pendentes
-
-#### Ao Voltar ONLINE:
-- Sincroniza automaticamente
-- Envia OSs concluidas/pausadas com fotos
-- Envia execucoes de checklists
-- Exclui OSs concluidas do banco local
-- Atualiza lista com dados do servidor
-
----
-
-## Solucao de Problemas
-
-### "SDK location not found"
-
-Crie um arquivo `android/local.properties`:
-```
-sdk.dir=C:\\Users\\SEU_USUARIO\\AppData\\Local\\Android\\Sdk
-```
-
-### "JAVA_HOME is set to an invalid directory"
-
-Verifique se o JDK 17 esta instalado e a variavel esta correta.
-
-### Erro de memoria durante build
-
-Edite `android/gradle.properties`:
-```properties
-org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m
-```
-
-### "Build failed"
-- Verifique se tem Node.js 18+
-- Execute `npm install` novamente
-- Limpe cache: `cd android && ./gradlew clean`
-
-### "Login invalido no app"
-- Verifique se esta usando as credenciais corretas
-- Certifique-se de que o servidor esta acessivel
-- Verifique sua conexao com a internet
-
-### "App nao abre"
-- Desinstale versoes anteriores
-- Limpe cache do celular
-- Reinstale o APK
-
----
-
-## Configuracao do Servidor
-
-Por padrao, o app se conecta a:
+O app conecta automaticamente em:
 ```
 https://facilities.grupoopus.com
 ```
 
-Para alterar, edite o arquivo `app.json`:
-```json
-{
-  "expo": {
-    "extra": {
-      "apiUrl": "https://SEU_SERVIDOR.com"
-    }
-  }
-}
-```
+Para alterar, edite `app.json` → `extra.apiUrl`
 
 ---
 
-## Suporte
+## Funcionalidades Offline
 
-- Servidor de producao: https://facilities.grupoopus.com
-- Documentacao Expo: https://docs.expo.dev
-- Documentacao Android: https://developer.android.com/studio/build
+O app funciona 100% offline:
+- Sincroniza automaticamente quando online
+- Armazena OSs localmente em SQLite
+- Permite concluir/pausar OSs offline
+- Envia tudo ao servidor quando reconectar
