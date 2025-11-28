@@ -57,38 +57,39 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      let hostname = window.location.hostname;
-      let port = window.location.port;
+      const hostname = window.location.hostname || '';
+      const port = window.location.port || '';
       
-      // CRITICAL: Early validation - reject localhost and invalid hostnames immediately
-      if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '' || hostname === 'undefined') {
-        console.warn('[WS Client] Skipping WebSocket connection - invalid hostname in Replit environment:', hostname);
+      // CRITICAL: Comprehensive validation - reject any invalid values
+      const invalidValues = ['localhost', '127.0.0.1', '', 'undefined', 'null'];
+      
+      if (!hostname || invalidValues.includes(hostname) || invalidValues.includes(String(hostname))) {
+        console.warn('[WS Client] Skipping WebSocket - invalid hostname:', hostname);
         return null;
       }
       
-      // Validação adicional: se port é string 'undefined' ou port é undefined
-      if (port === 'undefined' || typeof port === 'undefined' || hostname.includes('undefined')) {
-        console.warn('[WS Client] Invalid port or hostname detected:', { hostname, port: typeof port });
+      // Check for undefined in hostname or port (as string or value)
+      if (String(hostname).includes('undefined') || String(port).includes('undefined')) {
+        console.warn('[WS Client] Skipping WebSocket - undefined detected:', { hostname, port });
         return null;
       }
       
-      // Determinar a porta apropriada
+      // Determine appropriate port
       let urlPort = '';
-      if (hostname.includes('.replit.dev') || hostname.includes('janeway.replit.dev')) {
-        // Ambiente Replit - sem porta
+      if (hostname.includes('.replit.dev') || hostname.includes('janeway.replit.dev') || hostname.includes('.repl.co')) {
+        // Replit environment - no port needed
         urlPort = '';
-      } else if (port && port !== '' && port !== '0') {
-        // Outros hostnames com porta explícita
+      } else if (port && port !== '' && port !== '0' && !isNaN(Number(port))) {
+        // Valid explicit port
         urlPort = `:${port}`;
       }
-      // else: sem porta
       
-      // Validar URL antes de usar
+      // Construct URL
       const wsUrl = `${protocol}//${hostname}${urlPort}/ws?token=${encodeURIComponent(token)}`;
       
-      // Dupla validação: garantir que não tem 'undefined' ou 'localhost' na URL
-      if (wsUrl.includes('undefined') || wsUrl.includes('localhost') || wsUrl.includes('//undefined')) {
-        console.warn('[WS Client] Invalid WebSocket URL - skipping connection:', wsUrl.substring(0, 50));
+      // Final validation - reject if URL contains any invalid patterns
+      if (wsUrl.includes('undefined') || wsUrl.includes('localhost') || wsUrl.includes('null') || wsUrl.includes(':NaN')) {
+        console.warn('[WS Client] Invalid WebSocket URL - skipping:', wsUrl.substring(0, 60));
         return null;
       }
       
