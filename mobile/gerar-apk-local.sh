@@ -9,6 +9,17 @@ echo "  Expo SDK 54 | React Native 0.81"
 echo "========================================"
 echo ""
 
+# Verificar caminho nao muito longo (limite do CMake)
+CURRENT_PATH=$(pwd)
+PATH_LEN=${#CURRENT_PATH}
+
+if [ $PATH_LEN -gt 80 ]; then
+    echo "[AVISO] Caminho atual tem $PATH_LEN caracteres."
+    echo "Se o build falhar com erros de CMake, mova para um caminho mais curto."
+    echo "Exemplo: /tmp/mobile ou ~/AceleraApp/mobile"
+    echo ""
+fi
+
 # Verificar Node.js
 if ! command -v node &> /dev/null; then
     echo "[ERRO] Node.js nao encontrado!"

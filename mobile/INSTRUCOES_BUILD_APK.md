@@ -10,6 +10,29 @@ Este projeto usa as versoes mais recentes do Expo, garantindo:
 
 ---
 
+## IMPORTANTE: Caminho Curto no Windows
+
+**O projeto DEVE estar em um caminho curto** (menos de 50 caracteres) para evitar erros de CMake.
+
+**ERRADO (caminho muito longo):**
+```
+C:\Users\Daniel Lacerda\Desktop\comp\ACELERAFACILITIES\ACELERAFACILITIES\mobile
+```
+
+**CORRETO (caminho curto):**
+```
+C:\AceleraApp
+```
+
+### Como mover o projeto:
+
+1. Crie a pasta `C:\AceleraApp`
+2. Copie APENAS a pasta `mobile` para `C:\AceleraApp\mobile`
+3. Abra o terminal em `C:\AceleraApp\mobile`
+4. Execute os comandos de build
+
+---
+
 ## Opcao 1: Build LOCAL no seu PC (Recomendado)
 
 ### Pre-requisitos
