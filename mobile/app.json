@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "OPUS Facilities",
-    "slug": "opus-facilities",
+    "name": "Acelera Facilities",
+    "slug": "acelera-facilities",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -53,6 +53,6 @@
         "projectId": "COLE_SEU_PROJECT_ID_AQUI"
       }
     },
-    "scheme": "opus-facilities"
+    "scheme": "acelera-facilities"
   }
 }
