@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { User, WorkOrder, QRCodePoint } from '../types';
+import { User, WorkOrder, QRCodePoint, ChecklistTemplate, CapturedPhoto, ChecklistAnswer } from '../types';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://facilities.grupoopus.com';
 
@@ -34,7 +34,7 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const error: ApiError = {
-      message: 'Erro na requisição',
+      message: 'Erro na requisicao',
       status: response.status,
     };
     
@@ -95,8 +95,12 @@ export async function fetchWorkOrders(
       zoneId: order.zoneId,
       zoneName: order.zone?.name || '',
       scheduledDate: order.scheduledDate,
+      startedAt: order.startedAt || null,
+      completedAt: order.completedAt || null,
       assignedUserId: order.assignedUserId,
       assignedUserName: order.assignedUser?.name || null,
+      checklistTemplateId: order.checklistTemplateId || order.serviceChecklistId || null,
+      serviceId: order.serviceId || null,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       offlineModified: false,
@@ -129,16 +133,58 @@ export async function fetchQRCodes(
   }));
 }
 
+export async function fetchChecklistTemplate(
+  token: string,
+  templateId: string
+): Promise<ChecklistTemplate | null> {
+  try {
+    const template = await apiRequest<any>(
+      `/api/checklists/${templateId}`,
+      { method: 'GET' },
+      token
+    );
+
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      items: template.items || [],
+      customerId: template.customerId,
+      module: template.module,
+    };
+  } catch (error) {
+    console.log('Checklist template nao encontrado:', templateId);
+    return null;
+  }
+}
+
+export async function startWorkOrder(
+  token: string,
+  workOrderId: string
+): Promise<void> {
+  await apiRequest(
+    `/api/work-orders/${workOrderId}/start`,
+    {
+      method: 'POST',
+    },
+    token
+  );
+}
+
 export async function completeWorkOrder(
   token: string,
   workOrderId: string,
-  notes?: string
+  data?: {
+    notes?: string;
+    checklistAnswers?: Record<string, ChecklistAnswer>;
+    photos?: { base64: string; type: string; checklistItemId?: string }[];
+  }
 ): Promise<void> {
   await apiRequest(
     `/api/work-orders/${workOrderId}/complete`,
     {
       method: 'POST',
-      body: JSON.stringify({ notes }),
+      body: JSON.stringify(data || {}),
     },
     token
   );
@@ -147,13 +193,95 @@ export async function completeWorkOrder(
 export async function pauseWorkOrder(
   token: string,
   workOrderId: string,
-  notes?: string
+  data?: {
+    reason: string;
+    photos?: { base64: string }[];
+  }
 ): Promise<void> {
   await apiRequest(
     `/api/work-orders/${workOrderId}/pause`,
     {
       method: 'POST',
-      body: JSON.stringify({ notes }),
+      body: JSON.stringify(data || {}),
+    },
+    token
+  );
+}
+
+export async function resumeWorkOrder(
+  token: string,
+  workOrderId: string
+): Promise<void> {
+  await apiRequest(
+    `/api/work-orders/${workOrderId}/resume`,
+    {
+      method: 'POST',
+    },
+    token
+  );
+}
+
+export async function uploadWorkOrderPhoto(
+  token: string,
+  workOrderId: string,
+  photoBase64: string,
+  type: 'checklist' | 'pause' | 'completion' | 'comment',
+  checklistItemId?: string
+): Promise<{ id: string }> {
+  return apiRequest<{ id: string }>(
+    `/api/work-orders/${workOrderId}/photos`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        base64: photoBase64,
+        type,
+        checklistItemId,
+      }),
+    },
+    token
+  );
+}
+
+export async function submitChecklistExecution(
+  token: string,
+  workOrderId: string,
+  checklistTemplateId: string,
+  answers: Record<string, ChecklistAnswer>
+): Promise<{ id: string }> {
+  const answersForApi = Object.entries(answers).map(([itemId, answer]) => ({
+    itemId,
+    type: answer.type,
+    value: answer.value,
+    photoIds: answer.photos?.map(p => p.id) || [],
+  }));
+
+  return apiRequest<{ id: string }>(
+    `/api/work-orders/${workOrderId}/checklist`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        checklistTemplateId,
+        answers: answersForApi,
+      }),
+    },
+    token
+  );
+}
+
+export async function addWorkOrderComment(
+  token: string,
+  workOrderId: string,
+  comment: string,
+  photoIds?: string[]
+): Promise<{ id: string }> {
+  return apiRequest<{ id: string }>(
+    `/api/work-orders/${workOrderId}/comments`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        comment,
+        photoIds: photoIds || [],
+      }),
     },
     token
   );
