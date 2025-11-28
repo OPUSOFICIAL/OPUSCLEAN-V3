@@ -20,6 +20,9 @@
         "backgroundColor": "#3B82F6"
       },
       "package": "com.opus.facilities",
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.INTERNET",
