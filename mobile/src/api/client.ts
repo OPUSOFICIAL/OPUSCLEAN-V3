@@ -66,15 +66,8 @@ export async function fetchWorkOrders(
   customerId: string,
   module: string
 ): Promise<WorkOrder[]> {
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
-  const todayStr = today.toISOString().split('T')[0];
-  const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  
   const orders = await apiRequest<any[]>(
-    `/api/customers/${customerId}/work-orders?module=${module}&startDate=${todayStr}&endDate=${tomorrowStr}`,
+    `/api/customers/${customerId}/work-orders?module=${module}&status=open,in_progress,paused`,
     { method: 'GET' },
     token
   );
