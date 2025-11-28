@@ -61,14 +61,36 @@ The project is configured for the Replit cloud environment, with automated Postg
 - React Icons
 - Framer Motion
 
-### Mobile (Android APK)
-- Capacitor 7 (Core, CLI, Android)
-- IndexedDB v4
-- @capacitor/network
-- @capacitor/camera
-- `client/src/lib/camera-utils.ts`
-- `client/src/hooks/use-network-status.ts`
-- SyncQueueManager
+### Mobile (Android APK - Expo React Native)
+O app móvel foi reconstruído usando Expo React Native para melhor experiência offline e build simplificado.
+
+**Estrutura do projeto mobile:**
+- `/mobile` - Projeto Expo separado
+- `/mobile/src/db/database.ts` - Schema SQLite e operações CRUD
+- `/mobile/src/services/syncService.ts` - Sincronização com servidor
+- `/mobile/src/hooks/` - Hooks (useAuth, useNetwork, useSync, useWorkOrders)
+- `/mobile/src/screens/` - Telas (Login, CustomerSelect, WorkOrders)
+
+**Tecnologias:**
+- Expo SDK 52
+- Expo SQLite (armazenamento local)
+- Expo Network (detecção de conectividade)
+- Expo Secure Store (credenciais)
+- React Native
+- TypeScript
+
+**Funcionalidades offline:**
+- SQLite local com tabelas: work_orders, qr_codes, users, pending_sync
+- Sincronização automática a cada 1 minuto quando online
+- Fila de pendências para alterações offline (concluir/pausar OS)
+- Baixa OSs abertas/pausadas de hoje + próximo dia
+- Exclui OSs concluídas após sincronização
+
+**Build APK:**
+- Instruções: `/mobile/INSTRUCOES_BUILD_APK.md`
+- Scripts: `gerar-apk.bat` (Windows), `gerar-apk.sh` (Mac/Linux)
+- Requer: Node.js 18+, conta Expo gratuita
+- Build na nuvem via EAS Build (5-15 min)
 
 ### Frontend Framework
 - React 18

@@ -23,6 +23,7 @@ interface WorkOrdersScreenProps {
   onViewOrder: (order: WorkOrder) => void;
   onLogout: () => void;
   onForceSync: () => Promise<void>;
+  onOpenScanner: () => void;
 }
 
 export function WorkOrdersScreen({
@@ -36,6 +37,7 @@ export function WorkOrdersScreen({
   onViewOrder,
   onLogout,
   onForceSync,
+  onOpenScanner,
 }: WorkOrdersScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
 
@@ -270,6 +272,10 @@ export function WorkOrdersScreen({
           </View>
         }
       />
+
+      <TouchableOpacity style={styles.scanButton} onPress={onOpenScanner}>
+        <Text style={styles.scanButtonText}>Escanear QR Code</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -470,5 +476,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
+  },
+  scanButton: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    backgroundColor: '#3B82F6',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  scanButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

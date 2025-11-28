@@ -6,14 +6,16 @@ import { View, StyleSheet, Alert } from 'react-native';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { CustomerSelectScreen } from './src/screens/CustomerSelectScreen';
 import { WorkOrdersScreen } from './src/screens/WorkOrdersScreen';
+import { QRScannerScreen } from './src/screens/QRScannerScreen';
 import { useAuth } from './src/hooks/useAuth';
 import { useWorkOrders } from './src/hooks/useWorkOrders';
 import { useSync } from './src/hooks/useSync';
-import { WorkOrder } from './src/types';
+import { WorkOrder, QRCodePoint } from './src/types';
 
 export default function App() {
   const { user, isLoading, error, login, logout, isAuthenticated } = useAuth();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
   const { workOrders, isLoading: ordersLoading, refresh, completeWorkOrder, pauseWorkOrder } = useWorkOrders();
   const { syncStatus, forceSync } = useSync(user, selectedCustomerId);
 
@@ -55,6 +57,43 @@ export default function App() {
       `${order.title}\n\nLocal: ${order.siteName} - ${order.zoneName}\n\nDescricao: ${order.description || 'Sem descricao'}`,
       [{ text: 'Fechar' }]
     );
+  }, []);
+
+  const handleOpenScanner = useCallback(() => {
+    setShowScanner(true);
+  }, []);
+
+  const handleScanComplete = useCallback((order: WorkOrder | null, qrCode: QRCodePoint | null) => {
+    setShowScanner(false);
+    
+    if (order) {
+      Alert.alert(
+        `OS #${order.workOrderNumber}`,
+        `${order.title}\n\nLocal: ${order.siteName} - ${order.zoneName}`,
+        [
+          { text: 'Fechar' },
+          {
+            text: 'Concluir',
+            onPress: async () => {
+              const success = await completeWorkOrder(order.id);
+              if (success) {
+                Alert.alert('Sucesso', 'OS concluida com sucesso!');
+              }
+            },
+          },
+        ]
+      );
+    } else if (qrCode) {
+      Alert.alert(
+        'QR Code escaneado',
+        `Local: ${qrCode.siteName}\nZona: ${qrCode.zoneName}`,
+        [{ text: 'OK' }]
+      );
+    }
+  }, [completeWorkOrder]);
+
+  const handleCloseScanner = useCallback(() => {
+    setShowScanner(false);
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -101,6 +140,19 @@ export default function App() {
     );
   }
 
+  if (showScanner) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <QRScannerScreen
+          workOrders={workOrders}
+          onScanComplete={handleScanComplete}
+          onClose={handleCloseScanner}
+        />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
@@ -115,6 +167,7 @@ export default function App() {
         onViewOrder={handleViewOrder}
         onLogout={handleLogout}
         onForceSync={handleForceSync}
+        onOpenScanner={handleOpenScanner}
       />
     </SafeAreaProvider>
   );
