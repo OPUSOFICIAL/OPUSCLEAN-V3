@@ -48,11 +48,9 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://facilities.grupoopus.com",
-      "eas": {
-        "projectId": "opus-facilities"
-      }
+      "apiUrl": "https://facilities.grupoopus.com"
     },
+    "owner": null,
     "scheme": "opus-facilities"
   }
 }
