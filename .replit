@@ -106,4 +106,4 @@ expertMode = true
 
 [userenv.shared]
 ENCRYPTION_KEY = "83c1acd153c53d706a27fe8c33f11e8ee5e94a3b9c2f0354063b0e5e05b635f4"
-VITE_API_BASE_URL = "https://b33715f7-23a2-49e4-bc36-d68327f21b3d-00-1ehjl4tukkmmt.picard.replit.dev"
+VITE_API_BASE_URL = "https://facilities.grupoopus.com"

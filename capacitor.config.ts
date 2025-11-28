@@ -1,26 +1,22 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// URL do servidor Replit (produção)
-const REPLIT_SERVER_URL = 'https://b33715f7-23a2-49e4-bc36-d68327f21b3d-00-1ehjl4tukkmmt.picard.replit.dev';
+// URL da API de produção
+const PRODUCTION_API_URL = 'https://facilities.grupoopus.com';
 
 const config: CapacitorConfig = {
   appId: 'com.acelerait.facilities',
   appName: 'Acelera Facilities',
   webDir: 'dist/public',
-  // REMOTE MODE: Carrega a aplicação diretamente do servidor Replit
-  // Isso permite usar o APK sem precisar fazer build local
+  // MODO LOCAL: Assets embutidos no APK, apenas chamadas API vão para o servidor
+  // NÃO definimos server.url para que o app carregue os assets locais
   server: {
-    // URL do servidor remoto - carrega a aplicação web diretamente
-    url: REPLIT_SERVER_URL,
-    cleartext: false, // Força HTTPS
-    // Permite navegação para estes domínios
+    // Permite chamadas à API de produção
     allowNavigation: [
-      'replit.dev',
-      '*.replit.dev',
-      '*.picard.replit.dev',
       'facilities.grupoopus.com',
       '*.grupoopus.com',
     ],
+    // Configurações de hostname para o servidor local
+    androidScheme: 'https',
   },
   plugins: {
     SplashScreen: {
