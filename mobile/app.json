@@ -29,7 +29,6 @@
     },
     "plugins": [
       "expo-sqlite",
-      "expo-network",
       "expo-secure-store",
       [
         "expo-camera",
