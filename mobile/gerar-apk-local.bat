@@ -1,6 +1,6 @@
 @echo off
 REM OPUS Facilities - Build APK Local (Windows)
-REM Requer: Node.js 18+, Java JDK 17, Android Studio com SDK
+REM Requer: Node.js 18-20 (NAO use Node 22+), Java JDK 17, Android Studio com SDK
 
 echo.
 echo ========================================
@@ -13,6 +13,28 @@ where node >nul 2>nul
 if errorlevel 1 (
     echo [ERRO] Node.js nao encontrado!
     echo Instale em: https://nodejs.org/
+    pause
+    exit /b 1
+)
+
+REM Verificar versao do Node.js
+for /f "tokens=1 delims=v" %%i in ('node -v') do set NODE_VERSION=%%i
+for /f "tokens=1 delims=." %%i in ('node -v') do set NODE_MAJOR=%%i
+echo Versao do Node.js: %NODE_MAJOR%
+
+REM Avisar se Node 22+
+echo %NODE_MAJOR% | findstr /r "v22 v23 v24" >nul
+if not errorlevel 1 (
+    echo.
+    echo [ERRO] Voce esta usando Node.js %NODE_MAJOR% que NAO e compativel!
+    echo.
+    echo O Expo requer Node.js 18 ou 20 LTS.
+    echo.
+    echo Solucao:
+    echo   1. Desinstale o Node.js atual
+    echo   2. Instale o Node.js 20 LTS em: https://nodejs.org/
+    echo   3. Ou use nvm: nvm install 20 ^&^& nvm use 20
+    echo.
     pause
     exit /b 1
 )

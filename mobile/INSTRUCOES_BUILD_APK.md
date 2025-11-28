@@ -4,7 +4,7 @@
 
 ### Pre-requisitos para Build Local
 
-1. **Node.js 18+** - https://nodejs.org/
+1. **Node.js 18 ou 20 LTS** - https://nodejs.org/ (NAO use Node 22+)
 2. **Java JDK 17** - https://adoptium.net/ (Temurin 17)
 3. **Android Studio** - https://developer.android.com/studio
    - Instale o Android SDK (API 34)
