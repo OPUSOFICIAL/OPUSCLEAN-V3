@@ -49,11 +49,23 @@ echo [4/5] Gerando projeto Android nativo...
 call npx expo prebuild --platform android --clean
 if errorlevel 1 goto :error
 
-REM Compilar APK
-echo [5/5] Compilando APK Release...
+REM Limpar cache CMake e Gradle
+echo [5/7] Limpando cache Gradle e CMake...
 cd android
-call .\gradlew.bat clean
-call .\gradlew.bat assembleRelease
+if exist .gradle rmdir /s /q .gradle
+if exist .cxx rmdir /s /q .cxx
+if exist app\.cxx rmdir /s /q app\.cxx
+if exist build rmdir /s /q build
+if exist app\build rmdir /s /q app\build
+
+REM Limpar Gradle
+echo [6/7] Executando Gradle clean...
+call .\gradlew.bat clean --no-daemon
+if errorlevel 1 goto :error
+
+REM Compilar APK
+echo [7/7] Compilando APK Release...
+call .\gradlew.bat assembleRelease --no-daemon
 if errorlevel 1 goto :error
 
 cd ..

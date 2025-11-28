@@ -136,6 +136,43 @@ android/app/build/outputs/apk/release/app-release.apk
 
 ## Solucao de Problemas Comuns
 
+### Erro: "undefined symbol: typeinfo for std::out_of_range" (Linker C++)
+
+Este erro acontece quando os modulos nativos nao linkam corretamente com a biblioteca C++.
+
+**Solucao:**
+
+1. O projeto ja inclui um plugin (`plugins/withAndroidCppFix.js`) que adiciona `ANDROID_STL=c++_shared`
+2. Limpe completamente e rebuild:
+
+```bash
+# Deletar tudo
+rmdir /s /q node_modules android .expo 2>nul
+del package-lock.json 2>nul
+
+# Reinstalar
+npm install
+
+# Regenerar com plugin aplicado
+npx expo prebuild --platform android --clean
+
+# Limpar cache CMake
+cd android
+rmdir /s /q .gradle .cxx app\.cxx 2>nul
+
+# Compilar
+.\gradlew.bat clean
+.\gradlew.bat assembleRelease
+```
+
+### Erro: "Cannot find module 'babel-preset-expo'"
+
+Ja corrigido! O `babel-preset-expo` foi adicionado ao package.json. Execute:
+
+```bash
+npm install
+```
+
 ### Erro: "SDK location not found"
 
 Crie o arquivo `android/local.properties`:

@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -29,17 +29,28 @@
       ]
     },
     "plugins": [
+      "./plugins/withAndroidCppFix.js",
       [
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.0.21",
+            "kotlinVersion": "1.9.25",
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "minSdkVersion": 24,
             "buildToolsVersion": "35.0.0",
-            "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableProguardInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false,
+            "ndkVersion": "26.1.10909125",
+            "extraMavenRepos": [],
+            "packagingOptions": {
+              "pickFirst": [
+                "lib/arm64-v8a/libc++_shared.so",
+                "lib/armeabi-v7a/libc++_shared.so",
+                "lib/x86/libc++_shared.so",
+                "lib/x86_64/libc++_shared.so"
+              ]
+            }
           }
         }
       ],
