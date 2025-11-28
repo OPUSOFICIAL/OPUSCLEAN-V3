@@ -119,19 +119,57 @@ which java
 /usr/libexec/java_home -V
 ```
 
-### Erro: "compileReleaseKotlin FAILED"
+### Erro: "compileReleaseKotlin FAILED" ou "Kotlin version 1.9.25"
 
-O plugin `expo-build-properties` ja esta configurado no `app.json` com:
-- kotlinVersion: 1.9.24
-- compileSdkVersion: 35
+**IMPORTANTE:** O Compose Compiler 1.5.14 EXIGE Kotlin 1.9.24 exatamente.
 
-Se ainda der erro, limpe e reconstrua:
+O projeto ja vem configurado com Kotlin 1.9.24 em:
+- `app.json` (expo-build-properties)
+- `android/build.gradle` (fallback)
+- `android/gradle.properties`
+
+**Se ainda aparecer erro de versao 1.9.25, faca isso:**
+
+1. **Apague a pasta android completamente:**
+```bash
+rm -rf android
+```
+
+2. **Verifique se gradle.properties esta correto antes do prebuild:**
+```bash
+mkdir -p android
+cat > android/gradle.properties << 'EOF'
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
+org.gradle.daemon=true
+org.gradle.parallel=true
+android.useAndroidX=true
+android.enableJetifier=true
+android.kotlinVersion=1.9.24
+android.compileSdkVersion=35
+android.targetSdkVersion=34
+android.minSdkVersion=24
+android.buildToolsVersion=35.0.0
+android.nonTransitiveRClass=true
+EOF
+```
+
+3. **Gere o projeto Android:**
+```bash
+npx expo prebuild --platform android --clean
+```
+
+4. **Verifique se a versao esta correta:**
+```bash
+grep -r "1.9.25" android/
+# Se encontrar algo, substitua por 1.9.24:
+# Windows: Use "Localizar e Substituir" do VS Code
+# Mac/Linux: sed -i 's/1.9.25/1.9.24/g' android/build.gradle
+```
+
+5. **Compile:**
 ```bash
 cd android
 ./gradlew clean
-cd ..
-npx expo prebuild --platform android --clean
-cd android
 ./gradlew assembleDebug
 ```
 
