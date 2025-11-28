@@ -24,6 +24,8 @@ interface WorkOrdersScreenProps {
   onLogout: () => void;
   onForceSync: () => Promise<void>;
   onOpenScanner: () => void;
+  title?: string;
+  onBack?: () => void;
 }
 
 export function WorkOrdersScreen({
@@ -38,6 +40,8 @@ export function WorkOrdersScreen({
   onLogout,
   onForceSync,
   onOpenScanner,
+  title,
+  onBack,
 }: WorkOrdersScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
 
@@ -216,15 +220,30 @@ export function WorkOrdersScreen({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>Ola, {user.name}</Text>
-            <Text style={styles.headerSubtitle}>
-              {workOrders.length} ordem{workOrders.length !== 1 ? 'ns' : ''} de servico
-            </Text>
+          {onBack ? (
+            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+              <Text style={styles.backButtonText}>Voltar</Text>
+            </TouchableOpacity>
+          ) : (
+            <View>
+              <Text style={styles.greeting}>Ola, {user.name}</Text>
+            </View>
+          )}
+          <View style={styles.headerCenter}>
+            {title ? (
+              <Text style={styles.headerTitle}>{title}</Text>
+            ) : (
+              <Text style={styles.headerSubtitle}>
+                {workOrders.length} ordem{workOrders.length !== 1 ? 'ns' : ''} de servico
+              </Text>
+            )}
           </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-            <Text style={styles.logoutText}>Sair</Text>
-          </TouchableOpacity>
+          {!onBack && (
+            <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+              <Text style={styles.logoutText}>Sair</Text>
+            </TouchableOpacity>
+          )}
+          {onBack && <View style={styles.placeholder} />}
         </View>
 
         <View style={styles.syncStatus}>
@@ -307,6 +326,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.8,
     marginTop: 4,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+  },
+  backButton: {
+    paddingVertical: 8,
+    paddingRight: 16,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  placeholder: {
+    width: 60,
   },
   logoutButton: {
     backgroundColor: 'rgba(255,255,255,0.2)',
