@@ -61,6 +61,23 @@ export async function login(username: string, password: string): Promise<User> {
   };
 }
 
+function mapStatusToEnglish(status: string): 'open' | 'in_progress' | 'paused' | 'completed' | 'cancelled' {
+  const statusMap: Record<string, 'open' | 'in_progress' | 'paused' | 'completed' | 'cancelled'> = {
+    'aberta': 'open',
+    'open': 'open',
+    'em_andamento': 'in_progress',
+    'in_progress': 'in_progress',
+    'pausada': 'paused',
+    'paused': 'paused',
+    'concluida': 'completed',
+    'completed': 'completed',
+    'cancelada': 'cancelled',
+    'cancelled': 'cancelled',
+    'vencida': 'open',
+  };
+  return statusMap[status] || 'open';
+}
+
 export async function fetchWorkOrders(
   token: string,
   customerId: string,
@@ -73,33 +90,38 @@ export async function fetchWorkOrders(
   const todayStr = today.toISOString().split('T')[0];
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
   
-  const orders = await apiRequest<any[]>(
+  const response = await apiRequest<any>(
     `/api/customers/${customerId}/work-orders?module=${module}&startDate=${todayStr}&endDate=${tomorrowStr}`,
     { method: 'GET' },
     token
   );
 
+  const orders = Array.isArray(response) ? response : (response.data || []);
+
   return orders
-    .filter((o: any) => o.status === 'open' || o.status === 'in_progress' || o.status === 'paused')
+    .filter((o: any) => {
+      const mappedStatus = mapStatusToEnglish(o.status);
+      return mappedStatus === 'open' || mappedStatus === 'in_progress' || mappedStatus === 'paused';
+    })
     .map((order: any) => ({
       id: order.id,
-      workOrderNumber: order.workOrderNumber,
+      workOrderNumber: order.workOrderNumber || order.number || 0,
       title: order.title,
       description: order.description,
-      status: order.status,
+      status: mapStatusToEnglish(order.status),
       priority: order.priority,
       module: order.module,
       customerId: order.customerId,
       siteId: order.siteId,
-      siteName: order.site?.name || '',
+      siteName: order.site?.name || order.siteName || '',
       zoneId: order.zoneId,
-      zoneName: order.zone?.name || '',
+      zoneName: order.zone?.name || order.zoneName || '',
       scheduledDate: order.scheduledDate || null,
       dueDate: order.dueDate || null,
       startedAt: order.startedAt || null,
       completedAt: order.completedAt || null,
       assignedUserId: order.assignedUserId,
-      assignedUserName: order.assignedUser?.name || null,
+      assignedUserName: order.assignedUser?.name || order.assignedUserName || null,
       checklistTemplateId: order.checklistTemplateId || order.serviceChecklistId || null,
       serviceId: order.serviceId || null,
       createdAt: order.createdAt,

@@ -237,36 +237,44 @@ async function syncCommentAction(
 async function pullFromServer(user: User, customerId: string): Promise<void> {
   const modules = user.modules || ['clean', 'maintenance'];
   
+  console.log(`[SYNC] Iniciando pull - User: ${user.username}, Customer: ${customerId}, Modules: ${modules.join(',')}`);
+  
   for (const module of modules) {
     try {
+      console.log(`[SYNC] Buscando OSs do modulo ${module}...`);
       const workOrders = await api.fetchWorkOrders(user.token, customerId, module);
-      await db.saveWorkOrders(workOrders);
+      console.log(`[SYNC] Recebidas ${workOrders.length} OSs do modulo ${module}`);
       
-      for (const order of workOrders) {
-        if (order.checklistTemplateId) {
-          try {
-            const template = await api.fetchChecklistTemplate(user.token, order.checklistTemplateId);
-            if (template) {
-              await db.saveChecklistTemplate(template);
+      if (workOrders.length > 0) {
+        await db.saveWorkOrders(workOrders);
+        console.log(`[SYNC] Salvas ${workOrders.length} OSs no banco local`);
+        
+        for (const order of workOrders) {
+          if (order.checklistTemplateId) {
+            try {
+              const template = await api.fetchChecklistTemplate(user.token, order.checklistTemplateId);
+              if (template) {
+                await db.saveChecklistTemplate(template);
+              }
+            } catch (error) {
+              console.log('Nao foi possivel baixar checklist:', order.checklistTemplateId);
             }
-          } catch (error) {
-            console.log('Nao foi possivel baixar checklist:', order.checklistTemplateId);
           }
         }
       }
       
-      console.log(`Baixadas ${workOrders.length} OSs do modulo ${module}`);
+      console.log(`[SYNC] Processadas ${workOrders.length} OSs do modulo ${module}`);
     } catch (error) {
-      console.error(`Erro ao baixar OSs do modulo ${module}:`, error);
+      console.error(`[SYNC] Erro ao baixar OSs do modulo ${module}:`, error);
     }
   }
   
   try {
     const qrCodes = await api.fetchQRCodes(user.token, customerId);
     await db.saveQRCodes(qrCodes);
-    console.log(`Baixados ${qrCodes.length} QR codes`);
+    console.log(`[SYNC] Baixados ${qrCodes.length} QR codes`);
   } catch (error) {
-    console.error('Erro ao baixar QR codes:', error);
+    console.error('[SYNC] Erro ao baixar QR codes:', error);
   }
 }
 

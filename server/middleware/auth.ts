@@ -234,8 +234,17 @@ function getEffectiveRole(baseRole: UserRole, permissions: string[]): UserRole {
 export async function getUserFromToken(req: Request): Promise<SessionUser | null> {
   try {
     const authHeader = req.headers.authorization;
+    const reqPath = req.path;
+    
     if (!authHeader) {
+      if (reqPath.includes('my-customers')) {
+        console.log('[AUTH DEBUG] No auth header for:', reqPath);
+      }
       return null;
+    }
+    
+    if (reqPath.includes('my-customers')) {
+      console.log('[AUTH DEBUG] Has auth header for:', reqPath, '- token starts with:', authHeader.substring(0, 20));
     }
     
     const token = authHeader.replace('Bearer ', '');
