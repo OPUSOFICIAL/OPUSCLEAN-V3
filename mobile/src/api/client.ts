@@ -92,20 +92,11 @@ export async function fetchWorkOrders(
   customerId: string,
   module: string
 ): Promise<WorkOrder[]> {
-  // Buscar O.S. dos últimos 7 dias até os próximos 7 dias para ter margem
-  // O filtro por data "Hoje/Ontem/Esta Semana" é feito localmente na tela
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 7);
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() + 7);
-  
-  const startDateStr = startDate.toISOString().split('T')[0];
-  const endDateStr = endDate.toISOString().split('T')[0];
-  
-  console.log(`[FETCH WORK ORDERS] Buscando O.S. de ${startDateStr} até ${endDateStr}`);
+  // Buscar todas as O.S. sem filtro de data - o filtro é feito localmente na tela
+  console.log(`[FETCH WORK ORDERS] Buscando todas as O.S. do cliente ${customerId}`);
   
   const response = await apiRequest<any>(
-    `/api/customers/${customerId}/work-orders?module=${module}&startDate=${startDateStr}&endDate=${endDateStr}`,
+    `/api/customers/${customerId}/work-orders?module=${module}`,
     { method: 'GET' },
     token
   );

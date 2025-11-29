@@ -6,10 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  Alert,
   ScrollView,
 } from 'react-native';
-import { format, isToday, isYesterday, subDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { WorkOrder, SyncStatus, User } from '../types';
 
@@ -29,7 +28,7 @@ interface WorkOrdersScreenProps {
   onBack?: () => void;
 }
 
-type DateFilter = 'hoje' | 'ontem' | 'semana' | 'todos';
+type FilterType = 'pendentes_dia' | 'minhas_os';
 
 export function WorkOrdersScreen({
   workOrders,
@@ -47,7 +46,7 @@ export function WorkOrdersScreen({
   onBack,
 }: WorkOrdersScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('todos');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('pendentes_dia');
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -55,86 +54,37 @@ export function WorkOrdersScreen({
     setRefreshing(false);
   };
 
-  const getOrderDate = useCallback((wo: WorkOrder, useCompletionDate: boolean = false): Date => {
-    if (useCompletionDate && wo.completedAt) {
-      return new Date(wo.completedAt);
-    }
-    return new Date(wo.dueDate || wo.scheduledDate || wo.createdAt);
-  }, []);
+  // O.S. Pendentes do Dia - Abertas com data de hoje
+  const pendentesHoje = useMemo(() => {
+    return workOrders
+      .filter(wo => {
+        const orderDate = new Date(wo.dueDate || wo.scheduledDate || wo.createdAt);
+        const isOpen = wo.status === 'open';
+        return isOpen && isToday(orderDate);
+      })
+      .sort((a, b) => b.workOrderNumber - a.workOrderNumber);
+  }, [workOrders]);
 
-  const filterByDate = useCallback((orders: WorkOrder[], filter: DateFilter, useCompletionDate: boolean = false): WorkOrder[] => {
-    const today = new Date();
-    
-    switch (filter) {
-      case 'hoje':
-        return orders.filter(wo => {
-          const date = getOrderDate(wo, useCompletionDate);
-          return isToday(date);
-        });
-      case 'ontem':
-        return orders.filter(wo => {
-          const date = getOrderDate(wo, useCompletionDate);
-          return isYesterday(date);
-        });
-      case 'semana':
-        const weekAgo = subDays(today, 7);
-        return orders.filter(wo => {
-          const date = getOrderDate(wo, useCompletionDate);
-          return isWithinInterval(date, { start: startOfDay(weekAgo), end: endOfDay(today) });
-        });
-      case 'todos':
-      default:
-        return orders;
-    }
-  }, [getOrderDate]);
+  // Minhas O.S. - Todas atribuidas ao operador (qualquer status exceto concluida/cancelada)
+  const minhasOS = useMemo(() => {
+    return workOrders
+      .filter(wo => {
+        const isAssignedToMe = wo.assignedUserId === user.id;
+        const isActive = wo.status !== 'completed' && wo.status !== 'cancelled';
+        return isAssignedToMe && isActive;
+      })
+      .sort((a, b) => {
+        // Prioridade: em execucao > pausada > aberta
+        const statusOrder = { 'in_progress': 0, 'paused': 1, 'open': 2 };
+        const aOrder = statusOrder[a.status as keyof typeof statusOrder] ?? 3;
+        const bOrder = statusOrder[b.status as keyof typeof statusOrder] ?? 3;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return b.workOrderNumber - a.workOrderNumber;
+      });
+  }, [workOrders, user.id]);
 
-  const filteredOrders = useMemo(() => 
-    filterByDate(workOrders, dateFilter), 
-    [workOrders, dateFilter, filterByDate]
-  );
-
-  const inProgressOrders = useMemo(() => 
-    filteredOrders
-      .filter(wo => wo.status === 'in_progress' && wo.assignedUserId === user.id)
-      .sort((a, b) => b.workOrderNumber - a.workOrderNumber),
-    [filteredOrders, user.id]
-  );
-
-  const availableOrders = useMemo(() => 
-    filteredOrders
-      .filter(wo => !wo.assignedUserId && wo.status === 'open')
-      .sort((a, b) => b.workOrderNumber - a.workOrderNumber),
-    [filteredOrders]
-  );
-
-  const myPendingOrders = useMemo(() => 
-    filteredOrders
-      .filter(wo => wo.assignedUserId === user.id && wo.status === 'open')
-      .sort((a, b) => b.workOrderNumber - a.workOrderNumber),
-    [filteredOrders, user.id]
-  );
-
-  const pausedOrders = useMemo(() => 
-    filteredOrders
-      .filter(wo => wo.status === 'paused' && wo.assignedUserId === user.id)
-      .sort((a, b) => b.workOrderNumber - a.workOrderNumber),
-    [filteredOrders, user.id]
-  );
-
-  const completedOrders = useMemo(() => 
-    filterByDate(workOrders, dateFilter, true)
-      .filter(wo => wo.status === 'completed' && wo.assignedUserId === user.id)
-      .sort((a, b) => b.workOrderNumber - a.workOrderNumber),
-    [workOrders, dateFilter, filterByDate, user.id]
-  );
-
-  const statusCounts = useMemo(() => ({
-    inProgress: inProgressOrders.length,
-    available: availableOrders.length,
-    pending: myPendingOrders.length,
-    paused: pausedOrders.length,
-    completed: completedOrders.length,
-  }), [inProgressOrders, availableOrders, myPendingOrders, pausedOrders, completedOrders]);
+  // Lista atual baseada no filtro
+  const currentList = activeFilter === 'pendentes_dia' ? pendentesHoje : minhasOS;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -176,7 +126,7 @@ export function WorkOrdersScreen({
     }
   };
 
-  const renderWorkOrderCard = (item: WorkOrder, showActions: boolean = true) => (
+  const renderWorkOrderCard = (item: WorkOrder) => (
     <TouchableOpacity
       key={item.id}
       style={[
@@ -192,7 +142,7 @@ export function WorkOrdersScreen({
           </View>
           {item.offlineModified && (
             <View style={styles.offlineBadge}>
-              <Text style={styles.offlineBadgeText}>Pendente</Text>
+              <Text style={styles.offlineBadgeText}>Pendente Sync</Text>
             </View>
           )}
         </View>
@@ -231,78 +181,36 @@ export function WorkOrdersScreen({
         </View>
       )}
 
-      {showActions && item.status !== 'completed' && (
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.viewButton]}
-            onPress={() => onViewOrder(item)}
-          >
-            <Text style={styles.viewButtonText}>Ver Detalhes</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.viewButton]}
+          onPress={() => onViewOrder(item)}
+        >
+          <Text style={styles.viewButtonText}>Ver Detalhes</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
-  const renderInProgressCard = (item: WorkOrder) => (
-    <TouchableOpacity
-      key={item.id}
-      style={styles.inProgressCard}
-      onPress={() => onViewOrder(item)}
-    >
-      <View style={styles.inProgressHeader}>
-        <View style={styles.inProgressBadge}>
-          <Text style={styles.inProgressBadgeText}>OS #{item.workOrderNumber}</Text>
-        </View>
-        <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(item.priority) }]} />
-      </View>
-      <Text style={styles.inProgressTitle} numberOfLines={2}>{item.title}</Text>
-      <View style={styles.inProgressLocation}>
-        <Text style={styles.inProgressLocationIcon}>📍</Text>
-        <Text style={styles.inProgressLocationText}>{item.siteName} - {item.zoneName}</Text>
-      </View>
-      <View style={styles.inProgressDate}>
-        <Text style={styles.inProgressDateIcon}>📅</Text>
-        <Text style={styles.inProgressDateText}>
-          Prazo: {format(new Date(item.dueDate || item.scheduledDate || item.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-        </Text>
-      </View>
-      {item.startedAt && (
-        <View style={styles.inProgressStarted}>
-          <Text style={styles.inProgressStartedIcon}>⏱️</Text>
-          <Text style={styles.inProgressStartedText}>
-            Iniciado: {format(new Date(item.startedAt), "dd/MM HH:mm", { locale: ptBR })}
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-
-  const renderSection = (sectionTitle: string, orders: WorkOrder[], emptyMessage: string, icon: string) => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionIcon}>{icon}</Text>
-        <Text style={styles.sectionTitle}>{sectionTitle}</Text>
-        <View style={styles.sectionBadge}>
-          <Text style={styles.sectionBadgeText}>{orders.length}</Text>
-        </View>
-      </View>
-      {orders.length === 0 ? (
-        <View style={styles.emptySection}>
-          <Text style={styles.emptySectionText}>{emptyMessage}</Text>
-        </View>
-      ) : (
-        orders.slice(0, 5).map(order => renderWorkOrderCard(order))
-      )}
-      {orders.length > 5 && (
-        <Text style={styles.moreText}>+ {orders.length - 5} mais...</Text>
-      )}
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyIcon}>📋</Text>
+      <Text style={styles.emptyTitle}>
+        {activeFilter === 'pendentes_dia' 
+          ? 'Nenhuma O.S. pendente para hoje'
+          : 'Nenhuma O.S. atribuida a voce'}
+      </Text>
+      <Text style={styles.emptySubtitle}>
+        {activeFilter === 'pendentes_dia'
+          ? 'Todas as ordens de servico de hoje foram concluidas ou nao ha ordens para hoje'
+          : 'Escaneie um QR Code para iniciar uma nova tarefa'}
+      </Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Header - Azul escuro como na web */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           {onBack ? (
@@ -317,11 +225,9 @@ export function WorkOrdersScreen({
           )}
           {!onBack && (
             <View style={styles.headerActions}>
-              {/* Botao de modulo Clean como na web */}
               <View style={styles.moduleButton}>
                 <Text style={styles.moduleIcon}>📋</Text>
                 <Text style={styles.moduleText}>Clean</Text>
-                <Text style={styles.moduleRefresh}>🔄</Text>
               </View>
               <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
                 <Text style={styles.logoutIcon}>→</Text>
@@ -331,119 +237,80 @@ export function WorkOrdersScreen({
         </View>
       </View>
 
-      <ScrollView 
+      {/* Filtros Simplificados */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[
+            styles.filterTab,
+            activeFilter === 'pendentes_dia' && styles.filterTabActive
+          ]}
+          onPress={() => setActiveFilter('pendentes_dia')}
+        >
+          <Text style={styles.filterTabIcon}>📅</Text>
+          <Text style={[
+            styles.filterTabText,
+            activeFilter === 'pendentes_dia' && styles.filterTabTextActive
+          ]}>
+            Pendentes Hoje
+          </Text>
+          <View style={[
+            styles.filterBadge,
+            activeFilter === 'pendentes_dia' && styles.filterBadgeActive
+          ]}>
+            <Text style={[
+              styles.filterBadgeText,
+              activeFilter === 'pendentes_dia' && styles.filterBadgeTextActive
+            ]}>
+              {pendentesHoje.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filterTab,
+            activeFilter === 'minhas_os' && styles.filterTabActive
+          ]}
+          onPress={() => setActiveFilter('minhas_os')}
+        >
+          <Text style={styles.filterTabIcon}>👤</Text>
+          <Text style={[
+            styles.filterTabText,
+            activeFilter === 'minhas_os' && styles.filterTabTextActive
+          ]}>
+            Minhas O.S.
+          </Text>
+          <View style={[
+            styles.filterBadge,
+            activeFilter === 'minhas_os' && styles.filterBadgeActive
+          ]}>
+            <Text style={[
+              styles.filterBadgeText,
+              activeFilter === 'minhas_os' && styles.filterBadgeTextActive
+            ]}>
+              {minhasOS.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Lista de O.S. */}
+      <ScrollView
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4F46E5']} />}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh} 
+            colors={['#4F46E5']} 
+          />
+        }
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Em Execucao Card - Destaque */}
-        <View style={[
-          styles.inProgressSection,
-          inProgressOrders.length > 0 ? styles.inProgressActive : styles.inProgressEmpty
-        ]}>
-          <View style={styles.inProgressSectionHeader}>
-            <Text style={styles.inProgressSectionIcon}>⚡</Text>
-            <Text style={styles.inProgressSectionTitle}>Minhas Execucoes</Text>
-            <View style={styles.inProgressSectionBadge}>
-              <Text style={styles.inProgressSectionBadgeText}>{inProgressOrders.length}</Text>
-            </View>
-          </View>
-
-          {inProgressOrders.length === 0 ? (
-            <View style={styles.inProgressEmptyContent}>
-              <View style={styles.playIconContainer}>
-                <Text style={styles.playIcon}>▶</Text>
-              </View>
-              <Text style={styles.inProgressEmptyTitle}>Nenhuma O.S em execucao</Text>
-              <Text style={styles.inProgressEmptySubtitle}>Escaneie um QR Code para iniciar uma tarefa</Text>
-            </View>
-          ) : (
-            <View style={styles.inProgressList}>
-              <Text style={styles.inProgressListTitle}>
-                Voce iniciou {inProgressOrders.length} {inProgressOrders.length === 1 ? 'tarefa' : 'tarefas'}:
-              </Text>
-              {inProgressOrders.map(order => renderInProgressCard(order))}
-            </View>
-          )}
-        </View>
-
-        {/* Filtros de Data */}
-        <View style={styles.filterCard}>
-          <View style={styles.filterHeader}>
-            <Text style={styles.filterIcon}>⏷</Text>
-            <Text style={styles.filterTitle}>Filtrar por Data</Text>
-          </View>
-          <View style={styles.filterButtons}>
-            {[
-              { key: 'hoje', label: 'Hoje', icon: '📅' },
-              { key: 'ontem', label: 'Ontem', icon: '🕐' },
-              { key: 'semana', label: 'Esta Semana', icon: '📅' },
-              { key: 'todos', label: 'Todas', icon: '📅' },
-            ].map(({ key, label, icon }) => (
-              <TouchableOpacity
-                key={key}
-                style={[
-                  styles.filterButton,
-                  dateFilter === key && styles.filterButtonActive
-                ]}
-                onPress={() => setDateFilter(key as DateFilter)}
-              >
-                <Text style={[
-                  styles.filterButtonIcon,
-                  dateFilter === key && styles.filterButtonIconActive
-                ]}>
-                  {icon}
-                </Text>
-                <Text style={[
-                  styles.filterButtonText,
-                  dateFilter === key && styles.filterButtonTextActive
-                ]}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Stats Cards - Com icones em circulos como na web */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconCircle, { backgroundColor: '#FEE2E2' }]}>
-              <Text style={styles.statIconText}>⚠️</Text>
-            </View>
-            <Text style={styles.statValue}>{statusCounts.available}</Text>
-            <Text style={styles.statLabel}>Disponiveis</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconCircle, { backgroundColor: '#DBEAFE' }]}>
-              <Text style={styles.statIconText}>📋</Text>
-            </View>
-            <Text style={styles.statValue}>{statusCounts.pending}</Text>
-            <Text style={styles.statLabel}>Pendentes</Text>
-          </View>
-        </View>
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconCircle, { backgroundColor: '#FEF3C7' }]}>
-              <Text style={styles.statIconText}>⏱️</Text>
-            </View>
-            <Text style={styles.statValue}>{statusCounts.paused}</Text>
-            <Text style={styles.statLabel}>Pausadas</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconCircle, { backgroundColor: '#D1FAE5' }]}>
-              <Text style={styles.statIconText}>✓</Text>
-            </View>
-            <Text style={styles.statValue}>{statusCounts.completed}</Text>
-            <Text style={styles.statLabel}>Concluidas</Text>
-          </View>
-        </View>
-
-        {/* Sections */}
-        {renderSection('Disponiveis', availableOrders, 'Nenhuma O.S disponivel', '📂')}
-        {renderSection('Minhas Pendentes', myPendingOrders, 'Nenhuma O.S pendente atribuida a voce', '📋')}
-        {renderSection('Pausadas', pausedOrders, 'Nenhuma O.S pausada', '⏸️')}
-        {renderSection('Concluidas', completedOrders, 'Nenhuma O.S concluida', '✅')}
+        {currentList.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          currentList.map(order => renderWorkOrderCard(order))
+        )}
 
         {/* Spacer for scan button */}
         <View style={styles.bottomSpacer} />
@@ -480,11 +347,11 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFFFFF',
   },
   userRole: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    color: '#94A3B8',
     marginTop: 2,
   },
   headerActions: {
@@ -495,7 +362,7 @@ const styles = StyleSheet.create({
   moduleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -507,369 +374,132 @@ const styles = StyleSheet.create({
   moduleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0D9488',
+    color: '#1E3A5F',
   },
-  moduleRefresh: {
-    fontSize: 12,
-    color: '#0D9488',
+  logoutButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutIcon: {
+    fontSize: 18,
+    color: '#FFFFFF',
   },
   backButton: {
     paddingVertical: 8,
-    paddingRight: 16,
   },
   backButtonText: {
-    color: '#fff',
     fontSize: 16,
-    fontWeight: '500',
+    color: '#FFFFFF',
   },
-  logoutButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutIcon: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-
-  // Em Execucao Section
-  inProgressSection: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  inProgressActive: {
-    backgroundColor: '#10B981',
-  },
-  inProgressEmpty: {
-    backgroundColor: '#94A3B8',
-  },
-  inProgressSectionHeader: {
+  filterContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  inProgressSectionIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  inProgressSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    flex: 1,
-  },
-  inProgressSectionBadge: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 12,
-  },
-  inProgressSectionBadgeText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  inProgressEmptyContent: {
-    alignItems: 'center',
-    paddingVertical: 24,
-  },
-  playIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  playIcon: {
-    fontSize: 28,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  inProgressEmptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  inProgressEmptySubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  inProgressList: {
-    gap: 12,
-  },
-  inProgressListTitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: 8,
-  },
-  inProgressCard: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  inProgressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  inProgressBadge: {
-    backgroundColor: 'rgba(255,255,255,0.4)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  inProgressBadgeText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  inProgressTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  inProgressLocation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  inProgressLocationIcon: {
-    fontSize: 12,
-    marginRight: 6,
-  },
-  inProgressLocationText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  inProgressDate: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  inProgressDateIcon: {
-    fontSize: 12,
-    marginRight: 6,
-  },
-  inProgressDateText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  inProgressStarted: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
-  },
-  inProgressStartedIcon: {
-    fontSize: 12,
-    marginRight: 6,
-  },
-  inProgressStartedText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-  },
-
-  // Filter Card
-  filterCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  filterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  filterIcon: {
-    fontSize: 16,
-    marginRight: 8,
-    color: '#6B7280',
-  },
-  filterTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  filterButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  filterButton: {
+  filterTab: {
     flex: 1,
-    minWidth: '45%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#fff',
     gap: 6,
   },
-  filterButtonActive: {
+  filterTabActive: {
     backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5',
   },
-  filterButtonIcon: {
-    fontSize: 14,
+  filterTabIcon: {
+    fontSize: 16,
   },
-  filterButtonIconActive: {
-    opacity: 1,
-  },
-  filterButtonText: {
+  filterTabText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  filterButtonTextActive: {
-    color: '#fff',
-  },
-
-  // Stats Grid - Circulos coloridos como na web
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  statIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statIconText: {
-    fontSize: 20,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 12,
+    fontWeight: '600',
     color: '#64748B',
-    fontWeight: '500',
   },
-
-  // Sections
-  section: {
-    marginTop: 8,
+  filterTabTextActive: {
+    color: '#FFFFFF',
+  },
+  filterBadge: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+  },
+  filterBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  filterBadgeText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#64748B',
+  },
+  filterBadgeTextActive: {
+    color: '#FFFFFF',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyIcon: {
+    fontSize: 48,
     marginBottom: 16,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  sectionIcon: {
+  emptyTitle: {
     fontSize: 18,
-    marginRight: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
-    flex: 1,
-  },
-  sectionBadge: {
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  sectionBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  emptySection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  emptySectionText: {
-    fontSize: 14,
-    color: '#94A3B8',
-  },
-  moreText: {
+    color: '#334155',
     textAlign: 'center',
-    color: '#4F46E5',
-    marginTop: 8,
-    fontWeight: '500',
+    marginBottom: 8,
   },
-
-  // Cards
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 10,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardModified: {
-    borderColor: '#FCD34D',
     borderWidth: 2,
+    borderColor: '#F59E0B',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   orderInfo: {
     flexDirection: 'row',
@@ -877,7 +507,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   orderNumberBadge: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#1E3A5F',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -885,13 +515,13 @@ const styles = StyleSheet.create({
   orderNumberText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#4F46E5',
+    color: '#FFFFFF',
   },
   offlineBadge: {
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 4,
   },
   offlineBadgeText: {
     fontSize: 10,
@@ -904,15 +534,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1E293B',
-    marginBottom: 10,
-    lineHeight: 20,
+    marginBottom: 12,
+    lineHeight: 22,
   },
   locationRow: {
     flexDirection: 'row',
@@ -921,8 +551,7 @@ const styles = StyleSheet.create({
   },
   locationIcon: {
     fontSize: 14,
-    marginRight: 6,
-    opacity: 0.8,
+    marginRight: 8,
   },
   locationText: {
     fontSize: 13,
@@ -936,8 +565,7 @@ const styles = StyleSheet.create({
   },
   dateIcon: {
     fontSize: 14,
-    marginRight: 6,
-    opacity: 0.8,
+    marginRight: 8,
   },
   dateText: {
     fontSize: 13,
@@ -946,33 +574,32 @@ const styles = StyleSheet.create({
   priorityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   priorityDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    marginRight: 8,
   },
   priorityText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
-    fontWeight: '500',
   },
   startedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#E2E8F0',
   },
   startedIcon: {
-    fontSize: 12,
-    marginRight: 6,
+    fontSize: 14,
+    marginRight: 8,
   },
   startedText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#10B981',
     fontWeight: '500',
   },
@@ -980,7 +607,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: '#E2E8F0',
   },
   actionButton: {
     paddingVertical: 10,
@@ -988,23 +615,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewButton: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#4F46E5',
   },
   viewButtonText: {
-    color: '#4F46E5',
-    fontWeight: '600',
     fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
-
-  // Bottom
   bottomSpacer: {
-    height: 80,
+    height: 20,
   },
   scanButton: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    bottom: 24,
+    left: 16,
+    right: 16,
     backgroundColor: '#4F46E5',
     flexDirection: 'row',
     alignItems: 'center',
@@ -1015,15 +640,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 8,
+    gap: 8,
   },
   scanButtonIcon: {
     fontSize: 20,
-    marginRight: 10,
   },
   scanButtonText: {
-    color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
 });
