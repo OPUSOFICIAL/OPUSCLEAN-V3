@@ -24,7 +24,8 @@ export interface WorkOrder {
   siteName: string;
   zoneId: string;
   zoneName: string;
-  scheduledDate: string;
+  scheduledDate: string | null;
+  dueDate: string | null;
   startedAt: string | null;
   completedAt: string | null;
   assignedUserId: string | null;

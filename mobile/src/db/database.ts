@@ -51,7 +51,8 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       siteName TEXT,
       zoneId TEXT NOT NULL,
       zoneName TEXT,
-      scheduledDate TEXT NOT NULL,
+      scheduledDate TEXT,
+      dueDate TEXT,
       startedAt TEXT,
       completedAt TEXT,
       assignedUserId TEXT,
@@ -143,6 +144,73 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
     CREATE INDEX IF NOT EXISTS idx_photos_wo ON work_order_photos(workOrderId);
     CREATE INDEX IF NOT EXISTS idx_comments_wo ON work_order_comments(workOrderId);
   `);
+  
+  await runMigrations(database);
+}
+
+async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    await database.runAsync('ALTER TABLE work_orders ADD COLUMN dueDate TEXT');
+  } catch (e) {
+  }
+  
+  try {
+    const tableInfo = await database.getAllAsync<any>('PRAGMA table_info(work_orders)');
+    const scheduledDateCol = tableInfo.find((col: any) => col.name === 'scheduledDate');
+    
+    if (scheduledDateCol && scheduledDateCol.notnull === 1) {
+      await database.execAsync(`
+        BEGIN TRANSACTION;
+        
+        CREATE TABLE work_orders_new (
+          id TEXT PRIMARY KEY,
+          workOrderNumber INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          status TEXT NOT NULL,
+          priority TEXT NOT NULL,
+          module TEXT NOT NULL,
+          customerId TEXT NOT NULL,
+          siteId TEXT NOT NULL,
+          siteName TEXT,
+          zoneId TEXT NOT NULL,
+          zoneName TEXT,
+          scheduledDate TEXT,
+          dueDate TEXT,
+          startedAt TEXT,
+          completedAt TEXT,
+          assignedUserId TEXT,
+          assignedUserName TEXT,
+          checklistTemplateId TEXT,
+          serviceId TEXT,
+          createdAt TEXT,
+          updatedAt TEXT,
+          offlineModified INTEGER DEFAULT 0,
+          offlineAction TEXT,
+          lastSyncAt TEXT
+        );
+        
+        INSERT INTO work_orders_new SELECT 
+          id, workOrderNumber, title, description, status, priority, module, customerId,
+          siteId, siteName, zoneId, zoneName, scheduledDate, 
+          COALESCE((SELECT dueDate FROM work_orders AS wo2 WHERE wo2.id = work_orders.id), NULL),
+          startedAt, completedAt, assignedUserId, assignedUserName, checklistTemplateId, 
+          serviceId, createdAt, updatedAt, offlineModified, offlineAction, lastSyncAt
+        FROM work_orders;
+        
+        DROP TABLE work_orders;
+        ALTER TABLE work_orders_new RENAME TO work_orders;
+        
+        CREATE INDEX IF NOT EXISTS idx_work_orders_status ON work_orders(status);
+        CREATE INDEX IF NOT EXISTS idx_work_orders_date ON work_orders(scheduledDate);
+        CREATE INDEX IF NOT EXISTS idx_work_orders_customer ON work_orders(customerId);
+        
+        COMMIT;
+      `);
+    }
+  } catch (e) {
+    console.log('Migration to fix scheduledDate constraint skipped or failed:', e);
+  }
 }
 
 // ============================================================================
@@ -206,10 +274,10 @@ export async function saveWorkOrders(orders: WorkOrder[]): Promise<void> {
       await database.runAsync(
         `INSERT OR REPLACE INTO work_orders 
          (id, workOrderNumber, title, description, status, priority, module, customerId, 
-          siteId, siteName, zoneId, zoneName, scheduledDate, startedAt, completedAt,
+          siteId, siteName, zoneId, zoneName, scheduledDate, dueDate, startedAt, completedAt,
           assignedUserId, assignedUserName, checklistTemplateId, serviceId,
           createdAt, updatedAt, offlineModified, offlineAction, lastSyncAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         order.id,
         order.workOrderNumber,
         order.title,
@@ -222,7 +290,8 @@ export async function saveWorkOrders(orders: WorkOrder[]): Promise<void> {
         order.siteName || '',
         order.zoneId,
         order.zoneName || '',
-        order.scheduledDate,
+        order.scheduledDate || null,
+        order.dueDate || null,
         order.startedAt || null,
         order.completedAt || null,
         order.assignedUserId || '',
@@ -241,7 +310,7 @@ export async function saveWorkOrders(orders: WorkOrder[]): Promise<void> {
 
 export async function getWorkOrders(): Promise<WorkOrder[]> {
   const database = await getDatabase();
-  const rows = await database.getAllAsync<any>('SELECT * FROM work_orders ORDER BY scheduledDate ASC');
+  const rows = await database.getAllAsync<any>('SELECT * FROM work_orders ORDER BY COALESCE(dueDate, scheduledDate, createdAt) ASC');
   
   return rows.map(row => ({
     ...row,
@@ -251,6 +320,8 @@ export async function getWorkOrders(): Promise<WorkOrder[]> {
     description: row.description || null,
     siteName: row.siteName || '',
     zoneName: row.zoneName || '',
+    scheduledDate: row.scheduledDate || null,
+    dueDate: row.dueDate || null,
     startedAt: row.startedAt || null,
     completedAt: row.completedAt || null,
     checklistTemplateId: row.checklistTemplateId || null,
@@ -275,6 +346,8 @@ export async function getWorkOrderById(id: string): Promise<WorkOrder | null> {
     description: row.description || null,
     siteName: row.siteName || '',
     zoneName: row.zoneName || '',
+    scheduledDate: row.scheduledDate || null,
+    dueDate: row.dueDate || null,
     startedAt: row.startedAt || null,
     completedAt: row.completedAt || null,
     checklistTemplateId: row.checklistTemplateId || null,
@@ -324,7 +397,7 @@ export async function getWorkOrdersByZone(zoneId: string): Promise<WorkOrder[]> 
   const rows = await database.getAllAsync<any>(
     `SELECT * FROM work_orders 
      WHERE zoneId = ? AND status IN ('open', 'in_progress', 'paused')
-     ORDER BY scheduledDate ASC`,
+     ORDER BY COALESCE(dueDate, scheduledDate, createdAt) ASC`,
     zoneId
   );
   
@@ -336,6 +409,8 @@ export async function getWorkOrdersByZone(zoneId: string): Promise<WorkOrder[]> 
     description: row.description || null,
     siteName: row.siteName || '',
     zoneName: row.zoneName || '',
+    scheduledDate: row.scheduledDate || null,
+    dueDate: row.dueDate || null,
     startedAt: row.startedAt || null,
     completedAt: row.completedAt || null,
     checklistTemplateId: row.checklistTemplateId || null,

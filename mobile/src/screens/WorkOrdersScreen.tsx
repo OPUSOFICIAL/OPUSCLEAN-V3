@@ -59,7 +59,7 @@ export function WorkOrdersScreen({
     if (useCompletionDate && wo.completedAt) {
       return new Date(wo.completedAt);
     }
-    return new Date(wo.scheduledDate || wo.createdAt);
+    return new Date(wo.dueDate || wo.scheduledDate || wo.createdAt);
   }, []);
 
   const filterByDate = useCallback((orders: WorkOrder[], filter: DateFilter, useCompletionDate: boolean = false): WorkOrder[] => {
@@ -213,7 +213,7 @@ export function WorkOrdersScreen({
       <View style={styles.dateRow}>
         <Text style={styles.dateIcon}>📅</Text>
         <Text style={styles.dateText}>
-          Prazo: {format(new Date(item.scheduledDate), "dd/MM/yyyy", { locale: ptBR })}
+          Prazo: {format(new Date(item.dueDate || item.scheduledDate || item.createdAt), "dd/MM/yyyy", { locale: ptBR })}
         </Text>
       </View>
 
@@ -264,7 +264,7 @@ export function WorkOrdersScreen({
       <View style={styles.inProgressDate}>
         <Text style={styles.inProgressDateIcon}>📅</Text>
         <Text style={styles.inProgressDateText}>
-          Prazo: {format(new Date(item.scheduledDate), "dd/MM/yyyy", { locale: ptBR })}
+          Prazo: {format(new Date(item.dueDate || item.scheduledDate || item.createdAt), "dd/MM/yyyy", { locale: ptBR })}
         </Text>
       </View>
       {item.startedAt && (
