@@ -203,7 +203,7 @@ export function WorkOrdersScreen({
         </View>
       </View>
 
-      <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+      <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
 
       <View style={styles.locationRow}>
         <Text style={styles.locationIcon}>📍</Text>
@@ -302,7 +302,7 @@ export function WorkOrdersScreen({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header - Azul escuro como na web */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           {onBack ? (
@@ -311,41 +311,29 @@ export function WorkOrdersScreen({
             </TouchableOpacity>
           ) : (
             <View style={styles.userInfo}>
-              <Text style={styles.greeting}>Ola, {user.name}</Text>
-              <Text style={styles.orderCount}>
-                {workOrders.length} ordem{workOrders.length !== 1 ? 'ns' : ''} de servico
-              </Text>
+              <Text style={styles.greeting}>{user.name}</Text>
+              <Text style={styles.userRole}>Colaborador</Text>
             </View>
           )}
           {!onBack && (
-            <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-              <Text style={styles.logoutText}>Sair</Text>
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              {/* Botao de modulo Clean como na web */}
+              <View style={styles.moduleButton}>
+                <Text style={styles.moduleIcon}>📋</Text>
+                <Text style={styles.moduleText}>Clean</Text>
+                <Text style={styles.moduleRefresh}>🔄</Text>
+              </View>
+              <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+                <Text style={styles.logoutIcon}>→</Text>
+              </TouchableOpacity>
+            </View>
           )}
-        </View>
-
-        {/* Sync Status */}
-        <View style={styles.syncStatus}>
-          <View style={styles.syncInfo}>
-            <View style={[styles.onlineIndicator, { backgroundColor: syncStatus.isOnline ? '#10B981' : '#EF4444' }]} />
-            <Text style={styles.syncText}>{syncStatus.isOnline ? 'Online' : 'Offline'}</Text>
-            {syncStatus.pendingChanges > 0 && (
-              <Text style={styles.pendingText}>{syncStatus.pendingChanges} pendente{syncStatus.pendingChanges > 1 ? 's' : ''}</Text>
-            )}
-          </View>
-          <TouchableOpacity
-            style={[styles.syncButton, syncStatus.isSyncing && styles.syncButtonDisabled]}
-            onPress={onForceSync}
-            disabled={syncStatus.isSyncing}
-          >
-            <Text style={styles.syncButtonText}>{syncStatus.isSyncing ? 'Sincronizando...' : 'Sincronizar'}</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView 
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4F46E5']} />}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Em Execucao Card - Destaque */}
@@ -355,9 +343,7 @@ export function WorkOrdersScreen({
         ]}>
           <View style={styles.inProgressSectionHeader}>
             <Text style={styles.inProgressSectionIcon}>⚡</Text>
-            <Text style={styles.inProgressSectionTitle}>
-              {inProgressOrders.length > 0 ? 'Em Execucao Agora' : 'Minhas Execucoes'}
-            </Text>
+            <Text style={styles.inProgressSectionTitle}>Minhas Execucoes</Text>
             <View style={styles.inProgressSectionBadge}>
               <Text style={styles.inProgressSectionBadgeText}>{inProgressOrders.length}</Text>
             </View>
@@ -365,7 +351,9 @@ export function WorkOrdersScreen({
 
           {inProgressOrders.length === 0 ? (
             <View style={styles.inProgressEmptyContent}>
-              <Text style={styles.inProgressEmptyIcon}>▶️</Text>
+              <View style={styles.playIconContainer}>
+                <Text style={styles.playIcon}>▶</Text>
+              </View>
               <Text style={styles.inProgressEmptyTitle}>Nenhuma O.S em execucao</Text>
               <Text style={styles.inProgressEmptySubtitle}>Escaneie um QR Code para iniciar uma tarefa</Text>
             </View>
@@ -382,16 +370,16 @@ export function WorkOrdersScreen({
         {/* Filtros de Data */}
         <View style={styles.filterCard}>
           <View style={styles.filterHeader}>
-            <Text style={styles.filterIcon}>🗓️</Text>
+            <Text style={styles.filterIcon}>⏷</Text>
             <Text style={styles.filterTitle}>Filtrar por Data</Text>
           </View>
           <View style={styles.filterButtons}>
             {[
-              { key: 'hoje', label: 'Hoje' },
-              { key: 'ontem', label: 'Ontem' },
-              { key: 'semana', label: 'Esta Semana' },
-              { key: 'todos', label: 'Todas' },
-            ].map(({ key, label }) => (
+              { key: 'hoje', label: 'Hoje', icon: '📅' },
+              { key: 'ontem', label: 'Ontem', icon: '🕐' },
+              { key: 'semana', label: 'Esta Semana', icon: '📅' },
+              { key: 'todos', label: 'Todas', icon: '📅' },
+            ].map(({ key, label, icon }) => (
               <TouchableOpacity
                 key={key}
                 style={[
@@ -400,6 +388,12 @@ export function WorkOrdersScreen({
                 ]}
                 onPress={() => setDateFilter(key as DateFilter)}
               >
+                <Text style={[
+                  styles.filterButtonIcon,
+                  dateFilter === key && styles.filterButtonIconActive
+                ]}>
+                  {icon}
+                </Text>
                 <Text style={[
                   styles.filterButtonText,
                   dateFilter === key && styles.filterButtonTextActive
@@ -411,27 +405,35 @@ export function WorkOrdersScreen({
           </View>
         </View>
 
-        {/* Stats Cards */}
+        {/* Stats Cards - Com icones em circulos como na web */}
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, styles.statCardAvailable]}>
-            <Text style={styles.statIcon}>📂</Text>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#FEE2E2' }]}>
+              <Text style={styles.statIconText}>⚠️</Text>
+            </View>
             <Text style={styles.statValue}>{statusCounts.available}</Text>
             <Text style={styles.statLabel}>Disponiveis</Text>
           </View>
-          <View style={[styles.statCard, styles.statCardPending]}>
-            <Text style={styles.statIcon}>📋</Text>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#DBEAFE' }]}>
+              <Text style={styles.statIconText}>📋</Text>
+            </View>
             <Text style={styles.statValue}>{statusCounts.pending}</Text>
             <Text style={styles.statLabel}>Pendentes</Text>
           </View>
         </View>
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, styles.statCardPaused]}>
-            <Text style={styles.statIcon}>⏸️</Text>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#FEF3C7' }]}>
+              <Text style={styles.statIconText}>⏱️</Text>
+            </View>
             <Text style={styles.statValue}>{statusCounts.paused}</Text>
             <Text style={styles.statLabel}>Pausadas</Text>
           </View>
-          <View style={[styles.statCard, styles.statCardCompleted]}>
-            <Text style={styles.statIcon}>✅</Text>
+          <View style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#D1FAE5' }]}>
+              <Text style={styles.statIconText}>✓</Text>
+            </View>
             <Text style={styles.statValue}>{statusCounts.completed}</Text>
             <Text style={styles.statLabel}>Concluidas</Text>
           </View>
@@ -459,10 +461,10 @@ export function WorkOrdersScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F1F5F9',
   },
   header: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#1E3A5F',
     paddingTop: 50,
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -470,22 +472,46 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
   },
   userInfo: {
     flex: 1,
   },
   greeting: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
   },
-  orderCount: {
+  userRole: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  moduleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  moduleIcon: {
     fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    marginTop: 4,
+  },
+  moduleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0D9488',
+  },
+  moduleRefresh: {
+    fontSize: 12,
+    color: '#0D9488',
   },
   backButton: {
     paddingVertical: 8,
@@ -497,56 +523,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   logoutButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    width: 36,
+    height: 36,
     borderRadius: 8,
-  },
-  logoutText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  syncStatus: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    padding: 12,
-    borderRadius: 10,
-  },
-  syncInfo: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  onlineIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
-  },
-  syncText: {
+  logoutIcon: {
     color: '#fff',
-    fontWeight: '600',
-  },
-  pendingText: {
-    color: '#FCD34D',
-    marginLeft: 12,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  syncButton: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  syncButtonDisabled: {
-    opacity: 0.5,
-  },
-  syncButtonText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
@@ -565,7 +552,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   inProgressEmpty: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: '#94A3B8',
   },
   inProgressSectionHeader: {
     flexDirection: 'row',
@@ -597,10 +584,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
   },
-  inProgressEmptyIcon: {
-    fontSize: 40,
-    marginBottom: 12,
-    opacity: 0.8,
+  playIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  playIcon: {
+    fontSize: 28,
+    color: 'rgba(255,255,255,0.9)',
   },
   inProgressEmptyTitle: {
     fontSize: 16,
@@ -713,6 +708,7 @@ const styles = StyleSheet.create({
   filterIcon: {
     fontSize: 16,
     marginRight: 8,
+    color: '#6B7280',
   },
   filterTitle: {
     fontSize: 14,
@@ -727,83 +723,89 @@ const styles = StyleSheet.create({
   filterButton: {
     flex: 1,
     minWidth: '45%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    alignItems: 'center',
+    backgroundColor: '#fff',
+    gap: 6,
   },
   filterButtonActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  filterButtonIcon: {
+    fontSize: 14,
+  },
+  filterButtonIconActive: {
+    opacity: 1,
   },
   filterButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#4B5563',
+    color: '#374151',
   },
   filterButtonTextActive: {
     color: '#fff',
   },
 
-  // Stats Grid
+  // Stats Grid - Circulos coloridos como na web
   statsGrid: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  statCardAvailable: {
-    borderTopWidth: 3,
-    borderTopColor: '#F97316',
+  statIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  statCardPending: {
-    borderTopWidth: 3,
-    borderTopColor: '#3B82F6',
-  },
-  statCardPaused: {
-    borderTopWidth: 3,
-    borderTopColor: '#F59E0B',
-  },
-  statCardCompleted: {
-    borderTopWidth: 3,
-    borderTopColor: '#10B981',
-  },
-  statIcon: {
+  statIconText: {
     fontSize: 20,
-    marginBottom: 6,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#1E293B',
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
   },
 
   // Sections
   section: {
-    marginBottom: 20,
+    marginTop: 8,
+    marginBottom: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    paddingHorizontal: 4,
   },
   sectionIcon: {
     fontSize: 18,
@@ -811,12 +813,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontWeight: '600',
+    color: '#1E293B',
     flex: 1,
   },
   sectionBadge: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E2E8F0',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
@@ -824,41 +826,44 @@ const styles = StyleSheet.create({
   sectionBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4B5563',
+    color: '#475569',
   },
   emptySection: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 24,
+    padding: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   emptySectionText: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: '#94A3B8',
   },
   moreText: {
     textAlign: 'center',
-    color: '#3B82F6',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#4F46E5',
     marginTop: 8,
+    fontWeight: '500',
   },
 
-  // Work Order Card
+  // Cards
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   cardModified: {
+    borderColor: '#FCD34D',
     borderWidth: 2,
-    borderColor: '#F59E0B',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -869,29 +874,29 @@ const styles = StyleSheet.create({
   orderInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   orderNumberBadge: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   orderNumberText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#3B82F6',
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4F46E5',
   },
   offlineBadge: {
     backgroundColor: '#FEF3C7',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
-    marginLeft: 8,
+    borderRadius: 6,
   },
   offlineBadgeText: {
     fontSize: 10,
-    color: '#D97706',
     fontWeight: '600',
+    color: '#D97706',
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -899,45 +904,49 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
-  title: {
-    fontSize: 16,
+  cardTitle: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#1E293B',
     marginBottom: 10,
+    lineHeight: 20,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   locationIcon: {
-    fontSize: 12,
+    fontSize: 14,
     marginRight: 6,
+    opacity: 0.8,
   },
   locationText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#64748B',
+    flex: 1,
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   dateIcon: {
-    fontSize: 12,
+    fontSize: 14,
     marginRight: 6,
+    opacity: 0.8,
   },
   dateText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#64748B',
   },
   priorityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   priorityDot: {
     width: 8,
@@ -947,15 +956,16 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#64748B',
+    fontWeight: '500',
   },
   startedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F1F5F9',
   },
   startedIcon: {
     fontSize: 12,
@@ -963,53 +973,57 @@ const styles = StyleSheet.create({
   },
   startedText: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#10B981',
+    fontWeight: '500',
   },
   actions: {
-    marginTop: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
   actionButton: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
   viewButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#EEF2FF',
   },
   viewButtonText: {
-    color: '#fff',
+    color: '#4F46E5',
     fontWeight: '600',
     fontSize: 14,
   },
 
   // Bottom
   bottomSpacer: {
-    height: 100,
+    height: 80,
   },
   scanButton: {
     position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-    backgroundColor: '#3B82F6',
-    paddingVertical: 16,
-    borderRadius: 14,
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: '#4F46E5',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#3B82F6',
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 4,
   },
   scanButtonIcon: {
-    fontSize: 18,
+    fontSize: 20,
     marginRight: 10,
   },
   scanButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
