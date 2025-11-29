@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthState, canOnlyViewOwnWorkOrders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { useModule } from "@/contexts/ModuleContext";
 import { MobileHeader } from "@/components/mobile-header";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { Capacitor } from "@capacitor/core";
+import { isToday } from "date-fns";
 
 interface WorkOrder {
   id: string;
@@ -31,12 +32,14 @@ interface WorkOrder {
   completedAt?: string;
 }
 
+type FilterType = 'pendentes_dia' | 'minhas_os';
+
 export default function MobileDashboard() {
   const { currentModule } = useModule();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = getAuthState();
-  const [dateFilter, setDateFilter] = useState<'hoje' | 'ontem' | 'semana' | 'todos'>('todos');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('pendentes_dia');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPageAvailable, setCurrentPageAvailable] = useState(0);
   const [currentPageCompleted, setCurrentPageCompleted] = useState(0);
@@ -169,44 +172,43 @@ export default function MobileDashboard() {
     );
   }
 
-  // Função para filtrar OS por data
-  const filterWorkOrdersByDate = (orders: WorkOrder[], useCompletionDate: boolean = false) => {
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(today.getDate() - 7);
+  // === NOVOS FILTROS SIMPLIFICADOS ===
+  
+  // O.S. Pendentes do Dia - Abertas com data de hoje
+  const pendentesHoje = useMemo(() => {
+    return workOrders
+      .filter(wo => {
+        const orderDate = new Date(wo.dueDate || wo.createdAt);
+        const isOpen = wo.status === 'aberta' || wo.status === 'open';
+        return isOpen && isToday(orderDate);
+      })
+      .sort((a, b) => b.number - a.number);
+  }, [workOrders]);
 
-    switch (dateFilter) {
-      case 'hoje':
-        return orders.filter(wo => {
-          // Para O.S. concluídas, usar completedAt; para outras, usar dueDate ou createdAt
-          const dateToCheck = useCompletionDate && wo.completedAt ? wo.completedAt : (wo.dueDate || wo.createdAt);
-          const orderDate = new Date(dateToCheck);
-          return orderDate.toDateString() === today.toDateString();
-        });
-      case 'ontem':
-        return orders.filter(wo => {
-          const dateToCheck = useCompletionDate && wo.completedAt ? wo.completedAt : (wo.dueDate || wo.createdAt);
-          const orderDate = new Date(dateToCheck);
-          return orderDate.toDateString() === yesterday.toDateString();
-        });
-      case 'semana':
-        return orders.filter(wo => {
-          const dateToCheck = useCompletionDate && wo.completedAt ? wo.completedAt : (wo.dueDate || wo.createdAt);
-          const orderDate = new Date(dateToCheck);
-          return orderDate >= oneWeekAgo && orderDate <= today;
-        });
-      case 'todos':
-      default:
-        return orders;
-    }
-  };
+  // Minhas O.S. - Todas atribuidas ao operador (qualquer status exceto concluida/cancelada)
+  const minhasOS = useMemo(() => {
+    if (!user) return [];
+    return workOrders
+      .filter(wo => {
+        const assignedIds = (wo as any).assignedUserIds || [];
+        const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+        const isActive = wo.status !== 'concluida' && wo.status !== 'cancelada';
+        return isAssignedToMe && isActive;
+      })
+      .sort((a, b) => {
+        const statusOrder: Record<string, number> = { 'em_execucao': 0, 'pausada': 1, 'aberta': 2 };
+        const aOrder = statusOrder[a.status] ?? 3;
+        const bOrder = statusOrder[b.status] ?? 3;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return b.number - a.number;
+      });
+  }, [workOrders, user]);
 
-  const filteredWorkOrders = filterWorkOrdersByDate(workOrders);
+  // Lista atual baseada no filtro ativo
+  const currentFilteredList = activeFilter === 'pendentes_dia' ? pendentesHoje : minhasOS;
 
-  // Separar as OS em categorias
-  const availableOrders = filteredWorkOrders.filter(wo => 
+  // Separar as OS em categorias (mantendo compatibilidade)
+  const availableOrders = workOrders.filter(wo => 
     !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
   ).sort((a, b) => b.number - a.number);
 
@@ -217,34 +219,42 @@ export default function MobileDashboard() {
     (currentPageAvailable + 1) * ITEMS_PER_PAGE
   );
   
-  // 🔥 ATUALIZADO: Minhas em Execução - O.S que o colaborador trabalhou
-  const myInProgressOrders = filteredWorkOrders.filter(wo => {
-    const assignedIds = (wo as any).assignedUserIds || [];
-    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
-    return isAssignedToMe && wo.status === 'em_execucao';
-  }).sort((a, b) => b.number - a.number);
+  // Minhas em Execução - O.S que o colaborador trabalhou
+  const myInProgressOrders = useMemo(() => {
+    if (!user) return [];
+    return workOrders.filter(wo => {
+      const assignedIds = (wo as any).assignedUserIds || [];
+      const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+      return isAssignedToMe && wo.status === 'em_execucao';
+    }).sort((a, b) => b.number - a.number);
+  }, [workOrders, user]);
   
-  const myPendingOrders = filteredWorkOrders.filter(wo => {
-    const assignedIds = (wo as any).assignedUserIds || [];
-    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
-    return isAssignedToMe && 
-      wo.status !== 'concluida' && 
-      wo.status !== 'cancelada' && 
-      wo.status !== 'pausada' && 
-      wo.status !== 'em_execucao'; // Excluir as que já estão em execução
-  }).sort((a, b) => b.number - a.number);
+  const myPendingOrders = useMemo(() => {
+    if (!user) return [];
+    return workOrders.filter(wo => {
+      const assignedIds = (wo as any).assignedUserIds || [];
+      const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+      return isAssignedToMe && 
+        wo.status !== 'concluida' && 
+        wo.status !== 'cancelada' && 
+        wo.status !== 'pausada' && 
+        wo.status !== 'em_execucao';
+    }).sort((a, b) => b.number - a.number);
+  }, [workOrders, user]);
   
-  const myPausedOrders = filteredWorkOrders.filter(wo => 
-    wo.status === 'pausada'
-  ).sort((a, b) => b.number - a.number);
+  const myPausedOrders = useMemo(() => {
+    return workOrders.filter(wo => wo.status === 'pausada').sort((a, b) => b.number - a.number);
+  }, [workOrders]);
   
-  // Filtrar O.S. concluídas pelo filtro de data (para exibição na seção)
-  const completedOrdersFiltered = filterWorkOrdersByDate(workOrders, true);
-  const myCompletedOrdersAll = completedOrdersFiltered.filter(wo => {
-    const assignedIds = (wo as any).assignedUserIds || [];
-    const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
-    return isAssignedToMe && wo.status === 'concluida';
-  }).sort((a, b) => b.number - a.number);
+  // O.S. Concluídas
+  const myCompletedOrdersAll = useMemo(() => {
+    if (!user) return [];
+    return workOrders.filter(wo => {
+      const assignedIds = (wo as any).assignedUserIds || [];
+      const isAssignedToMe = assignedIds.includes(user.id) || wo.assignedUserId === user.id;
+      return isAssignedToMe && wo.status === 'concluida';
+    }).sort((a, b) => b.number - a.number);
+  }, [workOrders, user]);
   
   // Paginação para O.S. Concluídas
   const totalPagesCompleted = Math.ceil(myCompletedOrdersAll.length / ITEMS_PER_PAGE);
@@ -444,70 +454,42 @@ export default function MobileDashboard() {
           </CardContent>
         </Card>
 
-        {/* Filtros de Data */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Filtrar por Data
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-2 gap-2">
+        {/* Filtros Simplificados */}
+        <Card className="bg-white/90 backdrop-blur-sm border-white/30 shadow-lg">
+          <CardContent className="p-3">
+            <div className="flex gap-2">
               <Button
-                variant={dateFilter === 'hoje' ? 'default' : 'outline'}
+                variant={activeFilter === 'pendentes_dia' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setDateFilter('hoje')}
-                className={`text-xs ${dateFilter === 'hoje' 
+                onClick={() => setActiveFilter('pendentes_dia')}
+                className={`flex-1 ${activeFilter === 'pendentes_dia' 
                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
                   : 'border-blue-200 text-blue-700 hover:bg-blue-50'
                 }`}
-                data-testid="filter-hoje"
+                data-testid="filter-pendentes-dia"
               >
-                <Calendar className="w-3 h-3 mr-1" />
-                Hoje
+                <Calendar className="w-4 h-4 mr-2" />
+                Pendentes Hoje
+                <Badge className={`ml-2 ${activeFilter === 'pendentes_dia' ? 'bg-white/30 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                  {pendentesHoje.length}
+                </Badge>
               </Button>
               
               <Button
-                variant={dateFilter === 'ontem' ? 'default' : 'outline'}
+                variant={activeFilter === 'minhas_os' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setDateFilter('ontem')}
-                className={`text-xs ${dateFilter === 'ontem' 
+                onClick={() => setActiveFilter('minhas_os')}
+                className={`flex-1 ${activeFilter === 'minhas_os' 
                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
                   : 'border-blue-200 text-blue-700 hover:bg-blue-50'
                 }`}
-                data-testid="filter-ontem"
+                data-testid="filter-minhas-os"
               >
-                <Clock className="w-3 h-3 mr-1" />
-                Ontem
-              </Button>
-              
-              <Button
-                variant={dateFilter === 'semana' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateFilter('semana')}
-                className={`text-xs ${dateFilter === 'semana' 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'border-blue-200 text-blue-700 hover:bg-blue-50'
-                }`}
-                data-testid="filter-semana"
-              >
-                <Calendar className="w-3 h-3 mr-1" />
-                Esta Semana
-              </Button>
-              
-              <Button
-                variant={dateFilter === 'todos' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setDateFilter('todos')}
-                className={`text-xs ${dateFilter === 'todos' 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'border-blue-200 text-blue-700 hover:bg-blue-50'
-                }`}
-                data-testid="filter-todos"
-              >
-                <ClipboardList className="w-3 h-3 mr-1" />
-                Todas
+                <User className="w-4 h-4 mr-2" />
+                Minhas O.S.
+                <Badge className={`ml-2 ${activeFilter === 'minhas_os' ? 'bg-white/30 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                  {minhasOS.length}
+                </Badge>
               </Button>
             </div>
           </CardContent>
