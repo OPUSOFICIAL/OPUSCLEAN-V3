@@ -281,7 +281,11 @@ export async function getUserFromToken(req: Request): Promise<SessionUser | null
         isActive: user.isActive,
         modules: user.modules || []
       };
-    } catch (jwtError) {
+    } catch (jwtError: any) {
+      // Log JWT error for debugging
+      if (reqPath.includes('my-customers')) {
+        console.log('[AUTH DEBUG] JWT verification failed:', jwtError.message);
+      }
       // Fallback to old token format for backwards compatibility
       const parts = token.split('_');
       if (parts.length >= 2 && parts[0] === 'token') {
