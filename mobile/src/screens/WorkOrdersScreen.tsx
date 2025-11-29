@@ -54,16 +54,21 @@ export function WorkOrdersScreen({
     setRefreshing(false);
   };
 
-  // O.S. Pendentes do Dia - Abertas com data de hoje
-  const pendentesHoje = useMemo(() => {
+  // O.S. Disponíveis (não atribuídas, abertas)
+  const allAvailableOrders = useMemo(() => {
     return workOrders
-      .filter(wo => {
-        const orderDate = new Date(wo.dueDate || wo.scheduledDate || wo.createdAt);
-        const isOpen = wo.status === 'open';
-        return isOpen && isToday(orderDate);
-      })
+      .filter(wo => !wo.assignedUserId && wo.status === 'open')
       .sort((a, b) => b.workOrderNumber - a.workOrderNumber);
   }, [workOrders]);
+
+  // Pendentes Hoje - O.S. DISPONÍVEIS (não atribuídas) com data de hoje
+  const pendentesHoje = useMemo(() => {
+    return allAvailableOrders
+      .filter(wo => {
+        const orderDate = new Date(wo.dueDate || wo.scheduledDate || wo.createdAt);
+        return isToday(orderDate);
+      });
+  }, [allAvailableOrders]);
 
   // Minhas O.S. - Todas atribuidas ao operador (qualquer status exceto concluida/cancelada)
   const minhasOS = useMemo(() => {
@@ -74,7 +79,6 @@ export function WorkOrdersScreen({
         return isAssignedToMe && isActive;
       })
       .sort((a, b) => {
-        // Prioridade: em execucao > pausada > aberta
         const statusOrder = { 'in_progress': 0, 'paused': 1, 'open': 2 };
         const aOrder = statusOrder[a.status as keyof typeof statusOrder] ?? 3;
         const bOrder = statusOrder[b.status as keyof typeof statusOrder] ?? 3;

@@ -174,16 +174,21 @@ export default function MobileDashboard() {
 
   // === NOVOS FILTROS SIMPLIFICADOS ===
   
-  // O.S. Pendentes do Dia - Abertas com data de hoje
-  const pendentesHoje = useMemo(() => {
+  // O.S. Disponíveis (não atribuídas, abertas)
+  const allAvailableOrders = useMemo(() => {
     return workOrders
-      .filter(wo => {
-        const orderDate = new Date(wo.dueDate || wo.createdAt);
-        const isOpen = wo.status === 'aberta' || wo.status === 'open';
-        return isOpen && isToday(orderDate);
-      })
+      .filter(wo => !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada')
       .sort((a, b) => b.number - a.number);
   }, [workOrders]);
+
+  // Pendentes Hoje - O.S. DISPONÍVEIS (não atribuídas) com data de hoje
+  const pendentesHoje = useMemo(() => {
+    return allAvailableOrders
+      .filter(wo => {
+        const orderDate = new Date(wo.dueDate || wo.createdAt);
+        return isToday(orderDate);
+      });
+  }, [allAvailableOrders]);
 
   // Minhas O.S. - Todas atribuidas ao operador (qualquer status exceto concluida/cancelada)
   const minhasOS = useMemo(() => {
@@ -204,20 +209,20 @@ export default function MobileDashboard() {
       });
   }, [workOrders, user]);
 
-  // Lista atual baseada no filtro ativo
-  const currentFilteredList = activeFilter === 'pendentes_dia' ? pendentesHoje : minhasOS;
+  // Lista filtrada baseada no filtro ativo (para exibição principal)
+  const filteredOrders = activeFilter === 'pendentes_dia' ? pendentesHoje : minhasOS;
 
-  // Separar as OS em categorias (mantendo compatibilidade)
-  const availableOrders = workOrders.filter(wo => 
-    !wo.assignedUserId && wo.status !== 'concluida' && wo.status !== 'cancelada' && wo.status !== 'pausada'
-  ).sort((a, b) => b.number - a.number);
-
-  // Paginação para OS Disponíveis
-  const totalPagesAvailable = Math.ceil(availableOrders.length / ITEMS_PER_PAGE);
-  const paginatedAvailableOrders = availableOrders.slice(
+  // Paginação para lista filtrada
+  const totalPagesFiltered = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
+  const paginatedFilteredOrders = filteredOrders.slice(
     currentPageAvailable * ITEMS_PER_PAGE,
     (currentPageAvailable + 1) * ITEMS_PER_PAGE
   );
+
+  // Compatibilidade com código existente
+  const availableOrders = allAvailableOrders;
+  const totalPagesAvailable = totalPagesFiltered;
+  const paginatedAvailableOrders = paginatedFilteredOrders;
   
   // Minhas em Execução - O.S que o colaborador trabalhou
   const myInProgressOrders = useMemo(() => {
@@ -723,41 +728,86 @@ export default function MobileDashboard() {
           )}
         </div>
 
-        {/* Work Orders List - Disponíveis */}
-        {availableOrders.length > 0 && (
-          <div className="space-y-4" id="disponiveis-section">
-            <h2 className="text-xl font-bold text-orange-900 flex items-center gap-2">
-              <AlertCircle className="w-6 h-6" />
-              OS Disponíveis ({availableOrders.length})
-            </h2>
+        {/* Work Orders List - Baseada no Filtro Ativo */}
+        <div className="space-y-4" id="disponiveis-section">
+          <h2 className={`text-xl font-bold flex items-center gap-2 ${
+            activeFilter === 'pendentes_dia' ? 'text-orange-900' : 'text-blue-900'
+          }`}>
+            {activeFilter === 'pendentes_dia' ? (
+              <>
+                <AlertCircle className="w-6 h-6" />
+                OS Disponíveis Hoje ({filteredOrders.length})
+              </>
+            ) : (
+              <>
+                <User className="w-6 h-6" />
+                Minhas O.S. ({filteredOrders.length})
+              </>
+            )}
+          </h2>
 
-            {paginatedAvailableOrders.map((workOrder) => (
-              <Card key={workOrder.id} className="bg-orange-50/80 backdrop-blur-sm border-orange-200 shadow-lg">
+          {filteredOrders.length === 0 ? (
+            <Card className="bg-white/80 backdrop-blur-sm border-white/20">
+              <CardContent className="p-6 text-center">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  {activeFilter === 'pendentes_dia' ? 'Nenhuma O.S. disponível hoje!' : 'Nenhuma O.S. atribuída a você!'}
+                </h3>
+                <p className="text-slate-600">
+                  {activeFilter === 'pendentes_dia' 
+                    ? 'Não há ordens de serviço disponíveis para hoje.'
+                    : 'Você não tem ordens de serviço atribuídas no momento.'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            paginatedFilteredOrders.map((workOrder) => (
+              <Card key={workOrder.id} className={`backdrop-blur-sm shadow-lg ${
+                activeFilter === 'pendentes_dia' 
+                  ? 'bg-orange-50/80 border-orange-200' 
+                  : 'bg-blue-50/80 border-blue-200'
+              }`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1 flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="bg-orange-600 text-white border-orange-700 font-bold">
+                        <Badge variant="outline" className={`text-white font-bold ${
+                          activeFilter === 'pendentes_dia' 
+                            ? 'bg-orange-600 border-orange-700' 
+                            : 'bg-blue-600 border-blue-700'
+                        }`}>
                           OS #{workOrder.number}
                         </Badge>
                       </div>
-                      <CardTitle className="text-lg text-orange-900 break-words">{workOrder.title}</CardTitle>
-                      <div className="flex items-center space-x-2 text-sm text-orange-700">
+                      <CardTitle className={`text-lg break-words ${
+                        activeFilter === 'pendentes_dia' ? 'text-orange-900' : 'text-blue-900'
+                      }`}>{workOrder.title}</CardTitle>
+                      <div className={`flex items-center space-x-2 text-sm ${
+                        activeFilter === 'pendentes_dia' ? 'text-orange-700' : 'text-blue-700'
+                      }`}>
                         <MapPin className="w-4 h-4" />
                         <span>{workOrder.siteName} - {workOrder.zoneName}</span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
                       <div className={`w-3 h-3 rounded-full ${getPriorityColor(workOrder.priority)}`}></div>
-                      <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
-                        Disponível
+                      <Badge variant="outline" className={`${
+                        activeFilter === 'pendentes_dia' 
+                          ? 'bg-orange-100 text-orange-800 border-orange-200' 
+                          : getStatusColor(workOrder.status)
+                      }`}>
+                        {activeFilter === 'pendentes_dia' ? 'Disponível' : workOrder.status.replace('_', ' ')}
                       </Badge>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-orange-800 mb-3">{workOrder.description}</p>
-                  <div className="flex items-center justify-between text-sm text-orange-600 mb-3">
+                  <p className={`mb-3 ${
+                    activeFilter === 'pendentes_dia' ? 'text-orange-800' : 'text-blue-800'
+                  }`}>{workOrder.description}</p>
+                  <div className={`flex items-center justify-between text-sm mb-3 ${
+                    activeFilter === 'pendentes_dia' ? 'text-orange-600' : 'text-blue-600'
+                  }`}>
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
                       <span>Prazo: {formatDate(workOrder.dueDate)}</span>
@@ -765,7 +815,11 @@ export default function MobileDashboard() {
                     <span className="font-medium capitalize">{workOrder.type.replace('_', ' ')}</span>
                   </div>
                   <Button 
-                    className="w-full bg-orange-600 hover:bg-orange-700" 
+                    className={`w-full ${
+                      activeFilter === 'pendentes_dia' 
+                        ? 'bg-orange-600 hover:bg-orange-700' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                     data-testid={`button-view-order-${workOrder.id}`}
                     onClick={() => setLocation(`/mobile/work-order-details/${workOrder.id}`)}
                   >
@@ -773,55 +827,63 @@ export default function MobileDashboard() {
                   </Button>
                 </CardContent>
               </Card>
-            ))}
+            ))
+          )}
 
-            {/* Pagination Controls */}
-            {totalPagesAvailable > 1 && (
-              <div className="flex items-center justify-between gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPageAvailable(Math.max(0, currentPageAvailable - 1))}
-                  disabled={currentPageAvailable === 0}
-                  className="bg-white/80 border-orange-200 hover:bg-orange-50"
-                  data-testid="button-prev-available"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Anterior
-                </Button>
+          {/* Pagination Controls */}
+          {totalPagesFiltered > 1 && (
+            <div className="flex items-center justify-between gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPageAvailable(Math.max(0, currentPageAvailable - 1))}
+                disabled={currentPageAvailable === 0}
+                className={`bg-white/80 ${
+                  activeFilter === 'pendentes_dia' 
+                    ? 'border-orange-200 hover:bg-orange-50' 
+                    : 'border-blue-200 hover:bg-blue-50'
+                }`}
+                data-testid="button-prev-available"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Anterior
+              </Button>
 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPagesAvailable }).map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentPageAvailable(index)}
-                      className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
-                        currentPageAvailable === index
-                          ? 'bg-orange-600 text-white'
-                          : 'bg-white/80 text-orange-900 hover:bg-orange-100'
-                      }`}
-                      data-testid={`button-page-available-${index}`}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPageAvailable(Math.min(totalPagesAvailable - 1, currentPageAvailable + 1))}
-                  disabled={currentPageAvailable === totalPagesAvailable - 1}
-                  className="bg-white/80 border-orange-200 hover:bg-orange-50"
-                  data-testid="button-next-available"
-                >
-                  Próximo
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPagesFiltered }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentPageAvailable(index)}
+                    className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                      currentPageAvailable === index
+                        ? (activeFilter === 'pendentes_dia' ? 'bg-orange-600 text-white' : 'bg-blue-600 text-white')
+                        : (activeFilter === 'pendentes_dia' ? 'bg-white/80 text-orange-900 hover:bg-orange-100' : 'bg-white/80 text-blue-900 hover:bg-blue-100')
+                    }`}
+                    data-testid={`button-page-available-${index}`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPageAvailable(Math.min(totalPagesFiltered - 1, currentPageAvailable + 1))}
+                disabled={currentPageAvailable === totalPagesFiltered - 1}
+                className={`bg-white/80 ${
+                  activeFilter === 'pendentes_dia' 
+                    ? 'border-orange-200 hover:bg-orange-50' 
+                    : 'border-blue-200 hover:bg-blue-50'
+                }`}
+                data-testid="button-next-available"
+              >
+                Próximo
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Work Orders List - Pausadas */}
         {myPausedOrders.length > 0 && (
