@@ -551,10 +551,13 @@ export default function MobileDashboard() {
             <Card 
               className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
               onClick={() => {
-                document.getElementById('disponiveis-section')?.scrollIntoView({ 
-                  behavior: 'smooth', 
-                  block: 'start' 
-                });
+                setActiveFilter('pendentes_dia');
+                setTimeout(() => {
+                  document.getElementById('disponiveis-section')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                  });
+                }, 100);
               }}
               data-testid="card-disponiveis"
             >
@@ -572,10 +575,13 @@ export default function MobileDashboard() {
             <Card 
               className="bg-white/80 backdrop-blur-sm border-white/20 cursor-pointer hover:shadow-lg transition-shadow active:scale-95"
               onClick={() => {
-                document.getElementById('pendentes-section')?.scrollIntoView({ 
-                  behavior: 'smooth', 
-                  block: 'start' 
-                });
+                setActiveFilter('minhas_os');
+                setTimeout(() => {
+                  document.getElementById('disponiveis-section')?.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                  });
+                }, 100);
               }}
               data-testid="card-pendentes"
             >
@@ -656,74 +662,8 @@ export default function MobileDashboard() {
           </CardContent>
         </Card>
 
-        {/* Work Orders List - Minhas Pendentes */}
-        <div className="space-y-4" id="pendentes-section">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <ClipboardList className="w-6 h-6" />
-            Minhas Pendentes
-          </h2>
-
-          {myPendingOrders.length === 0 ? (
-            <Card className="bg-white/80 backdrop-blur-sm border-white/20">
-              <CardContent className="p-6 text-center">
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                  Tudo em dia!
-                </h3>
-                <p className="text-slate-600">
-                  Você não tem ordens de serviço pendentes no momento.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            myPendingOrders.map((workOrder) => (
-              <Card key={workOrder.id} className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="bg-blue-600 text-white border-blue-700 font-bold">
-                          OS #{workOrder.number}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-lg break-words">{workOrder.title}</CardTitle>
-                      <div className="flex items-center space-x-2 text-sm text-slate-600">
-                        <MapPin className="w-4 h-4" />
-                        <span>{workOrder.siteName} - {workOrder.zoneName}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(workOrder.priority)}`}></div>
-                      <Badge variant="outline" className={getStatusColor(workOrder.status)}>
-                        {workOrder.status.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-slate-700 mb-3">{workOrder.description}</p>
-                  <div className="flex items-center justify-between text-sm text-slate-500">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Prazo: {formatDate(workOrder.dueDate)}</span>
-                    </div>
-                    <span className="font-medium capitalize">{workOrder.type.replace('_', ' ')}</span>
-                  </div>
-                  <Button 
-                    className="w-full mt-4" 
-                    data-testid={`button-view-order-${workOrder.id}`}
-                    onClick={() => setLocation(`/mobile/work-order-details/${workOrder.id}`)}
-                  >
-                    Ver Detalhes
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-
         {/* Work Orders List - Baseada no Filtro Ativo */}
-        <div className="space-y-4" id="disponiveis-section">
+        <div className="space-y-4" id="disponiveis-section" data-section="pendentes-section">
           <h2 className={`text-xl font-bold flex items-center gap-2 ${
             activeFilter === 'pendentes_dia' ? 'text-orange-900' : 'text-blue-900'
           }`}>
