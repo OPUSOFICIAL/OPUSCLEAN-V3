@@ -1,7 +1,7 @@
-import Constants from 'expo-constants';
 import { User, WorkOrder, QRCodePoint, ChecklistTemplate, CapturedPhoto, ChecklistAnswer } from '../types';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'https://facilities.grupoopus.com';
+// URL de produção fixo - NÃO usar variável de ambiente para evitar problemas de build
+const API_URL = 'https://facilities.grupoopus.com';
 
 interface LoginResponse {
   user: Omit<User, 'token'>;
