@@ -42,6 +42,12 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
+    if (syncStatus.lastSync && !syncStatus.isSyncing) {
+      refresh();
+    }
+  }, [syncStatus.lastSync, syncStatus.isSyncing]);
+
+  useEffect(() => {
     const checkNetwork = async () => {
       const online = await checkConnectivity();
       setIsOnline(online);

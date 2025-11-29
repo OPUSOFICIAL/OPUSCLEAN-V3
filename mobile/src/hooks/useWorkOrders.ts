@@ -75,7 +75,10 @@ export function useWorkOrders() {
   }, [workOrders]);
 
   const getOrdersByDate = useCallback((date: string) => {
-    return workOrders.filter((o) => o.scheduledDate.startsWith(date));
+    return workOrders.filter((o) => {
+      const orderDate = o.dueDate || o.scheduledDate || o.createdAt;
+      return orderDate?.startsWith(date);
+    });
   }, [workOrders]);
 
   return {
