@@ -257,17 +257,6 @@ export function WorkOrdersScreen({
           ]}>
             Pendentes Hoje
           </Text>
-          <View style={[
-            styles.filterBadge,
-            activeFilter === 'pendentes_dia' && styles.filterBadgeActive
-          ]}>
-            <Text style={[
-              styles.filterBadgeText,
-              activeFilter === 'pendentes_dia' && styles.filterBadgeTextActive
-            ]}>
-              {pendentesHoje.length}
-            </Text>
-          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -284,17 +273,6 @@ export function WorkOrdersScreen({
           ]}>
             Minhas O.S.
           </Text>
-          <View style={[
-            styles.filterBadge,
-            activeFilter === 'minhas_os' && styles.filterBadgeActive
-          ]}>
-            <Text style={[
-              styles.filterBadgeText,
-              activeFilter === 'minhas_os' && styles.filterBadgeTextActive
-            ]}>
-              {minhasOS.length}
-            </Text>
-          </View>
         </TouchableOpacity>
       </View>
 
