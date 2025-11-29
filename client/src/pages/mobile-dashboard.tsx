@@ -475,9 +475,6 @@ export default function MobileDashboard() {
               >
                 <Calendar className="w-4 h-4 mr-2" />
                 Pendentes Hoje
-                <Badge className={`ml-2 ${activeFilter === 'pendentes_dia' ? 'bg-white/30 text-white' : 'bg-blue-100 text-blue-700'}`}>
-                  {pendentesHoje.length}
-                </Badge>
               </Button>
               
               <Button
@@ -569,7 +566,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                     <AlertCircle className="w-5 h-5 text-orange-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{statusCounts.abertas}</p>
+                  <p className="text-xl font-bold text-slate-900">{pendentesHoje.length}</p>
                   <p className="text-xs text-slate-600 text-center">Disponíveis</p>
                 </div>
               </CardContent>
