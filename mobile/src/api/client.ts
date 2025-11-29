@@ -3,6 +3,9 @@ import { User, WorkOrder, QRCodePoint, ChecklistTemplate, CapturedPhoto, Checkli
 // URL de produção fixo - NÃO usar variável de ambiente para evitar problemas de build
 const API_URL = 'https://facilities.grupoopus.com';
 
+// Log da URL em uso para debug
+console.log('[API CLIENT] URL configurada:', API_URL);
+
 interface LoginResponse {
   user: Omit<User, 'token'>;
   token: string;
@@ -27,10 +30,15 @@ async function apiRequest<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const fullUrl = `${API_URL}${endpoint}`;
+  console.log(`[API REQUEST] ${options.method || 'GET'} ${fullUrl}`);
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
+
+  console.log(`[API RESPONSE] ${response.status} ${fullUrl}`);
 
   if (!response.ok) {
     const error: ApiError = {
@@ -41,6 +49,7 @@ async function apiRequest<T>(
     try {
       const data = await response.json();
       error.message = data.message || error.message;
+      console.log(`[API ERROR] ${response.status}: ${error.message}`);
     } catch {}
     
     throw error;
