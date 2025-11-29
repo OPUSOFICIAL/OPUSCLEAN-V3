@@ -2565,6 +2565,320 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================
+  // MOBILE APP ENDPOINTS - Endpoints específicos para o app móvel
+  // ============================================================
+
+  // Start Work Order (Mobile)
+  app.post("/api/work-orders/:workOrderId/start", requireAuth, async (req, res) => {
+    try {
+      const workOrderId = req.params.workOrderId;
+      const workOrder = await storage.getWorkOrder(workOrderId);
+      
+      if (!workOrder) {
+        return res.status(404).json({ message: "Ordem de serviço não encontrada" });
+      }
+      
+      // Verificar se a O.S. pode ser iniciada (status aberta ou vencida)
+      if (workOrder.status !== 'aberta' && workOrder.status !== 'vencida') {
+        return res.status(400).json({ 
+          message: `Ordem de serviço não pode ser iniciada. Status atual: ${workOrder.status}` 
+        });
+      }
+      
+      // Montar array de assignedUserIds filtrando undefined
+      const currentIds = workOrder.assignedUserIds || [];
+      const newIds = req.user?.id ? [...currentIds, req.user.id].filter((id, idx, arr) => id && arr.indexOf(id) === idx) : currentIds;
+      
+      const updatedWorkOrder = await storage.updateWorkOrder(workOrderId, {
+        status: 'em_execucao',
+        startedAt: new Date(),
+        assignedUserId: req.user?.id,
+        assignedUserIds: newIds as string[],
+      });
+      
+      console.log(`[MOBILE] O.S. ${workOrderId} iniciada por ${req.user?.username}`);
+      broadcast({
+        type: 'update',
+        resource: 'work_orders',
+        data: updatedWorkOrder,
+        customerId: workOrder.customerId || undefined,
+      });
+      
+      res.json({ success: true, workOrder: updatedWorkOrder });
+    } catch (error) {
+      console.error("[MOBILE] Erro ao iniciar O.S.:", error);
+      res.status(500).json({ message: "Erro ao iniciar ordem de serviço" });
+    }
+  });
+
+  // Complete Work Order (Mobile)
+  app.post("/api/work-orders/:workOrderId/complete", requireAuth, async (req, res) => {
+    try {
+      const workOrderId = req.params.workOrderId;
+      const { notes, checklistAnswers, photos } = req.body;
+      
+      const workOrder = await storage.getWorkOrder(workOrderId);
+      
+      if (!workOrder) {
+        return res.status(404).json({ message: "Ordem de serviço não encontrada" });
+      }
+      
+      // Verificar se a O.S. pode ser concluída
+      if (workOrder.status !== 'em_execucao') {
+        return res.status(400).json({ 
+          message: `Ordem de serviço não pode ser concluída. Status atual: ${workOrder.status}` 
+        });
+      }
+      
+      // Processar fotos se houver
+      const uploadedPhotos: string[] = [];
+      if (photos && Array.isArray(photos)) {
+        for (const photo of photos) {
+          try {
+            const base64Clean = photo.base64.includes(',') 
+              ? photo.base64.split(',')[1] 
+              : photo.base64;
+            const buffer = Buffer.from(base64Clean, 'base64');
+            const { relativePath } = await storage.saveWorkOrderAttachmentFile({
+              buffer,
+              format: photo.type || 'jpg',
+            });
+            uploadedPhotos.push(relativePath);
+          } catch (photoError) {
+            console.error("[MOBILE] Erro ao processar foto:", photoError);
+          }
+        }
+      }
+      
+      const updatedWorkOrder = await storage.updateWorkOrder(workOrderId, {
+        status: 'concluida',
+        completedAt: new Date(),
+      });
+      
+      // Adicionar comentário com fotos se houver
+      if (notes && notes.trim()) {
+        await storage.createWorkOrderComment({
+          id: nanoid(),
+          workOrderId,
+          comment: notes,
+          userId: req.user?.id || 'system',
+          attachments: uploadedPhotos,
+        });
+      }
+      
+      console.log(`[MOBILE] O.S. ${workOrderId} concluída por ${req.user?.username}`);
+      broadcast({
+        type: 'update',
+        resource: 'work_orders',
+        data: updatedWorkOrder,
+        customerId: workOrder.customerId || undefined,
+      });
+      
+      res.json({ success: true, workOrder: updatedWorkOrder });
+    } catch (error) {
+      console.error("[MOBILE] Erro ao concluir O.S.:", error);
+      res.status(500).json({ message: "Erro ao concluir ordem de serviço" });
+    }
+  });
+
+  // Pause Work Order (Mobile)
+  app.post("/api/work-orders/:workOrderId/pause", requireAuth, async (req, res) => {
+    try {
+      const workOrderId = req.params.workOrderId;
+      const { reason, photos } = req.body;
+      
+      const workOrder = await storage.getWorkOrder(workOrderId);
+      
+      if (!workOrder) {
+        return res.status(404).json({ message: "Ordem de serviço não encontrada" });
+      }
+      
+      // Verificar se a O.S. pode ser pausada
+      if (workOrder.status !== 'em_execucao') {
+        return res.status(400).json({ 
+          message: `Ordem de serviço não pode ser pausada. Status atual: ${workOrder.status}` 
+        });
+      }
+      
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: "Motivo da pausa é obrigatório" });
+      }
+      
+      // Processar fotos se houver
+      const uploadedPhotos: string[] = [];
+      if (photos && Array.isArray(photos)) {
+        for (const photo of photos) {
+          try {
+            const base64Clean = photo.base64.includes(',') 
+              ? photo.base64.split(',')[1] 
+              : photo.base64;
+            const buffer = Buffer.from(base64Clean, 'base64');
+            const { relativePath } = await storage.saveWorkOrderAttachmentFile({
+              buffer,
+              format: 'jpg',
+            });
+            uploadedPhotos.push(relativePath);
+          } catch (photoError) {
+            console.error("[MOBILE] Erro ao processar foto de pausa:", photoError);
+          }
+        }
+      }
+      
+      const updatedWorkOrder = await storage.updateWorkOrder(workOrderId, {
+        status: 'pausada',
+      });
+      
+      // Adicionar comentário com motivo da pausa
+      await storage.createWorkOrderComment({
+        id: nanoid(),
+        workOrderId,
+        comment: `[PAUSA] ${reason}`,
+        userId: req.user?.id || 'system',
+        attachments: uploadedPhotos,
+      });
+      
+      console.log(`[MOBILE] O.S. ${workOrderId} pausada por ${req.user?.username}: ${reason}`);
+      broadcast({
+        type: 'update',
+        resource: 'work_orders',
+        data: updatedWorkOrder,
+        customerId: workOrder.customerId || undefined,
+      });
+      
+      res.json({ success: true, workOrder: updatedWorkOrder });
+    } catch (error) {
+      console.error("[MOBILE] Erro ao pausar O.S.:", error);
+      res.status(500).json({ message: "Erro ao pausar ordem de serviço" });
+    }
+  });
+
+  // Resume Work Order (Mobile)
+  app.post("/api/work-orders/:workOrderId/resume", requireAuth, async (req, res) => {
+    try {
+      const workOrderId = req.params.workOrderId;
+      const workOrder = await storage.getWorkOrder(workOrderId);
+      
+      if (!workOrder) {
+        return res.status(404).json({ message: "Ordem de serviço não encontrada" });
+      }
+      
+      // Verificar se a O.S. pode ser retomada
+      if (workOrder.status !== 'pausada') {
+        return res.status(400).json({ 
+          message: `Ordem de serviço não pode ser retomada. Status atual: ${workOrder.status}` 
+        });
+      }
+      
+      const updatedWorkOrder = await storage.updateWorkOrder(workOrderId, {
+        status: 'em_execucao',
+      });
+      
+      // Adicionar comentário de retomada
+      await storage.createWorkOrderComment({
+        id: nanoid(),
+        workOrderId,
+        comment: '[RETOMADA] Ordem de serviço retomada',
+        userId: req.user?.id || 'system',
+      });
+      
+      console.log(`[MOBILE] O.S. ${workOrderId} retomada por ${req.user?.username}`);
+      broadcast({
+        type: 'update',
+        resource: 'work_orders',
+        data: updatedWorkOrder,
+        customerId: workOrder.customerId || undefined,
+      });
+      
+      res.json({ success: true, workOrder: updatedWorkOrder });
+    } catch (error) {
+      console.error("[MOBILE] Erro ao retomar O.S.:", error);
+      res.status(500).json({ message: "Erro ao retomar ordem de serviço" });
+    }
+  });
+
+  // Upload Work Order Photo (Mobile)
+  app.post("/api/work-orders/:workOrderId/photos", requireAuth, async (req, res) => {
+    try {
+      const workOrderId = req.params.workOrderId;
+      const { base64, type, checklistItemId } = req.body;
+      
+      if (!base64) {
+        return res.status(400).json({ message: "Foto é obrigatória" });
+      }
+      
+      const workOrder = await storage.getWorkOrder(workOrderId);
+      if (!workOrder) {
+        return res.status(404).json({ message: "Ordem de serviço não encontrada" });
+      }
+      
+      // Processar foto
+      const base64Clean = base64.includes(',') 
+        ? base64.split(',')[1] 
+        : base64;
+      const buffer = Buffer.from(base64Clean, 'base64');
+      
+      const { relativePath, absolutePath } = await storage.saveWorkOrderAttachmentFile({
+        buffer,
+        format: 'jpg',
+      });
+      
+      // Criar registro de anexo
+      const attachment = await storage.createWorkOrderAttachmentRecord({
+        workOrderId,
+        userId: req.user?.id || 'system',
+        relativePath,
+        originalName: `photo_${Date.now()}.jpg`,
+        fileType: 'image/jpeg',
+        fileSize: buffer.length,
+      });
+      
+      console.log(`[MOBILE] Foto adicionada à O.S. ${workOrderId} por ${req.user?.username}`);
+      
+      res.json({ id: attachment.id, path: relativePath });
+    } catch (error) {
+      console.error("[MOBILE] Erro ao fazer upload de foto:", error);
+      res.status(500).json({ message: "Erro ao fazer upload de foto" });
+    }
+  });
+
+  // Submit Checklist Execution (Mobile)
+  app.post("/api/work-orders/:workOrderId/checklist", requireAuth, async (req, res) => {
+    try {
+      const workOrderId = req.params.workOrderId;
+      const { checklistTemplateId, answers } = req.body;
+      
+      if (!checklistTemplateId || !answers) {
+        return res.status(400).json({ message: "Template e respostas são obrigatórios" });
+      }
+      
+      const workOrder = await storage.getWorkOrder(workOrderId);
+      if (!workOrder) {
+        return res.status(404).json({ message: "Ordem de serviço não encontrada" });
+      }
+      
+      // Salvar respostas do checklist como comentário estruturado
+      const answersJson = JSON.stringify(answers);
+      await storage.createWorkOrderComment({
+        id: nanoid(),
+        workOrderId,
+        comment: `[CHECKLIST] Template: ${checklistTemplateId}\n${answersJson}`,
+        userId: req.user?.id || 'system',
+      });
+      
+      console.log(`[MOBILE] Checklist executado para O.S. ${workOrderId} por ${req.user?.username}`);
+      
+      res.json({ id: nanoid(), success: true });
+    } catch (error) {
+      console.error("[MOBILE] Erro ao submeter checklist:", error);
+      res.status(500).json({ message: "Erro ao submeter checklist" });
+    }
+  });
+
+  // ============================================================
+  // FIM DOS ENDPOINTS MOBILE
+  // ============================================================
+
   // Upload Base64 Attachment (for mobile photo uploads)
   const uploadBase64Schema = z.object({
     base64: z.string().min(1),
