@@ -29,6 +29,7 @@ export interface WorkOrder {
   startedAt: string | null;
   completedAt: string | null;
   assignedUserId: string | null;
+  assignedUserIds: string[] | null;
   assignedUserName: string | null;
   checklistTemplateId: string | null;
   serviceId: string | null;

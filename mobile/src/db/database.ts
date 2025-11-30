@@ -56,6 +56,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       startedAt TEXT,
       completedAt TEXT,
       assignedUserId TEXT,
+      assignedUserIds TEXT,
       assignedUserName TEXT,
       checklistTemplateId TEXT,
       serviceId TEXT,
@@ -211,6 +212,11 @@ async function runMigrations(database: SQLite.SQLiteDatabase): Promise<void> {
   } catch (e) {
     console.log('Migration to fix scheduledDate constraint skipped or failed:', e);
   }
+  
+  try {
+    await database.runAsync('ALTER TABLE work_orders ADD COLUMN assignedUserIds TEXT');
+  } catch (e) {
+  }
 }
 
 // ============================================================================
@@ -275,9 +281,9 @@ export async function saveWorkOrders(orders: WorkOrder[]): Promise<void> {
         `INSERT OR REPLACE INTO work_orders 
          (id, workOrderNumber, title, description, status, priority, module, customerId, 
           siteId, siteName, zoneId, zoneName, scheduledDate, dueDate, startedAt, completedAt,
-          assignedUserId, assignedUserName, checklistTemplateId, serviceId,
+          assignedUserId, assignedUserIds, assignedUserName, checklistTemplateId, serviceId,
           createdAt, updatedAt, offlineModified, offlineAction, lastSyncAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         order.id,
         order.workOrderNumber,
         order.title,
@@ -295,6 +301,7 @@ export async function saveWorkOrders(orders: WorkOrder[]): Promise<void> {
         order.startedAt || null,
         order.completedAt || null,
         order.assignedUserId || '',
+        order.assignedUserIds ? JSON.stringify(order.assignedUserIds) : null,
         order.assignedUserName || '',
         order.checklistTemplateId || null,
         order.serviceId || null,
@@ -316,6 +323,7 @@ export async function getWorkOrders(): Promise<WorkOrder[]> {
     ...row,
     offlineModified: Boolean(row.offlineModified),
     assignedUserId: row.assignedUserId || null,
+    assignedUserIds: row.assignedUserIds ? JSON.parse(row.assignedUserIds) : null,
     assignedUserName: row.assignedUserName || null,
     description: row.description || null,
     siteName: row.siteName || '',
@@ -342,6 +350,7 @@ export async function getWorkOrderById(id: string): Promise<WorkOrder | null> {
     ...row,
     offlineModified: Boolean(row.offlineModified),
     assignedUserId: row.assignedUserId || null,
+    assignedUserIds: row.assignedUserIds ? JSON.parse(row.assignedUserIds) : null,
     assignedUserName: row.assignedUserName || null,
     description: row.description || null,
     siteName: row.siteName || '',
@@ -405,6 +414,7 @@ export async function getWorkOrdersByZone(zoneId: string): Promise<WorkOrder[]> 
     ...row,
     offlineModified: Boolean(row.offlineModified),
     assignedUserId: row.assignedUserId || null,
+    assignedUserIds: row.assignedUserIds ? JSON.parse(row.assignedUserIds) : null,
     assignedUserName: row.assignedUserName || null,
     description: row.description || null,
     siteName: row.siteName || '',

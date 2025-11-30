@@ -57,10 +57,22 @@ export function WorkOrdersScreen({
     setRefreshing(false);
   };
 
+  // Helper: verificar se O.S. está atribuída ao usuário
+  const isAssignedToMe = (wo: WorkOrder) => {
+    if (wo.assignedUserId === user.id) return true;
+    if (wo.assignedUserIds && wo.assignedUserIds.includes(user.id)) return true;
+    return false;
+  };
+
+  // Helper: verificar se O.S. NÃO está atribuída a ninguém
+  const isNotAssigned = (wo: WorkOrder) => {
+    return !wo.assignedUserId && (!wo.assignedUserIds || wo.assignedUserIds.length === 0);
+  };
+
   // O.S. Disponíveis (não atribuídas, abertas)
   const allAvailableOrders = useMemo(() => {
     return workOrders
-      .filter(wo => !wo.assignedUserId && wo.status === 'open')
+      .filter(wo => isNotAssigned(wo) && wo.status === 'open')
       .sort((a, b) => b.workOrderNumber - a.workOrderNumber);
   }, [workOrders]);
 
@@ -77,9 +89,8 @@ export function WorkOrdersScreen({
   const minhasOS = useMemo(() => {
     return workOrders
       .filter(wo => {
-        const isAssignedToMe = wo.assignedUserId === user.id;
         const isActive = wo.status !== 'completed' && wo.status !== 'cancelled';
-        return isAssignedToMe && isActive;
+        return isAssignedToMe(wo) && isActive;
       })
       .sort((a, b) => {
         const statusOrder = { 'in_progress': 0, 'paused': 1, 'open': 2 };
@@ -93,14 +104,14 @@ export function WorkOrdersScreen({
   // Minhas em Execução
   const myInProgressOrders = useMemo(() => {
     return workOrders.filter(wo => 
-      wo.assignedUserId === user.id && wo.status === 'in_progress'
+      isAssignedToMe(wo) && wo.status === 'in_progress'
     );
   }, [workOrders, user.id]);
 
   // Minhas Pausadas
   const myPausedOrders = useMemo(() => {
     return workOrders.filter(wo => 
-      wo.assignedUserId === user.id && wo.status === 'paused'
+      isAssignedToMe(wo) && wo.status === 'paused'
     );
   }, [workOrders, user.id]);
 
@@ -109,7 +120,7 @@ export function WorkOrdersScreen({
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     return workOrders.filter(wo => {
-      if (wo.assignedUserId !== user.id) return false;
+      if (!isAssignedToMe(wo)) return false;
       if (wo.status !== 'completed') return false;
       if (!wo.completedAt) return false;
       const completedDate = new Date(wo.completedAt);
