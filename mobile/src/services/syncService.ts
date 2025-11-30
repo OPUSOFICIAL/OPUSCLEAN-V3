@@ -242,7 +242,7 @@ async function pullFromServer(user: User, customerId: string): Promise<void> {
   for (const module of modules) {
     try {
       console.log(`[SYNC] Buscando OSs do modulo ${module}...`);
-      const workOrders = await api.fetchWorkOrders(user.token, customerId, module);
+      const workOrders = await api.fetchWorkOrders(user.token, customerId, module, user.id);
       console.log(`[SYNC] Recebidas ${workOrders.length} OSs do modulo ${module}`);
       
       if (workOrders.length > 0) {

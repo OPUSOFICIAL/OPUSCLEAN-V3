@@ -87,55 +87,102 @@ function mapStatusToEnglish(status: string): 'open' | 'in_progress' | 'paused' |
   return statusMap[status] || 'open';
 }
 
+function mapOrderToWorkOrder(order: any): WorkOrder {
+  return {
+    id: order.id,
+    workOrderNumber: order.workOrderNumber || order.number || 0,
+    title: order.title,
+    description: order.description,
+    status: mapStatusToEnglish(order.status),
+    priority: order.priority,
+    module: order.module,
+    customerId: order.customerId,
+    siteId: order.siteId,
+    siteName: order.site?.name || order.siteName || '',
+    zoneId: order.zoneId,
+    zoneName: order.zone?.name || order.zoneName || '',
+    scheduledDate: order.scheduledDate || null,
+    dueDate: order.dueDate || null,
+    startedAt: order.startedAt || null,
+    completedAt: order.completedAt || null,
+    assignedUserId: order.assignedUserId || null,
+    assignedUserIds: order.assignedUserIds || null,
+    assignedUserName: order.assignedUser?.name || order.assignedUserName || null,
+    checklistTemplateId: order.checklistTemplateId || order.serviceChecklistId || null,
+    serviceId: order.serviceId || null,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    offlineModified: false,
+    offlineAction: null,
+    lastSyncAt: null,
+  };
+}
+
 export async function fetchWorkOrders(
   token: string,
   customerId: string,
-  module: string
+  module: string,
+  userId?: string
 ): Promise<WorkOrder[]> {
-  // Buscar todas as O.S. sem filtro de data - o filtro é feito localmente na tela
-  console.log(`[FETCH WORK ORDERS] Buscando todas as O.S. do cliente ${customerId}`);
+  console.log(`[FETCH WORK ORDERS] Buscando O.S. do cliente ${customerId} (modulo: ${module})`);
   
-  const response = await apiRequest<any>(
-    `/api/customers/${customerId}/work-orders?module=${module}`,
-    { method: 'GET' },
-    token
-  );
-
-  const orders = Array.isArray(response) ? response : (response.data || []);
-
-  return orders
-    .filter((o: any) => {
-      const mappedStatus = mapStatusToEnglish(o.status);
-      return mappedStatus === 'open' || mappedStatus === 'in_progress' || mappedStatus === 'paused';
-    })
-    .map((order: any) => ({
-      id: order.id,
-      workOrderNumber: order.workOrderNumber || order.number || 0,
-      title: order.title,
-      description: order.description,
-      status: mapStatusToEnglish(order.status),
-      priority: order.priority,
-      module: order.module,
-      customerId: order.customerId,
-      siteId: order.siteId,
-      siteName: order.site?.name || order.siteName || '',
-      zoneId: order.zoneId,
-      zoneName: order.zone?.name || order.zoneName || '',
-      scheduledDate: order.scheduledDate || null,
-      dueDate: order.dueDate || null,
-      startedAt: order.startedAt || null,
-      completedAt: order.completedAt || null,
-      assignedUserId: order.assignedUserId || null,
-      assignedUserIds: order.assignedUserIds || null,
-      assignedUserName: order.assignedUser?.name || order.assignedUserName || null,
-      checklistTemplateId: order.checklistTemplateId || order.serviceChecklistId || null,
-      serviceId: order.serviceId || null,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      offlineModified: false,
-      offlineAction: null,
-      lastSyncAt: null,
-    }));
+  const allOrders: WorkOrder[] = [];
+  const seenIds = new Set<string>();
+  
+  // Query 1: O.S. atribuídas ao usuário (se userId fornecido)
+  if (userId) {
+    try {
+      console.log(`[FETCH WORK ORDERS] Buscando O.S. atribuidas ao usuario ${userId}`);
+      const myResponse = await apiRequest<any>(
+        `/api/customers/${customerId}/work-orders?module=${module}&assignedTo=${userId}&limit=1000`,
+        { method: 'GET' },
+        token
+      );
+      
+      const myOrders = Array.isArray(myResponse) ? myResponse : (myResponse.data || []);
+      console.log(`[FETCH WORK ORDERS] Encontradas ${myOrders.length} O.S. atribuidas`);
+      
+      for (const order of myOrders) {
+        if (!seenIds.has(order.id)) {
+          seenIds.add(order.id);
+          const mappedStatus = mapStatusToEnglish(order.status);
+          if (mappedStatus === 'open' || mappedStatus === 'in_progress' || mappedStatus === 'paused') {
+            allOrders.push(mapOrderToWorkOrder(order));
+          }
+        }
+      }
+    } catch (error) {
+      console.log('[FETCH WORK ORDERS] Erro ao buscar O.S. atribuidas:', error);
+    }
+  }
+  
+  // Query 2: O.S. NÃO atribuídas (disponíveis)
+  try {
+    console.log(`[FETCH WORK ORDERS] Buscando O.S. disponiveis (nao atribuidas)`);
+    const availableResponse = await apiRequest<any>(
+      `/api/customers/${customerId}/work-orders?module=${module}&assignedTo=nao_atribuido&limit=1000`,
+      { method: 'GET' },
+      token
+    );
+    
+    const availableOrders = Array.isArray(availableResponse) ? availableResponse : (availableResponse.data || []);
+    console.log(`[FETCH WORK ORDERS] Encontradas ${availableOrders.length} O.S. disponiveis`);
+    
+    for (const order of availableOrders) {
+      if (!seenIds.has(order.id)) {
+        seenIds.add(order.id);
+        const mappedStatus = mapStatusToEnglish(order.status);
+        if (mappedStatus === 'open' || mappedStatus === 'in_progress' || mappedStatus === 'paused') {
+          allOrders.push(mapOrderToWorkOrder(order));
+        }
+      }
+    }
+  } catch (error) {
+    console.log('[FETCH WORK ORDERS] Erro ao buscar O.S. disponiveis:', error);
+  }
+  
+  console.log(`[FETCH WORK ORDERS] Total de O.S. baixadas: ${allOrders.length}`);
+  return allOrders;
 }
 
 export async function fetchQRCodes(
