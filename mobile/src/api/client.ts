@@ -59,15 +59,60 @@ async function apiRequest<T>(
 }
 
 export async function login(username: string, password: string): Promise<User> {
+  console.log('[LOGIN] Iniciando login para:', username);
+  
   const response = await apiRequest<LoginResponse>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
   });
 
-  return {
-    ...response.user,
+  console.log('[LOGIN] Resposta recebida:', {
+    userId: response.user.id,
+    userType: response.user.userType,
+    role: response.user.role,
+    customerId: response.user.customerId,
+    modules: response.user.modules,
+  });
+
+  // Buscar módulos disponíveis se não vierem no login
+  let modules = response.user.modules || [];
+  if (!modules.length) {
+    try {
+      console.log('[LOGIN] Módulos não vieram no login, buscando via API...');
+      const modulesResponse = await apiRequest<{ modules: string[] }>(
+        '/api/auth/user-modules',
+        { method: 'GET' },
+        response.token
+      );
+      modules = modulesResponse.modules || ['clean', 'maintenance'];
+      console.log('[LOGIN] Módulos obtidos:', modules);
+    } catch (err) {
+      console.log('[LOGIN] Erro ao buscar módulos, usando padrão:', err);
+      modules = ['clean', 'maintenance'];
+    }
+  }
+
+  const user: User = {
+    id: response.user.id,
+    username: response.user.username,
+    name: response.user.name,
+    email: response.user.email || '',
+    role: response.user.role,
+    userType: response.user.userType,
+    customerId: response.user.customerId || null,
+    companyId: response.user.companyId,
+    modules: modules,
     token: response.token,
   };
+
+  console.log('[LOGIN] Usuário configurado:', {
+    id: user.id,
+    name: user.name,
+    modules: user.modules,
+    customerId: user.customerId,
+  });
+
+  return user;
 }
 
 function mapStatusToEnglish(status: string): 'open' | 'in_progress' | 'paused' | 'completed' | 'cancelled' {

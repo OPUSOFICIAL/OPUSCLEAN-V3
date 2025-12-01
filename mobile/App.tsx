@@ -90,7 +90,13 @@ export default function App() {
   }, [logout]);
 
   const handleSelectCustomer = useCallback((customerId: string) => {
+    console.log('[APP] Cliente selecionado:', customerId);
     setSelectedCustomerId(customerId);
+  }, []);
+
+  const handleChangeCustomer = useCallback(() => {
+    console.log('[APP] Voltando para seleção de cliente');
+    setSelectedCustomerId(null);
   }, []);
 
   const handleOpenScanner = useCallback(() => {
@@ -423,6 +429,7 @@ export default function App() {
         onLogout={handleLogout}
         onForceSync={handleForceSync}
         onOpenScanner={handleOpenScanner}
+        onChangeCustomer={user?.role === 'admin' ? handleChangeCustomer : undefined}
       />
     </SafeAreaProvider>
   );

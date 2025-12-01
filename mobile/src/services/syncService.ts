@@ -237,45 +237,78 @@ async function syncCommentAction(
 async function pullFromServer(user: User, customerId: string): Promise<void> {
   const modules = user.modules || ['clean', 'maintenance'];
   
-  console.log(`[SYNC] Iniciando pull - User: ${user.username}, Customer: ${customerId}, Modules: ${modules.join(',')}`);
+  console.log(`[SYNC] ========================================`);
+  console.log(`[SYNC] INICIANDO PULL FROM SERVER`);
+  console.log(`[SYNC] User ID: ${user.id}`);
+  console.log(`[SYNC] User Name: ${user.name}`);
+  console.log(`[SYNC] Customer ID: ${customerId}`);
+  console.log(`[SYNC] Modulos: ${modules.join(', ')}`);
+  console.log(`[SYNC] Token valido: ${user.token ? 'SIM' : 'NAO'}`);
+  console.log(`[SYNC] ========================================`);
+  
+  let totalOrders = 0;
   
   for (const module of modules) {
     try {
-      console.log(`[SYNC] Buscando OSs do modulo ${module}...`);
+      console.log(`[SYNC] [${module.toUpperCase()}] Buscando OSs...`);
       const workOrders = await api.fetchWorkOrders(user.token, customerId, module, user.id);
-      console.log(`[SYNC] Recebidas ${workOrders.length} OSs do modulo ${module}`);
+      console.log(`[SYNC] [${module.toUpperCase()}] Recebidas ${workOrders.length} OSs`);
       
       if (workOrders.length > 0) {
-        await db.saveWorkOrders(workOrders);
-        console.log(`[SYNC] Salvas ${workOrders.length} OSs no banco local`);
+        // Log detalhado das OSs recebidas
+        console.log(`[SYNC] [${module.toUpperCase()}] Detalhes das OSs:`);
+        workOrders.forEach((wo, idx) => {
+          console.log(`[SYNC]   ${idx + 1}. OS #${wo.workOrderNumber} - ${wo.status} - ${wo.title?.substring(0, 30)}...`);
+        });
         
+        await db.saveWorkOrders(workOrders);
+        console.log(`[SYNC] [${module.toUpperCase()}] Salvas ${workOrders.length} OSs no SQLite`);
+        totalOrders += workOrders.length;
+        
+        // Baixar checklists
+        let checklistCount = 0;
         for (const order of workOrders) {
           if (order.checklistTemplateId) {
             try {
               const template = await api.fetchChecklistTemplate(user.token, order.checklistTemplateId);
               if (template) {
                 await db.saveChecklistTemplate(template);
+                checklistCount++;
               }
             } catch (error) {
-              console.log('Nao foi possivel baixar checklist:', order.checklistTemplateId);
+              console.log(`[SYNC] Checklist ${order.checklistTemplateId} nao encontrado`);
             }
           }
         }
+        console.log(`[SYNC] [${module.toUpperCase()}] Baixados ${checklistCount} checklists`);
       }
-      
-      console.log(`[SYNC] Processadas ${workOrders.length} OSs do modulo ${module}`);
-    } catch (error) {
-      console.error(`[SYNC] Erro ao baixar OSs do modulo ${module}:`, error);
+    } catch (error: any) {
+      console.error(`[SYNC] [${module.toUpperCase()}] ERRO ao baixar OSs:`, error?.message || error);
     }
+  }
+  
+  // Verificar quantas OSs estao no banco local
+  try {
+    const localOrders = await db.getWorkOrders();
+    console.log(`[SYNC] Total de OSs no banco local apos sync: ${localOrders.length}`);
+    if (localOrders.length > 0) {
+      console.log(`[SYNC] Exemplo de OS local: OS #${localOrders[0].workOrderNumber} - ${localOrders[0].status}`);
+    }
+  } catch (err) {
+    console.error('[SYNC] Erro ao verificar banco local:', err);
   }
   
   try {
     const qrCodes = await api.fetchQRCodes(user.token, customerId);
     await db.saveQRCodes(qrCodes);
     console.log(`[SYNC] Baixados ${qrCodes.length} QR codes`);
-  } catch (error) {
-    console.error('[SYNC] Erro ao baixar QR codes:', error);
+  } catch (error: any) {
+    console.error('[SYNC] Erro ao baixar QR codes:', error?.message || error);
   }
+  
+  console.log(`[SYNC] ========================================`);
+  console.log(`[SYNC] PULL CONCLUIDO - Total: ${totalOrders} OSs`);
+  console.log(`[SYNC] ========================================`);
 }
 
 export function startAutoSync(

@@ -27,6 +27,7 @@ interface WorkOrdersScreenProps {
   onLogout: () => void;
   onForceSync: () => Promise<void>;
   onOpenScanner: () => void;
+  onChangeCustomer?: () => void;
   title?: string;
   onBack?: () => void;
 }
@@ -45,6 +46,7 @@ export function WorkOrdersScreen({
   onLogout,
   onForceSync,
   onOpenScanner,
+  onChangeCustomer,
   title,
   onBack,
 }: WorkOrdersScreenProps) {
@@ -255,16 +257,19 @@ export function WorkOrdersScreen({
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <Text style={styles.userName}>{user.name}</Text>
-            <Text style={styles.userRole}>Colaborador</Text>
+            <Text style={styles.userRole}>{user.role === 'admin' ? 'Administrador' : 'Colaborador'}</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.moduleButton}>
+            <TouchableOpacity style={styles.moduleButton} onPress={onForceSync}>
               <Text style={styles.moduleIcon}>📋</Text>
               <Text style={styles.moduleText}>Clean</Text>
-              <TouchableOpacity style={styles.syncButton} onPress={onForceSync}>
-                <Text style={styles.syncIcon}>🔄</Text>
-              </TouchableOpacity>
+              <Text style={styles.syncIcon}>🔄</Text>
             </TouchableOpacity>
+            {onChangeCustomer && (
+              <TouchableOpacity style={styles.changeCustomerButton} onPress={onChangeCustomer}>
+                <Text style={styles.changeCustomerIcon}>🔀</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
               <Text style={styles.logoutIcon}>➡️</Text>
             </TouchableOpacity>
@@ -517,6 +522,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutIcon: {
+    fontSize: 16,
+  },
+  changeCustomerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  changeCustomerIcon: {
     fontSize: 16,
   },
   content: {
