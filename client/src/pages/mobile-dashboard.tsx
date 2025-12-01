@@ -129,13 +129,15 @@ export default function MobileDashboard() {
   
   const myCompletedCount = getCurrentMonthCompletedCount();
   
-  // Status counts: Disponíveis = abertas não atribuídas, Pendentes = minhas abertas, Pausadas = minhas pausadas, Concluídas = minhas concluídas do mês
+  // Status counts: Usar os contadores reais da API (não limitados pela paginação)
+  // Para "Minhas O.S.", usamos os statusCounts de myResponse que contém todos os status
+  // Para "Disponíveis", usamos os statusCounts de availableResponse
   const statusCounts = {
     abertas: availableResponse?.statusCounts?.abertas || 0,  // TODAS as abertas sem atribuição (para card de Disponíveis)
-    pendentes: myPendingCount,  // Minhas abertas/vencidas (para card de Pendentes)
-    vencidas: 0,
-    pausadas: myPausedCount,
-    concluidas: myCompletedCount  // TODAS as concluídas do mês atual
+    pendentes: (myResponse?.statusCounts?.abertas || 0) + (myResponse?.statusCounts?.vencidas || 0),  // Minhas abertas + vencidas (usando contador da API)
+    vencidas: myResponse?.statusCounts?.vencidas || 0,
+    pausadas: myResponse?.statusCounts?.pausadas || 0,  // Usando contador da API
+    concluidas: myResponse?.statusCounts?.concluidas || 0  // Todas as minhas concluídas (usando contador da API)
   };
   
   // Combinar dados: disponíveis + minhas para exibição nos cards
@@ -568,7 +570,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                     <AlertCircle className="w-5 h-5 text-orange-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{pendentesHoje.length}</p>
+                  <p className="text-xl font-bold text-slate-900">{statusCounts.abertas}</p>
                   <p className="text-xs text-slate-600 text-center">Disponíveis</p>
                 </div>
               </CardContent>
@@ -592,7 +594,7 @@ export default function MobileDashboard() {
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                     <ClipboardList className="w-5 h-5 text-blue-600" />
                   </div>
-                  <p className="text-xl font-bold text-slate-900">{minhasOS.length}</p>
+                  <p className="text-xl font-bold text-slate-900">{statusCounts.pendentes}</p>
                   <p className="text-xs text-slate-600 text-center">Pendentes</p>
                 </div>
               </CardContent>
