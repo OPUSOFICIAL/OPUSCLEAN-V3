@@ -95,6 +95,28 @@ export default function CleaningSchedule() {
     }
   }, [currentModule, setLocation]);
 
+  // Mutation para gerar OSs manualmente
+  const generateWorkOrdersMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/scheduler/regenerate-monthly-maintenance', {});
+      return response;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", activeClientId, "work-orders"] });
+      toast({
+        title: "OSs geradas com sucesso!",
+        description: `${data.totalGenerated} ordens de serviço foram criadas para o próximo mês.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao gerar OSs",
+        description: "Ocorreu um erro ao gerar as ordens de serviço.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Mutation to delete cleaning activity
   const deleteCleaningActivityMutation = useMutation({
     mutationFn: async (activityId: string) => {
@@ -447,10 +469,21 @@ export default function CleaningSchedule() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="monthly">📆 Mensal</SelectItem>
-              <SelectItem value="list">📋 Lista</SelectItem>
+              <SelectItem value="monthly">Mensal</SelectItem>
+              <SelectItem value="list">Lista</SelectItem>
             </SelectContent>
           </Select>
+          <Button 
+            onClick={() => generateWorkOrdersMutation.mutate()}
+            variant="outline"
+            disabled={generateWorkOrdersMutation.isPending}
+            data-testid="button-generate-work-orders"
+            className="flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs'}</span>
+            <span className="sm:hidden">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar'}</span>
+          </Button>
           <Button 
             className={theme.buttons.primary}
             style={theme.buttons.primaryStyle}
