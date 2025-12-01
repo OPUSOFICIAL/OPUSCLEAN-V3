@@ -4954,6 +4954,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const activityData = insertMaintenanceActivitySchema.partial().parse(req.body);
       const activity = await storage.updateMaintenanceActivity(req.params.id, activityData);
+      
+      // Se a atividade foi ativada ou atualizada com equipamentos, gerar O.S. para o mês atual
+      if (activity && activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0 && activity.startDate) {
+        const now = new Date();
+        const startDate = new Date(activity.startDate + 'T00:00:00');
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        
+        // Gerar O.S. se startDate está no mês atual ou passado
+        if (startDate <= endOfMonth) {
+          try {
+            await storage.generateMaintenanceWorkOrders(
+              activity.companyId,
+              startDate <= now ? new Date(now.getFullYear(), now.getMonth(), 1) : startDate,
+              endOfMonth
+            );
+            console.log(`[PLAN UPDATED] Generated work orders for activity ${activity.id}`);
+          } catch (error) {
+            console.error(`[PLAN UPDATED] Failed to generate work orders:`, error);
+          }
+        }
+      }
+      
       res.json(activity);
     } catch (error) {
       if (error instanceof z.ZodError) {

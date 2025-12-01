@@ -331,16 +331,28 @@ export default function MaintenancePlans() {
     
     return (activities as any[]).filter((activity: any) => {
       // VERIFICAÇÃO CRÍTICA: Não mostrar atividade antes da data de início
+      // Usar comparação UTC para evitar problemas de timezone
       if (activity.startDate) {
-        const activityStartDate = new Date(activity.startDate);
-        activityStartDate.setHours(0, 0, 0, 0); // Início do dia
+        // Extrair ano/mês/dia da string ISO diretamente (evita conversão timezone)
+        const startDateStr = typeof activity.startDate === 'string' 
+          ? activity.startDate 
+          : activity.startDate.toISOString?.() || '';
         
-        const calendarDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        calendarDate.setHours(0, 0, 0, 0);
-        
-        // Se a data do calendário é anterior à data de início, não mostrar
-        if (calendarDate < activityStartDate) {
-          return false;
+        // Formato esperado: "2025-11-30T00:00:00.000Z" ou "2025-11-30"
+        const match = startDateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+          const startYear = parseInt(match[1]);
+          const startMonth = parseInt(match[2]) - 1; // 0-indexed
+          const startDay = parseInt(match[3]);
+          
+          // Comparar ano/mês/dia diretamente (sem conversão timezone)
+          const calendarYear = currentDate.getFullYear();
+          const calendarMonth = currentDate.getMonth();
+          
+          // Data do calendário é anterior à data de início?
+          if (calendarYear < startYear) return false;
+          if (calendarYear === startYear && calendarMonth < startMonth) return false;
+          if (calendarYear === startYear && calendarMonth === startMonth && day < startDay) return false;
         }
       }
       
