@@ -4916,27 +4916,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const activity = await storage.createMaintenanceActivity(activityWithId as any);
       
-      // Generate work orders from start date until end of current month
+      // Generate work orders from start date until end of the startDate's month
       // ONLY for this specific activity (not all activities in the company)
       if (activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0 && activity.startDate) {
-        const now = new Date();
         const startDate = new Date(activity.startDate + 'T00:00:00');
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        // Calculate end of the month based on startDate, not server's current date
+        const endOfStartMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
         
-        // Only generate if start date is in current month or past
-        if (startDate <= endOfMonth) {
-          try {
-            await storage.generateMaintenanceWorkOrders(
-              activity.companyId,
-              startDate, // Use activity start date, not "now"
-              endOfMonth,
-              activity.id // Only generate for this specific activity
-            );
-            console.log(`[PLAN CREATED] Generated work orders from ${startDate.toISOString()} to ${endOfMonth.toISOString()} for activity ${activity.id}`);
-          } catch (error) {
-            console.error(`[PLAN CREATED] Failed to generate work orders:`, error);
-            // Don't fail the request if work order generation fails
-          }
+        try {
+          await storage.generateMaintenanceWorkOrders(
+            activity.companyId,
+            startDate,
+            endOfStartMonth,
+            activity.id // Only generate for this specific activity
+          );
+          console.log(`[PLAN CREATED] Generated work orders from ${startDate.toISOString()} to ${endOfStartMonth.toISOString()} for activity ${activity.id}`);
+        } catch (error) {
+          console.error(`[PLAN CREATED] Failed to generate work orders:`, error);
+          // Don't fail the request if work order generation fails
         }
       }
       
@@ -4957,26 +4954,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activityData = insertMaintenanceActivitySchema.partial().parse(req.body);
       const activity = await storage.updateMaintenanceActivity(req.params.id, activityData);
       
-      // Se a atividade foi ativada ou atualizada com equipamentos, gerar O.S. para o mês atual
+      // Se a atividade foi ativada ou atualizada com equipamentos, gerar O.S. para o mês do startDate
       // ONLY for this specific activity (not all activities in the company)
       if (activity && activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0 && activity.startDate) {
-        const now = new Date();
         const startDate = new Date(activity.startDate + 'T00:00:00');
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        // Calculate end of the month based on startDate
+        const endOfStartMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59, 999);
         
-        // Gerar O.S. se startDate está no mês atual ou passado
-        if (startDate <= endOfMonth) {
-          try {
-            await storage.generateMaintenanceWorkOrders(
-              activity.companyId,
-              startDate <= now ? new Date(now.getFullYear(), now.getMonth(), 1) : startDate,
-              endOfMonth,
-              activity.id // Only generate for this specific activity
-            );
-            console.log(`[PLAN UPDATED] Generated work orders for activity ${activity.id}`);
-          } catch (error) {
-            console.error(`[PLAN UPDATED] Failed to generate work orders:`, error);
-          }
+        try {
+          await storage.generateMaintenanceWorkOrders(
+            activity.companyId,
+            startDate,
+            endOfStartMonth,
+            activity.id // Only generate for this specific activity
+          );
+          console.log(`[PLAN UPDATED] Generated work orders for activity ${activity.id}`);
+        } catch (error) {
+          console.error(`[PLAN UPDATED] Failed to generate work orders:`, error);
         }
       }
       
