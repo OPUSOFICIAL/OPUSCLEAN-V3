@@ -330,6 +330,20 @@ export default function MaintenancePlans() {
     if (!activities) return [];
     
     return (activities as any[]).filter((activity: any) => {
+      // VERIFICAÇÃO CRÍTICA: Não mostrar atividade antes da data de início
+      if (activity.startDate) {
+        const activityStartDate = new Date(activity.startDate);
+        activityStartDate.setHours(0, 0, 0, 0); // Início do dia
+        
+        const calendarDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        calendarDate.setHours(0, 0, 0, 0);
+        
+        // Se a data do calendário é anterior à data de início, não mostrar
+        if (calendarDate < activityStartDate) {
+          return false;
+        }
+      }
+      
       if (activity.frequency === 'diaria') return true;
       if (activity.frequency === 'semanal') {
         const dayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay();
