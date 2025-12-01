@@ -4917,6 +4917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activity = await storage.createMaintenanceActivity(activityWithId as any);
       
       // Generate work orders from start date until end of current month
+      // ONLY for this specific activity (not all activities in the company)
       if (activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0 && activity.startDate) {
         const now = new Date();
         const startDate = new Date(activity.startDate + 'T00:00:00');
@@ -4928,7 +4929,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.generateMaintenanceWorkOrders(
               activity.companyId,
               startDate, // Use activity start date, not "now"
-              endOfMonth
+              endOfMonth,
+              activity.id // Only generate for this specific activity
             );
             console.log(`[PLAN CREATED] Generated work orders from ${startDate.toISOString()} to ${endOfMonth.toISOString()} for activity ${activity.id}`);
           } catch (error) {
@@ -4956,6 +4958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activity = await storage.updateMaintenanceActivity(req.params.id, activityData);
       
       // Se a atividade foi ativada ou atualizada com equipamentos, gerar O.S. para o mês atual
+      // ONLY for this specific activity (not all activities in the company)
       if (activity && activity.isActive && activity.equipmentIds && activity.equipmentIds.length > 0 && activity.startDate) {
         const now = new Date();
         const startDate = new Date(activity.startDate + 'T00:00:00');
@@ -4967,7 +4970,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.generateMaintenanceWorkOrders(
               activity.companyId,
               startDate <= now ? new Date(now.getFullYear(), now.getMonth(), 1) : startDate,
-              endOfMonth
+              endOfMonth,
+              activity.id // Only generate for this specific activity
             );
             console.log(`[PLAN UPDATED] Generated work orders for activity ${activity.id}`);
           } catch (error) {

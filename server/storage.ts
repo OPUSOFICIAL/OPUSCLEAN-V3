@@ -3503,12 +3503,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Generate scheduled work orders from maintenance activities
-  async generateMaintenanceWorkOrders(companyId: string, windowStart: Date, windowEnd: Date): Promise<WorkOrder[]> {
-    console.log(`[SCHEDULER BATCH] Iniciando geração de O.S de manutenção para ${companyId}`);
+  // activityId is optional - if provided, only generate for that specific activity
+  async generateMaintenanceWorkOrders(companyId: string, windowStart: Date, windowEnd: Date, activityId?: string): Promise<WorkOrder[]> {
+    console.log(`[SCHEDULER BATCH] Iniciando geração de O.S de manutenção para ${companyId}${activityId ? ` (atividade: ${activityId})` : ''}`);
     
     // Get active maintenance activities
-    const activities = await this.getMaintenanceActivitiesByCompany(companyId);
-    const activeActivities = activities.filter((a: any) => a.isActive);
+    let activities = await this.getMaintenanceActivitiesByCompany(companyId);
+    let activeActivities = activities.filter((a: any) => a.isActive);
+    
+    // If activityId is provided, filter to only that activity
+    if (activityId) {
+      activeActivities = activeActivities.filter((a: any) => a.id === activityId);
+    }
     
     console.log(`[SCHEDULER BATCH] ${activeActivities.length} atividades de manutenção ativas`);
     
