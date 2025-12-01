@@ -5103,10 +5103,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all companies
       const allCompanies = await storage.getCompanies();
       
-      // Get all valid customer IDs to filter out orphaned activities
-      const allCustomers = await storage.getCustomers();
-      const validCustomerIds = new Set(allCustomers.map(c => c.id));
-      
       let totalCleaningGenerated = 0;
       let totalMaintenanceGenerated = 0;
       

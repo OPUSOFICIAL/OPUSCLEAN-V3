@@ -32,6 +32,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { logout, getRoleDisplayName } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -86,19 +87,12 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
 
   const handleLogout = async () => {
     try {
+      queryClient.clear();
       await logout();
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso.",
-      });
-      // Forçar recarregamento da página para voltar ao login
-      window.location.reload();
+      window.location.href = "/login";
     } catch (error) {
-      toast({
-        title: "Erro no logout",
-        description: "Houve um problema ao fazer logout.",
-        variant: "destructive",
-      });
+      queryClient.clear();
+      window.location.href = "/login";
     }
   };
 
