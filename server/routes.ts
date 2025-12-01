@@ -4041,10 +4041,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allowed = await storage.getUserAllowedCustomers(req.user.id);
       console.log(`[MY-CUSTOMERS] 📋 opus_user found ${allowed.length} links:`, allowed.map(a => a.customerId));
       
-      const customers = await storage.getCustomersByUser(req.user.id);
-      console.log(`[MY-CUSTOMERS] ✅ Returning ${customers.length} customers:`, customers.map(c => ({ id: c.id, name: c.name })));
+      if (allowed.length > 0) {
+        const customers = await storage.getCustomersByUser(req.user.id);
+        console.log(`[MY-CUSTOMERS] ✅ Returning ${customers.length} customers:`, customers.map(c => ({ id: c.id, name: c.name })));
+        return res.json(customers);
+      }
       
-      res.json(customers);
+      // Fallback: se opus_user tem customerId definido mas sem links, retornar o cliente dele
+      if (req.user.customerId) {
+        const customer = await storage.getCustomer(req.user.customerId);
+        console.log(`[MY-CUSTOMERS] ✅ Fallback: opus_user with customerId returning:`, customer?.name);
+        return res.json(customer ? [customer] : []);
+      }
+      
+      console.log(`[MY-CUSTOMERS] ⚠️ opus_user without allowed customers or customerId`);
+      res.json([]);
     } catch (error) {
       console.error("Get my customers error:", error);
       res.status(500).json({ message: "Internal server error" });

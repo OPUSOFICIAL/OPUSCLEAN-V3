@@ -71,10 +71,18 @@ export default function App() {
           text: 'Sair',
           style: 'destructive',
           onPress: async () => {
-            setSelectedCustomerId(null);
-            setCurrentScreen('workOrders');
-            setSelectedWorkOrder(null);
-            await logout();
+            try {
+              setCurrentScreen('workOrders');
+              setSelectedWorkOrder(null);
+              setSelectedChecklist(null);
+              setScannedQRCode(null);
+              setZoneWorkOrders([]);
+              await logout();
+              setSelectedCustomerId(null);
+            } catch (error) {
+              console.error('Erro no logout:', error);
+              setSelectedCustomerId(null);
+            }
           },
         },
       ]
