@@ -115,6 +115,8 @@ export default function MobileDashboard() {
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    // Definir horário para 23:59:59.999 para incluir O.S. concluídas em qualquer horário do último dia
+    lastDayOfMonth.setHours(23, 59, 59, 999);
     
     return myData.filter((wo: WorkOrder) => {
       if (wo.status !== 'concluida') return false;
