@@ -5083,20 +5083,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Monthly regeneration of ALL work orders (cleaning + maintenance) - called automatically
+  // Monthly regeneration of ALL work orders (cleaning + maintenance) - called automatically on last day of month
+  // This generates work orders for the NEXT month (runs on last day of current month)
   app.post("/api/scheduler/regenerate-monthly-maintenance", requirePermission('schedule_create'), async (req, res) => {
     try {
-      console.log(`[MONTHLY SCHEDULER] Iniciando regeneração mensal automática de OSs (LIMPEZA + MANUTENÇÃO)`);
+      console.log(`[MONTHLY SCHEDULER] Iniciando regeneração mensal automática de OSs (LIMPEZA + MANUTENÇÃO) para PRÓXIMO MÊS`);
       
       // Get all companies
       const allCompanies = await storage.getCompanies();
+      
+      // Get all valid customer IDs to filter out orphaned activities
+      const allCustomers = await storage.getCustomers();
+      const validCustomerIds = new Set(allCustomers.map(c => c.id));
       
       let totalCleaningGenerated = 0;
       let totalMaintenanceGenerated = 0;
       
       for (const company of allCompanies) {
         try {
-          // Calculate next month window
+          // Calculate NEXT month window (scheduler runs on last day of current month)
           const now = new Date();
           const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
           const startDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);

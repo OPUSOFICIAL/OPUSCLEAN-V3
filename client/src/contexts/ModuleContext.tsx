@@ -21,7 +21,7 @@ export const MODULE_CONFIGS: Record<ModuleType, ModuleConfig> = {
   clean: {
     id: 'clean',
     name: 'clean',
-    displayName: 'OPUS Clean',
+    displayName: 'Clean',
     primaryColor: '#1e3a8a',
     secondaryColor: '#3b82f6',
     accentColor: '#60a5fa',
@@ -31,7 +31,7 @@ export const MODULE_CONFIGS: Record<ModuleType, ModuleConfig> = {
   maintenance: {
     id: 'maintenance',
     name: 'maintenance',
-    displayName: 'OPUS Manutenção',
+    displayName: 'Manutenção',
     primaryColor: '#FF9800',
     secondaryColor: '#FB8C00',
     accentColor: '#FFB74D',

@@ -457,21 +457,10 @@ export default function MaintenancePlans() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="monthly">📆 Mensal</SelectItem>
-                <SelectItem value="list">📋 Lista</SelectItem>
+                <SelectItem value="monthly">Mensal</SelectItem>
+                <SelectItem value="list">Lista</SelectItem>
               </SelectContent>
             </Select>
-            <Button 
-              onClick={() => generateWorkOrdersMutation.mutate()}
-              variant="outline"
-              disabled={generateWorkOrdersMutation.isPending}
-              data-testid="button-generate-work-orders"
-              className={cn("flex items-center gap-2 px-4", theme.buttons.outline)}
-            >
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs'}</span>
-              <span className="sm:hidden">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar'}</span>
-            </Button>
             <Button 
               variant="default"
               onClick={() => setShowCreateModal(true)}

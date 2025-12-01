@@ -474,17 +474,6 @@ export default function CleaningSchedule() {
             </SelectContent>
           </Select>
           <Button 
-            onClick={() => generateWorkOrdersMutation.mutate()}
-            variant="outline"
-            disabled={generateWorkOrdersMutation.isPending}
-            data-testid="button-generate-work-orders"
-            className="flex items-center gap-2"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar OSs'}</span>
-            <span className="sm:hidden">{generateWorkOrdersMutation.isPending ? 'Gerando...' : 'Gerar'}</span>
-          </Button>
-          <Button 
             className={theme.buttons.primary}
             style={theme.buttons.primaryStyle}
             onClick={() => setShowCreateModal(true)}
