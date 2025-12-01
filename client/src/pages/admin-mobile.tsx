@@ -438,17 +438,10 @@ export default function AdminMobile({ companyId }: AdminMobileProps) {
   const [currentPage, setCurrentPage] = useState<string>("dashboard");
   const { toast } = useToast();
   const { user } = getAuthState();
-  const { activeClientId, setActiveClientId } = useClient();
+  const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
   
   // Usuários do tipo customer_user não podem alterar o cliente
   const isCustomerUser = (user as any)?.customerId ? true : false;
-
-  // Get all customers from OPUS
-  const OPUS_COMPANY_ID = "company-opus-default";
-  const { data: customers } = useQuery({
-    queryKey: ["/api/companies", OPUS_COMPANY_ID, "customers"],
-    enabled: !isCustomerUser, // Só buscar se não for customer_user
-  });
 
   const { data: selectedCustomer } = useQuery({
     queryKey: ["/api/customers", activeClientId],
@@ -800,14 +793,14 @@ export default function AdminMobile({ companyId }: AdminMobileProps) {
           </div>
           
           {/* Seletor de Cliente para Admin OPUS */}
-          {!isCustomerUser && (
+          {!isCustomerUser && customers.length > 0 && (
             <div className="w-full">
               <Select value={activeClientId} onValueChange={setActiveClientId}>
                 <SelectTrigger className="w-full bg-white/50 text-sm h-10" data-testid="mobile-customer-selector">
                   <SelectValue placeholder="Selecione um cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(customers as any[])?.map((customer: any) => (
+                  {customers.map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>
@@ -818,10 +811,10 @@ export default function AdminMobile({ companyId }: AdminMobileProps) {
           )}
           
           {/* Nome do Cliente fixo para customer_user */}
-          {isCustomerUser && selectedCustomer && (
+          {isCustomerUser && activeClient && (
             <div className="w-full px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-600 font-medium">Cliente</p>
-              <p className="text-sm font-semibold text-blue-900">{(selectedCustomer as any).name}</p>
+              <p className="text-sm font-semibold text-blue-900">{activeClient.name}</p>
             </div>
           )}
         </div>
