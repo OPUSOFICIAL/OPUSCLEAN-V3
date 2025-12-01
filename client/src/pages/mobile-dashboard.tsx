@@ -4,12 +4,14 @@ import { getAuthState, canOnlyViewOwnWorkOrders } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, Play, Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { QrCode, ClipboardList, Clock, CheckCircle, AlertCircle, Camera, User, LogOut, MapPin, Calendar, Filter, Play, Zap, ChevronLeft, ChevronRight, Building } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
+import { useClient } from "@/contexts/ClientContext";
 import { MobileHeader } from "@/components/mobile-header";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { Capacitor } from "@capacitor/core";
@@ -36,6 +38,7 @@ type FilterType = 'pendentes_dia' | 'minhas_os';
 
 export default function MobileDashboard() {
   const { currentModule } = useModule();
+  const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = getAuthState();
@@ -45,8 +48,11 @@ export default function MobileDashboard() {
   const [currentPageCompleted, setCurrentPageCompleted] = useState(0);
   const ITEMS_PER_PAGE = 5;
   
-  // Get customerId - some users may not have customerId, use assignedClientId as fallback
-  const effectiveCustomerId = user ? ((user as any).customerId || (user as any).assignedClientId) : null;
+  // Verificar se é customer_user (usuário de cliente) - não pode trocar de cliente
+  const isCustomerUser = (user as any)?.userType === 'customer_user';
+  
+  // Get customerId - usar activeClientId do contexto ou fallback para customerId/assignedClientId do user
+  const effectiveCustomerId = activeClientId || (user ? ((user as any).customerId || (user as any).assignedClientId) : null);
   
   // Get current location context from localStorage (set by QR scanner)
   const currentLocation = JSON.parse(localStorage.getItem('current-location') || 'null');
@@ -386,6 +392,43 @@ export default function MobileDashboard() {
           </Button>
         }
       />
+
+      {/* Seletor de Cliente - Apenas para usuários admin (não customer_user) */}
+      {!isCustomerUser && customers.length > 0 && (
+        <div className="px-4 py-3 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+            Cliente Ativo
+          </label>
+          <Select value={activeClientId} onValueChange={setActiveClientId}>
+            <SelectTrigger 
+              data-testid="mobile-customer-selector" 
+              className="w-full bg-white shadow-sm border-slate-300 hover:border-blue-400 transition-colors h-11"
+            >
+              <div className="flex items-center gap-2">
+                <Building className="w-4 h-4 text-slate-500" />
+                <SelectValue placeholder="Selecione um cliente" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      
+      {/* Nome do cliente fixo para customer_user */}
+      {isCustomerUser && activeClient && (
+        <div className="px-4 py-3 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Building className="w-4 h-4 text-blue-600" />
+            <span className="font-semibold text-slate-900">{activeClient.name}</span>
+          </div>
+        </div>
+      )}
 
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="p-4 space-y-6">
