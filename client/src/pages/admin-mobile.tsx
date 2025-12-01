@@ -453,13 +453,26 @@ export default function AdminMobile({ companyId }: AdminMobileProps) {
     enabled: !!activeClientId,
   });
 
-  const { data: workOrdersResponse } = useQuery({
+  const { data: workOrdersResponse } = useQuery<{
+    data: any[];
+    statusCounts?: {
+      abertas: number;
+      vencidas: number;
+      pausadas: number;
+      concluidas: number;
+      em_execucao: number;
+      canceladas: number;
+    };
+    pagination?: any;
+  }>({
     queryKey: ["/api/customers", activeClientId, "work-orders", { module: currentModule }],
     enabled: !!activeClientId,
   });
   
   // Extrair dados da resposta paginada
   const workOrders = workOrdersResponse?.data || [];
+  // Usar statusCounts da API para contagens precisas (não limitado pela paginação)
+  const statusCounts = workOrdersResponse?.statusCounts;
 
   const { data: sites = [] } = useQuery({
     queryKey: ["/api/customers", activeClientId, "sites", { module: currentModule }],
@@ -493,12 +506,11 @@ export default function AdminMobile({ companyId }: AdminMobileProps) {
   ];
 
   const recentOS = (workOrders as any[]).slice(0, 3);
-  const pendingOS = (workOrders as any[]).filter((os: any) => os.status === 'aberta' || os.status === 'vencida').length;
-  const completedToday = (workOrders as any[]).filter((os: any) => {
-    const today = new Date().toDateString();
-    const osDate = new Date(os.createdAt).toDateString();
-    return os.status === 'concluida' && osDate === today;
-  }).length;
+  // Usar statusCounts da API para contagens precisas (totais reais, não limitados pela paginação)
+  const pendingOS = statusCounts 
+    ? (statusCounts.abertas || 0) + (statusCounts.vencidas || 0)
+    : (workOrders as any[]).filter((os: any) => os.status === 'aberta' || os.status === 'vencida').length;
+  const completedToday = statusCounts?.concluidas || 0;
 
   const renderPageContent = () => {
     switch (currentPage) {
