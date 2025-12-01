@@ -122,10 +122,25 @@ export default function WorkOrdersMobile({ customerId }: WorkOrdersMobileProps) 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: workOrders, isLoading, refetch } = useQuery({
+  const { data: workOrdersResponse, isLoading, refetch } = useQuery<{
+    data: any[];
+    statusCounts?: {
+      abertas: number;
+      vencidas: number;
+      pausadas: number;
+      concluidas: number;
+      em_execucao: number;
+      canceladas: number;
+    };
+    pagination?: any;
+  }>({
     queryKey: ["/api/customers", customerId, "work-orders"],
     enabled: !!customerId,
   });
+
+  // Extrair dados da resposta paginada
+  const workOrders = workOrdersResponse?.data || [];
+  const statusCounts = workOrdersResponse?.statusCounts;
 
   const { data: zones } = useQuery({
     queryKey: ["/api/customers", customerId, "zones"],
@@ -138,23 +153,24 @@ export default function WorkOrdersMobile({ customerId }: WorkOrdersMobileProps) 
     toast({ title: "Atualizado!" });
   };
 
-  const filteredWorkOrders = (workOrders as any[])?.filter((wo: any) => {
+  const filteredWorkOrders = workOrders.filter((wo: any) => {
     const matchesStatus = statusFilter.length === 0 || statusFilter.includes(wo.status);
     const matchesZone = zoneFilter.length === 0 || zoneFilter.includes(wo.zoneId);
     const matchesSearch = wo.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          wo.number?.toString().includes(searchTerm);
     return matchesStatus && matchesZone && matchesSearch;
-  }) || [];
+  });
 
-  const totalAbertas = (workOrders as any[])?.filter((wo: any) => 
+  // Usar statusCounts da API para contagens precisas (totais reais, não limitados pela paginação)
+  const totalAbertas = statusCounts?.abertas || workOrders.filter((wo: any) => 
     wo.status === 'aberta' || wo.status === 'atrasada'
   ).length || 0;
   
-  const totalVencidas = (workOrders as any[])?.filter((wo: any) => 
+  const totalVencidas = statusCounts?.vencidas || workOrders.filter((wo: any) => 
     wo.status === 'vencida'
   ).length || 0;
   
-  const totalConcluidas = (workOrders as any[])?.filter((wo: any) => 
+  const totalConcluidas = statusCounts?.concluidas || workOrders.filter((wo: any) => 
     wo.status === 'concluida'
   ).length || 0;
 
