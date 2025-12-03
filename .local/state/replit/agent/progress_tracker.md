@@ -83,3 +83,8 @@
 [x] 404. Simplified applyClientBranding to reuse applyBrandingData (no code duplication)
 [x] 405. Added applyModuleColors function that sets --module-primary, --module-secondary, --module-accent CSS vars
 [x] 406. Verified API /api/customers/:id returns all branding fields (loginLogo, sidebarLogo, moduleColors, etc)
+[x] 407. Removed query param support (test-subdomain) from detectSubdomain - branding uses activeClient only
+[x] 408. Removed localStorage persistence for activeClientId - maintained purely in useState (in-memory)
+[x] 409. Cleaned subdomain-detector.ts - removed all query param override support
+[x] 410. Architect review passed - all requirements met: no localStorage, no query params, pure in-memory branding
+[x] 411. Branding system now loads dynamically from activeClient immediately after login/client switch
