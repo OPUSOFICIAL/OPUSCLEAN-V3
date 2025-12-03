@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
-import { detectSubdomain, isValidSubdomain, isValidUUID } from '@/lib/subdomain-detector';
+import { detectSubdomain, isValidSubdomain } from '@/lib/subdomain-detector';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -34,107 +34,69 @@ interface BrandingContextType {
 const BrandingContext = createContext<BrandingContextType | null>(null);
 
 export function BrandingProvider({ children }: { children: ReactNode }) {
-  // Branding é armazenado em MEMÓRIA (useState), não localStorage
   const [branding, setBranding] = useState<BrandingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Get active client from ClientContext
-  const { activeClient, activeClientId, clientSource } = useClient();
+  // Get active client from ClientContext to update branding when client changes
+  const { activeClient, activeClientId } = useClient();
   const { isAuthenticated } = useAuth();
   
-  // Track which client's branding was last applied
+  // Track if branding was already applied for current client to avoid loops
   const appliedClientIdRef = useRef<string | null>(null);
 
-  // Load branding from query param or subdomain (for public pages)
-  const loadBrandingFromDetection = async () => {
+  // Load branding from subdomain (for public pages / landing)
+  const loadBrandingFromSubdomain = async () => {
     try {
       const detection = detectSubdomain();
-      console.log('[BRANDING] 🔍 Detecção:', detection);
+      const subdomain = detection.subdomain;
       
-      // Priority 1: Query param with customer ID
-      if (detection.source === 'query_param_id' && detection.customerId) {
-        if (isValidUUID(detection.customerId)) {
-          console.log('[BRANDING] 🔑 Carregando branding via query param ID:', detection.customerId);
-          const response = await fetch(`/api/public/customer-by-id/${detection.customerId}`);
-          if (response.ok) {
-            const customerData = await response.json();
-            console.log('[BRANDING] ✅ Branding carregado (query param ID):', customerData.name);
-            applyBrandingData(customerData);
-            appliedClientIdRef.current = customerData.id;
-            return true;
-          }
-        }
-      }
-      
-      // Priority 2: Query param with slug (?cliente=)
-      if (detection.source === 'query_param_slug' && detection.clienteSlug) {
-        if (isValidSubdomain(detection.clienteSlug)) {
-          console.log('[BRANDING] 🔑 Carregando branding via query param slug:', detection.clienteSlug);
-          const response = await fetch(`/api/public/customer-by-subdomain/${detection.clienteSlug}`);
-          if (response.ok) {
-            const customerData = await response.json();
-            console.log('[BRANDING] ✅ Branding carregado (query param slug):', customerData.name);
-            applyBrandingData(customerData);
-            appliedClientIdRef.current = customerData.id;
-            return true;
-          }
-        }
-      }
+      console.log('[BRANDING] 🔍 Detecção subdomain:', detection);
 
-      // Priority 3: Subdomain
-      if (detection.source === 'subdomain' && detection.subdomain) {
-        if (isValidSubdomain(detection.subdomain)) {
-          console.log('[BRANDING] 🌐 Carregando branding via subdomínio:', detection.subdomain);
-          const response = await fetch(`/api/public/customer-by-subdomain/${detection.subdomain}`);
-          if (response.ok) {
-            const customerData = await response.json();
-            console.log('[BRANDING] ✅ Branding carregado (subdomínio):', customerData.name);
-            applyBrandingData(customerData);
-            appliedClientIdRef.current = customerData.id;
-            return true;
-          }
+      if (subdomain && isValidSubdomain(subdomain)) {
+        console.log('[BRANDING] 🌐 Buscando branding por subdomain:', subdomain);
+        const response = await fetch(`/api/public/customer-by-subdomain/${subdomain}`);
+        
+        if (response.ok) {
+          const customerData = await response.json();
+          console.log('[BRANDING] ✨ Branding carregado do subdomain:', customerData.name);
+          applyBrandingData(customerData);
+          return true;
         }
       }
-      
       return false;
     } catch (error) {
-      console.error('[BRANDING] Erro ao carregar branding:', error);
+      console.error('[BRANDING] Erro ao carregar branding por subdomain:', error);
       return false;
     }
   };
 
-  // Load branding from customer ID (for logged-in users)
+  // Load branding directly from customer ID (for logged-in users)
   const loadBrandingFromCustomerId = async (customerId: string) => {
     try {
       console.log('[BRANDING] 🔄 Carregando branding do cliente:', customerId);
       
-      // Try authenticated API first
+      // Get token from localStorage
       const token = localStorage.getItem('opus_clean_token');
-      if (token) {
-        const response = await fetch(`/api/customers/${customerId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        
-        if (response.ok) {
-          const customerData = await response.json();
-          console.log('[BRANDING] ✅ Branding carregado (auth):', customerData.name);
-          applyBrandingData(customerData);
-          appliedClientIdRef.current = customerId;
-          return true;
-        }
+      if (!token) {
+        console.warn('[BRANDING] Token não encontrado, tentando API pública');
+        return false;
       }
+
+      const response = await fetch(`/api/customers/${customerId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       
-      // Fallback to public API
-      console.log('[BRANDING] ⚠️ Fallback para API pública');
-      const response = await fetch(`/api/public/customer-by-id/${customerId}`);
       if (response.ok) {
         const customerData = await response.json();
-        console.log('[BRANDING] ✅ Branding carregado (público):', customerData.name);
+        console.log('[BRANDING] ✨ Branding carregado do cliente:', customerData.name);
         applyBrandingData(customerData);
         appliedClientIdRef.current = customerId;
         return true;
+      } else {
+        console.warn('[BRANDING] Falha ao carregar branding do cliente:', response.status);
       }
-      
       return false;
     } catch (error) {
       console.error('[BRANDING] Erro ao carregar branding do cliente:', error);
@@ -142,8 +104,9 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Apply branding data to state (MEMORY) and CSS variables
+  // Apply branding data to state and CSS variables
   const applyBrandingData = (customerData: any) => {
+    // Build branding config
     const brandingConfig: BrandingConfig = {
       name: customerData.name,
       subdomain: customerData.subdomain || null,
@@ -155,10 +118,9 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       moduleColors: customerData.moduleColors || null,
     };
     
-    // Store in MEMORY (React state)
     setBranding(brandingConfig);
     
-    console.log('[BRANDING] 🎨 Branding salvo em MEMÓRIA:', {
+    console.log('[BRANDING] 🎨 Branding aplicado:', {
       name: brandingConfig.name,
       logos: {
         login: !!brandingConfig.loginLogo,
@@ -170,7 +132,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       colors: brandingConfig.moduleColors
     });
 
-    // Apply module colors to CSS variables
+    // Apply module colors dynamically via CSS variables
     applyModuleColors(customerData.moduleColors);
     setIsLoading(false);
   };
@@ -181,6 +143,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     
     const root = document.documentElement;
     
+    // Apply clean module colors if available
     if (moduleColors.clean) {
       const colors = moduleColors.clean;
       if (colors.primary) {
@@ -200,6 +163,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       }
     }
     
+    // Apply maintenance module colors if available
     if (moduleColors.maintenance) {
       const colors = moduleColors.maintenance;
       if (colors.primary) {
@@ -217,7 +181,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Reset CSS variables to defaults
+  // Reset CSS variables to defaults (to prevent mixed branding)
   const resetCSSVariables = () => {
     const root = document.documentElement;
     root.style.removeProperty('--primary');
@@ -231,21 +195,21 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     root.style.removeProperty('--maintenance-accent');
   };
 
-  // Main branding loader
+  // Main branding loader - decides strategy based on auth state
   const loadBranding = async () => {
     setIsLoading(true);
     resetCSSVariables();
     
-    // If authenticated and has activeClientId, load from customer
+    // If user is authenticated and has activeClientId, load from customer
     if (isAuthenticated && activeClientId) {
-      console.log('[BRANDING] 👤 Usuário autenticado, carregando branding:', activeClientId);
+      console.log('[BRANDING] 👤 Usuário autenticado, carregando branding do cliente:', activeClientId);
       const loaded = await loadBrandingFromCustomerId(activeClientId);
       if (loaded) return;
     }
     
-    // Try detection (query param or subdomain)
-    const detected = await loadBrandingFromDetection();
-    if (detected) return;
+    // Try subdomain detection (for public pages)
+    const subdomainLoaded = await loadBrandingFromSubdomain();
+    if (subdomainLoaded) return;
     
     // No branding found - use defaults
     console.log('[BRANDING] ℹ️ Nenhum branding encontrado, usando padrão');
@@ -258,45 +222,50 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     loadBranding();
   }, []);
 
-  // Reload branding when activeClientId changes
-  // BUT keep existing branding if it matches (avoid 401s before login)
+  // CRITICAL: Reload branding when activeClientId changes (after login or client switch)
   useEffect(() => {
     if (activeClientId && activeClientId !== appliedClientIdRef.current) {
-      console.log('[BRANDING] 🔄 Cliente ativo mudou:', activeClientId, '(fonte:', clientSource, ')');
-      
-      // If we already have branding for this client (from query param), don't reload
-      if (branding && appliedClientIdRef.current === activeClientId) {
-        console.log('[BRANDING] ✅ Branding já aplicado, mantendo em memória');
-        return;
-      }
-      
+      console.log('[BRANDING] 🔄 Cliente ativo mudou:', activeClientId, '(anterior:', appliedClientIdRef.current, ')');
       loadBrandingFromCustomerId(activeClientId);
     }
-  }, [activeClientId, clientSource, branding]);
+  }, [activeClientId]);
 
-  // React to activeClient data changes (React Query fresh data)
+  // Also react to activeClient data changes (when React Query returns fresh data)
   useEffect(() => {
     if (activeClient && activeClient.id && activeClient.id !== appliedClientIdRef.current) {
-      console.log('[BRANDING] 🔄 Dados do cliente recebidos:', activeClient.name);
-      applyBrandingData(activeClient);
+      console.log('[BRANDING] 🔄 Dados do cliente ativo recebidos:', activeClient.name);
+      applyClientBranding(activeClient);
       appliedClientIdRef.current = activeClient.id;
     }
   }, [activeClient?.id, activeClient?.moduleColors, activeClient?.loginLogo, activeClient?.sidebarLogo]);
 
-  // Apply favicon dynamically
+  // Apply favicon dynamically when branding changes
   useEffect(() => {
     if (branding?.favicon) {
-      console.log('[BRANDING] 🖼️ Aplicando favicon:', branding.favicon);
+      console.log('[BRANDING] 🎨 Aplicando favicon:', branding.favicon);
+      
+      // Remove existing favicon link tags
       const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
       existingFavicons.forEach(favicon => favicon.remove());
       
+      // Create new favicon link element
       const link = document.createElement('link');
       link.rel = 'icon';
       link.type = 'image/png';
       link.href = branding.favicon;
+      
+      // Append to head
       document.head.appendChild(link);
+    } else {
+      console.log('[BRANDING] ℹ️ Nenhum favicon personalizado, mantendo padrão');
     }
   }, [branding?.favicon]);
+
+  // Apply branding from activeClient data (for dropdown changes)
+  const applyClientBranding = (client: any) => {
+    // Reuse applyBrandingData to avoid code duplication
+    applyBrandingData(client);
+  };
 
   return (
     <BrandingContext.Provider value={{ branding, isLoading, refresh: loadBranding }}>
@@ -313,7 +282,7 @@ export const useBranding = () => {
   return context;
 };
 
-// Helper: Convert HEX to HSL
+// Helper: Converter HEX para HSL
 function hexToHSL(hex: string): { h: number; s: number; l: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return { h: 0, s: 0, l: 0 };

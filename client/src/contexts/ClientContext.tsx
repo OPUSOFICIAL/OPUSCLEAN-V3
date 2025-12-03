@@ -1,14 +1,12 @@
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { detectSubdomain, isValidUUID, isValidSubdomain } from '@/lib/subdomain-detector';
 
 interface Customer {
   id: string;
   name: string;
   isActive: boolean;
   modules: string[];
-  subdomain?: string | null;
   loginLogo?: string | null;
   sidebarLogo?: string | null;
   sidebarLogoCollapsed?: string | null;
@@ -21,7 +19,6 @@ interface ClientContextType {
   activeClient: Customer | null;
   customers: Customer[];
   isLoading: boolean;
-  clientSource: 'query_param' | 'subdomain' | 'user_login' | 'none';
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -31,12 +28,11 @@ interface ClientProviderProps {
 }
 
 export function ClientProvider({ children }: ClientProviderProps) {
-  // IMPORTANTE: activeClientId é mantido apenas em MEMÓRIA (useState)
-  const [activeClientId, setActiveClientId] = useState<string>("");
-  const [clientSource, setClientSource] = useState<'query_param' | 'subdomain' | 'user_login' | 'none'>('none');
-  const [queryDetected, setQueryDetected] = useState(false);
-  const queryLockRef = useRef(false); // Previne override do query param pelo login
-  
+  // Inicializar com valor do localStorage se existir
+  const [activeClientId, setActiveClientId] = useState<string>(() => {
+    return localStorage.getItem('opus:activeClientId') || "";
+  });
+  const [subdomainDetected, setSubdomainDetected] = useState(false);
   const { user } = useAuth();
   
   // Usar o companyId do usuário logado ao invés de um valor fixo
@@ -49,111 +45,88 @@ export function ClientProvider({ children }: ClientProviderProps) {
   // Verificar se o usuário é admin (role admin ou gestor_cliente)
   const isAdmin = user?.role === 'admin' || user?.role === 'gestor_cliente';
 
-  // PRIORIDADE 1: Detectar cliente via query param ou subdomínio (executa uma vez)
+  // Detectar subdomínio e buscar cliente automaticamente
+  const detectSubdomain = () => {
+    // MODO DE TESTE: Permitir simular subdomínio via query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const testSubdomain = urlParams.get('test-subdomain');
+    if (testSubdomain) {
+      console.log(`[CLIENT CONTEXT] 🧪 MODO DE TESTE: Simulando subdomínio "${testSubdomain}"`);
+      return testSubdomain;
+    }
+
+    // MODO NORMAL: Detectar do hostname
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    // Se houver pelo menos 3 partes (subdominio.dominio.com) e não for www
+    if (parts.length >= 3 && parts[0] !== 'www') {
+      return parts[0];
+    }
+    return null;
+  };
+
+  // Buscar cliente por subdomínio (executa apenas uma vez ao carregar)
   useEffect(() => {
-    const fetchCustomerFromDetection = async () => {
-      if (queryDetected) return; // Já foi detectado
+    const fetchCustomerBySubdomain = async () => {
+      const subdomain = detectSubdomain();
       
-      const detection = detectSubdomain();
-      console.log('[CLIENT CONTEXT] 🔍 Detecção:', detection);
-      
-      // Se detectou via query param com ID
-      if (detection.source === 'query_param_id' && detection.customerId) {
-        if (!isValidUUID(detection.customerId)) {
-          console.warn('[CLIENT CONTEXT] ⚠️ customerId inválido:', detection.customerId);
-          setQueryDetected(true);
-          return;
-        }
-        
-        try {
-          // Buscar cliente por ID (API pública para pre-login)
-          const response = await fetch(`/api/public/customer-by-id/${detection.customerId}`);
-          if (response.ok) {
-            const customer = await response.json();
-            console.log('[CLIENT CONTEXT] ✅ Cliente encontrado via query param ID:', customer.name);
-            setActiveClientId(customer.id);
-            setClientSource('query_param');
-            queryLockRef.current = true; // Lock para não ser sobrescrito pelo login
-          } else {
-            console.warn('[CLIENT CONTEXT] ⚠️ Cliente não encontrado para ID:', detection.customerId);
-          }
-        } catch (error) {
-          console.error('[CLIENT CONTEXT] Erro ao buscar cliente por ID:', error);
-        }
-        setQueryDetected(true);
-        return;
+      if (!subdomain || subdomainDetected) {
+        return; // Não há subdomínio ou já foi detectado
       }
-      
-      // Se detectou via query param com slug (?cliente=)
-      if (detection.source === 'query_param_slug' && detection.clienteSlug) {
-        if (!isValidSubdomain(detection.clienteSlug)) {
-          console.warn('[CLIENT CONTEXT] ⚠️ cliente slug inválido:', detection.clienteSlug);
-          setQueryDetected(true);
-          return;
+
+      try {
+        const response = await fetch(`/api/public/customer-by-subdomain/${subdomain}`);
+        if (response.ok) {
+          const customer = await response.json();
+          console.log(`[CLIENT CONTEXT] Subdomínio detectado: ${subdomain}, cliente: ${customer.name}`);
+          setActiveClientId(customer.id);
+          setSubdomainDetected(true);
+          // Salvar no localStorage para manter mesmo depois
+          localStorage.setItem('opus:activeClientId', customer.id);
+        } else {
+          console.log(`[CLIENT CONTEXT] Subdomínio ${subdomain} não encontrado`);
         }
-        
-        try {
-          const response = await fetch(`/api/public/customer-by-subdomain/${detection.clienteSlug}`);
-          if (response.ok) {
-            const customer = await response.json();
-            console.log('[CLIENT CONTEXT] ✅ Cliente encontrado via query param slug:', customer.name);
-            setActiveClientId(customer.id);
-            setClientSource('query_param');
-            queryLockRef.current = true;
-          } else {
-            console.warn('[CLIENT CONTEXT] ⚠️ Cliente não encontrado para slug:', detection.clienteSlug);
-          }
-        } catch (error) {
-          console.error('[CLIENT CONTEXT] Erro ao buscar cliente por slug:', error);
-        }
-        setQueryDetected(true);
-        return;
+      } catch (error) {
+        console.error('[CLIENT CONTEXT] Erro ao buscar cliente por subdomínio:', error);
       }
-      
-      // Se detectou via subdomínio
-      if (detection.source === 'subdomain' && detection.subdomain) {
-        try {
-          const response = await fetch(`/api/public/customer-by-subdomain/${detection.subdomain}`);
-          if (response.ok) {
-            const customer = await response.json();
-            console.log('[CLIENT CONTEXT] ✅ Cliente encontrado via subdomínio:', customer.name);
-            setActiveClientId(customer.id);
-            setClientSource('subdomain');
-            // Não lock - pode ser sobrescrito pelo login
-          } else {
-            console.warn('[CLIENT CONTEXT] ⚠️ Cliente não encontrado para subdomínio:', detection.subdomain);
-          }
-        } catch (error) {
-          console.error('[CLIENT CONTEXT] Erro ao buscar cliente por subdomínio:', error);
-        }
-        setQueryDetected(true);
-        return;
-      }
-      
-      // Nenhuma detecção
-      console.log('[CLIENT CONTEXT] ℹ️ Nenhum cliente detectado via query/subdomínio');
-      setQueryDetected(true);
     };
 
-    fetchCustomerFromDetection();
+    fetchCustomerBySubdomain();
   }, []); // Executa apenas uma vez ao montar
 
   // Buscar clientes do usuário (funciona para admin e opus_user não-admin)
-  const { data: myCustomers = [], isLoading: isLoadingMyCustomers, refetch: refetchMyCustomers } = useQuery({
-    queryKey: ["/api/auth/my-customers"],
+  // Usa /api/auth/my-customers que busca via userAllowedCustomers
+  // IMPORTANTE: Permite customer_user admins também (role === 'admin')
+  const { data: myCustomers = [], isLoading: isLoadingMyCustomers, isError: myCustomersError, error: myCustomersErrorDetail, refetch: refetchMyCustomers } = useQuery({
+    queryKey: ["/api/auth/my-customers"],  // Simples - queryKey é apenas para cache, não para URL
     enabled: (!isCustomerUser || (isCustomerUser && isAdmin)) && !!user?.id,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 0,  // Não usar cache
+    gcTime: 0,  // Desabilitar garbage collection também
+    refetchOnWindowFocus: true,  // Refetch ao focar na janela
   });
 
-  // Force refetch quando user muda
+  // Force refetch quando user muda (para garantir dados fresh)
   useEffect(() => {
     if ((!isCustomerUser || (isCustomerUser && isAdmin)) && user?.id) {
-      console.log(`[CLIENT CONTEXT] 🔄 Forcing refetch myCustomers for:`, user.id);
+      console.log(`[CLIENT CONTEXT] 🔄 Forcing refetch myCustomers for:`, user.id, `isAdmin: ${isAdmin}`);
       refetchMyCustomers();
     }
   }, [user?.id, isCustomerUser, isAdmin, refetchMyCustomers]);
+
+  // Debug log - MUITO VERBOSE
+  useEffect(() => {
+    if (!isCustomerUser) {
+      console.log(`[CLIENT CONTEXT] 🔍 Query estado:`, {
+        isCustomerUser,
+        userId: user?.id,
+        enabled: !isCustomerUser && !!user?.id,
+        isLoading: isLoadingMyCustomers,
+        isError: myCustomersError,
+        dataLength: (myCustomers as any[])?.length || 0,
+        data: myCustomers
+      });
+    }
+  }, [myCustomers, isLoadingMyCustomers, myCustomersError, user?.id, isCustomerUser]);
 
   // Buscar clientes permitidos para usuários do sistema não-admin (fallback)
   const { data: allowedCustomers = [], isLoading: isLoadingAllowedCustomers } = useQuery({
@@ -164,11 +137,14 @@ export function ClientProvider({ children }: ClientProviderProps) {
   // Filtrar clientes baseado em permissões
   let customers: Customer[];
   if (isCustomerUser && !isAdmin) {
+    // customer_user não-admin não vê lista de clientes
     customers = [];
   } else if (isAdmin) {
+    // Admin (opus_user ou customer_user) vê seus clientes vinculados (via userAllowedCustomers)
     customers = (myCustomers as Customer[]);
     console.log(`[CLIENT CONTEXT] Admin customers received:`, customers.length, customers.map(c => ({ id: c.id, name: c.name })));
   } else {
+    // Usuários não-admin veem apenas clientes permitidos e ativos
     const myCustomersArray = (myCustomers as unknown as Customer[]) || [];
     const allowedCustomersArray = (allowedCustomers as unknown as Customer[]) || [];
     const customersToUse = myCustomersArray.length > 0 ? myCustomersArray : allowedCustomersArray;
@@ -177,62 +153,71 @@ export function ClientProvider({ children }: ClientProviderProps) {
   }
 
   // Buscar cliente ativo específico
+  // Para customer_user: usa /api/auth/my-customer (sem permissão requerida)
+  // Para opus_user: usa /api/customers/:id (requer permissão customers_view)
   const { data: activeClient } = useQuery({
     queryKey: isCustomerUser ? ["/api/auth/my-customer"] : ["/api/customers", activeClientId],
     enabled: isCustomerUser ? true : !!activeClientId,
   });
 
-  // PRIORIDADE 2: Definir activeClientId baseado no usuário logado
-  // MAS NÃO sobrescrever se veio de query param (queryLockRef)
+  // Resetar activeClientId quando o companyId mudar (quando user loga)
+  // SOMENTE se não houver um cliente válido salvo no localStorage
   useEffect(() => {
-    // Se cliente foi definido via query param, não sobrescrever
-    if (queryLockRef.current) {
-      console.log('[CLIENT CONTEXT] 🔒 Cliente locked via query param, não sobrescrevendo');
-      return;
+    if (companyId && !isCustomerUser) {
+      const savedClientId = localStorage.getItem('opus:activeClientId');
+      // Só resetar se não houver cliente salvo no localStorage
+      if (!savedClientId) {
+        setActiveClientId("");
+      }
     }
-    
-    // Se é customer_user, SEMPRE usar o customerId dele
+  }, [companyId, isCustomerUser]);
+
+  // COMBINADO: Definir activeClientId corretamente baseado no tipo de usuário
+  useEffect(() => {
+    // Se é customer_user, SEMPRE usar o customerId dele (PRIORIDADE)
     if (isCustomerUser && userCustomerId) {
       if (activeClientId !== userCustomerId) {
-        console.log(`[CLIENT CONTEXT] 👤 Customer user - definindo activeClientId:`, userCustomerId);
         setActiveClientId(userCustomerId);
-        setClientSource('user_login');
       }
-      return;
+      return; // Não executar lógica de admin
     }
     
-    // Se é admin/opus_user e não tem cliente selecionado, usar primeiro da lista
+    // Se é admin/opus_user e não tem cliente selecionado
     if (!isCustomerUser && !activeClientId && customers.length > 0) {
-      console.log(`[CLIENT CONTEXT] 📋 Admin/opus_user - definindo primeiro cliente:`, customers[0].id);
-      setActiveClientId(customers[0].id);
-      setClientSource('user_login');
+      // Verificar se o cliente do localStorage é válido antes de sobrescrever
+      const savedClientId = localStorage.getItem('opus:activeClientId');
+      const savedClientExists = savedClientId && customers.some(c => c.id === savedClientId);
+      
+      if (savedClientExists) {
+        // Se existe um cliente válido salvo, usar ele
+        setActiveClientId(savedClientId);
+      } else {
+        // Caso contrário, usar o primeiro da lista
+        setActiveClientId(customers[0].id);
+      }
     }
   }, [isCustomerUser, userCustomerId, activeClientId, customers]);
 
   // Para customer_user, isLoading só é false quando activeClientId está definido
+  // Para opus_user não-admin, considerar também o loading dos clientes permitidos
   const isLoading = isCustomerUser 
     ? !activeClientId 
     : (isLoadingMyCustomers || (!isAdmin && isLoadingAllowedCustomers));
 
-  // Log quando activeClientId muda (em memória)
+  // Sincronizar activeClientId com localStorage
   useEffect(() => {
     if (activeClientId) {
-      console.log(`[CLIENT CONTEXT] ✅ Cliente ativo em MEMÓRIA: ${activeClientId} (fonte: ${clientSource})`);
+      localStorage.setItem('opus:activeClientId', activeClientId);
+      console.log(`[CLIENT CONTEXT] Cliente ativo atualizado: ${activeClientId}`);
     }
-  }, [activeClientId, clientSource]);
+  }, [activeClientId]);
 
   const value: ClientContextType = {
     activeClientId,
-    setActiveClientId: (id: string) => {
-      // Se usuário muda manualmente, liberar o lock
-      queryLockRef.current = false;
-      setActiveClientId(id);
-      setClientSource('user_login');
-    },
+    setActiveClientId,
     activeClient: activeClient as Customer | null,
     customers: customers as Customer[],
     isLoading,
-    clientSource,
   };
 
   return (
