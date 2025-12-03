@@ -28,10 +28,8 @@ interface ClientProviderProps {
 }
 
 export function ClientProvider({ children }: ClientProviderProps) {
-  // Inicializar com valor do localStorage se existir
-  const [activeClientId, setActiveClientId] = useState<string>(() => {
-    return localStorage.getItem('opus:activeClientId') || "";
-  });
+  // IMPORTANTE: activeClientId é apenas EM MEMÓRIA - não usar localStorage
+  const [activeClientId, setActiveClientId] = useState<string>("");
   const [subdomainDetected, setSubdomainDetected] = useState(false);
   const { user } = useAuth();
   
@@ -45,17 +43,10 @@ export function ClientProvider({ children }: ClientProviderProps) {
   // Verificar se o usuário é admin (role admin ou gestor_cliente)
   const isAdmin = user?.role === 'admin' || user?.role === 'gestor_cliente';
 
-  // Detectar subdomínio e buscar cliente automaticamente
+  // Detectar subdomínio do hostname (SEM query params)
   const detectSubdomain = () => {
-    // MODO DE TESTE: Permitir simular subdomínio via query string
-    const urlParams = new URLSearchParams(window.location.search);
-    const testSubdomain = urlParams.get('test-subdomain');
-    if (testSubdomain) {
-      console.log(`[CLIENT CONTEXT] 🧪 MODO DE TESTE: Simulando subdomínio "${testSubdomain}"`);
-      return testSubdomain;
-    }
-
-    // MODO NORMAL: Detectar do hostname
+    // MODO NORMAL: Detectar apenas do hostname
+    // NÃO usar query params para teste - branding é carregado do activeClient
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
     // Se houver pelo menos 3 partes (subdominio.dominio.com) e não for www
@@ -66,6 +57,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
   };
 
   // Buscar cliente por subdomínio (executa apenas uma vez ao carregar)
+  // NOTA: Isso é para páginas públicas antes do login
   useEffect(() => {
     const fetchCustomerBySubdomain = async () => {
       const subdomain = detectSubdomain();
@@ -81,8 +73,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
           console.log(`[CLIENT CONTEXT] Subdomínio detectado: ${subdomain}, cliente: ${customer.name}`);
           setActiveClientId(customer.id);
           setSubdomainDetected(true);
-          // Salvar no localStorage para manter mesmo depois
-          localStorage.setItem('opus:activeClientId', customer.id);
+          // NÃO salvar no localStorage - manter apenas em memória
         } else {
           console.log(`[CLIENT CONTEXT] Subdomínio ${subdomain} não encontrado`);
         }
@@ -160,41 +151,22 @@ export function ClientProvider({ children }: ClientProviderProps) {
     enabled: isCustomerUser ? true : !!activeClientId,
   });
 
-  // Resetar activeClientId quando o companyId mudar (quando user loga)
-  // SOMENTE se não houver um cliente válido salvo no localStorage
-  useEffect(() => {
-    if (companyId && !isCustomerUser) {
-      const savedClientId = localStorage.getItem('opus:activeClientId');
-      // Só resetar se não houver cliente salvo no localStorage
-      if (!savedClientId) {
-        setActiveClientId("");
-      }
-    }
-  }, [companyId, isCustomerUser]);
-
   // COMBINADO: Definir activeClientId corretamente baseado no tipo de usuário
+  // IMPORTANTE: Usar apenas memória, sem localStorage
   useEffect(() => {
     // Se é customer_user, SEMPRE usar o customerId dele (PRIORIDADE)
     if (isCustomerUser && userCustomerId) {
       if (activeClientId !== userCustomerId) {
+        console.log(`[CLIENT CONTEXT] 👤 Customer user - definindo activeClientId:`, userCustomerId);
         setActiveClientId(userCustomerId);
       }
       return; // Não executar lógica de admin
     }
     
-    // Se é admin/opus_user e não tem cliente selecionado
+    // Se é admin/opus_user e não tem cliente selecionado, usar primeiro da lista
     if (!isCustomerUser && !activeClientId && customers.length > 0) {
-      // Verificar se o cliente do localStorage é válido antes de sobrescrever
-      const savedClientId = localStorage.getItem('opus:activeClientId');
-      const savedClientExists = savedClientId && customers.some(c => c.id === savedClientId);
-      
-      if (savedClientExists) {
-        // Se existe um cliente válido salvo, usar ele
-        setActiveClientId(savedClientId);
-      } else {
-        // Caso contrário, usar o primeiro da lista
-        setActiveClientId(customers[0].id);
-      }
+      console.log(`[CLIENT CONTEXT] 📋 Admin/opus_user - definindo primeiro cliente:`, customers[0].id);
+      setActiveClientId(customers[0].id);
     }
   }, [isCustomerUser, userCustomerId, activeClientId, customers]);
 
@@ -204,11 +176,10 @@ export function ClientProvider({ children }: ClientProviderProps) {
     ? !activeClientId 
     : (isLoadingMyCustomers || (!isAdmin && isLoadingAllowedCustomers));
 
-  // Sincronizar activeClientId com localStorage
+  // Log quando activeClientId muda (sem sincronizar com localStorage)
   useEffect(() => {
     if (activeClientId) {
-      localStorage.setItem('opus:activeClientId', activeClientId);
-      console.log(`[CLIENT CONTEXT] Cliente ativo atualizado: ${activeClientId}`);
+      console.log(`[CLIENT CONTEXT] ✅ Cliente ativo atualizado (em memória): ${activeClientId}`);
     }
   }, [activeClientId]);
 

@@ -6,7 +6,7 @@
  * - Production VM: tecnofibra.acelera.com
  * - Any custom domain: tecnofibra.customdomain.com
  * 
- * Also supports query parameter testing: ?test-subdomain=tecnofibra
+ * IMPORTANTE: NÃO usa query params - branding é carregado do activeClient em memória
  */
 
 export interface SubdomainDetectionResult {
@@ -18,26 +18,13 @@ export interface SubdomainDetectionResult {
 /**
  * Detects subdomain adaptively from current URL
  * - Extracts first part of hostname (before first dot)
- * - Supports query parameter override for testing: ?test-subdomain=value
  * - Returns null if no subdomain detected (e.g., root domain)
  * - Handles 2-label domains like localhost and custom TLDs
+ * 
+ * NOTA: Para usuários logados, o branding é carregado do activeClient (não do subdomain)
  */
 export function detectSubdomain(): SubdomainDetectionResult {
   const fullHostname = window.location.hostname;
-  
-  // Check for test mode via query parameter (for development)
-  const urlParams = new URLSearchParams(window.location.search);
-  const testSubdomain = urlParams.get('test-subdomain');
-  
-  if (testSubdomain) {
-    // Normalize test subdomain (lowercase, trim)
-    const normalized = testSubdomain.toLowerCase().trim();
-    return {
-      subdomain: normalized,
-      fullHostname,
-      isTestMode: true
-    };
-  }
   
   // Handle special cases
   if (fullHostname === 'localhost' || fullHostname === '127.0.0.1') {
@@ -52,7 +39,7 @@ export function detectSubdomain(): SubdomainDetectionResult {
   // Examples:
   // tecnofibra.localhost -> ["tecnofibra", "localhost"] (2 parts)
   // tecnofibra.janeway.replit.dev -> ["tecnofibra", "janeway", "replit", "dev"] (4 parts)
-  // tecnofibra.acelera.com -> ["tecnofibra", "acelera", "com"] (3 parts)
+  // tecnofibras.acelera.com -> ["tecnofibra", "acelera", "com"] (3 parts)
   // tecnofibra.co.uk -> ["tecnofibra", "co", "uk"] (3 parts)
   const parts = fullHostname.split('.');
   
