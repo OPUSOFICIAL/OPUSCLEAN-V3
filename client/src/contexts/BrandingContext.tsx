@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { detectSubdomain, isValidSubdomain } from '@/lib/subdomain-detector';
 import { useClient } from '@/contexts/ClientContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface BrandingConfig {
   name: string;
@@ -37,128 +38,206 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   
   // Get active client from ClientContext to update branding when client changes
-  const { activeClient } = useClient();
+  const { activeClient, activeClientId } = useClient();
+  const { isAuthenticated } = useAuth();
+  
+  // Track if branding was already applied for current client to avoid loops
+  const appliedClientIdRef = useRef<string | null>(null);
 
-  const loadBranding = async () => {
+  // Load branding from subdomain (for public pages / landing)
+  const loadBrandingFromSubdomain = async () => {
     try {
-      // Adaptive subdomain detection
       const detection = detectSubdomain();
       const subdomain = detection.subdomain;
       
-      console.log('[BRANDING] 🔍 Detecção:', detection);
-      console.log('[BRANDING] 📍 Subdomain:', subdomain);
-      console.log('[BRANDING] ✅ Válido?', subdomain ? isValidSubdomain(subdomain) : false);
-
-      // Reset branding state first (to clear previous tenant data)
-      setBranding(null);
-      resetCSSVariables();
+      console.log('[BRANDING] 🔍 Detecção subdomain:', detection);
 
       if (subdomain && isValidSubdomain(subdomain)) {
-        console.log('[BRANDING] 🌐 Buscando branding para:', subdomain);
-        // Fetch customer branding via public API
+        console.log('[BRANDING] 🌐 Buscando branding por subdomain:', subdomain);
         const response = await fetch(`/api/public/customer-by-subdomain/${subdomain}`);
-        console.log('[BRANDING] 📡 Resposta API:', response.status);
         
         if (response.ok) {
           const customerData = await response.json();
-          console.log('[BRANDING] ✨ Dados recebidos:', customerData);
-          
-          // Build branding config
-          const brandingConfig: BrandingConfig = {
-            name: customerData.name,
-            subdomain: customerData.subdomain,
-            loginLogo: customerData.loginLogo,
-            sidebarLogo: customerData.sidebarLogo,
-            sidebarLogoCollapsed: customerData.sidebarLogoCollapsed,
-            homeLogo: customerData.homeLogo,
-            favicon: customerData.favicon,
-            moduleColors: customerData.moduleColors,
-          };
-          
-          setBranding(brandingConfig);
-          console.log('[BRANDING] 🎨 Branding configurado:', {
-            logos: {
-              login: brandingConfig.loginLogo,
-              sidebar: brandingConfig.sidebarLogo,
-              sidebarCollapsed: brandingConfig.sidebarLogoCollapsed,
-              home: brandingConfig.homeLogo
-            },
-            colors: brandingConfig.moduleColors
-          });
-
-          // Apply module colors dynamically via CSS variables
-          if (customerData.moduleColors) {
-            const root = document.documentElement;
-            
-            // Apply clean module colors if available
-            if (customerData.moduleColors.clean) {
-              const colors = customerData.moduleColors.clean;
-              if (colors.primary) {
-                const hsl = hexToHSL(colors.primary);
-                root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-              }
-              if (colors.secondary) {
-                const hsl = hexToHSL(colors.secondary);
-                root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-              }
-              if (colors.accent) {
-                const hsl = hexToHSL(colors.accent);
-                root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-              }
-            }
-            
-            // Apply maintenance module colors if available
-            if (customerData.moduleColors.maintenance) {
-              const colors = customerData.moduleColors.maintenance;
-              if (colors.primary) {
-                const hsl = hexToHSL(colors.primary);
-                root.style.setProperty('--maintenance-primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-              }
-              if (colors.secondary) {
-                const hsl = hexToHSL(colors.secondary);
-                root.style.setProperty('--maintenance-secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-              }
-              if (colors.accent) {
-                const hsl = hexToHSL(colors.accent);
-                root.style.setProperty('--maintenance-accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-              }
-            }
-          }
-        } else if (response.status === 404) {
-          // No branding found for this subdomain - reset to defaults
-          console.warn(`[BRANDING] No branding found for subdomain: ${subdomain}`);
+          console.log('[BRANDING] ✨ Branding carregado do subdomain:', customerData.name);
+          applyBrandingData(customerData);
+          return true;
         }
       }
+      return false;
     } catch (error) {
-      console.error('[BRANDING] Error loading branding:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('[BRANDING] Erro ao carregar branding por subdomain:', error);
+      return false;
+    }
+  };
+
+  // Load branding directly from customer ID (for logged-in users)
+  const loadBrandingFromCustomerId = async (customerId: string) => {
+    try {
+      console.log('[BRANDING] 🔄 Carregando branding do cliente:', customerId);
+      
+      // Get token from localStorage
+      const token = localStorage.getItem('opus_clean_token');
+      if (!token) {
+        console.warn('[BRANDING] Token não encontrado, tentando API pública');
+        return false;
+      }
+
+      const response = await fetch(`/api/customers/${customerId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const customerData = await response.json();
+        console.log('[BRANDING] ✨ Branding carregado do cliente:', customerData.name);
+        applyBrandingData(customerData);
+        appliedClientIdRef.current = customerId;
+        return true;
+      } else {
+        console.warn('[BRANDING] Falha ao carregar branding do cliente:', response.status);
+      }
+      return false;
+    } catch (error) {
+      console.error('[BRANDING] Erro ao carregar branding do cliente:', error);
+      return false;
+    }
+  };
+
+  // Apply branding data to state and CSS variables
+  const applyBrandingData = (customerData: any) => {
+    // Build branding config
+    const brandingConfig: BrandingConfig = {
+      name: customerData.name,
+      subdomain: customerData.subdomain || null,
+      loginLogo: customerData.loginLogo || null,
+      sidebarLogo: customerData.sidebarLogo || null,
+      sidebarLogoCollapsed: customerData.sidebarLogoCollapsed || null,
+      homeLogo: customerData.homeLogo || null,
+      favicon: customerData.favicon || null,
+      moduleColors: customerData.moduleColors || null,
+    };
+    
+    setBranding(brandingConfig);
+    
+    console.log('[BRANDING] 🎨 Branding aplicado:', {
+      name: brandingConfig.name,
+      logos: {
+        login: !!brandingConfig.loginLogo,
+        sidebar: !!brandingConfig.sidebarLogo,
+        sidebarCollapsed: !!brandingConfig.sidebarLogoCollapsed,
+        home: !!brandingConfig.homeLogo,
+        favicon: !!brandingConfig.favicon,
+      },
+      colors: brandingConfig.moduleColors
+    });
+
+    // Apply module colors dynamically via CSS variables
+    applyModuleColors(customerData.moduleColors);
+    setIsLoading(false);
+  };
+
+  // Apply module colors to CSS variables
+  const applyModuleColors = (moduleColors: any) => {
+    if (!moduleColors) return;
+    
+    const root = document.documentElement;
+    
+    // Apply clean module colors if available
+    if (moduleColors.clean) {
+      const colors = moduleColors.clean;
+      if (colors.primary) {
+        const hsl = hexToHSL(colors.primary);
+        root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+        root.style.setProperty('--module-primary', colors.primary);
+      }
+      if (colors.secondary) {
+        const hsl = hexToHSL(colors.secondary);
+        root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+        root.style.setProperty('--module-secondary', colors.secondary);
+      }
+      if (colors.accent) {
+        const hsl = hexToHSL(colors.accent);
+        root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+        root.style.setProperty('--module-accent', colors.accent);
+      }
+    }
+    
+    // Apply maintenance module colors if available
+    if (moduleColors.maintenance) {
+      const colors = moduleColors.maintenance;
+      if (colors.primary) {
+        const hsl = hexToHSL(colors.primary);
+        root.style.setProperty('--maintenance-primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+      }
+      if (colors.secondary) {
+        const hsl = hexToHSL(colors.secondary);
+        root.style.setProperty('--maintenance-secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+      }
+      if (colors.accent) {
+        const hsl = hexToHSL(colors.accent);
+        root.style.setProperty('--maintenance-accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
+      }
     }
   };
 
   // Reset CSS variables to defaults (to prevent mixed branding)
   const resetCSSVariables = () => {
     const root = document.documentElement;
-    // Remove any custom color overrides
     root.style.removeProperty('--primary');
     root.style.removeProperty('--secondary');
     root.style.removeProperty('--accent');
+    root.style.removeProperty('--module-primary');
+    root.style.removeProperty('--module-secondary');
+    root.style.removeProperty('--module-accent');
     root.style.removeProperty('--maintenance-primary');
     root.style.removeProperty('--maintenance-secondary');
     root.style.removeProperty('--maintenance-accent');
   };
 
+  // Main branding loader - decides strategy based on auth state
+  const loadBranding = async () => {
+    setIsLoading(true);
+    resetCSSVariables();
+    
+    // If user is authenticated and has activeClientId, load from customer
+    if (isAuthenticated && activeClientId) {
+      console.log('[BRANDING] 👤 Usuário autenticado, carregando branding do cliente:', activeClientId);
+      const loaded = await loadBrandingFromCustomerId(activeClientId);
+      if (loaded) return;
+    }
+    
+    // Try subdomain detection (for public pages)
+    const subdomainLoaded = await loadBrandingFromSubdomain();
+    if (subdomainLoaded) return;
+    
+    // No branding found - use defaults
+    console.log('[BRANDING] ℹ️ Nenhum branding encontrado, usando padrão');
+    setBranding(null);
+    setIsLoading(false);
+  };
+
+  // Initial load on mount
   useEffect(() => {
     loadBranding();
   }, []);
 
-  // Update branding when active client changes (for dropdown changes)
+  // CRITICAL: Reload branding when activeClientId changes (after login or client switch)
   useEffect(() => {
-    if (activeClient) {
-      console.log('[BRANDING] 🔄 Cliente ativo mudou, atualizando branding:', activeClient.name);
-      applyClientBranding(activeClient);
+    if (activeClientId && activeClientId !== appliedClientIdRef.current) {
+      console.log('[BRANDING] 🔄 Cliente ativo mudou:', activeClientId, '(anterior:', appliedClientIdRef.current, ')');
+      loadBrandingFromCustomerId(activeClientId);
     }
-  }, [activeClient?.id]); // React when client ID changes
+  }, [activeClientId]);
+
+  // Also react to activeClient data changes (when React Query returns fresh data)
+  useEffect(() => {
+    if (activeClient && activeClient.id && activeClient.id !== appliedClientIdRef.current) {
+      console.log('[BRANDING] 🔄 Dados do cliente ativo recebidos:', activeClient.name);
+      applyClientBranding(activeClient);
+      appliedClientIdRef.current = activeClient.id;
+    }
+  }, [activeClient?.id, activeClient?.moduleColors, activeClient?.loginLogo, activeClient?.sidebarLogo]);
 
   // Apply favicon dynamically when branding changes
   useEffect(() => {
@@ -184,66 +263,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
   // Apply branding from activeClient data (for dropdown changes)
   const applyClientBranding = (client: any) => {
-    // Build branding config from client data
-    const brandingConfig: BrandingConfig = {
-      name: client.name,
-      subdomain: client.subdomain || null,
-      loginLogo: client.loginLogo || null,
-      sidebarLogo: client.sidebarLogo || null,
-      sidebarLogoCollapsed: client.sidebarLogoCollapsed || null,
-      homeLogo: client.homeLogo || null,
-      favicon: client.favicon || null,
-      moduleColors: client.moduleColors || null,
-    };
-    
-    setBranding(brandingConfig);
-    console.log('[BRANDING] 🎨 Branding atualizado do cliente ativo:', {
-      logos: {
-        login: brandingConfig.loginLogo,
-        sidebar: brandingConfig.sidebarLogo,
-        sidebarCollapsed: brandingConfig.sidebarLogoCollapsed,
-        home: brandingConfig.homeLogo,
-        favicon: brandingConfig.favicon
-      },
-      colors: brandingConfig.moduleColors
-    });
-
-    // Apply module colors dynamically
-    if (client.moduleColors) {
-      const root = document.documentElement;
-      
-      if (client.moduleColors.clean) {
-        const colors = client.moduleColors.clean;
-        if (colors.primary) {
-          const hsl = hexToHSL(colors.primary);
-          root.style.setProperty('--primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-        }
-        if (colors.secondary) {
-          const hsl = hexToHSL(colors.secondary);
-          root.style.setProperty('--secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-        }
-        if (colors.accent) {
-          const hsl = hexToHSL(colors.accent);
-          root.style.setProperty('--accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-        }
-      }
-      
-      if (client.moduleColors.maintenance) {
-        const colors = client.moduleColors.maintenance;
-        if (colors.primary) {
-          const hsl = hexToHSL(colors.primary);
-          root.style.setProperty('--maintenance-primary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-        }
-        if (colors.secondary) {
-          const hsl = hexToHSL(colors.secondary);
-          root.style.setProperty('--maintenance-secondary', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-        }
-        if (colors.accent) {
-          const hsl = hexToHSL(colors.accent);
-          root.style.setProperty('--maintenance-accent', `${hsl.h} ${hsl.s}% ${hsl.l}%`);
-        }
-      }
-    }
+    // Reuse applyBrandingData to avoid code duplication
+    applyBrandingData(client);
   };
 
   return (
