@@ -46,6 +46,41 @@ Performance optimizations include database indexing, parallel query execution, a
 ### System Design Choices
 The project is configured for the Replit cloud environment, with automated PostgreSQL provisioning and a modular design for future expansion. It includes an adaptive subdomain-based branding system that dynamically applies client branding (logos and module colors) based on the subdomain, with robust fallback mechanisms and asset serving.
 
+### Subdomain-Based Client Separation (Multi-Tenant)
+O sistema suporta separação de clientes baseada em subdomain usando query parameters. Isso permite que cada cliente tenha seu próprio branding e contexto desde a landing page, antes mesmo do login.
+
+**Funcionamento:**
+1. **Detecção de Subdomain (Priority Order):**
+   - Query Parameter: `?subdomain=nestle` (Priority 1 - highest)
+   - Hostname Subdomain: `nestle.aceelra.com.br` (Priority 2)
+   - localStorage Persistence: Subdomain salvo de sessão anterior (Priority 3)
+
+2. **Persistência:**
+   - O subdomain é salvo em localStorage (`opus:subdomain`)
+   - Todas as navegações preservam o subdomain usando o hook `useSubdomainNavigation`
+   - O subdomain persiste durante toda a sessão do usuário
+
+3. **Branding Dinâmico:**
+   - BrandingContext carrega branding do cliente por subdomain (pré-login)
+   - Aplica logos (loginLogo, sidebarLogo, homeLogo) e cores do módulo
+   - Fallback para branding padrão da Acelera se cliente não encontrado
+
+4. **Auto-Set Client após Login:**
+   - ClientContext detecta subdomain e busca cliente correspondente
+   - Após login, activeClient é automaticamente setado para o cliente do subdomain
+   - Na seleção de módulo, o cliente do subdomain tem prioridade
+
+**Arquivos Principais:**
+- `client/src/lib/subdomain-detector.ts` - Detecção e persistência de subdomain
+- `client/src/hooks/useSubdomainNavigation.ts` - Hook para navegação com subdomain
+- `client/src/contexts/ClientContext.tsx` - Auto-set de cliente baseado em subdomain
+- `client/src/contexts/BrandingContext.tsx` - Aplicação de branding por subdomain
+
+**Uso:**
+- Landing Page: `https://seu-dominio.com/landing?subdomain=nestle`
+- Login: O subdomain é preservado automaticamente na navegação
+- Dashboard: Cliente do subdomain é ativado automaticamente após login
+
 ## External Dependencies
 
 ### Database & Storage

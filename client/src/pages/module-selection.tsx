@@ -8,7 +8,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useModule } from "@/contexts/ModuleContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useClient } from "@/contexts/ClientContext";
 import { LogoImage } from "@/components/logo-image";
+import { useSubdomainNavigation } from "@/hooks/useSubdomainNavigation";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 interface Customer {
@@ -24,6 +26,8 @@ export default function ModuleSelection() {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const { branding } = useBranding();
+  const { subdomainCustomer, setActiveClientId } = useClient();
+  const { navigateTo } = useSubdomainNavigation();
 
   const companyId = user?.companyId || "company-opus-default";
   const isCustomerUser = user?.userType === 'customer_user';
@@ -50,26 +54,38 @@ export default function ModuleSelection() {
 
   useEffect(() => {
     if (!user) {
-      setLocation("/login");
+      navigateTo("/login");
     }
-  }, [user, setLocation]);
+  }, [user]);
 
   const handleModuleSelect = async (module: 'clean' | 'maintenance') => {
     setIsLoading(true);
     setModule(module);
     
+    // Priority 1: If subdomain customer is set and has this module, use it
+    if (subdomainCustomer && subdomainCustomer.modules?.includes(module)) {
+      console.log(`[MODULE SELECTION] 🎯 Using subdomain customer: ${subdomainCustomer.name} for module ${module}`);
+      setActiveClientId(subdomainCustomer.id);
+      localStorage.setItem('opus:activeClientId', subdomainCustomer.id);
+      setTimeout(() => navigateTo("/"), 300);
+      return;
+    }
+    
+    // Priority 2: If customer_user, use their assigned customer
     if (isCustomerUser && userCustomerId) {
       localStorage.setItem('opus:activeClientId', userCustomerId);
-      setTimeout(() => setLocation("/"), 300);
+      setTimeout(() => navigateTo("/"), 300);
       return;
     }
 
+    // Priority 3: Find first customer with this module
     const customersWithModule = activeCustomers.filter(customer => 
       customer.modules.includes(module)
     );
 
     if (customersWithModule.length > 0) {
       const selectedCustomer = customersWithModule[0];
+      setActiveClientId(selectedCustomer.id);
       localStorage.setItem('opus:activeClientId', selectedCustomer.id);
       console.log(`[MODULE SELECTION] Módulo ${module} selecionado. Cliente ativo: ${selectedCustomer.name}`);
     } else {
@@ -77,7 +93,7 @@ export default function ModuleSelection() {
     }
     
     setTimeout(() => {
-      setLocation("/");
+      navigateTo("/");
     }, 300);
   };
 

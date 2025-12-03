@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
-import { detectSubdomain, isValidSubdomain } from '@/lib/subdomain-detector';
+import { detectSubdomain, isValidSubdomain, getPersistedSubdomain } from '@/lib/subdomain-detector';
 import { useClient } from '@/contexts/ClientContext';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -37,12 +37,13 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<BrandingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Get active client from ClientContext to update branding when client changes
-  const { activeClient, activeClientId } = useClient();
+  // Get active client and subdomain customer from ClientContext
+  const { activeClient, activeClientId, subdomainCustomer, activeSubdomain, isSubdomainLoading } = useClient();
   const { isAuthenticated } = useAuth();
   
   // Track if branding was already applied for current client to avoid loops
   const appliedClientIdRef = useRef<string | null>(null);
+  const appliedSubdomainRef = useRef<string | null>(null);
 
   // Load branding from subdomain (for public pages / landing)
   const loadBrandingFromSubdomain = async () => {
@@ -195,19 +196,28 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     root.style.removeProperty('--maintenance-accent');
   };
 
-  // Main branding loader - decides strategy based on auth state
+  // Main branding loader - decides strategy based on auth state and subdomain
   const loadBranding = async () => {
     setIsLoading(true);
-    resetCSSVariables();
     
-    // If user is authenticated and has activeClientId, load from customer
-    if (isAuthenticated && activeClientId) {
+    // Priority 1: If subdomain customer is already loaded (from ClientContext), use it immediately
+    if (subdomainCustomer && activeSubdomain !== appliedSubdomainRef.current) {
+      console.log('[BRANDING] 🌐 Aplicando branding do subdomain:', subdomainCustomer.name);
+      resetCSSVariables();
+      applyBrandingData(subdomainCustomer);
+      appliedSubdomainRef.current = activeSubdomain;
+      return;
+    }
+    
+    // Priority 2: If user is authenticated and has activeClientId, load from customer
+    if (isAuthenticated && activeClientId && activeClientId !== appliedClientIdRef.current) {
       console.log('[BRANDING] 👤 Usuário autenticado, carregando branding do cliente:', activeClientId);
+      resetCSSVariables();
       const loaded = await loadBrandingFromCustomerId(activeClientId);
       if (loaded) return;
     }
     
-    // Try subdomain detection (for public pages)
+    // Priority 3: Try subdomain detection (for public pages - fetches from API)
     const subdomainLoaded = await loadBrandingFromSubdomain();
     if (subdomainLoaded) return;
     
@@ -217,10 +227,22 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   };
 
-  // Initial load on mount
+  // Initial load on mount (wait for subdomain loading first)
   useEffect(() => {
-    loadBranding();
-  }, []);
+    if (!isSubdomainLoading) {
+      loadBranding();
+    }
+  }, [isSubdomainLoading]);
+
+  // CRITICAL: React to subdomainCustomer changes (for pre-login branding)
+  useEffect(() => {
+    if (subdomainCustomer && activeSubdomain && activeSubdomain !== appliedSubdomainRef.current) {
+      console.log('[BRANDING] 🌐 Subdomain customer loaded:', subdomainCustomer.name);
+      resetCSSVariables();
+      applyBrandingData(subdomainCustomer);
+      appliedSubdomainRef.current = activeSubdomain;
+    }
+  }, [subdomainCustomer, activeSubdomain]);
 
   // CRITICAL: Reload branding when activeClientId changes (after login or client switch)
   useEffect(() => {

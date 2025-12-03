@@ -83,3 +83,16 @@
 [x] 404. Simplified applyClientBranding to reuse applyBrandingData (no code duplication)
 [x] 405. Added applyModuleColors function that sets --module-primary, --module-secondary, --module-accent CSS vars
 [x] 406. Verified API /api/customers/:id returns all branding fields (loginLogo, sidebarLogo, moduleColors, etc)
+
+## SUBDOMAIN-BASED CLIENT SEPARATION (03/12/2025 11:44 PM)
+[x] 407. Updated subdomain-detector.ts to support ?subdomain= query parameter with Priority 1
+[x] 408. Added persistSubdomain() and getPersistedSubdomain() functions for localStorage persistence
+[x] 409. Added filtering for Replit development hostnames (*.janeway.replit.dev, *.replit.dev)
+[x] 410. Created useSubdomainNavigation hook to preserve subdomain in all navigation
+[x] 411. Updated ClientContext to auto-detect subdomain and set subdomainCustomer state
+[x] 412. Updated ClientContext to auto-set activeClient based on subdomain after login
+[x] 413. Updated BrandingContext to prioritize subdomain branding pre-login (before activeClient)
+[x] 414. Updated landing page to use useSubdomainNavigation hook
+[x] 415. Updated login page to use navigateTo for all navigation (preserves subdomain)
+[x] 416. Updated module-selection page to prioritize subdomain customer when selecting module
+[x] 417. Added detailed console logging for subdomain detection and client context setup

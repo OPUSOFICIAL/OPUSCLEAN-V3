@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { detectSubdomain, getPersistedSubdomain, persistSubdomain } from '@/lib/subdomain-detector';
 
 interface Customer {
   id: string;
   name: string;
+  subdomain?: string | null;
   isActive: boolean;
   modules: string[];
   loginLogo?: string | null;
@@ -19,6 +21,9 @@ interface ClientContextType {
   activeClient: Customer | null;
   customers: Customer[];
   isLoading: boolean;
+  activeSubdomain: string | null;
+  subdomainCustomer: Customer | null;
+  isSubdomainLoading: boolean;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
@@ -32,7 +37,12 @@ export function ClientProvider({ children }: ClientProviderProps) {
   const [activeClientId, setActiveClientId] = useState<string>(() => {
     return localStorage.getItem('opus:activeClientId') || "";
   });
-  const [subdomainDetected, setSubdomainDetected] = useState(false);
+  const [activeSubdomain, setActiveSubdomain] = useState<string | null>(() => {
+    return getPersistedSubdomain();
+  });
+  const [subdomainCustomer, setSubdomainCustomer] = useState<Customer | null>(null);
+  const [isSubdomainLoading, setIsSubdomainLoading] = useState(true);
+  const subdomainFetchedRef = useRef<string | null>(null);
   const { user } = useAuth();
   
   // Usar o companyId do usuário logado ao invés de um valor fixo
@@ -45,54 +55,55 @@ export function ClientProvider({ children }: ClientProviderProps) {
   // Verificar se o usuário é admin (role admin ou gestor_cliente)
   const isAdmin = user?.role === 'admin' || user?.role === 'gestor_cliente';
 
-  // Detectar subdomínio e buscar cliente automaticamente
-  const detectSubdomain = () => {
-    // MODO DE TESTE: Permitir simular subdomínio via query string
-    const urlParams = new URLSearchParams(window.location.search);
-    const testSubdomain = urlParams.get('test-subdomain');
-    if (testSubdomain) {
-      console.log(`[CLIENT CONTEXT] 🧪 MODO DE TESTE: Simulando subdomínio "${testSubdomain}"`);
-      return testSubdomain;
-    }
-
-    // MODO NORMAL: Detectar do hostname
-    const hostname = window.location.hostname;
-    const parts = hostname.split('.');
-    // Se houver pelo menos 3 partes (subdominio.dominio.com) e não for www
-    if (parts.length >= 3 && parts[0] !== 'www') {
-      return parts[0];
-    }
-    return null;
-  };
-
-  // Buscar cliente por subdomínio (executa apenas uma vez ao carregar)
+  // Detect and fetch subdomain customer on mount and URL changes
   useEffect(() => {
-    const fetchCustomerBySubdomain = async () => {
-      const subdomain = detectSubdomain();
+    const fetchSubdomainCustomer = async () => {
+      const detection = detectSubdomain();
+      console.log('[CLIENT CONTEXT] 🔍 Subdomain detection:', detection);
       
-      if (!subdomain || subdomainDetected) {
-        return; // Não há subdomínio ou já foi detectado
+      if (!detection.subdomain) {
+        setIsSubdomainLoading(false);
+        return;
       }
+      
+      // Skip if we already fetched this subdomain
+      if (subdomainFetchedRef.current === detection.subdomain) {
+        return;
+      }
+      
+      setActiveSubdomain(detection.subdomain);
+      setIsSubdomainLoading(true);
 
       try {
-        const response = await fetch(`/api/public/customer-by-subdomain/${subdomain}`);
+        const response = await fetch(`/api/public/customer-by-subdomain/${detection.subdomain}`);
         if (response.ok) {
           const customer = await response.json();
-          console.log(`[CLIENT CONTEXT] Subdomínio detectado: ${subdomain}, cliente: ${customer.name}`);
-          setActiveClientId(customer.id);
-          setSubdomainDetected(true);
-          // Salvar no localStorage para manter mesmo depois
-          localStorage.setItem('opus:activeClientId', customer.id);
+          console.log(`[CLIENT CONTEXT] ✅ Subdomain customer found: ${customer.name} (${customer.id})`);
+          setSubdomainCustomer(customer);
+          subdomainFetchedRef.current = detection.subdomain;
+          
+          // Persist subdomain for session continuity
+          persistSubdomain(detection.subdomain);
+          
+          // Auto-set activeClientId if not already set
+          if (!activeClientId) {
+            setActiveClientId(customer.id);
+            localStorage.setItem('opus:activeClientId', customer.id);
+          }
         } else {
-          console.log(`[CLIENT CONTEXT] Subdomínio ${subdomain} não encontrado`);
+          console.log(`[CLIENT CONTEXT] ❌ Subdomain ${detection.subdomain} not found`);
+          setSubdomainCustomer(null);
         }
       } catch (error) {
-        console.error('[CLIENT CONTEXT] Erro ao buscar cliente por subdomínio:', error);
+        console.error('[CLIENT CONTEXT] Error fetching subdomain customer:', error);
+        setSubdomainCustomer(null);
+      } finally {
+        setIsSubdomainLoading(false);
       }
     };
 
-    fetchCustomerBySubdomain();
-  }, []); // Executa apenas uma vez ao montar
+    fetchSubdomainCustomer();
+  }, []); // Run once on mount
 
   // Buscar clientes do usuário (funciona para admin e opus_user não-admin)
   // Usa /api/auth/my-customers que busca via userAllowedCustomers
@@ -172,7 +183,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
     }
   }, [companyId, isCustomerUser]);
 
-  // COMBINADO: Definir activeClientId corretamente baseado no tipo de usuário
+  // COMBINADO: Definir activeClientId corretamente baseado no tipo de usuário e subdomain
   useEffect(() => {
     // Se é customer_user, SEMPRE usar o customerId dele (PRIORIDADE)
     if (isCustomerUser && userCustomerId) {
@@ -180,6 +191,16 @@ export function ClientProvider({ children }: ClientProviderProps) {
         setActiveClientId(userCustomerId);
       }
       return; // Não executar lógica de admin
+    }
+    
+    // Priority 1: If subdomain customer is loaded, use it
+    if (subdomainCustomer && customers.length > 0) {
+      const subdomainClientValid = customers.some(c => c.id === subdomainCustomer.id);
+      if (subdomainClientValid && activeClientId !== subdomainCustomer.id) {
+        console.log(`[CLIENT CONTEXT] 🎯 Auto-selecting subdomain customer: ${subdomainCustomer.name}`);
+        setActiveClientId(subdomainCustomer.id);
+        return;
+      }
     }
     
     // Se é admin/opus_user e não tem cliente selecionado
@@ -196,7 +217,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
         setActiveClientId(customers[0].id);
       }
     }
-  }, [isCustomerUser, userCustomerId, activeClientId, customers]);
+  }, [isCustomerUser, userCustomerId, activeClientId, customers, subdomainCustomer]);
 
   // Para customer_user, isLoading só é false quando activeClientId está definido
   // Para opus_user não-admin, considerar também o loading dos clientes permitidos
@@ -218,6 +239,9 @@ export function ClientProvider({ children }: ClientProviderProps) {
     activeClient: activeClient as Customer | null,
     customers: customers as Customer[],
     isLoading,
+    activeSubdomain,
+    subdomainCustomer,
+    isSubdomainLoading,
   };
 
   return (

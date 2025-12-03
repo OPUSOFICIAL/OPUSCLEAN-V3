@@ -9,6 +9,7 @@ import { login, setAuthState } from "@/lib/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBranding } from "@/contexts/BrandingContext";
 import { LogoImage } from "@/components/logo-image";
+import { useSubdomainNavigation } from "@/hooks/useSubdomainNavigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
@@ -34,12 +35,13 @@ export default function Login() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { branding, isLoading: isBrandingLoading } = useBranding();
+  const { navigateTo } = useSubdomainNavigation();
 
   useEffect(() => {
     if (isMobile) {
-      setLocation("/login-mobile");
+      navigateTo("/login-mobile");
     }
-  }, [isMobile, setLocation]);
+  }, [isMobile]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +68,7 @@ export default function Login() {
         const availableModules = modulesData.modules || [];
         
         if (availableModules.length > 1) {
-          setLocation("/module-selection");
+          navigateTo("/module-selection");
           return;
         }
       } catch (error) {
@@ -74,9 +76,9 @@ export default function Login() {
       }
       
       if (user.role === 'operador') {
-        setLocation("/mobile");
+        navigateTo("/mobile");
       } else {
-        setLocation("/");
+        navigateTo("/");
       }
     } catch (error) {
       toast({
@@ -108,7 +110,7 @@ export default function Login() {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="container mx-auto px-6 py-4">
           <Button
-            onClick={() => setLocation("/")}
+            onClick={() => navigateTo("/")}
             variant="ghost"
             className="text-slate-700 hover:text-slate-900 gap-2"
             data-testid="button-back-landing"

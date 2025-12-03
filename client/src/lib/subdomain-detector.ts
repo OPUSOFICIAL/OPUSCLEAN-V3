@@ -6,45 +6,127 @@
  * - Production VM: tecnofibra.acelera.com
  * - Any custom domain: tecnofibra.customdomain.com
  * 
- * Also supports query parameter testing: ?test-subdomain=tecnofibra
+ * Also supports query parameter override: ?subdomain=nestle or ?test-subdomain=tecnofibra
+ * The subdomain is persisted in localStorage for session continuity.
  */
+
+const SUBDOMAIN_STORAGE_KEY = 'opus:activeSubdomain';
 
 export interface SubdomainDetectionResult {
   subdomain: string | null;
   fullHostname: string;
   isTestMode: boolean;
+  source: 'query' | 'hostname' | 'storage' | 'none';
 }
 
 /**
- * Detects subdomain adaptively from current URL
- * - Extracts first part of hostname (before first dot)
- * - Supports query parameter override for testing: ?test-subdomain=value
- * - Returns null if no subdomain detected (e.g., root domain)
- * - Handles 2-label domains like localhost and custom TLDs
+ * Check if a subdomain looks like a Replit development hostname (should not be persisted)
+ */
+function isInvalidSubdomain(subdomain: string): boolean {
+  if (!subdomain) return true;
+  
+  // Replit hostnames are UUIDs like "171b9630-64fa-42a9-b21a-8b472644a059-00-gs199jgwajvv"
+  const isUuidLike = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(-[0-9]{2}-[a-z0-9]+)?$/i.test(subdomain);
+  const hasReplitPattern = subdomain.includes('replit') || subdomain.includes('janeway');
+  const isLongHexString = subdomain.length > 30 && /^[a-f0-9-]+$/i.test(subdomain);
+  
+  return isUuidLike || hasReplitPattern || isLongHexString;
+}
+
+/**
+ * Get persisted subdomain from localStorage
+ */
+export function getPersistedSubdomain(): string | null {
+  try {
+    const persisted = localStorage.getItem(SUBDOMAIN_STORAGE_KEY);
+    
+    // Clear if it's a Replit hostname that was incorrectly persisted
+    if (persisted && isInvalidSubdomain(persisted)) {
+      console.log('[SUBDOMAIN] 🧹 Clearing invalid persisted subdomain:', persisted);
+      localStorage.removeItem(SUBDOMAIN_STORAGE_KEY);
+      return null;
+    }
+    
+    return persisted;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist subdomain to localStorage for session continuity
+ */
+export function persistSubdomain(subdomain: string | null): void {
+  try {
+    if (subdomain && !isInvalidSubdomain(subdomain)) {
+      localStorage.setItem(SUBDOMAIN_STORAGE_KEY, subdomain);
+      console.log('[SUBDOMAIN] 💾 Persisted subdomain:', subdomain);
+    } else {
+      localStorage.removeItem(SUBDOMAIN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Clear persisted subdomain (for logout or context switch)
+ */
+export function clearPersistedSubdomain(): void {
+  try {
+    localStorage.removeItem(SUBDOMAIN_STORAGE_KEY);
+    console.log('[SUBDOMAIN] 🗑️ Cleared persisted subdomain');
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Detects subdomain from URL query params, hostname, or localStorage
+ * Priority: 1) Query param (?subdomain=x) 2) Hostname subdomain 3) localStorage
  */
 export function detectSubdomain(): SubdomainDetectionResult {
   const fullHostname = window.location.hostname;
-  
-  // Check for test mode via query parameter (for development)
   const urlParams = new URLSearchParams(window.location.search);
-  const testSubdomain = urlParams.get('test-subdomain');
   
-  if (testSubdomain) {
-    // Normalize test subdomain (lowercase, trim)
-    const normalized = testSubdomain.toLowerCase().trim();
+  // Priority 1: Check for subdomain via query parameter (?subdomain=nestle)
+  const querySubdomain = urlParams.get('subdomain') || urlParams.get('test-subdomain');
+  
+  if (querySubdomain) {
+    const normalized = querySubdomain.toLowerCase().trim();
+    // Persist for session continuity
+    persistSubdomain(normalized);
     return {
       subdomain: normalized,
       fullHostname,
-      isTestMode: true
+      isTestMode: true,
+      source: 'query'
     };
   }
   
-  // Handle special cases
-  if (fullHostname === 'localhost' || fullHostname === '127.0.0.1') {
+  // Priority 2: Check for subdomain in hostname
+  // Handle special cases for localhost and Replit development hostnames
+  const isLocalhost = fullHostname === 'localhost' || fullHostname === '127.0.0.1';
+  const isReplitDevHostname = fullHostname.includes('.janeway.replit.dev') || 
+                               fullHostname.includes('.replit.dev') ||
+                               fullHostname.match(/^[a-f0-9-]+\.janeway\.replit\.dev$/);
+  
+  if (isLocalhost || isReplitDevHostname) {
+    // Check localStorage for persisted subdomain
+    const persistedSubdomain = getPersistedSubdomain();
+    if (persistedSubdomain) {
+      return {
+        subdomain: persistedSubdomain,
+        fullHostname,
+        isTestMode: false,
+        source: 'storage'
+      };
+    }
     return {
       subdomain: null,
       fullHostname,
-      isTestMode: false
+      isTestMode: false,
+      source: 'none'
     };
   }
   
@@ -62,10 +144,21 @@ export function detectSubdomain(): SubdomainDetectionResult {
     
     // Filter out common non-subdomain prefixes
     if (subdomain === 'www') {
+      // Check localStorage for persisted subdomain
+      const persistedSubdomain = getPersistedSubdomain();
+      if (persistedSubdomain) {
+        return {
+          subdomain: persistedSubdomain,
+          fullHostname,
+          isTestMode: false,
+          source: 'storage'
+        };
+      }
       return {
         subdomain: null,
         fullHostname,
-        isTestMode: false
+        isTestMode: false,
+        source: 'none'
       };
     }
     
@@ -75,33 +168,58 @@ export function detectSubdomain(): SubdomainDetectionResult {
       const secondPart = parts[1].toLowerCase();
       // If second part is a known dev/platform domain, first part is subdomain
       if (['localhost', 'vercel', 'app', 'dev', 'ngrok'].some(pattern => secondPart.includes(pattern))) {
+        persistSubdomain(subdomain);
         return {
           subdomain,
           fullHostname,
-          isTestMode: false
+          isTestMode: false,
+          source: 'hostname'
         };
       }
-      // Otherwise, it's likely a root domain (e.g., example.com)
+      // Otherwise, it's likely a root domain (e.g., example.com) - check localStorage
+      const persistedSubdomain = getPersistedSubdomain();
+      if (persistedSubdomain) {
+        return {
+          subdomain: persistedSubdomain,
+          fullHostname,
+          isTestMode: false,
+          source: 'storage'
+        };
+      }
       return {
         subdomain: null,
         fullHostname,
-        isTestMode: false
+        isTestMode: false,
+        source: 'none'
       };
     }
     
     // For 3+ part domains, first part is the subdomain
+    persistSubdomain(subdomain);
     return {
       subdomain,
       fullHostname,
-      isTestMode: false
+      isTestMode: false,
+      source: 'hostname'
     };
   }
   
-  // No subdomain detected
+  // No subdomain detected from hostname - check localStorage
+  const persistedSubdomain = getPersistedSubdomain();
+  if (persistedSubdomain) {
+    return {
+      subdomain: persistedSubdomain,
+      fullHostname,
+      isTestMode: false,
+      source: 'storage'
+    };
+  }
+  
   return {
     subdomain: null,
     fullHostname,
-    isTestMode: false
+    isTestMode: false,
+    source: 'none'
   };
 }
 

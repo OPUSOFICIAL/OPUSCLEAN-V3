@@ -20,13 +20,17 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
+import { useClient } from "@/contexts/ClientContext";
 import { LogoImage } from "@/components/logo-image";
+import { useSubdomainNavigation } from "@/hooks/useSubdomainNavigation";
 import aceleraLogo from "@assets/acelera-full-facilities-logo.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
   const [activeSlide, setActiveSlide] = useState(0);
   const { branding, isLoading: isBrandingLoading } = useBranding();
+  const { subdomainCustomer, isSubdomainLoading } = useClient();
+  const { navigateTo, getPathWithSubdomain } = useSubdomainNavigation();
 
   const stats = [
     { value: "45%", label: "Redução de Custos" },
@@ -281,7 +285,7 @@ export default function Landing() {
               />
             </div>
             <Button 
-              onClick={() => setLocation("/login")}
+              onClick={() => navigateTo("/login")}
               variant="outline"
               className="border-slate-300 text-slate-700 hover:bg-slate-50 font-medium"
               data-testid="button-login-header"
@@ -328,7 +332,7 @@ export default function Landing() {
             {/* CTA */}
             <div className="flex flex-wrap gap-4">
               <Button 
-                onClick={() => setLocation("/login")}
+                onClick={() => navigateTo("/login")}
                 size="lg"
                 className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold px-8 py-7 text-lg rounded-xl shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all duration-300 group"
                 data-testid="button-start"
@@ -337,7 +341,7 @@ export default function Landing() {
                 <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
               <Button 
-                onClick={() => setLocation("/login")}
+                onClick={() => navigateTo("/login")}
                 size="lg"
                 variant="outline"
                 className="border-2 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold px-8 py-7 text-lg rounded-xl"
@@ -483,7 +487,7 @@ export default function Landing() {
               Junte-se a centenas de empresas que já otimizaram suas operações com o Acelera it Full Facilities
             </p>
             <Button 
-              onClick={() => setLocation("/login")}
+              onClick={() => navigateTo("/login")}
               size="lg"
               className="bg-white text-blue-600 hover:bg-slate-100 font-bold px-10 py-7 text-lg rounded-xl shadow-2xl"
             >
