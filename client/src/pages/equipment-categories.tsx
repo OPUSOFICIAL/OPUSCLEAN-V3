@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
-import { useAuth } from "@/hooks/useAuth";
+import { useClient } from "@/contexts/ClientContext";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { 
@@ -43,7 +43,7 @@ export default function EquipmentCategories() {
   const { currentModule } = useModule();
   const theme = useModuleTheme();
   const [, setLocation] = useLocation();
-  const { user } = useAuth();
+  const { activeClient } = useClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<EquipmentCategory | null>(null);
@@ -54,7 +54,7 @@ export default function EquipmentCategories() {
   const [isActive, setIsActive] = useState(true);
 
   const { toast } = useToast();
-  const companyId = user?.companyId;
+  const companyId = activeClient?.companyId;
 
   const { data: categories = [], isLoading } = useQuery<EquipmentCategory[]>({
     queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }],
@@ -73,7 +73,7 @@ export default function EquipmentCategories() {
     },
     onSuccess: () => {
       toast({ title: "Categoria criada com sucesso" });
-      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
       setIsCreateDialogOpen(false);
       resetForm();
     },
@@ -93,7 +93,7 @@ export default function EquipmentCategories() {
     },
     onSuccess: () => {
       toast({ title: "Categoria atualizada com sucesso" });
-      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
       setIsEditDialogOpen(false);
       setEditingCategory(null);
       resetForm();
@@ -114,7 +114,7 @@ export default function EquipmentCategories() {
     },
     onSuccess: () => {
       toast({ title: "Categoria excluída com sucesso" });
-      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
     },
     onError: (error: any) => {
       const errorMessage = error?.message || "Erro ao excluir categoria";
@@ -137,7 +137,7 @@ export default function EquipmentCategories() {
         title: data.message || "Categorias padrão criadas",
         description: `${data.categories?.length || 0} categorias adicionadas`
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
     },
     onError: (error: any) => {
       const errorMessage = error?.message || "Erro ao criar categorias padrão";
@@ -207,7 +207,7 @@ export default function EquipmentCategories() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     toast({ title: "Atualizando lista..." });
-    await queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`] });
+    await queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
     setTimeout(() => {
       setIsRefreshing(false);
     }, 500);

@@ -97,6 +97,13 @@ export default function Equipment({ customerId }: EquipmentProps) {
     enabled: !!selectedEquipmentForHistory?.id && isHistoryDialogOpen,
   });
 
+  // Fetch equipment categories
+  const companyId = (customer as any)?.companyId;
+  const { data: equipmentCategories = [] } = useQuery<any[]>({
+    queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }],
+    enabled: !!companyId,
+  });
+
   // Redirect if not in maintenance module
   useEffect(() => {
     if (currentModule !== 'maintenance') {
@@ -409,12 +416,21 @@ export default function Equipment({ customerId }: EquipmentProps) {
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="hvac">HVAC</SelectItem>
-                          <SelectItem value="eletrico">Elétrico</SelectItem>
-                          <SelectItem value="hidraulico">Hidráulico</SelectItem>
-                          <SelectItem value="mecanico">Mecânico</SelectItem>
-                          <SelectItem value="eletronico">Eletrônico</SelectItem>
-                          <SelectItem value="outro">Outro</SelectItem>
+                          {Array.isArray(equipmentCategories) && equipmentCategories.filter((c: any) => c.isActive).map((category: any) => (
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                          {(!Array.isArray(equipmentCategories) || equipmentCategories.length === 0) && (
+                            <>
+                              <SelectItem value="hvac">HVAC</SelectItem>
+                              <SelectItem value="eletrico">Elétrico</SelectItem>
+                              <SelectItem value="hidraulico">Hidráulico</SelectItem>
+                              <SelectItem value="mecanico">Mecânico</SelectItem>
+                              <SelectItem value="eletronico">Eletrônico</SelectItem>
+                              <SelectItem value="outro">Outro</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -704,12 +720,21 @@ export default function Equipment({ customerId }: EquipmentProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hvac">HVAC</SelectItem>
-                      <SelectItem value="eletrico">Elétrico</SelectItem>
-                      <SelectItem value="hidraulico">Hidráulico</SelectItem>
-                      <SelectItem value="mecanico">Mecânico</SelectItem>
-                      <SelectItem value="eletronico">Eletrônico</SelectItem>
-                      <SelectItem value="outro">Outro</SelectItem>
+                      {Array.isArray(equipmentCategories) && equipmentCategories.filter((c: any) => c.isActive).map((category: any) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                      {(!Array.isArray(equipmentCategories) || equipmentCategories.length === 0) && (
+                        <>
+                          <SelectItem value="hvac">HVAC</SelectItem>
+                          <SelectItem value="eletrico">Elétrico</SelectItem>
+                          <SelectItem value="hidraulico">Hidráulico</SelectItem>
+                          <SelectItem value="mecanico">Mecânico</SelectItem>
+                          <SelectItem value="eletronico">Eletrônico</SelectItem>
+                          <SelectItem value="outro">Outro</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
