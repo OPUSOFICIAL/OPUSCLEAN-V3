@@ -65,8 +65,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 🔧 FUNÇÃO AUXILIAR: Desconto automático de estoque ao completar O.S.
   // ============================================================================
   async function deductStockForWorkOrder(workOrderId: string, userId?: string) {
-    // Buscar peças associadas à O.S.
-    const workOrderParts = await storage.getWorkOrderParts(workOrderId);
+    // Buscar a O.S. para verificar se tem checklist template
+    const workOrder = await storage.getWorkOrder(workOrderId);
+    if (!workOrder) {
+      console.error(`[STOCK] O.S. ${workOrderId} não encontrada.`);
+      return;
+    }
+    
+    // Buscar peças associadas diretamente à O.S.
+    let workOrderParts = await storage.getWorkOrderParts(workOrderId);
+    
+    // Se a O.S. tem um checklist template, verificar as peças dos itens
+    if (workOrder.maintenanceChecklistTemplateId) {
+      console.log(`[STOCK] O.S. ${workOrderId} tem checklist template: ${workOrder.maintenanceChecklistTemplateId}`);
+      
+      const template = await storage.getMaintenanceChecklistTemplate(workOrder.maintenanceChecklistTemplateId);
+      if (template && template.items && Array.isArray(template.items)) {
+        for (const item of template.items as any[]) {
+          if (item.partId) {
+            // Verificar se essa peça já está associada diretamente à O.S.
+            const existingPart = workOrderParts.find(wp => wp.partId === item.partId);
+            if (!existingPart) {
+              console.log(`[STOCK] Criando associação para peça ${item.partId} do checklist template`);
+              
+              // Criar associação da peça com a O.S.
+              const quantity = item.partQuantity ? String(item.partQuantity) : '1';
+              const newWoPart = await storage.createWorkOrderPart({
+                workOrderId: workOrderId,
+                partId: item.partId,
+                quantityPlanned: quantity,
+                quantityUsed: quantity,
+                notes: `Peça do checklist: ${item.label || 'Item sem rótulo'}`
+              });
+              
+              // Adicionar à lista para processamento
+              workOrderParts.push(newWoPart);
+            }
+          }
+        }
+      }
+    }
     
     if (workOrderParts.length === 0) {
       console.log(`[STOCK] O.S. ${workOrderId} não tem peças associadas.`);
