@@ -65,6 +65,9 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
   const [minimumQuantity, setMinimumQuantity] = useState("");
   const [unit, setUnit] = useState("un");
   const [costPrice, setCostPrice] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  const [partLocation, setPartLocation] = useState("");
+  const [supplier, setSupplier] = useState("");
   
   const [stockMovementType, setStockMovementType] = useState<"entrada" | "saida" | "ajuste">("entrada");
   const [stockMovementQuantity, setStockMovementQuantity] = useState("");
@@ -224,6 +227,9 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
     setMinimumQuantity("");
     setUnit("un");
     setCostPrice("");
+    setUnitCost("");
+    setPartLocation("");
+    setSupplier("");
     setEditingPart(null);
   };
 
@@ -536,8 +542,8 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
                           <Label htmlFor="location">Localização no Almoxarifado</Label>
                           <Input
                             id="location"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
+                            value={partLocation}
+                            onChange={(e) => setPartLocation(e.target.value)}
                             placeholder="Ex: Prateleira A3"
                             data-testid="input-location"
                           />
