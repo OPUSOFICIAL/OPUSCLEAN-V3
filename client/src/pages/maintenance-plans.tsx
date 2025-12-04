@@ -1010,6 +1010,8 @@ export default function MaintenancePlans() {
                     }}
                     data-testid="button-create-activity-for-day"
                     size="sm"
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Criar Atividade
