@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useBranding } from "@/contexts/BrandingContext";
 import aceleraLogo from "@assets/imagem_2025-11-10_010501695-Photoroom_1762805733799.png";
 import { 
@@ -17,6 +18,7 @@ import {
   Menu,
   X,
   ChevronLeft,
+  ChevronDown,
   Settings,
   Shield,
   Cog,
@@ -52,6 +54,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
   const { currentModule, setModule, moduleConfig, allowedModules, hasMultipleModules } = useModule();
   const { branding } = useBranding();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Helper para obter cores de um módulo específico (com fallback para cores padrão)
   const getModulePalette = (moduleId: 'clean' | 'maintenance') => {
@@ -129,11 +132,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     // Clientes (apenas admin)
     ...(can.viewCustomers() ? [{ path: "/customers", label: "Clientes", icon: Building }] : []),
     
-    // Configurações do Sistema (contexto específico de cliente)
-    ...(activeClientId && can.viewServiceSettings(activeClientId) ? [{ path: "/service-settings", label: "Configurações", icon: Cog }] : []),
-    
-    // Categorias de Equipamentos (dentro de configurações, apenas manutenção)
-    ...(currentModule === 'maintenance' && can.viewServiceSettings(activeClientId) ? [{ path: "/equipment-categories", label: "Categorias", icon: Tag }] : []),
     
     // Funções (apenas super admin)
     ...(can.manageRoles() ? [{ path: "/roles", label: "Funções", icon: Shield }] : []),
@@ -294,6 +292,63 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
             </Link>
           );
         })}
+        
+        {/* Menu Configurações com sub-itens */}
+        {activeClientId && can.viewServiceSettings(activeClientId) && (
+          <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant={location.startsWith('/service-settings') || location === '/equipment-categories' ? "default" : "ghost"}
+                className={`w-full ${isCollapsed ? 'justify-center px-0' : 'justify-between'} transition-all duration-200 ${
+                  (location.startsWith('/service-settings') || location === '/equipment-categories')
+                    ? 'text-white shadow-md hover:shadow-lg'
+                    : "hover:bg-slate-100 hover:text-slate-900"
+                }`}
+                style={(location.startsWith('/service-settings') || location === '/equipment-categories') ? {
+                  background: `linear-gradient(to right, var(--module-primary), var(--module-secondary))`
+                } : undefined}
+                data-testid="nav-settings"
+                title={isCollapsed ? "Configurações" : undefined}
+              >
+                <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'}`}>
+                  <Cog className="w-5 h-5" />
+                  {!isCollapsed && <span className="font-medium">Configurações</span>}
+                </div>
+                {!isCollapsed && (
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isSettingsOpen ? 'rotate-180' : ''}`} />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            {!isCollapsed && (
+              <CollapsibleContent className="pl-4 mt-1 space-y-1">
+                <Link href="/service-settings">
+                  <Button
+                    variant={location === '/service-settings' ? "secondary" : "ghost"}
+                    size="sm"
+                    className="w-full justify-start"
+                    data-testid="nav-service-settings"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Geral
+                  </Button>
+                </Link>
+                {currentModule === 'maintenance' && (
+                  <Link href="/equipment-categories">
+                    <Button
+                      variant={location === '/equipment-categories' ? "secondary" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start"
+                      data-testid="nav-equipment-categories"
+                    >
+                      <Tag className="w-4 h-4 mr-2" />
+                      Categorias
+                    </Button>
+                  </Link>
+                )}
+              </CollapsibleContent>
+            )}
+          </Collapsible>
+        )}
       </nav>
       {/* User Profile */}
       <div className="p-4 border-t border-slate-200 bg-gradient-to-br from-slate-50 to-white">
