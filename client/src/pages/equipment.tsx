@@ -152,7 +152,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
   const [equipmentName, setEquipmentName] = useState("");
-  const [equipmentType, setEquipmentType] = useState("");
+  const [equipmentTypeId, setEquipmentTypeId] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [model, setModel] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
@@ -284,7 +284,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSelectedSiteId("");
     setSelectedZoneId("");
     setEquipmentName("");
-    setEquipmentType("");
+    setEquipmentTypeId("");
     setManufacturer("");
     setModel("");
     setSerialNumber("");
@@ -311,7 +311,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
       name: equipmentName,
-      equipmentType,
+      equipmentTypeId,
       manufacturer: manufacturer || null,
       model: model || null,
       serialNumber: serialNumber || null,
@@ -329,7 +329,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
     setSelectedSiteId(equip.siteId);
     setSelectedZoneId(equip.zoneId || "");
     setEquipmentName(equip.name);
-    setEquipmentType(equip.equipmentType);
+    setEquipmentTypeId(equip.equipmentTypeId);
     setManufacturer(equip.manufacturer || "");
     setModel(equip.model || "");
     setSerialNumber(equip.serialNumber || "");
@@ -352,7 +352,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
       siteId: selectedSiteId,
       zoneId: selectedZoneId || null,
       name: equipmentName,
-      equipmentType,
+      equipmentTypeId,
       manufacturer: manufacturer || null,
       model: model || null,
       serialNumber: serialNumber || null,
@@ -505,13 +505,13 @@ export default function Equipment({ customerId }: EquipmentProps) {
 
                     <div className="space-y-2">
                       <Label htmlFor="type">Tipo de Equipamento *</Label>
-                      <Select value={equipmentType} onValueChange={setEquipmentType}>
+                      <Select value={equipmentTypeId} onValueChange={setEquipmentTypeId}>
                         <SelectTrigger data-testid="select-equipment-type">
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                         <SelectContent>
                           {Array.isArray(equipmentCategories) && equipmentCategories.filter((c: any) => c.isActive).map((category: any) => (
-                            <SelectItem key={category.id} value={category.name}>
+                            <SelectItem key={category.id} value={category.id}>
                               {category.name}
                             </SelectItem>
                           ))}
@@ -808,13 +808,13 @@ export default function Equipment({ customerId }: EquipmentProps) {
 
                 <div className="space-y-2">
                   <Label>Tipo de Equipamento *</Label>
-                  <Select value={equipmentType} onValueChange={setEquipmentType}>
+                  <Select value={equipmentTypeId} onValueChange={setEquipmentTypeId}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {Array.isArray(equipmentCategories) && equipmentCategories.filter((c: any) => c.isActive).map((category: any) => (
-                        <SelectItem key={category.id} value={category.name}>
+                        <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
                       ))}
@@ -934,6 +934,8 @@ export default function Equipment({ customerId }: EquipmentProps) {
               <Button
                 onClick={handleUpdate}
                 disabled={updateEquipmentMutation.isPending}
+                className={theme.buttons.primary}
+                style={theme.buttons.primaryStyle}
               >
                 {updateEquipmentMutation.isPending ? "Atualizando..." : "Atualizar"}
               </Button>

@@ -2530,7 +2530,7 @@ function CreateMaintenanceActivityModal({ activeClientId, editingActivity, onClo
           {/* Seção de Peças (Opcional) */}
           <div className="space-y-4 rounded-lg border p-4">
             <h3 className="font-medium flex items-center gap-2">
-              <Package className="w-4 h-4" style={{ color: theme.primary }} />
+              <Package className="w-4 h-4" style={theme.styles.color} />
               Peças Necessárias (Opcional)
             </h3>
             <p className="text-sm text-muted-foreground">
