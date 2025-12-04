@@ -9,6 +9,7 @@ interface Customer {
   subdomain?: string | null;
   isActive: boolean;
   modules: string[];
+  companyId?: string;
   loginLogo?: string | null;
   sidebarLogo?: string | null;
   sidebarLogoCollapsed?: string | null;

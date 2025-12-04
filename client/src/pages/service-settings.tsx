@@ -23,10 +23,19 @@ import {
   Users as UsersIcon,
   Cog,
   Target,
-  Bookmark
+  Bookmark,
+  Tag,
+  Download,
+  Loader2,
+  MoreVertical,
+  Power,
+  PowerOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient as globalQueryClient } from "@/lib/queryClient";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import Sites from "./sites";
 import Users from "./users";
 import Services from "./services";
@@ -57,6 +66,370 @@ const dashboardGoalSchema = z.object({
   goalValue: z.string().min(1, "Valor da meta é obrigatório"),
   currentPeriod: z.string().min(1, "Período é obrigatório"),
 });
+
+interface EquipmentCategory {
+  id: string;
+  companyId: string;
+  name: string;
+  description: string | null;
+  module: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function EquipmentCategoriesTab() {
+  const { currentModule } = useModule();
+  const { activeClient } = useClient();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const theme = useModuleTheme();
+  
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<EquipmentCategory | null>(null);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+
+  const companyId = activeClient?.companyId;
+
+  const { data: categories = [], isLoading } = useQuery<EquipmentCategory[]>({
+    queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }],
+    enabled: !!companyId,
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/equipment-categories", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Categoria criada com sucesso" });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
+      setIsCreateDialogOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao criar categoria", description: error?.message, variant: "destructive" });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PUT", `/api/equipment-categories/${data.id}`, data);
+    },
+    onSuccess: () => {
+      toast({ title: "Categoria atualizada com sucesso" });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
+      setIsEditDialogOpen(false);
+      setEditingCategory(null);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao atualizar categoria", description: error?.message, variant: "destructive" });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/equipment-categories/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Categoria excluída com sucesso" });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao excluir categoria", description: error?.message, variant: "destructive" });
+    },
+  });
+
+  const seedDefaultsMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", `/api/companies/${companyId}/equipment-categories/seed-defaults`, {
+        module: currentModule
+      });
+    },
+    onSuccess: (data: any) => {
+      toast({ title: data.message || "Categorias padrão criadas", description: `${data.categories?.length || 0} categorias adicionadas` });
+      queryClient.invalidateQueries({ queryKey: [`/api/companies/${companyId}/equipment-categories`, { module: currentModule }] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error?.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setCategoryName("");
+    setCategoryDescription("");
+    setIsActive(true);
+  };
+
+  const handleCreate = () => {
+    if (!companyId || !categoryName.trim()) {
+      toast({ title: "Preencha o nome da categoria", variant: "destructive" });
+      return;
+    }
+    createCategoryMutation.mutate({
+      companyId,
+      name: categoryName.trim(),
+      description: categoryDescription.trim() || null,
+      module: currentModule,
+      isActive,
+    });
+  };
+
+  const handleEdit = (category: EquipmentCategory) => {
+    setEditingCategory(category);
+    setCategoryName(category.name);
+    setCategoryDescription(category.description || "");
+    setIsActive(category.isActive);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdate = () => {
+    if (!editingCategory || !categoryName.trim()) {
+      toast({ title: "Preencha o nome da categoria", variant: "destructive" });
+      return;
+    }
+    updateCategoryMutation.mutate({
+      id: editingCategory.id,
+      name: categoryName.trim(),
+      description: categoryDescription.trim() || null,
+      isActive,
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (categoryToDelete) {
+      deleteCategoryMutation.mutate(categoryToDelete);
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <ModernCard variant="gradient">
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </CardContent>
+      </ModernCard>
+    );
+  }
+
+  return (
+    <>
+      <ModernCard variant="gradient">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <CardTitle className="flex items-center gap-2">
+              <Tag className="w-5 h-5" />
+              Categorias de Equipamentos
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {categories.length === 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => seedDefaultsMutation.mutate()}
+                  disabled={seedDefaultsMutation.isPending}
+                  size="sm"
+                  data-testid="button-seed-defaults"
+                >
+                  {seedDefaultsMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  Carregar Padrões
+                </Button>
+              )}
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => { resetForm(); }}
+                    className={theme.buttons.primary}
+                    style={theme.buttons.primaryStyle}
+                    data-testid="button-create-category"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Categoria
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Nova Categoria</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome *</Label>
+                      <Input
+                        id="name"
+                        value={categoryName}
+                        onChange={(e) => setCategoryName(e.target.value)}
+                        placeholder="Ex: Ar Condicionado"
+                        data-testid="input-category-name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Descrição</Label>
+                      <Textarea
+                        id="description"
+                        value={categoryDescription}
+                        onChange={(e) => setCategoryDescription(e.target.value)}
+                        placeholder="Descrição da categoria..."
+                        data-testid="input-category-description"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch checked={isActive} onCheckedChange={setIsActive} data-testid="switch-category-active" />
+                      <Label>Ativo</Label>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancelar</Button>
+                      <Button
+                        onClick={handleCreate}
+                        disabled={createCategoryMutation.isPending}
+                        className={theme.buttons.primary}
+                        style={theme.buttons.primaryStyle}
+                        data-testid="button-save-category"
+                      >
+                        {createCategoryMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Criar
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {categories.length === 0 ? (
+            <div className="text-center py-12">
+              <Tag className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Nenhuma categoria cadastrada</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Clique em "Carregar Padrões" para adicionar categorias comuns ou crie uma nova
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  className="flex items-center justify-between p-4 rounded-xl border bg-white/50 hover:bg-white/80 transition-colors"
+                  data-testid={`category-item-${category.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${category.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    <div>
+                      <p className="font-medium">{category.name}</p>
+                      {category.description && (
+                        <p className="text-sm text-muted-foreground">{category.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={category.isActive ? "default" : "secondary"}>
+                      {category.isActive ? "Ativo" : "Inativo"}
+                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" data-testid={`button-category-menu-${category.id}`}>
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(category)} data-testid={`button-edit-category-${category.id}`}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => { setCategoryToDelete(category.id); setDeleteDialogOpen(true); }}
+                          className="text-red-600"
+                          data-testid={`button-delete-category-${category.id}`}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </ModernCard>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome *</Label>
+              <Input
+                id="edit-name"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+                data-testid="input-edit-category-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Descrição</Label>
+              <Textarea
+                id="edit-description"
+                value={categoryDescription}
+                onChange={(e) => setCategoryDescription(e.target.value)}
+                data-testid="input-edit-category-description"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={isActive} onCheckedChange={setIsActive} data-testid="switch-edit-category-active" />
+              <Label>Ativo</Label>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+              <Button
+                onClick={handleUpdate}
+                disabled={updateCategoryMutation.isPending}
+                className={theme.buttons.primary}
+                style={theme.buttons.primaryStyle}
+                data-testid="button-update-category"
+              >
+                {updateCategoryMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Atualizar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
 
 export default function Settings() {
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
@@ -408,6 +781,16 @@ export default function Settings() {
                 <UsersIcon className="w-4 h-4" />
                 Usuários
               </TabsTrigger>
+              {currentModule === 'maintenance' && (
+                <TabsTrigger 
+                  value="categories" 
+                  className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 transition-all whitespace-nowrap data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-sm"
+                  data-testid="tab-categories"
+                >
+                  <Tag className="w-4 h-4" />
+                  Categorias
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -992,6 +1375,12 @@ export default function Settings() {
           <TabsContent value="users" className="space-y-6">
             <Users customerId={customerId} />
           </TabsContent>
+
+          {currentModule === 'maintenance' && (
+            <TabsContent value="categories" className="space-y-6">
+              <EquipmentCategoriesTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
