@@ -34,6 +34,110 @@ interface EquipmentProps {
   customerId: string;
 }
 
+// Mapeamento de campos para nomes em português
+const fieldLabels: Record<string, string> = {
+  name: "Nome",
+  equipmentType: "Tipo de Equipamento",
+  siteId: "Local",
+  zoneId: "Zona",
+  manufacturer: "Fabricante",
+  model: "Modelo",
+  serialNumber: "Número de Série",
+  installationDate: "Data de Instalação",
+  warrantyExpiry: "Validade da Garantia",
+  value: "Valor",
+  status: "Status",
+  description: "Descrição",
+  customerId: "Cliente",
+  companyId: "Empresa",
+};
+
+// Função para formatar erros de validação Zod em mensagens amigáveis
+function formatValidationError(error: any): string {
+  try {
+    // Se o erro já é uma string simples, retorná-la
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    // Tentar extrair a mensagem de erro
+    const message = error?.message || error?.toString() || '';
+
+    // Se a mensagem parece ser um JSON de erro Zod
+    if (message.includes('"errors"') || message.includes('"issues"') || message.includes('ZodError')) {
+      let errorData;
+      
+      // Tentar parsear o JSON da mensagem
+      try {
+        errorData = typeof message === 'string' ? JSON.parse(message) : message;
+      } catch {
+        // Se não conseguir parsear, tentar extrair informações
+        const fieldMatch = message.match(/"path":\["([^"]+)"\]/);
+        const expectedMatch = message.match(/"expected":"([^"]+)"/);
+        
+        if (fieldMatch) {
+          const fieldName = fieldLabels[fieldMatch[1]] || fieldMatch[1];
+          if (expectedMatch) {
+            return `O campo "${fieldName}" está inválido. Esperado: ${expectedMatch[1]}`;
+          }
+          return `O campo "${fieldName}" está inválido ou incompleto.`;
+        }
+        
+        // Se contiver "Expected string, received null"
+        if (message.includes('Expected string, received null') || message.includes('Expected number, received null')) {
+          return 'Preencha todos os campos obrigatórios.';
+        }
+        
+        return 'Dados inválidos. Verifique os campos e tente novamente.';
+      }
+
+      // Processar o objeto de erro Zod
+      const errors = errorData?.errors || errorData?.issues || [];
+      
+      if (errors.length > 0) {
+        const errorMessages: string[] = [];
+        
+        for (const err of errors) {
+          // Pegar o caminho do campo
+          const path = err.path || [];
+          const fieldPath = path.join('.');
+          const fieldName = fieldLabels[fieldPath] || fieldLabels[path[path.length - 1]] || fieldPath;
+          
+          // Formatar mensagem baseada no código de erro
+          if (err.code === 'invalid_type') {
+            if (err.received === 'null' || err.received === 'undefined') {
+              errorMessages.push(`O campo "${fieldName}" é obrigatório.`);
+            } else {
+              errorMessages.push(`O campo "${fieldName}" está com formato inválido.`);
+            }
+          } else if (err.code === 'too_small') {
+            errorMessages.push(`O campo "${fieldName}" é obrigatório.`);
+          } else if (err.code === 'invalid_string') {
+            errorMessages.push(`O campo "${fieldName}" está com formato inválido.`);
+          } else if (err.message) {
+            errorMessages.push(`${fieldName}: ${err.message}`);
+          }
+        }
+        
+        if (errorMessages.length > 0) {
+          // Remover duplicatas e retornar
+          const uniqueMessages = Array.from(new Set(errorMessages));
+          return uniqueMessages.slice(0, 3).join(' '); // Máximo 3 mensagens
+        }
+      }
+    }
+
+    // Se chegou aqui, tentar retornar a mensagem original mais limpa
+    if (message.includes('Invalid data')) {
+      return 'Dados inválidos. Verifique todos os campos obrigatórios.';
+    }
+
+    return message || 'Erro desconhecido. Tente novamente.';
+  } catch {
+    return 'Erro ao processar a solicitação. Tente novamente.';
+  }
+}
+
 export default function Equipment({ customerId }: EquipmentProps) {
   const { currentModule } = useModule();
   const theme = useModuleTheme();
@@ -122,8 +226,8 @@ export default function Equipment({ customerId }: EquipmentProps) {
       resetForm();
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "Erro ao criar equipamento";
-      console.error('[CREATE EQUIPMENT ERROR]', { error, message: errorMessage });
+      const errorMessage = formatValidationError(error);
+      console.error('[CREATE EQUIPMENT ERROR]', { error, formattedMessage: errorMessage });
       toast({ 
         title: "Erro ao criar equipamento",
         description: errorMessage,
@@ -145,8 +249,8 @@ export default function Equipment({ customerId }: EquipmentProps) {
       resetForm();
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "Erro ao atualizar equipamento";
-      console.error('[UPDATE EQUIPMENT ERROR]', { error, message: errorMessage });
+      const errorMessage = formatValidationError(error);
+      console.error('[UPDATE EQUIPMENT ERROR]', { error, formattedMessage: errorMessage });
       toast({ 
         title: "Erro ao atualizar equipamento",
         description: errorMessage,
@@ -165,8 +269,8 @@ export default function Equipment({ customerId }: EquipmentProps) {
       queryClient.invalidateQueries({ queryKey: [`/api/customers/${customerId}/equipment`] });
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "Erro ao excluir equipamento";
-      console.error('[DELETE EQUIPMENT ERROR]', { error, message: errorMessage });
+      const errorMessage = formatValidationError(error);
+      console.error('[DELETE EQUIPMENT ERROR]', { error, formattedMessage: errorMessage });
       toast({ 
         title: "Erro ao excluir equipamento",
         description: errorMessage,
