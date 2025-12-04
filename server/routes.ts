@@ -62,6 +62,72 @@ const loginLimiter = rateLimit({
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // ============================================================================
+  // 🔧 FUNÇÃO AUXILIAR: Desconto automático de estoque ao completar O.S.
+  // ============================================================================
+  async function deductStockForWorkOrder(workOrderId: string, userId?: string) {
+    // Buscar peças associadas à O.S.
+    const workOrderParts = await storage.getWorkOrderParts(workOrderId);
+    
+    if (workOrderParts.length === 0) {
+      console.log(`[STOCK] O.S. ${workOrderId} não tem peças associadas.`);
+      return;
+    }
+    
+    console.log(`[STOCK] Processando ${workOrderParts.length} peça(s) para O.S. ${workOrderId}...`);
+    
+    for (const woPart of workOrderParts) {
+      // Verificar se já foi descontada
+      if (woPart.stockDeducted) {
+        console.log(`[STOCK] Peça ${woPart.partId} já foi descontada anteriormente.`);
+        continue;
+      }
+      
+      // Buscar peça atual
+      const part = await storage.getPart(woPart.partId);
+      if (!part) {
+        console.error(`[STOCK] Peça ${woPart.partId} não encontrada.`);
+        continue;
+      }
+      
+      // Calcular quantidade a descontar (usar quantityUsed se disponível, senão quantityPlanned)
+      const quantityToDeduct = parseFloat(woPart.quantityUsed || woPart.quantityPlanned);
+      const previousQuantity = parseFloat(part.currentQuantity);
+      const newQuantity = Math.max(0, previousQuantity - quantityToDeduct);
+      
+      console.log(`[STOCK] Descontando ${quantityToDeduct} de ${part.name} (${previousQuantity} → ${newQuantity})`);
+      
+      // Atualizar estoque da peça
+      await storage.updatePart(part.id, { 
+        currentQuantity: String(newQuantity) 
+      });
+      
+      // Registrar movimento de estoque
+      const movement = insertPartMovementSchema.parse({
+        partId: part.id,
+        movementType: 'saida',
+        quantity: String(quantityToDeduct),
+        previousQuantity: String(previousQuantity),
+        newQuantity: String(newQuantity),
+        reason: `Consumo O.S. #${workOrderId.substring(0, 8)}`,
+        workOrderId: workOrderId,
+        performedByUserId: userId || null
+      });
+      await storage.createPartMovement(movement);
+      
+      // Marcar peça como descontada na O.S.
+      await storage.updateWorkOrderPart(woPart.id, {
+        stockDeducted: true,
+        deductedAt: new Date()
+      });
+      
+      // Broadcast atualização da peça
+      broadcast({ type: 'update', resource: 'parts', data: { id: part.id } });
+    }
+    
+    console.log(`[STOCK] Desconto de estoque concluído para O.S. ${workOrderId}`);
+  }
+  
+  // ============================================================================
   // 🧪 ENDPOINTS DE TESTE - NOVO SISTEMA DE PERMISSÕES
   // ============================================================================
   
@@ -2298,9 +2364,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrder.cancelledBy = req.user?.id;
       }
       
+      // Obter O.S. atual para verificar mudança de status
+      const currentWO = await storage.getWorkOrder(req.params.id);
+      
       // 🔥 ATUALIZADO: Adicionar colaborador ao array de responsáveis em QUALQUER alteração
       if (req.user?.id) {
-        const currentWO = await storage.getWorkOrder(req.params.id);
         if (currentWO) {
           // Pegar array atual de responsáveis (ou inicializar vazio)
           const currentAssignedIds = currentWO.assignedUserIds || [];
@@ -2317,6 +2385,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedWorkOrder = await storage.updateWorkOrder(req.params.id, workOrder);
+      
+      // 🔧 DESCONTO AUTOMÁTICO DE ESTOQUE: Quando O.S. é concluída
+      if (currentWO && currentWO.status !== 'concluida' && workOrder.status === 'concluida') {
+        console.log(`[WO COMPLETE] O.S. ${req.params.id} concluída - Processando desconto de estoque...`);
+        try {
+          await deductStockForWorkOrder(req.params.id, req.user?.id);
+        } catch (stockError) {
+          console.error(`[WO COMPLETE] Erro ao descontar estoque para O.S. ${req.params.id}:`, stockError);
+          // Não bloquear a conclusão da O.S., apenas logar o erro
+        }
+      }
       
       // Send webhook notification if configured
       // TODO: Implement webhook sending logic
@@ -2346,9 +2425,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workOrder.cancelledBy = req.user?.id;
       }
       
+      // Obter O.S. atual para verificar mudança de status
+      const currentWO = await storage.getWorkOrder(req.params.id);
+      
       // 🔥 ATUALIZADO: Adicionar colaborador ao array de responsáveis em QUALQUER alteração
       if (req.user?.id) {
-        const currentWO = await storage.getWorkOrder(req.params.id);
         if (currentWO) {
           // Pegar array atual de responsáveis (ou inicializar vazio)
           const currentAssignedIds = currentWO.assignedUserIds || [];
@@ -2365,6 +2446,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedWorkOrder = await storage.updateWorkOrder(req.params.id, workOrder);
+      
+      // 🔧 DESCONTO AUTOMÁTICO DE ESTOQUE: Quando O.S. é concluída
+      if (currentWO && currentWO.status !== 'concluida' && workOrder.status === 'concluida') {
+        console.log(`[WO COMPLETE] O.S. ${req.params.id} concluída (PATCH) - Processando desconto de estoque...`);
+        try {
+          await deductStockForWorkOrder(req.params.id, req.user?.id);
+        } catch (stockError) {
+          console.error(`[WO COMPLETE] Erro ao descontar estoque para O.S. ${req.params.id}:`, stockError);
+          // Não bloquear a conclusão da O.S., apenas logar o erro
+        }
+      }
       
       // Send webhook notification if configured
       // TODO: Implement webhook sending logic
@@ -6200,7 +6292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const part = insertPartSchema.parse(req.body);
       const newPart = await storage.createPart(part);
-      broadcast({ type: 'part_created', data: newPart });
+      broadcast({ type: 'create', resource: 'parts', data: newPart });
       res.status(201).json(newPart);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -6216,7 +6308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const part = insertPartSchema.partial().parse(req.body);
       const updatedPart = await storage.updatePart(req.params.id, part);
-      broadcast({ type: 'part_updated', data: updatedPart });
+      broadcast({ type: 'update', resource: 'parts', data: updatedPart });
       res.json(updatedPart);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -6231,7 +6323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/parts/:id", requirePermission('schedule_delete'), async (req, res) => {
     try {
       await storage.deletePart(req.params.id);
-      broadcast({ type: 'part_deleted', data: { id: req.params.id } });
+      broadcast({ type: 'delete', resource: 'parts', id: req.params.id });
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting part:", error);
@@ -6280,7 +6372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       await storage.createPartMovement(movement);
 
-      broadcast({ type: 'part_updated', data: updatedPart });
+      broadcast({ type: 'update', resource: 'parts', data: updatedPart });
       res.json(updatedPart);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -6472,7 +6564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         activityId: req.params.activityId
       });
       const newActivityPart = await storage.createMaintenanceActivityPart(activityPart);
-      broadcast('maintenance_activity_updated', { id: req.params.activityId });
+      broadcast({ type: 'update', resource: 'maintenance_activities', id: req.params.activityId });
       res.status(201).json(newActivityPart);
     } catch (error) {
       if (error instanceof z.ZodError) {
