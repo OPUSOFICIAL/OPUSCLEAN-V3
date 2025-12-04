@@ -343,17 +343,7 @@ export default function Equipment({ customerId }: EquipmentProps) {
             Lista de Equipamentos
           </ModernCardHeader>
           <ModernCardContent>
-            <div className="mb-4 flex justify-end">
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className={theme.buttons.primary}
-                    data-testid="button-create-equipment"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Novo Equipamento
-                  </Button>
-                </DialogTrigger>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Equipamento</DialogTitle>
@@ -562,7 +552,6 @@ export default function Equipment({ customerId }: EquipmentProps) {
                 </div>
               </DialogContent>
             </Dialog>
-            </div>
 
             {isLoading ? (
               <div className="text-center py-8">
