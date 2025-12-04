@@ -19,7 +19,7 @@ import {
   insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
   insertAiIntegrationSchema,
   insertPartSchema, insertWorkOrderPartSchema, insertMaintenancePlanPartSchema,
-  insertPartMovementSchema,
+  insertMaintenanceActivityPartSchema, insertPartMovementSchema,
   syncBatchRequestSchema,
   customers,
   type User, type InsertUser
@@ -6446,6 +6446,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting maintenance plan part:", error);
       res.status(500).json({ message: "Failed to delete maintenance plan part" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE ACTIVITY PARTS (Peças em Atividades de Manutenção)
+  // ============================================================================
+
+  // Get parts for a maintenance activity
+  app.get("/api/maintenance-activities/:activityId/parts", async (req, res) => {
+    try {
+      const parts = await storage.getMaintenanceActivityParts(req.params.activityId);
+      res.json(parts);
+    } catch (error) {
+      console.error("Error fetching maintenance activity parts:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance activity parts" });
+    }
+  });
+
+  // Add part to maintenance activity
+  app.post("/api/maintenance-activities/:activityId/parts", requirePermission('schedule_create'), async (req, res) => {
+    try {
+      const activityPart = insertMaintenanceActivityPartSchema.parse({
+        ...req.body,
+        activityId: req.params.activityId
+      });
+      const newActivityPart = await storage.createMaintenanceActivityPart(activityPart);
+      broadcast('maintenance_activity_updated', { id: req.params.activityId });
+      res.status(201).json(newActivityPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error adding part to maintenance activity:", error);
+      res.status(500).json({ message: "Failed to add part to maintenance activity" });
+    }
+  });
+
+  // Update maintenance activity part
+  app.put("/api/maintenance-activity-parts/:id", requirePermission('schedule_edit'), async (req, res) => {
+    try {
+      const activityPart = insertMaintenanceActivityPartSchema.partial().parse(req.body);
+      const updatedPart = await storage.updateMaintenanceActivityPart(req.params.id, activityPart);
+      res.json(updatedPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating maintenance activity part:", error);
+      res.status(500).json({ message: "Failed to update maintenance activity part" });
+    }
+  });
+
+  // Delete maintenance activity part
+  app.delete("/api/maintenance-activity-parts/:id", requirePermission('schedule_delete'), async (req, res) => {
+    try {
+      await storage.deleteMaintenanceActivityPart(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting maintenance activity part:", error);
+      res.status(500).json({ message: "Failed to delete maintenance activity part" });
     }
   });
 

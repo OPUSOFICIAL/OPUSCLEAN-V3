@@ -781,6 +781,19 @@ export const maintenancePlanParts = pgTable("maintenance_plan_parts", {
   uniquePlanPart: unique("unique_plan_part").on(table.planId, table.partId),
 }));
 
+// 36.5 TABELA: maintenance_activity_parts (Peças em Atividades de Manutenção)
+export const maintenanceActivityParts = pgTable("maintenance_activity_parts", {
+  id: varchar("id").primaryKey(),
+  activityId: varchar("activity_id").notNull().references(() => maintenanceActivities.id, { onDelete: 'cascade' }),
+  partId: varchar("part_id").notNull().references(() => parts.id),
+  quantityPerExecution: decimal("quantity_per_execution", { precision: 10, scale: 2 }).notNull(), // Qtd por execução
+  notes: text("notes"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => ({
+  uniqueActivityPart: unique("unique_activity_part").on(table.activityId, table.partId),
+}));
+
 // 37. TABELA: part_movements (Movimentações de Estoque)
 export const partMovements = pgTable("part_movements", {
   id: varchar("id").primaryKey(),
@@ -1478,6 +1491,9 @@ export const insertWorkOrderPartSchema = createInsertSchema(workOrderParts).omit
 export const insertMaintenancePlanPartSchema = createInsertSchema(maintenancePlanParts).omit({ id: true }).extend({
   quantityPerExecution: z.union([z.string(), z.number()]).transform(val => String(val)),
 });
+export const insertMaintenanceActivityPartSchema = createInsertSchema(maintenanceActivityParts).omit({ id: true }).extend({
+  quantityPerExecution: z.union([z.string(), z.number()]).transform(val => String(val)),
+});
 export const insertPartMovementSchema = createInsertSchema(partMovements).omit({ id: true }).extend({
   quantity: z.union([z.string(), z.number()]).transform(val => String(val)),
   previousQuantity: z.union([z.string(), z.number()]).transform(val => String(val)),
@@ -1604,6 +1620,9 @@ export type InsertWorkOrderPart = z.infer<typeof insertWorkOrderPartSchema>;
 
 export type MaintenancePlanPart = typeof maintenancePlanParts.$inferSelect;
 export type InsertMaintenancePlanPart = z.infer<typeof insertMaintenancePlanPartSchema>;
+
+export type MaintenanceActivityPart = typeof maintenanceActivityParts.$inferSelect;
+export type InsertMaintenanceActivityPart = z.infer<typeof insertMaintenanceActivityPartSchema>;
 
 export type PartMovement = typeof partMovements.$inferSelect;
 export type InsertPartMovement = z.infer<typeof insertPartMovementSchema>;

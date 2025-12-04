@@ -6,7 +6,7 @@ import {
   workOrderComments, workOrderAttachments,
   equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
-  parts, workOrderParts, maintenancePlanParts, partMovements,
+  parts, workOrderParts, maintenancePlanParts, maintenanceActivityParts, partMovements,
   aiIntegrations, chatConversations, chatMessages,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
@@ -37,6 +37,7 @@ import {
   type Part, type InsertPart,
   type WorkOrderPart, type InsertWorkOrderPart,
   type MaintenancePlanPart, type InsertMaintenancePlanPart,
+  type MaintenanceActivityPart, type InsertMaintenanceActivityPart,
   type PartMovement, type InsertPartMovement,
   type AiIntegration, type InsertAiIntegration,
   type ChatConversation, type InsertChatConversation,
@@ -472,6 +473,12 @@ export interface IStorage {
   createMaintenancePlanPart(planPart: InsertMaintenancePlanPart): Promise<MaintenancePlanPart>;
   updateMaintenancePlanPart(id: string, planPart: Partial<InsertMaintenancePlanPart>): Promise<MaintenancePlanPart>;
   deleteMaintenancePlanPart(id: string): Promise<void>;
+  
+  // Maintenance Activity Parts
+  getMaintenanceActivityParts(activityId: string): Promise<MaintenanceActivityPart[]>;
+  createMaintenanceActivityPart(activityPart: InsertMaintenanceActivityPart): Promise<MaintenanceActivityPart>;
+  updateMaintenanceActivityPart(id: string, activityPart: Partial<InsertMaintenanceActivityPart>): Promise<MaintenanceActivityPart>;
+  deleteMaintenanceActivityPart(id: string): Promise<void>;
   
   // Part Movements
   getPartMovements(partId: string): Promise<PartMovement[]>;
@@ -6055,6 +6062,32 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMaintenancePlanPart(id: string): Promise<void> {
     await db.delete(maintenancePlanParts).where(eq(maintenancePlanParts.id, id));
+  }
+
+  // Maintenance Activity Parts
+  async getMaintenanceActivityParts(activityId: string): Promise<MaintenanceActivityPart[]> {
+    return await db.select().from(maintenanceActivityParts)
+      .where(eq(maintenanceActivityParts.activityId, activityId));
+  }
+
+  async createMaintenanceActivityPart(activityPartData: InsertMaintenanceActivityPart): Promise<MaintenanceActivityPart> {
+    const [newActivityPart] = await db.insert(maintenanceActivityParts).values({
+      ...activityPartData,
+      id: nanoid()
+    }).returning();
+    return newActivityPart;
+  }
+
+  async updateMaintenanceActivityPart(id: string, activityPartData: Partial<InsertMaintenanceActivityPart>): Promise<MaintenanceActivityPart> {
+    const [updatedActivityPart] = await db.update(maintenanceActivityParts)
+      .set({ ...activityPartData, updatedAt: sql`now()` })
+      .where(eq(maintenanceActivityParts.id, id))
+      .returning();
+    return updatedActivityPart;
+  }
+
+  async deleteMaintenanceActivityPart(id: string): Promise<void> {
+    await db.delete(maintenanceActivityParts).where(eq(maintenanceActivityParts.id, id));
   }
 
   // Part Movements

@@ -30,7 +30,10 @@ import {
   RefreshCw,
   CalendarRange,
   ClipboardList,
-  XCircle
+  XCircle,
+  Package,
+  AlertTriangle,
+  X
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -1661,6 +1664,15 @@ function MultiSelect({
   );
 }
 
+// Interface para peças selecionadas no modal
+interface SelectedPart {
+  partId: string;
+  partName: string;
+  quantity: number;
+  available: number;
+  unit: string;
+}
+
 // Componente de Modal para Criação de Atividade de Manutenção
 interface CreateMaintenanceActivityModalProps {
   activeClientId: string;
@@ -1695,6 +1707,98 @@ function CreateMaintenanceActivityModal({ activeClientId, editingActivity, onClo
     endTime: "",
     isActive: true
   });
+
+  // Estado para peças selecionadas
+  const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
+  const [selectedPartId, setSelectedPartId] = useState("");
+  const [selectedPartQuantity, setSelectedPartQuantity] = useState(1);
+
+  // Buscar peças do cliente para o módulo manutenção
+  const { data: activeParts = [] } = useQuery<any[]>({
+    queryKey: ["/api/customers", activeClientId, "parts", { module: "maintenance" }],
+    enabled: !!activeClientId,
+  });
+
+  // Buscar peças já vinculadas à atividade (no modo de edição)
+  const { data: existingActivityParts = [] } = useQuery<any[]>({
+    queryKey: ["/api/maintenance-activities", editingActivity?.id, "parts"],
+    enabled: !!editingActivity?.id,
+    refetchOnMount: true,
+  });
+
+  // Carregar peças existentes no modo de edição
+  useEffect(() => {
+    if (!editingActivity?.id) {
+      setSelectedParts([]);
+      return;
+    }
+    
+    if (existingActivityParts.length > 0) {
+      const loadedParts: SelectedPart[] = existingActivityParts.map((ap: any) => {
+        const part = activeParts.find((p: any) => p.id === ap.partId);
+        return {
+          partId: ap.partId,
+          partName: part?.name || ap.partName || 'Peça desconhecida',
+          quantity: parseFloat(ap.quantityPerExecution) || 1,
+          available: part ? parseFloat(part.currentQuantity) : 0,
+          unit: part?.unit || 'un'
+        };
+      });
+      setSelectedParts(loadedParts);
+    }
+  }, [existingActivityParts, activeParts, editingActivity?.id]);
+
+  // Funções para gerenciar peças
+  const handleAddPart = () => {
+    if (!selectedPartId) return;
+    
+    const part = activeParts.find((p: any) => p.id === selectedPartId);
+    if (!part) return;
+    
+    const available = parseFloat(part.currentQuantity);
+    
+    if (selectedParts.some(sp => sp.partId === selectedPartId)) {
+      toast({
+        title: "Peça já adicionada",
+        description: "Esta peça já está na lista.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (selectedPartQuantity <= 0) {
+      toast({
+        title: "Quantidade inválida",
+        description: "Informe uma quantidade maior que zero.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const newPart: SelectedPart = {
+      partId: selectedPartId,
+      partName: part.name,
+      quantity: selectedPartQuantity,
+      available,
+      unit: part.unit || 'un'
+    };
+    
+    setSelectedParts([...selectedParts, newPart]);
+    setSelectedPartId("");
+    setSelectedPartQuantity(1);
+  };
+
+  const handleRemovePart = (partId: string) => {
+    setSelectedParts(selectedParts.filter(p => p.partId !== partId));
+  };
+
+  const handleUpdatePartQuantity = (partId: string, newQuantity: number) => {
+    if (newQuantity <= 0) return;
+    
+    setSelectedParts(selectedParts.map(p => 
+      p.partId === partId ? { ...p, quantity: newQuantity } : p
+    ));
+  };
 
   // Fetch equipment for selected zones
   const { data: equipment = [] } = useQuery({
@@ -1857,21 +1961,47 @@ function CreateMaintenanceActivityModal({ activeClientId, editingActivity, onClo
         checklistTemplateId: data.checklistTemplateId || null,
         equipmentIds: data.equipmentIds || [],
       };
-      return { activity: await apiRequest("POST", "/api/maintenance-activities", submitData), companyId };
+      
+      // Criar a atividade
+      const response = await apiRequest("POST", "/api/maintenance-activities", submitData);
+      const activity = await response.json();
+      
+      // Se tiver peças selecionadas, criar as maintenance_activity_parts
+      if (selectedParts.length > 0) {
+        for (const part of selectedParts) {
+          await apiRequest("POST", `/api/maintenance-activities/${activity.id}/parts`, {
+            partId: part.partId,
+            quantityPerExecution: String(part.quantity),
+          });
+        }
+      }
+      
+      return { activity, companyId };
     },
     onSuccess: async (result: any) => {
       toast({ 
         title: "Plano de Manutenção Criado!", 
-        description: "As ordens de serviço serão geradas automaticamente no final de cada mês." 
+        description: selectedParts.length > 0 
+          ? `Atividade criada com ${selectedParts.length} peça(s) associada(s).`
+          : "As ordens de serviço serão geradas automaticamente no final de cada mês." 
       });
       
       queryClient.invalidateQueries({ 
         queryKey: ["/api/customers", activeClientId, "maintenance-activities"] 
       });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers", activeClientId, "parts"]
+      });
+      if (result?.activity?.id) {
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/maintenance-activities", result.activity.id, "parts"]
+        });
+      }
       
       onSuccess();
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Erro ao criar atividade:", error);
       toast({ 
         title: "Erro ao criar atividade de manutenção", 
         variant: "destructive" 
@@ -1890,16 +2020,58 @@ function CreateMaintenanceActivityModal({ activeClientId, editingActivity, onClo
         checklistTemplateId: data.checklistTemplateId || null,
         equipmentIds: data.equipmentIds || [],
       };
-      return await apiRequest("PUT", `/api/maintenance-activities/${editingActivity.id}`, submitData);
+      
+      // Atualizar a atividade
+      await apiRequest("PUT", `/api/maintenance-activities/${editingActivity.id}`, submitData);
+      
+      // Atualizar peças: deletar as que foram removidas, criar as novas
+      const existingPartIds = new Set(existingActivityParts.map((p: any) => p.partId));
+      const newPartIds = new Set(selectedParts.map(p => p.partId));
+      
+      // Deletar peças removidas
+      for (const existing of existingActivityParts as any[]) {
+        if (!newPartIds.has(existing.partId)) {
+          await apiRequest("DELETE", `/api/maintenance-activity-parts/${existing.id}`);
+        }
+      }
+      
+      // Criar ou atualizar peças
+      for (const part of selectedParts) {
+        if (existingPartIds.has(part.partId)) {
+          // Atualizar quantidade se mudou
+          const existingPart = (existingActivityParts as any[]).find((p: any) => p.partId === part.partId);
+          if (existingPart && parseFloat(existingPart.quantityPerExecution) !== part.quantity) {
+            await apiRequest("PUT", `/api/maintenance-activity-parts/${existingPart.id}`, {
+              quantityPerExecution: String(part.quantity),
+            });
+          }
+        } else {
+          // Criar nova peça
+          await apiRequest("POST", `/api/maintenance-activities/${editingActivity.id}/parts`, {
+            partId: part.partId,
+            quantityPerExecution: String(part.quantity),
+          });
+        }
+      }
+      
+      return;
     },
     onSuccess: async () => {
       toast({ 
         title: "Atividade Atualizada!", 
-        description: "As alterações foram salvas com sucesso." 
+        description: selectedParts.length > 0 
+          ? `Atividade atualizada com ${selectedParts.length} peça(s) associada(s).`
+          : "As alterações foram salvas com sucesso." 
       });
       
       queryClient.invalidateQueries({ 
         queryKey: ["/api/customers", activeClientId, "maintenance-activities"] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/maintenance-activities", editingActivity?.id, "parts"] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/customers", activeClientId, "parts"]
       });
       
       onSuccess();
@@ -2353,6 +2525,131 @@ function CreateMaintenanceActivityModal({ activeClientId, editingActivity, onClo
                 </Select>
               </div>
             </div>
+          </div>
+
+          {/* Seção de Peças (Opcional) */}
+          <div className="space-y-4 rounded-lg border p-4">
+            <h3 className="font-medium flex items-center gap-2">
+              <Package className="w-4 h-4" style={{ color: theme.primary }} />
+              Peças Necessárias (Opcional)
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Associe peças do estoque que serão consumidas a cada execução desta atividade.
+            </p>
+            
+            {/* Seletor de peças */}
+            <div className="flex flex-wrap gap-2 items-end">
+              <div className="flex-1 min-w-[200px] space-y-1">
+                <Label>Peça</Label>
+                <Select 
+                  value={selectedPartId} 
+                  onValueChange={setSelectedPartId}
+                >
+                  <SelectTrigger data-testid="select-part">
+                    <SelectValue placeholder="Selecione uma peça" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeParts
+                      .filter((p: any) => !selectedParts.some(sp => sp.partId === p.id))
+                      .map((part: any) => (
+                        <SelectItem key={part.id} value={part.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{part.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              (Disp: {parseFloat(part.currentQuantity).toFixed(2)} {part.unit})
+                            </span>
+                            {parseFloat(part.currentQuantity) <= parseFloat(part.minimumQuantity) && (
+                              <AlertTriangle className="w-3 h-3 text-orange-500" />
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="w-[100px] space-y-1">
+                <Label>Qtd/Execução</Label>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={selectedPartQuantity}
+                  onChange={(e) => setSelectedPartQuantity(parseFloat(e.target.value) || 1)}
+                  data-testid="input-part-quantity"
+                />
+              </div>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddPart}
+                disabled={!selectedPartId}
+                data-testid="button-add-part"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar
+              </Button>
+            </div>
+
+            {/* Lista de peças selecionadas */}
+            {selectedParts.length > 0 && (
+              <div className="space-y-2">
+                <Label>Peças associadas:</Label>
+                <div className="space-y-2">
+                  {selectedParts.map((part) => (
+                    <div 
+                      key={part.partId}
+                      className="flex items-center justify-between gap-2 p-2 rounded-md border bg-muted/50"
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{part.partName}</span>
+                        {part.quantity > part.available && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            Estoque insuficiente
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={part.quantity}
+                          onChange={(e) => handleUpdatePartQuantity(part.partId, parseFloat(e.target.value) || 1)}
+                          className="w-[80px]"
+                          data-testid={`input-part-qty-${part.partId}`}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {part.unit}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          (Disp: {part.available.toFixed(2)})
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePart(part.partId)}
+                          data-testid={`button-remove-part-${part.partId}`}
+                        >
+                          <X className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {selectedParts.length === 0 && (
+              <p className="text-sm text-muted-foreground italic">
+                Nenhuma peça associada. Adicione peças se esta atividade requer materiais do estoque.
+              </p>
+            )}
           </div>
 
           {/* Botões de Ação */}
