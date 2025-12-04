@@ -5,12 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useModule } from "@/contexts/ModuleContext";
 import { useModuleTheme } from "@/hooks/use-module-theme";
-import { X, Save, Calendar, Timer, MapPin, User, Settings, AlertCircle, CheckSquare } from "lucide-react";
+import { X, Save, Calendar, Timer, MapPin, User, Settings, AlertCircle, CheckSquare, Package, Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface SelectedPart {
+  partId: string;
+  partName: string;
+  quantity: number;
+  available: number;
+  unit: string;
+}
 
 interface CreateWorkOrderModalProps {
   customerId: string;
@@ -43,6 +52,11 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     endTime: ""
   });
   
+  // Estado para peças selecionadas (Manutenção)
+  const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
+  const [selectedPartId, setSelectedPartId] = useState<string>("");
+  const [partQuantity, setPartQuantity] = useState<string>("1");
+  
   const { toast } = useToast();
 
   const { data: sites } = useQuery({
@@ -70,6 +84,12 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
   // Templates de checklist de manutenção
   const { data: maintenanceChecklistTemplates } = useQuery({
     queryKey: ["/api/customers", customerId, "maintenance-checklist-templates"],
+    enabled: !!customerId && currentModule === 'maintenance',
+  });
+
+  // Peças disponíveis para módulo Manutenção
+  const { data: availableParts } = useQuery({
+    queryKey: ["/api/customers", customerId, "parts"],
     enabled: !!customerId && currentModule === 'maintenance',
   });
 
@@ -111,6 +131,86 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
     return template.serviceId === formData.serviceId;
   });
 
+  // Filtrar peças ativas com estoque disponível
+  const activeParts = (availableParts as any[] || []).filter((part: any) => 
+    part.isActive && parseFloat(part.currentQuantity) > 0
+  );
+
+  // Funções para gerenciar peças selecionadas
+  const handleAddPart = () => {
+    if (!selectedPartId) {
+      toast({ title: "Selecione uma peça", variant: "destructive" });
+      return;
+    }
+    
+    const quantity = parseFloat(partQuantity);
+    if (isNaN(quantity) || quantity <= 0) {
+      toast({ title: "Informe uma quantidade válida", variant: "destructive" });
+      return;
+    }
+
+    const part = (availableParts as any[]).find((p: any) => p.id === selectedPartId);
+    if (!part) return;
+
+    const available = parseFloat(part.currentQuantity);
+    const alreadySelected = selectedParts.find(p => p.partId === selectedPartId);
+    const alreadyUsed = alreadySelected ? alreadySelected.quantity : 0;
+    
+    if (quantity + alreadyUsed > available) {
+      toast({ 
+        title: "Estoque insuficiente", 
+        description: `Disponível: ${available} ${part.unit}. Já selecionado: ${alreadyUsed} ${part.unit}.`,
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    if (alreadySelected) {
+      setSelectedParts(prev => prev.map(p => 
+        p.partId === selectedPartId 
+          ? { ...p, quantity: p.quantity + quantity }
+          : p
+      ));
+    } else {
+      setSelectedParts(prev => [...prev, {
+        partId: part.id,
+        partName: part.name,
+        quantity,
+        available,
+        unit: part.unit || 'un'
+      }]);
+    }
+
+    setSelectedPartId("");
+    setPartQuantity("1");
+  };
+
+  const handleRemovePart = (partId: string) => {
+    setSelectedParts(prev => prev.filter(p => p.partId !== partId));
+  };
+
+  const handleUpdatePartQuantity = (partId: string, newQuantity: number) => {
+    const part = selectedParts.find(p => p.partId === partId);
+    if (!part) return;
+
+    if (newQuantity <= 0) {
+      handleRemovePart(partId);
+      return;
+    }
+
+    if (newQuantity > part.available) {
+      toast({ 
+        title: "Estoque insuficiente", 
+        description: `Disponível: ${part.available} ${part.unit}`,
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setSelectedParts(prev => prev.map(p => 
+      p.partId === partId ? { ...p, quantity: newQuantity } : p
+    ));
+  };
 
   const createWorkOrderMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -158,10 +258,28 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
         submitData.scheduledEndAt = endDate.toISOString();
       }
       
-      return await apiRequest("POST", "/api/work-orders", submitData);
+      // Criar a O.S.
+      const response = await apiRequest("POST", "/api/work-orders", submitData);
+      const workOrder = await response.json();
+      
+      // Se tiver peças selecionadas, criar as work_order_parts
+      if (data.selectedParts && data.selectedParts.length > 0) {
+        const workOrderId = workOrder.id;
+        
+        for (const part of data.selectedParts) {
+          await apiRequest("POST", `/api/work-orders/${workOrderId}/parts`, {
+            partId: part.partId,
+            quantityPlanned: String(part.quantity),
+          });
+        }
+      }
+      
+      return workOrder;
     },
     onSuccess: () => {
       toast({ title: "Ordem de serviço criada com sucesso!" });
+      // Invalidar cache de peças para refletir estoque
+      queryClient.invalidateQueries({ queryKey: ["/api/customers", customerId, "parts"] });
       onSuccess();
     },
     onError: (error: any) => {
@@ -267,7 +385,8 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
 
     // Criar cópia sem o siteId (que é apenas para controle do frontend)
     const { siteId, ...submitData } = formData;
-    createWorkOrderMutation.mutate(submitData);
+    // Incluir peças selecionadas (se houver)
+    createWorkOrderMutation.mutate({ ...submitData, selectedParts });
   };
 
   const handleChange = (field: string, value: string) => {
@@ -708,6 +827,116 @@ export default function CreateWorkOrderModal({ customerId, onClose, onSuccess }:
             )}
           </div>
 
+          {/* Seção de Peças - Apenas para Manutenção */}
+          {currentModule === 'maintenance' && (
+            <div className="space-y-4 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <h4 className="font-semibold text-purple-900 dark:text-purple-100 flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Peças Necessárias (opcional)
+              </h4>
+              
+              {/* Seleção de Peças */}
+              <div className="flex flex-wrap gap-2 items-end">
+                <div className="flex-1 min-w-[200px] space-y-1">
+                  <Label htmlFor="part-select" className="text-sm">Peça</Label>
+                  <Select value={selectedPartId} onValueChange={setSelectedPartId}>
+                    <SelectTrigger data-testid="select-part">
+                      <SelectValue placeholder="Selecione uma peça" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeParts.length > 0 ? (
+                        activeParts.map((part: any) => (
+                          <SelectItem key={part.id} value={part.id}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span>{part.name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {parseFloat(part.currentQuantity).toFixed(0)} {part.unit || 'un'}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-parts" disabled>Nenhuma peça disponível</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="w-24 space-y-1">
+                  <Label htmlFor="part-quantity" className="text-sm">Qtd</Label>
+                  <Input
+                    id="part-quantity"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={partQuantity}
+                    onChange={(e) => setPartQuantity(e.target.value)}
+                    data-testid="input-part-quantity"
+                  />
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddPart}
+                  disabled={!selectedPartId}
+                  data-testid="button-add-part"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Adicionar
+                </Button>
+              </div>
+
+              {/* Lista de Peças Selecionadas */}
+              {selectedParts.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <Label className="text-sm font-medium">Peças selecionadas:</Label>
+                  <div className="space-y-2">
+                    {selectedParts.map((part) => (
+                      <div 
+                        key={part.partId} 
+                        className="flex items-center justify-between p-2 bg-background rounded-md border"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-purple-600" />
+                          <span className="font-medium">{part.partName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={part.quantity}
+                            onChange={(e) => handleUpdatePartQuantity(part.partId, parseFloat(e.target.value))}
+                            className="w-20 text-center"
+                            data-testid={`input-part-qty-${part.partId}`}
+                          />
+                          <span className="text-sm text-muted-foreground">{part.unit}</span>
+                          <span className="text-xs text-muted-foreground">(disp: {part.available})</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemovePart(part.partId)}
+                            data-testid={`button-remove-part-${part.partId}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeParts.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma peça com estoque disponível. 
+                  <a href="/parts-inventory" className="text-primary underline ml-1">Cadastrar peças</a>
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Datas de Planejamento */}
           <div className="space-y-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
