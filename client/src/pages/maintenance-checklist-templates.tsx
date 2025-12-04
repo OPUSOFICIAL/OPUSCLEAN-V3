@@ -20,8 +20,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useModule } from "@/contexts/ModuleContext";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Plus, Edit3, Trash2, List, FileText, Eye, Hash, ChevronDown } from "lucide-react";
+import { Plus, Edit3, Trash2, List, FileText, Eye, Hash, ChevronDown, Package } from "lucide-react";
 import { nanoid } from "nanoid";
+import type { Part } from "@shared/schema";
 
 interface ChecklistItem {
   id: string;
@@ -30,6 +31,7 @@ interface ChecklistItem {
   required: boolean;
   description?: string;
   options?: string[]; // Para tipo checkbox - lista de opções
+  partId?: string; // Peça associada a este item (para consumo na execução)
   validation?: {
     minLength?: number;
     maxLength?: number;
@@ -158,6 +160,7 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     required: false,
     description: "",
     options: [],
+    partId: undefined,
     validation: {}
   });
 
@@ -209,6 +212,12 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
     queryKey: [`/api/customers/${customerId}/equipment`],
     enabled: !!customerId,
     refetchOnMount: true,
+  });
+
+  // Fetch parts for the customer (para seleção no checklist)
+  const { data: parts = [] } = useQuery<Part[]>({
+    queryKey: [`/api/customers/${customerId}/parts`, { module: 'maintenance' }],
+    enabled: !!customerId,
   });
 
   // Fetch all zones for displaying names in the table
@@ -700,6 +709,44 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                         </div>
                       </div>
 
+                      {/* Campo de Peça Associada */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Package className="w-4 h-4" style={{ color: 'var(--module-primary)' }} />
+                          Peça Associada (consumo na execução)
+                        </Label>
+                        <Select 
+                          value={newItem.partId || "none"} 
+                          onValueChange={(value) => setNewItem(prev => ({ 
+                            ...prev, 
+                            partId: value === "none" ? undefined : value
+                          }))}
+                        >
+                          <SelectTrigger data-testid="select-item-part">
+                            <SelectValue placeholder="Selecione uma peça (opcional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhuma peça</SelectItem>
+                            {(parts as Part[]).map((part) => (
+                              <SelectItem key={part.id} value={part.id}>
+                                <span className="flex items-center gap-2">
+                                  <span>{part.name}</span>
+                                  {part.partNumber && (
+                                    <span className="text-xs text-muted-foreground">({part.partNumber})</span>
+                                  )}
+                                  <span className="text-xs" style={{ color: parseFloat(part.currentQuantity) <= parseFloat(part.minimumQuantity) ? 'red' : 'green' }}>
+                                    Estoque: {part.currentQuantity} {part.unit}
+                                  </span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Se selecionada, esta peça será sugerida para consumo quando este item for executado na O.S.
+                        </p>
+                      </div>
+
                       {/* Configurações avançadas */}
                       {newItem.type && (
                         <Card className="bg-slate-50">
@@ -926,7 +973,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
 
                       <Button 
                         onClick={handleAddItem} 
-                        className="w-full"
+                        className={cn("w-full", theme.buttons.primary)}
+                        style={theme.buttons.primaryStyle}
                         data-testid="button-add-item"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -1000,6 +1048,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                     <Button 
                       onClick={handleSubmit}
                       disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
+                      className={cn(theme.buttons.primary)}
+                      style={theme.buttons.primaryStyle}
                       data-testid="button-save-template"
                     >
                       {editingTemplate ? "Atualizar" : "Criar"} Template
@@ -1077,7 +1127,15 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
                         <div className="flex flex-wrap gap-1">
                           {template.zoneIds && template.zoneIds.length > 0 ? (
                             getZoneNames(template.zoneIds).map((name: string, idx: number) => (
-                              <Badge key={template.zoneIds[idx]} variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                              <Badge 
+                                key={template.zoneIds[idx]} 
+                                variant="outline"
+                                style={{
+                                  backgroundColor: 'color-mix(in srgb, var(--module-primary) 10%, white)',
+                                  color: 'var(--module-primary)',
+                                  borderColor: 'color-mix(in srgb, var(--module-primary) 30%, white)'
+                                }}
+                              >
                                 {name}
                               </Badge>
                             ))
