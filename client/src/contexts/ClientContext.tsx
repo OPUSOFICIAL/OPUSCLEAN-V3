@@ -112,33 +112,27 @@ export function ClientProvider({ children }: ClientProviderProps) {
   const { data: myCustomers = [], isLoading: isLoadingMyCustomers, isError: myCustomersError, error: myCustomersErrorDetail, refetch: refetchMyCustomers } = useQuery({
     queryKey: ["/api/auth/my-customers"],  // Simples - queryKey é apenas para cache, não para URL
     enabled: (!isCustomerUser || (isCustomerUser && isAdmin)) && !!user?.id,
-    staleTime: 0,  // Não usar cache
-    gcTime: 0,  // Desabilitar garbage collection também
-    refetchOnWindowFocus: true,  // Refetch ao focar na janela
+    staleTime: 60000,  // Cache por 1 minuto para evitar refetches em loop
+    gcTime: 300000,  // Manter em cache por 5 minutos
+    refetchOnWindowFocus: false,  // Não refetch ao focar na janela (causa loops)
   });
 
-  // Force refetch quando user muda (para garantir dados fresh)
+  // Force refetch apenas na primeira vez que o user é definido (login inicial)
+  const userFetchedRef = useRef<string | null>(null);
   useEffect(() => {
-    if ((!isCustomerUser || (isCustomerUser && isAdmin)) && user?.id) {
-      console.log(`[CLIENT CONTEXT] 🔄 Forcing refetch myCustomers for:`, user.id, `isAdmin: ${isAdmin}`);
+    if ((!isCustomerUser || (isCustomerUser && isAdmin)) && user?.id && userFetchedRef.current !== user.id) {
+      console.log(`[CLIENT CONTEXT] 🔄 Initial fetch myCustomers for:`, user.id, `isAdmin: ${isAdmin}`);
+      userFetchedRef.current = user.id;
       refetchMyCustomers();
     }
   }, [user?.id, isCustomerUser, isAdmin, refetchMyCustomers]);
 
-  // Debug log - MUITO VERBOSE
+  // Debug log - Apenas quando há erro (removido log verbose para evitar re-renders)
   useEffect(() => {
-    if (!isCustomerUser) {
-      console.log(`[CLIENT CONTEXT] 🔍 Query estado:`, {
-        isCustomerUser,
-        userId: user?.id,
-        enabled: !isCustomerUser && !!user?.id,
-        isLoading: isLoadingMyCustomers,
-        isError: myCustomersError,
-        dataLength: (myCustomers as any[])?.length || 0,
-        data: myCustomers
-      });
+    if (myCustomersError && !isCustomerUser) {
+      console.error(`[CLIENT CONTEXT] ❌ Error loading customers:`, myCustomersErrorDetail);
     }
-  }, [myCustomers, isLoadingMyCustomers, myCustomersError, user?.id, isCustomerUser]);
+  }, [myCustomersError, myCustomersErrorDetail, isCustomerUser]);
 
   // Buscar clientes permitidos para usuários do sistema não-admin (fallback)
   const { data: allowedCustomers = [], isLoading: isLoadingAllowedCustomers } = useQuery({
@@ -154,7 +148,6 @@ export function ClientProvider({ children }: ClientProviderProps) {
   } else if (isAdmin) {
     // Admin (opus_user ou customer_user) vê seus clientes vinculados (via userAllowedCustomers)
     customers = (myCustomers as Customer[]);
-    console.log(`[CLIENT CONTEXT] Admin customers received:`, customers.length, customers.map(c => ({ id: c.id, name: c.name })));
   } else {
     // Usuários não-admin veem apenas clientes permitidos e ativos
     const myCustomersArray = (myCustomers as unknown as Customer[]) || [];
