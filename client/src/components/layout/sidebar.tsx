@@ -110,7 +110,6 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     
     // OPUS Manutenção - Menu items específicos
     ...(currentModule === 'maintenance' && can.viewQRCodes(activeClientId) ? [{ path: "/equipment", label: "Equipamentos", icon: Wrench }] : []),
-    ...(currentModule === 'maintenance' && can.viewQRCodes(activeClientId) ? [{ path: "/equipment-categories", label: "Categorias de Equipamentos", icon: Tag }] : []),
     ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ path: "/maintenance-plans", label: "Planos de Manutenção", icon: CalendarCheck }] : []),
     ...(currentModule === 'maintenance' && can.viewChecklists(activeClientId) ? [{ path: "/maintenance-checklist-templates", label: "Checklists", icon: List }] : []),
     ...(currentModule === 'maintenance' && can.viewReports(activeClientId) ? [{ path: "/asset-report", label: "Relatório de Patrimônio", icon: FileBarChart }] : []),
@@ -132,6 +131,9 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     
     // Configurações do Sistema (contexto específico de cliente)
     ...(activeClientId && can.viewServiceSettings(activeClientId) ? [{ path: "/service-settings", label: "Configurações", icon: Cog }] : []),
+    
+    // Categorias de Equipamentos (dentro de configurações, apenas manutenção)
+    ...(currentModule === 'maintenance' && can.viewServiceSettings(activeClientId) ? [{ path: "/equipment-categories", label: "Categorias", icon: Tag }] : []),
     
     // Funções (apenas super admin)
     ...(can.manageRoles() ? [{ path: "/roles", label: "Funções", icon: Shield }] : []),
