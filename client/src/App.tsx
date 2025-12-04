@@ -27,6 +27,7 @@ import Roles from "@/pages/roles";
 import Equipment from "@/pages/equipment";
 import MaintenancePlans from "@/pages/maintenance-plans";
 import MaintenanceChecklistTemplates from "@/pages/maintenance-checklist-templates";
+import PartsInventory from "@/pages/parts-inventory";
 import AssetReport from "@/pages/asset-report";
 import AiIntegrations from "@/pages/ai-integrations";
 import TvMode from "@/pages/tv-mode";
@@ -273,6 +274,7 @@ function AuthenticatedAdminRouter() {
           <Route path="/equipment" component={() => <Equipment customerId={activeClientId} />} />
           <Route path="/maintenance-plans" component={() => <MaintenancePlans />} />
           <Route path="/maintenance-checklist-templates" component={() => <MaintenanceChecklistTemplates customerId={activeClientId} />} />
+          <Route path="/parts-inventory" component={() => <PartsInventory customerId={activeClientId} companyId={companyId} />} />
           <Route path="/asset-report" component={() => <AssetReport customerId={activeClientId} />} />
           
           {/* TV Mode Dashboard */}

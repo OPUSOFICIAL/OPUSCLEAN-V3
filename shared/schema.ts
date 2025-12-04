@@ -732,6 +732,69 @@ export const maintenanceActivities = pgTable("maintenance_activities", {
   endTime: time("end_time"),
 });
 
+// 34. TABELA: parts (Peças de Estoque)
+export const parts = pgTable("parts", {
+  id: varchar("id").primaryKey(),
+  companyId: varchar("company_id").notNull().references(() => companies.id),
+  customerId: varchar("customer_id").notNull().references(() => customers.id),
+  equipmentTypeId: varchar("equipment_type_id").references(() => equipmentTypes.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  partNumber: varchar("part_number"), // Código/número da peça
+  unit: varchar("unit").default('un'), // unidade, litro, kg, etc
+  currentQuantity: decimal("current_quantity", { precision: 10, scale: 2 }).notNull().default('0'),
+  minimumQuantity: decimal("minimum_quantity", { precision: 10, scale: 2 }).notNull().default('0'),
+  costPrice: decimal("cost_price", { precision: 10, scale: 2 }), // Preço de custo
+  module: moduleEnum("module").notNull().default('maintenance'),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 35. TABELA: work_order_parts (Peças usadas em Ordens de Serviço)
+export const workOrderParts = pgTable("work_order_parts", {
+  id: varchar("id").primaryKey(),
+  workOrderId: varchar("work_order_id").notNull().references(() => workOrders.id, { onDelete: 'cascade' }),
+  partId: varchar("part_id").notNull().references(() => parts.id),
+  quantityPlanned: decimal("quantity_planned", { precision: 10, scale: 2 }).notNull(), // Quantidade planejada
+  quantityUsed: decimal("quantity_used", { precision: 10, scale: 2 }), // Quantidade efetivamente usada
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }), // Custo unitário no momento do uso
+  notes: text("notes"),
+  stockDeducted: boolean("stock_deducted").default(false), // Se já foi descontado do estoque
+  deductedAt: timestamp("deducted_at"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => ({
+  uniqueWorkOrderPart: unique("unique_work_order_part").on(table.workOrderId, table.partId),
+}));
+
+// 36. TABELA: maintenance_plan_parts (Peças em Planos de Manutenção)
+export const maintenancePlanParts = pgTable("maintenance_plan_parts", {
+  id: varchar("id").primaryKey(),
+  planId: varchar("plan_id").notNull().references(() => maintenancePlans.id, { onDelete: 'cascade' }),
+  partId: varchar("part_id").notNull().references(() => parts.id),
+  quantityPerExecution: decimal("quantity_per_execution", { precision: 10, scale: 2 }).notNull(), // Qtd por execução
+  notes: text("notes"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => ({
+  uniquePlanPart: unique("unique_plan_part").on(table.planId, table.partId),
+}));
+
+// 37. TABELA: part_movements (Movimentações de Estoque)
+export const partMovements = pgTable("part_movements", {
+  id: varchar("id").primaryKey(),
+  partId: varchar("part_id").notNull().references(() => parts.id),
+  movementType: varchar("movement_type").notNull(), // 'entrada', 'saida', 'ajuste'
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  previousQuantity: decimal("previous_quantity", { precision: 10, scale: 2 }).notNull(),
+  newQuantity: decimal("new_quantity", { precision: 10, scale: 2 }).notNull(),
+  workOrderId: varchar("work_order_id").references(() => workOrders.id), // Referência se for saída por O.S.
+  reason: text("reason"),
+  performedByUserId: varchar("performed_by_user_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
 // AI Integrations (apenas para usuários OPUS)
 export const aiIntegrations = pgTable("ai_integrations", {
   id: varchar("id").primaryKey(),
@@ -1248,6 +1311,62 @@ export const maintenancePlanEquipmentsRelations = relations(maintenancePlanEquip
   }),
 }));
 
+// Relations for Parts (Estoque de Peças)
+export const partsRelations = relations(parts, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [parts.companyId],
+    references: [companies.id],
+  }),
+  customer: one(customers, {
+    fields: [parts.customerId],
+    references: [customers.id],
+  }),
+  equipmentType: one(equipmentTypes, {
+    fields: [parts.equipmentTypeId],
+    references: [equipmentTypes.id],
+  }),
+  workOrderParts: many(workOrderParts),
+  maintenancePlanParts: many(maintenancePlanParts),
+  movements: many(partMovements),
+}));
+
+export const workOrderPartsRelations = relations(workOrderParts, ({ one }) => ({
+  workOrder: one(workOrders, {
+    fields: [workOrderParts.workOrderId],
+    references: [workOrders.id],
+  }),
+  part: one(parts, {
+    fields: [workOrderParts.partId],
+    references: [parts.id],
+  }),
+}));
+
+export const maintenancePlanPartsRelations = relations(maintenancePlanParts, ({ one }) => ({
+  plan: one(maintenancePlans, {
+    fields: [maintenancePlanParts.planId],
+    references: [maintenancePlans.id],
+  }),
+  part: one(parts, {
+    fields: [maintenancePlanParts.partId],
+    references: [parts.id],
+  }),
+}));
+
+export const partMovementsRelations = relations(partMovements, ({ one }) => ({
+  part: one(parts, {
+    fields: [partMovements.partId],
+    references: [parts.id],
+  }),
+  workOrder: one(workOrders, {
+    fields: [partMovements.workOrderId],
+    references: [workOrders.id],
+  }),
+  performedBy: one(users, {
+    fields: [partMovements.performedByUserId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertCompanySchema = createInsertSchema(companies).omit({ id: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true });
@@ -1335,6 +1454,35 @@ export const insertMaintenanceChecklistExecutionSchema = createInsertSchema(main
 export const insertMaintenancePlanSchema = createInsertSchema(maintenancePlans).omit({ id: true });
 export const insertMaintenancePlanEquipmentSchema = createInsertSchema(maintenancePlanEquipments).omit({ id: true });
 export const insertMaintenanceActivitySchema = createInsertSchema(maintenanceActivities).omit({ id: true });
+
+// Parts (Estoque) insert schemas
+export const insertPartSchema = createInsertSchema(parts).omit({ id: true }).extend({
+  currentQuantity: z.union([z.string(), z.number()]).transform(val => String(val)).default('0'),
+  minimumQuantity: z.union([z.string(), z.number()]).transform(val => String(val)).default('0'),
+  costPrice: z.union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform(val => (val === null || val === undefined || val === '') ? null : String(val))
+    .optional()
+    .nullable(),
+});
+export const insertWorkOrderPartSchema = createInsertSchema(workOrderParts).omit({ id: true }).extend({
+  quantityPlanned: z.union([z.string(), z.number()]).transform(val => String(val)),
+  quantityUsed: z.union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform(val => (val === null || val === undefined || val === '') ? null : String(val))
+    .optional()
+    .nullable(),
+  unitCost: z.union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform(val => (val === null || val === undefined || val === '') ? null : String(val))
+    .optional()
+    .nullable(),
+});
+export const insertMaintenancePlanPartSchema = createInsertSchema(maintenancePlanParts).omit({ id: true }).extend({
+  quantityPerExecution: z.union([z.string(), z.number()]).transform(val => String(val)),
+});
+export const insertPartMovementSchema = createInsertSchema(partMovements).omit({ id: true }).extend({
+  quantity: z.union([z.string(), z.number()]).transform(val => String(val)),
+  previousQuantity: z.union([z.string(), z.number()]).transform(val => String(val)),
+  newQuantity: z.union([z.string(), z.number()]).transform(val => String(val)),
+});
 
 // Types
 export type Company = typeof companies.$inferSelect;
@@ -1446,6 +1594,19 @@ export type InsertMaintenancePlanEquipment = z.infer<typeof insertMaintenancePla
 
 export type MaintenanceActivity = typeof maintenanceActivities.$inferSelect;
 export type InsertMaintenanceActivity = z.infer<typeof insertMaintenanceActivitySchema>;
+
+// Parts (Estoque) types
+export type Part = typeof parts.$inferSelect;
+export type InsertPart = z.infer<typeof insertPartSchema>;
+
+export type WorkOrderPart = typeof workOrderParts.$inferSelect;
+export type InsertWorkOrderPart = z.infer<typeof insertWorkOrderPartSchema>;
+
+export type MaintenancePlanPart = typeof maintenancePlanParts.$inferSelect;
+export type InsertMaintenancePlanPart = z.infer<typeof insertMaintenancePlanPartSchema>;
+
+export type PartMovement = typeof partMovements.$inferSelect;
+export type InsertPartMovement = z.infer<typeof insertPartMovementSchema>;
 
 // AI Integration schemas
 export const insertAiIntegrationSchema = createInsertSchema(aiIntegrations).omit({

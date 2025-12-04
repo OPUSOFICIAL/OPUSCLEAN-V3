@@ -18,6 +18,8 @@ import {
   insertMaintenanceChecklistExecutionSchema, insertMaintenancePlanSchema,
   insertMaintenancePlanEquipmentSchema, insertMaintenanceActivitySchema,
   insertAiIntegrationSchema,
+  insertPartSchema, insertWorkOrderPartSchema, insertMaintenancePlanPartSchema,
+  insertPartMovementSchema,
   syncBatchRequestSchema,
   customers,
   type User, type InsertUser
@@ -6138,6 +6140,312 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting maintenance plan equipment:", error);
       res.status(500).json({ message: "Failed to delete maintenance plan equipment" });
+    }
+  });
+
+  // ============================================================================
+  // PARTS (Estoque de Peças)
+  // ============================================================================
+
+  // Get all parts for a customer
+  app.get("/api/customers/:customerId/parts", async (req, res) => {
+    try {
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const parts = await storage.getPartsByCustomer(req.params.customerId, module);
+      res.json(parts);
+    } catch (error) {
+      console.error("Error fetching parts:", error);
+      res.status(500).json({ message: "Failed to fetch parts" });
+    }
+  });
+
+  // Get parts with low stock for a customer
+  app.get("/api/customers/:customerId/parts/low-stock", async (req, res) => {
+    try {
+      const parts = await storage.getPartsWithLowStock(req.params.customerId);
+      res.json(parts);
+    } catch (error) {
+      console.error("Error fetching low stock parts:", error);
+      res.status(500).json({ message: "Failed to fetch low stock parts" });
+    }
+  });
+
+  // Get parts by equipment type
+  app.get("/api/equipment-types/:equipmentTypeId/parts", async (req, res) => {
+    try {
+      const parts = await storage.getPartsByEquipmentType(req.params.equipmentTypeId);
+      res.json(parts);
+    } catch (error) {
+      console.error("Error fetching parts by equipment type:", error);
+      res.status(500).json({ message: "Failed to fetch parts" });
+    }
+  });
+
+  // Get single part
+  app.get("/api/parts/:id", async (req, res) => {
+    try {
+      const part = await storage.getPart(req.params.id);
+      if (!part) {
+        return res.status(404).json({ message: "Part not found" });
+      }
+      res.json(part);
+    } catch (error) {
+      console.error("Error fetching part:", error);
+      res.status(500).json({ message: "Failed to fetch part" });
+    }
+  });
+
+  // Create part
+  app.post("/api/parts", requirePermission('schedule_create'), async (req, res) => {
+    try {
+      const part = insertPartSchema.parse(req.body);
+      const newPart = await storage.createPart(part);
+      broadcast({ type: 'part_created', data: newPart });
+      res.status(201).json(newPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating part:", error);
+      res.status(500).json({ message: "Failed to create part" });
+    }
+  });
+
+  // Update part
+  app.put("/api/parts/:id", requirePermission('schedule_edit'), async (req, res) => {
+    try {
+      const part = insertPartSchema.partial().parse(req.body);
+      const updatedPart = await storage.updatePart(req.params.id, part);
+      broadcast({ type: 'part_updated', data: updatedPart });
+      res.json(updatedPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating part:", error);
+      res.status(500).json({ message: "Failed to update part" });
+    }
+  });
+
+  // Delete part
+  app.delete("/api/parts/:id", requirePermission('schedule_delete'), async (req, res) => {
+    try {
+      await storage.deletePart(req.params.id);
+      broadcast({ type: 'part_deleted', data: { id: req.params.id } });
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting part:", error);
+      res.status(500).json({ message: "Failed to delete part" });
+    }
+  });
+
+  // Adjust stock (entrada/saida/ajuste)
+  app.post("/api/parts/:id/adjust-stock", requirePermission('schedule_edit'), async (req, res) => {
+    try {
+      const { movementType, quantity, reason } = req.body;
+      if (!['entrada', 'saida', 'ajuste'].includes(movementType)) {
+        return res.status(400).json({ message: "Invalid movement type" });
+      }
+
+      const part = await storage.getPart(req.params.id);
+      if (!part) {
+        return res.status(404).json({ message: "Part not found" });
+      }
+
+      const previousQuantity = parseFloat(part.currentQuantity);
+      let newQuantity: number;
+
+      if (movementType === 'entrada') {
+        newQuantity = previousQuantity + quantity;
+      } else if (movementType === 'saida') {
+        newQuantity = Math.max(0, previousQuantity - quantity);
+      } else {
+        newQuantity = quantity; // ajuste direto
+      }
+
+      // Update part stock
+      const updatedPart = await storage.updatePart(req.params.id, { 
+        currentQuantity: String(newQuantity) 
+      });
+
+      // Create movement record
+      const movement = insertPartMovementSchema.parse({
+        partId: req.params.id,
+        movementType,
+        quantity: String(quantity),
+        previousQuantity: String(previousQuantity),
+        newQuantity: String(newQuantity),
+        reason: reason || null,
+        performedByUserId: req.user?.id
+      });
+      await storage.createPartMovement(movement);
+
+      broadcast({ type: 'part_updated', data: updatedPart });
+      res.json(updatedPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error adjusting stock:", error);
+      res.status(500).json({ message: "Failed to adjust stock" });
+    }
+  });
+
+  // Get part movements (history)
+  app.get("/api/parts/:id/movements", async (req, res) => {
+    try {
+      const movements = await storage.getPartMovements(req.params.id);
+      res.json(movements);
+    } catch (error) {
+      console.error("Error fetching part movements:", error);
+      res.status(500).json({ message: "Failed to fetch part movements" });
+    }
+  });
+
+  // Validate stock availability
+  app.post("/api/parts/validate-stock", async (req, res) => {
+    try {
+      const { parts: partsToValidate } = req.body;
+      if (!Array.isArray(partsToValidate)) {
+        return res.status(400).json({ message: "Parts array is required" });
+      }
+      const result = await storage.validateStockAvailability(partsToValidate);
+      res.json(result);
+    } catch (error) {
+      console.error("Error validating stock:", error);
+      res.status(500).json({ message: "Failed to validate stock" });
+    }
+  });
+
+  // ============================================================================
+  // WORK ORDER PARTS
+  // ============================================================================
+
+  // Get parts for a work order
+  app.get("/api/work-orders/:workOrderId/parts", async (req, res) => {
+    try {
+      const parts = await storage.getWorkOrderParts(req.params.workOrderId);
+      res.json(parts);
+    } catch (error) {
+      console.error("Error fetching work order parts:", error);
+      res.status(500).json({ message: "Failed to fetch work order parts" });
+    }
+  });
+
+  // Add part to work order
+  app.post("/api/work-orders/:workOrderId/parts", requirePermission('schedule_create'), async (req, res) => {
+    try {
+      const workOrderPart = insertWorkOrderPartSchema.parse({
+        ...req.body,
+        workOrderId: req.params.workOrderId
+      });
+      const newWorkOrderPart = await storage.createWorkOrderPart(workOrderPart);
+      res.status(201).json(newWorkOrderPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error adding part to work order:", error);
+      res.status(500).json({ message: "Failed to add part to work order" });
+    }
+  });
+
+  // Update work order part
+  app.put("/api/work-order-parts/:id", requirePermission('schedule_edit'), async (req, res) => {
+    try {
+      const workOrderPart = insertWorkOrderPartSchema.partial().parse(req.body);
+      const updatedPart = await storage.updateWorkOrderPart(req.params.id, workOrderPart);
+      res.json(updatedPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating work order part:", error);
+      res.status(500).json({ message: "Failed to update work order part" });
+    }
+  });
+
+  // Delete work order part
+  app.delete("/api/work-order-parts/:id", requirePermission('schedule_delete'), async (req, res) => {
+    try {
+      await storage.deleteWorkOrderPart(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting work order part:", error);
+      res.status(500).json({ message: "Failed to delete work order part" });
+    }
+  });
+
+  // Deduct stock for work order (when completing)
+  app.post("/api/work-orders/:workOrderId/deduct-stock", requirePermission('schedule_edit'), async (req, res) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      await storage.deductStock(req.params.workOrderId, req.user.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deducting stock:", error);
+      res.status(500).json({ message: "Failed to deduct stock" });
+    }
+  });
+
+  // ============================================================================
+  // MAINTENANCE PLAN PARTS
+  // ============================================================================
+
+  // Get parts for a maintenance plan
+  app.get("/api/maintenance-plans/:planId/parts", async (req, res) => {
+    try {
+      const parts = await storage.getMaintenancePlanParts(req.params.planId);
+      res.json(parts);
+    } catch (error) {
+      console.error("Error fetching maintenance plan parts:", error);
+      res.status(500).json({ message: "Failed to fetch maintenance plan parts" });
+    }
+  });
+
+  // Add part to maintenance plan
+  app.post("/api/maintenance-plans/:planId/parts", requirePermission('schedule_create'), async (req, res) => {
+    try {
+      const planPart = insertMaintenancePlanPartSchema.parse({
+        ...req.body,
+        planId: req.params.planId
+      });
+      const newPlanPart = await storage.createMaintenancePlanPart(planPart);
+      res.status(201).json(newPlanPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error adding part to maintenance plan:", error);
+      res.status(500).json({ message: "Failed to add part to maintenance plan" });
+    }
+  });
+
+  // Update maintenance plan part
+  app.put("/api/maintenance-plan-parts/:id", requirePermission('schedule_edit'), async (req, res) => {
+    try {
+      const planPart = insertMaintenancePlanPartSchema.partial().parse(req.body);
+      const updatedPart = await storage.updateMaintenancePlanPart(req.params.id, planPart);
+      res.json(updatedPart);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating maintenance plan part:", error);
+      res.status(500).json({ message: "Failed to update maintenance plan part" });
+    }
+  });
+
+  // Delete maintenance plan part
+  app.delete("/api/maintenance-plan-parts/:id", requirePermission('schedule_delete'), async (req, res) => {
+    try {
+      await storage.deleteMaintenancePlanPart(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting maintenance plan part:", error);
+      res.status(500).json({ message: "Failed to delete maintenance plan part" });
     }
   });
 

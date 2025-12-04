@@ -25,7 +25,8 @@ import {
   List,
   CalendarCheck,
   FileBarChart,
-  Brain
+  Brain,
+  Package
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -108,6 +109,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     
     // OPUS Manutenção - Menu items específicos
     ...(currentModule === 'maintenance' && can.viewQRCodes(activeClientId) ? [{ path: "/equipment", label: "Equipamentos", icon: Wrench }] : []),
+    ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ path: "/parts-inventory", label: "Estoque de Peças", icon: Package }] : []),
     ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ path: "/maintenance-plans", label: "Planos de Manutenção", icon: CalendarCheck }] : []),
     ...(currentModule === 'maintenance' && can.viewChecklists(activeClientId) ? [{ path: "/maintenance-checklist-templates", label: "Checklists", icon: List }] : []),
     ...(currentModule === 'maintenance' && can.viewReports(activeClientId) ? [{ path: "/asset-report", label: "Relatório de Patrimônio", icon: FileBarChart }] : []),

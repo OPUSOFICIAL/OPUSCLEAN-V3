@@ -6,6 +6,7 @@ import {
   workOrderComments, workOrderAttachments,
   equipment, equipmentTypes, maintenanceChecklistTemplates,
   maintenanceChecklistExecutions, maintenancePlans, maintenancePlanEquipments, maintenanceActivities,
+  parts, workOrderParts, maintenancePlanParts, partMovements,
   aiIntegrations, chatConversations, chatMessages,
   type Company, type InsertCompany, type Site, type InsertSite, 
   type Zone, type InsertZone, type QrCodePoint, type InsertQrCodePoint,
@@ -33,6 +34,10 @@ import {
   type MaintenancePlan, type InsertMaintenancePlan,
   type MaintenancePlanEquipment, type InsertMaintenancePlanEquipment,
   type MaintenanceActivity, type InsertMaintenanceActivity,
+  type Part, type InsertPart,
+  type WorkOrderPart, type InsertWorkOrderPart,
+  type MaintenancePlanPart, type InsertMaintenancePlanPart,
+  type PartMovement, type InsertPartMovement,
   type AiIntegration, type InsertAiIntegration,
   type ChatConversation, type InsertChatConversation,
   type ChatMessage, type InsertChatMessage,
@@ -442,6 +447,39 @@ export interface IStorage {
   createMaintenancePlanEquipment(planEquipment: InsertMaintenancePlanEquipment): Promise<MaintenancePlanEquipment>;
   updateMaintenancePlanEquipment(id: string, planEquipment: Partial<InsertMaintenancePlanEquipment>): Promise<MaintenancePlanEquipment>;
   deleteMaintenancePlanEquipment(id: string): Promise<void>;
+
+  // ============================================================================
+  // PARTS (Estoque de Peças)
+  // ============================================================================
+  getPartsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Part[]>;
+  getPartsByEquipmentType(equipmentTypeId: string): Promise<Part[]>;
+  getPart(id: string): Promise<Part | undefined>;
+  createPart(part: InsertPart): Promise<Part>;
+  updatePart(id: string, part: Partial<InsertPart>): Promise<Part>;
+  deletePart(id: string): Promise<void>;
+  
+  // Parts with low stock
+  getPartsWithLowStock(customerId: string): Promise<Part[]>;
+  
+  // Work Order Parts
+  getWorkOrderParts(workOrderId: string): Promise<WorkOrderPart[]>;
+  createWorkOrderPart(workOrderPart: InsertWorkOrderPart): Promise<WorkOrderPart>;
+  updateWorkOrderPart(id: string, workOrderPart: Partial<InsertWorkOrderPart>): Promise<WorkOrderPart>;
+  deleteWorkOrderPart(id: string): Promise<void>;
+  
+  // Maintenance Plan Parts
+  getMaintenancePlanParts(planId: string): Promise<MaintenancePlanPart[]>;
+  createMaintenancePlanPart(planPart: InsertMaintenancePlanPart): Promise<MaintenancePlanPart>;
+  updateMaintenancePlanPart(id: string, planPart: Partial<InsertMaintenancePlanPart>): Promise<MaintenancePlanPart>;
+  deleteMaintenancePlanPart(id: string): Promise<void>;
+  
+  // Part Movements
+  getPartMovements(partId: string): Promise<PartMovement[]>;
+  createPartMovement(movement: InsertPartMovement): Promise<PartMovement>;
+  
+  // Stock operations
+  deductStock(workOrderId: string, userId: string): Promise<void>;
+  validateStockAvailability(partsToUse: { partId: string; quantity: number }[]): Promise<{ valid: boolean; shortages: { partId: string; partName: string; available: number; required: number }[] }>;
 
   // ============================================================================
   // AI INTEGRATIONS (OPUS Users Only)
@@ -5912,6 +5950,208 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMaintenancePlanEquipment(id: string): Promise<void> {
     await db.delete(maintenancePlanEquipments).where(eq(maintenancePlanEquipments.id, id));
+  }
+
+  // ============================================================================
+  // PARTS (Estoque de Peças) Implementation
+  // ============================================================================
+  
+  async getPartsByCustomer(customerId: string, module?: 'clean' | 'maintenance'): Promise<Part[]> {
+    const conditions = [eq(parts.customerId, customerId)];
+    if (module) {
+      conditions.push(eq(parts.module, module));
+    }
+    return await db.select().from(parts).where(and(...conditions)).orderBy(parts.name);
+  }
+
+  async getPartsByEquipmentType(equipmentTypeId: string): Promise<Part[]> {
+    return await db.select().from(parts)
+      .where(eq(parts.equipmentTypeId, equipmentTypeId))
+      .orderBy(parts.name);
+  }
+
+  async getPart(id: string): Promise<Part | undefined> {
+    const [part] = await db.select().from(parts).where(eq(parts.id, id));
+    return part;
+  }
+
+  async createPart(partData: InsertPart): Promise<Part> {
+    const [newPart] = await db.insert(parts).values({
+      ...partData,
+      id: nanoid()
+    }).returning();
+    return newPart;
+  }
+
+  async updatePart(id: string, partData: Partial<InsertPart>): Promise<Part> {
+    const [updatedPart] = await db.update(parts)
+      .set({ ...partData, updatedAt: sql`now()` })
+      .where(eq(parts.id, id))
+      .returning();
+    return updatedPart;
+  }
+
+  async deletePart(id: string): Promise<void> {
+    await db.delete(parts).where(eq(parts.id, id));
+  }
+
+  async getPartsWithLowStock(customerId: string): Promise<Part[]> {
+    return await db.select().from(parts)
+      .where(and(
+        eq(parts.customerId, customerId),
+        eq(parts.isActive, true),
+        sql`${parts.currentQuantity} < ${parts.minimumQuantity}`
+      ))
+      .orderBy(parts.name);
+  }
+
+  // Work Order Parts
+  async getWorkOrderParts(workOrderId: string): Promise<WorkOrderPart[]> {
+    return await db.select().from(workOrderParts)
+      .where(eq(workOrderParts.workOrderId, workOrderId));
+  }
+
+  async createWorkOrderPart(workOrderPartData: InsertWorkOrderPart): Promise<WorkOrderPart> {
+    const [newWorkOrderPart] = await db.insert(workOrderParts).values({
+      ...workOrderPartData,
+      id: nanoid()
+    }).returning();
+    return newWorkOrderPart;
+  }
+
+  async updateWorkOrderPart(id: string, workOrderPartData: Partial<InsertWorkOrderPart>): Promise<WorkOrderPart> {
+    const [updatedWorkOrderPart] = await db.update(workOrderParts)
+      .set({ ...workOrderPartData, updatedAt: sql`now()` })
+      .where(eq(workOrderParts.id, id))
+      .returning();
+    return updatedWorkOrderPart;
+  }
+
+  async deleteWorkOrderPart(id: string): Promise<void> {
+    await db.delete(workOrderParts).where(eq(workOrderParts.id, id));
+  }
+
+  // Maintenance Plan Parts
+  async getMaintenancePlanParts(planId: string): Promise<MaintenancePlanPart[]> {
+    return await db.select().from(maintenancePlanParts)
+      .where(eq(maintenancePlanParts.planId, planId));
+  }
+
+  async createMaintenancePlanPart(planPartData: InsertMaintenancePlanPart): Promise<MaintenancePlanPart> {
+    const [newPlanPart] = await db.insert(maintenancePlanParts).values({
+      ...planPartData,
+      id: nanoid()
+    }).returning();
+    return newPlanPart;
+  }
+
+  async updateMaintenancePlanPart(id: string, planPartData: Partial<InsertMaintenancePlanPart>): Promise<MaintenancePlanPart> {
+    const [updatedPlanPart] = await db.update(maintenancePlanParts)
+      .set({ ...planPartData, updatedAt: sql`now()` })
+      .where(eq(maintenancePlanParts.id, id))
+      .returning();
+    return updatedPlanPart;
+  }
+
+  async deleteMaintenancePlanPart(id: string): Promise<void> {
+    await db.delete(maintenancePlanParts).where(eq(maintenancePlanParts.id, id));
+  }
+
+  // Part Movements
+  async getPartMovements(partId: string): Promise<PartMovement[]> {
+    return await db.select().from(partMovements)
+      .where(eq(partMovements.partId, partId))
+      .orderBy(desc(partMovements.createdAt));
+  }
+
+  async createPartMovement(movementData: InsertPartMovement): Promise<PartMovement> {
+    const [newMovement] = await db.insert(partMovements).values({
+      ...movementData,
+      id: nanoid()
+    }).returning();
+    return newMovement;
+  }
+
+  // Stock operations
+  async deductStock(workOrderId: string, userId: string): Promise<void> {
+    // Get all work order parts that haven't been deducted yet
+    const woParts = await db.select().from(workOrderParts)
+      .where(and(
+        eq(workOrderParts.workOrderId, workOrderId),
+        eq(workOrderParts.stockDeducted, false)
+      ));
+
+    for (const woPart of woParts) {
+      // Get current part stock
+      const [part] = await db.select().from(parts).where(eq(parts.id, woPart.partId));
+      if (!part) continue;
+
+      const quantityToDeduct = parseFloat(woPart.quantityUsed || woPart.quantityPlanned);
+      const previousQuantity = parseFloat(part.currentQuantity);
+      const newQuantity = Math.max(0, previousQuantity - quantityToDeduct);
+
+      // Update part stock
+      await db.update(parts)
+        .set({ 
+          currentQuantity: String(newQuantity),
+          updatedAt: sql`now()` 
+        })
+        .where(eq(parts.id, woPart.partId));
+
+      // Create movement record
+      await db.insert(partMovements).values({
+        id: nanoid(),
+        partId: woPart.partId,
+        movementType: 'saida',
+        quantity: String(quantityToDeduct),
+        previousQuantity: String(previousQuantity),
+        newQuantity: String(newQuantity),
+        workOrderId: workOrderId,
+        reason: 'Consumo em Ordem de Serviço',
+        performedByUserId: userId
+      });
+
+      // Mark work order part as deducted
+      await db.update(workOrderParts)
+        .set({ 
+          stockDeducted: true, 
+          deductedAt: sql`now()`,
+          updatedAt: sql`now()` 
+        })
+        .where(eq(workOrderParts.id, woPart.id));
+    }
+  }
+
+  async validateStockAvailability(partsToUse: { partId: string; quantity: number }[]): Promise<{ valid: boolean; shortages: { partId: string; partName: string; available: number; required: number }[] }> {
+    const shortages: { partId: string; partName: string; available: number; required: number }[] = [];
+    
+    for (const item of partsToUse) {
+      const [part] = await db.select().from(parts).where(eq(parts.id, item.partId));
+      if (!part) {
+        shortages.push({
+          partId: item.partId,
+          partName: 'Peça não encontrada',
+          available: 0,
+          required: item.quantity
+        });
+        continue;
+      }
+
+      const available = parseFloat(part.currentQuantity);
+      if (available < item.quantity) {
+        shortages.push({
+          partId: item.partId,
+          partName: part.name,
+          available,
+          required: item.quantity
+        });
+      }
+    }
+
+    return {
+      valid: shortages.length === 0,
+      shortages
+    };
   }
 
   // Equipment Types Implementation
