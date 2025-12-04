@@ -6277,12 +6277,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate reserved quantities per part
       const reservedByPart: Record<string, number> = {};
       
+      // 1. First, check parts directly associated to work orders (work_order_parts table)
       for (const wo of openWorkOrders) {
         const woParts = await storage.getWorkOrderParts(wo.id);
         for (const woPart of woParts) {
           if (!woPart.stockDeducted) {
             const qty = parseFloat(woPart.quantityUsed || woPart.quantityPlanned);
             reservedByPart[woPart.partId] = (reservedByPart[woPart.partId] || 0) + qty;
+          }
+        }
+      }
+      
+      // 2. Second, check parts in checklist templates associated to work orders
+      // Get all maintenance checklist templates for this customer
+      const checklistTemplates = await storage.getMaintenanceChecklistTemplatesByCustomer(req.params.customerId);
+      const checklistTemplatesMap: Record<string, any> = {};
+      for (const ct of checklistTemplates) {
+        checklistTemplatesMap[ct.id] = ct;
+      }
+      
+      // For each open work order with a checklist template, check if items have partId
+      for (const wo of openWorkOrders) {
+        if (wo.maintenanceChecklistTemplateId) {
+          const template = checklistTemplatesMap[wo.maintenanceChecklistTemplateId];
+          if (template && template.items && Array.isArray(template.items)) {
+            for (const item of template.items) {
+              if (item.partId) {
+                // Default quantity is 1 per execution if not specified
+                const qty = item.partQuantity ? parseFloat(item.partQuantity) : 1;
+                reservedByPart[item.partId] = (reservedByPart[item.partId] || 0) + qty;
+              }
+            }
           }
         }
       }
@@ -6297,9 +6322,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...part,
           reservedQuantity: String(reserved),
           projectedQuantity: String(projectedQty),
-          openOrdersCount: openWorkOrders.filter((wo: any) => 
-            reservedByPart[part.id] && reservedByPart[part.id] > 0
-          ).length
+          openOrdersCount: openWorkOrders.filter((wo: any) => {
+            // Count WOs that have this part either directly or via checklist
+            if (reservedByPart[part.id] && reservedByPart[part.id] > 0) {
+              return true;
+            }
+            return false;
+          }).length
         };
       });
       
