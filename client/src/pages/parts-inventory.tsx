@@ -75,10 +75,17 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
 
   const { toast } = useToast();
 
-  const { data: parts, isLoading: partsLoading, refetch: refetchParts } = useQuery<Part[]>({
-    queryKey: [`/api/customers/${customerId}/parts`, currentModule],
+  // Extended Part type with projections
+  type PartWithProjection = Part & {
+    reservedQuantity?: string;
+    projectedQuantity?: string;
+    openOrdersCount?: number;
+  };
+
+  const { data: parts, isLoading: partsLoading, refetch: refetchParts } = useQuery<PartWithProjection[]>({
+    queryKey: [`/api/customers/${customerId}/parts/with-projections`, currentModule],
     queryFn: async () => {
-      const response = await fetch(`/api/customers/${customerId}/parts?module=${currentModule}`, {
+      const response = await fetch(`/api/customers/${customerId}/parts/with-projections?module=${currentModule}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` }
       });
       if (!response.ok) throw new Error('Failed to fetch parts');
@@ -600,22 +607,29 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
                   <TableHead>Nome</TableHead>
                   <TableHead>Código</TableHead>
                   <TableHead>Tipo Equipamento</TableHead>
-                  <TableHead className="text-right">Qtd. Atual</TableHead>
-                  <TableHead className="text-right">Qtd. Mínima</TableHead>
+                  <TableHead className="text-right">Estoque Real</TableHead>
+                  <TableHead className="text-right">Reservado</TableHead>
+                  <TableHead className="text-right">Projetado</TableHead>
+                  <TableHead className="text-right">Mínimo</TableHead>
                   <TableHead>Unidade</TableHead>
-                  <TableHead className="text-right">Custo</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredParts?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                       {searchTerm ? "Nenhuma peça encontrada para a busca" : "Nenhuma peça cadastrada"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredParts?.map((part) => (
+                  filteredParts?.map((part) => {
+                    const reserved = parseFloat(part.reservedQuantity || '0');
+                    const projected = parseFloat(part.projectedQuantity || part.currentQuantity);
+                    const minimum = parseFloat(part.minimumQuantity);
+                    const isProjectedLow = projected <= minimum;
+                    
+                    return (
                     <TableRow key={part.id} className={cn(isLowStock(part) && "bg-amber-50/50")}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
@@ -633,9 +647,26 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
                       )}>
                         {part.currentQuantity}
                       </TableCell>
+                      <TableCell className="text-right">
+                        {reserved > 0 ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {reserved.toFixed(0)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className={cn(
+                        "text-right font-medium",
+                        isProjectedLow && "text-red-600"
+                      )}>
+                        {projected.toFixed(0)}
+                        {isProjectedLow && projected !== parseFloat(part.currentQuantity) && (
+                          <AlertTriangle className="w-3 h-3 inline ml-1 text-red-500" />
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">{part.minimumQuantity}</TableCell>
                       <TableCell>{part.unit}</TableCell>
-                      <TableCell className="text-right">{part.costPrice ? `R$ ${part.costPrice}` : "-"}</TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -681,7 +712,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                  )})
                 )}
               </TableBody>
             </Table>

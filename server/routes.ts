@@ -6262,6 +6262,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get parts with projected quantities (stock - reserved in open work orders)
+  app.get("/api/customers/:customerId/parts/with-projections", async (req, res) => {
+    try {
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const parts = await storage.getPartsByCustomer(req.params.customerId, module);
+      
+      // Get all open work orders for this customer
+      const customer = await storage.getCustomer(req.params.customerId);
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      
+      // Get all work order parts for open work orders
+      const workOrders = await storage.getWorkOrdersByCompanyId(customer.companyId);
+      const openWorkOrders = workOrders.filter((wo: any) => 
+        wo.status !== 'concluida' && wo.status !== 'cancelada'
+      );
+      
+      // Calculate reserved quantities per part
+      const reservedByPart: Record<string, number> = {};
+      
+      for (const wo of openWorkOrders) {
+        const woParts = await storage.getWorkOrderParts(wo.id);
+        for (const woPart of woParts) {
+          if (!woPart.stockDeducted) {
+            const qty = parseFloat(woPart.quantityUsed || woPart.quantityPlanned);
+            reservedByPart[woPart.partId] = (reservedByPart[woPart.partId] || 0) + qty;
+          }
+        }
+      }
+      
+      // Add projected quantity to each part
+      const partsWithProjections = parts.map((part: any) => {
+        const reserved = reservedByPart[part.id] || 0;
+        const currentQty = parseFloat(part.currentQuantity);
+        const projectedQty = Math.max(0, currentQty - reserved);
+        
+        return {
+          ...part,
+          reservedQuantity: String(reserved),
+          projectedQuantity: String(projectedQty),
+          openOrdersCount: openWorkOrders.filter((wo: any) => 
+            reservedByPart[part.id] && reservedByPart[part.id] > 0
+          ).length
+        };
+      });
+      
+      res.json(partsWithProjections);
+    } catch (error) {
+      console.error("Error fetching parts with projections:", error);
+      res.status(500).json({ message: "Failed to fetch parts with projections" });
+    }
+  });
+
   // Get parts by equipment type
   app.get("/api/equipment-types/:equipmentTypeId/parts", async (req, res) => {
     try {
