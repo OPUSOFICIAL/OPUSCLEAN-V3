@@ -100,12 +100,12 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
   });
 
   const { data: equipmentTypes } = useQuery<EquipmentType[]>({
-    queryKey: [`/api/companies/${companyId}/equipment-types`, currentModule],
+    queryKey: [`/api/companies/${companyId}/equipment-categories`, currentModule],
     queryFn: async () => {
-      const response = await fetch(`/api/companies/${companyId}/equipment-types?module=${currentModule}`, {
+      const response = await fetch(`/api/companies/${companyId}/equipment-categories?module=${currentModule}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      if (!response.ok) throw new Error('Failed to fetch equipment types');
+      if (!response.ok) throw new Error('Failed to fetch equipment categories');
       return response.json();
     },
     enabled: !!companyId
