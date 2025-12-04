@@ -6268,14 +6268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const module = req.query.module as 'clean' | 'maintenance' | undefined;
       const parts = await storage.getPartsByCustomer(req.params.customerId, module);
       
-      // Get all open work orders for this customer
-      const customer = await storage.getCustomer(req.params.customerId);
-      if (!customer) {
-        return res.status(404).json({ message: "Customer not found" });
-      }
-      
-      // Get all work order parts for open work orders
-      const workOrders = await storage.getWorkOrdersByCompanyId(customer.companyId);
+      // Get all work orders for this customer (including maintenance module)
+      const workOrders = await storage.getWorkOrdersByCustomer(req.params.customerId, 'maintenance');
       const openWorkOrders = workOrders.filter((wo: any) => 
         wo.status !== 'concluida' && wo.status !== 'cancelada'
       );
