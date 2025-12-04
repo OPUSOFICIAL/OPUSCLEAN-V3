@@ -342,7 +342,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       required: newItem.required || false,
       description: newItem.description,
       options: newItem.options,
-      validation: newItem.validation
+      validation: newItem.validation,
+      partId: newItem.partId // Incluir a peça associada ao item
     };
 
     setTemplateForm(prev => ({
@@ -357,7 +358,8 @@ export default function MaintenanceChecklistTemplates({ customerId }: Maintenanc
       required: false,
       description: "",
       options: [],
-      validation: {}
+      validation: {},
+      partId: undefined
     });
   };
 
