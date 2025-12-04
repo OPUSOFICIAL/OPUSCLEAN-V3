@@ -79,7 +79,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
     queryKey: [`/api/customers/${customerId}/parts`, currentModule],
     queryFn: async () => {
       const response = await fetch(`/api/customers/${customerId}/parts?module=${currentModule}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('opus_clean_token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` }
       });
       if (!response.ok) throw new Error('Failed to fetch parts');
       return response.json();
@@ -91,7 +91,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
     queryKey: [`/api/customers/${customerId}/parts/low-stock`],
     queryFn: async () => {
       const response = await fetch(`/api/customers/${customerId}/parts/low-stock`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('opus_clean_token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` }
       });
       if (!response.ok) throw new Error('Failed to fetch low stock parts');
       return response.json();
@@ -103,7 +103,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
     queryKey: [`/api/companies/${companyId}/equipment-categories`, currentModule],
     queryFn: async () => {
       const response = await fetch(`/api/companies/${companyId}/equipment-categories?module=${currentModule}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('opus_clean_token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` }
       });
       if (!response.ok) throw new Error('Failed to fetch equipment categories');
       return response.json();
@@ -115,7 +115,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
     queryKey: [`/api/parts/${selectedPartForHistory?.id}/movements`],
     queryFn: async () => {
       const response = await fetch(`/api/parts/${selectedPartForHistory?.id}/movements`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('opus_clean_token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` }
       });
       if (!response.ok) throw new Error('Failed to fetch movements');
       return response.json();
@@ -129,7 +129,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` 
         },
         body: JSON.stringify(data)
       });
@@ -154,7 +154,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` 
         },
         body: JSON.stringify(data)
       });
@@ -177,7 +177,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/parts/${id}`, { 
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('opus_clean_token')}` }
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` }
       });
       if (!response.ok) throw new Error('Failed to delete part');
       return;
@@ -198,7 +198,7 @@ export default function PartsInventory({ customerId, companyId }: PartsInventory
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          'Authorization': `Bearer ${localStorage.getItem('acelera_token')}` 
         },
         body: JSON.stringify(data)
       });

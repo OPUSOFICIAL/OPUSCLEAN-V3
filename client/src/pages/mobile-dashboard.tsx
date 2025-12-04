@@ -77,7 +77,7 @@ export default function MobileDashboard() {
       url = baseUrl + url;
     }
     
-    const token = localStorage.getItem("opus_clean_token");
+    const token = localStorage.getItem("acelera_token");
     const headers: Record<string, string> = {};
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;

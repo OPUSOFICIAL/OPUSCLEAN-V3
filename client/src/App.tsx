@@ -171,8 +171,8 @@ function WebSocketInitializer() {
       // Detectar force logout
       if (message.type === 'force_logout') {
         // Limpar localStorage PRIMEIRO
-        localStorage.removeItem('opus_clean_token');
-        localStorage.removeItem('opus_clean_user');
+        localStorage.removeItem('acelera_token');
+        localStorage.removeItem('acelera_user');
         
         // Desconectar WebSocket imediatamente
         disconnect();

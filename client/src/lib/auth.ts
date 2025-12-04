@@ -22,8 +22,8 @@ export interface AuthState {
 }
 
 // Auth storage keys
-const AUTH_STORAGE_KEY = "opus_clean_auth";
-const TOKEN_STORAGE_KEY = "opus_clean_token";
+const AUTH_STORAGE_KEY = "acelera_auth";
+const TOKEN_STORAGE_KEY = "acelera_token";
 
 /**
  * Get current authentication state from localStorage

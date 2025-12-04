@@ -28,7 +28,7 @@ const getBaseUrl = (): string => {
 
 // Helper function to add JWT token to fetch requests
 const authenticatedFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
-  const token = localStorage.getItem("opus_clean_token");
+  const token = localStorage.getItem("acelera_token");
   const headers: Record<string, string> = {
     ...options.headers as Record<string, string>,
   };
@@ -69,7 +69,7 @@ export default function MobileWorkOrderExecute() {
 
   useEffect(() => {
     // Carregar usuário do localStorage
-    const authStr = localStorage.getItem('opus_clean_auth');
+    const authStr = localStorage.getItem('acelera_auth');
     if (authStr) {
       const authData = JSON.parse(authStr);
       setCurrentUser(authData.user);
@@ -98,7 +98,7 @@ export default function MobileWorkOrderExecute() {
       // ⚠️ NÃO iniciar automaticamente se status = 'pausada' - usuário deve retomar manualmente
       if (woData.status === 'aberta') {
         try {
-          const authStr = localStorage.getItem('opus_clean_auth');
+          const authStr = localStorage.getItem('acelera_auth');
           if (authStr) {
             const authData = JSON.parse(authStr);
             const user = authData.user;

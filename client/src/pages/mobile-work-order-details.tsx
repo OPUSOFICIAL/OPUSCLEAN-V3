@@ -69,8 +69,8 @@ export default function MobileWorkOrderDetails() {
     
     setIsResuming(true);
     try {
-      const authStr = localStorage.getItem('opus_clean_auth');
-      const token = localStorage.getItem('opus_clean_token');
+      const authStr = localStorage.getItem('acelera_auth');
+      const token = localStorage.getItem('acelera_token');
       
       if (!authStr || !token) {
         toast({

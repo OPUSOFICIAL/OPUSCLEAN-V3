@@ -51,7 +51,7 @@ export function canViewReports(user: User | null): boolean {
 
 export function getAuthState() {
   try {
-    const authStr = localStorage.getItem('opus_clean_auth');
+    const authStr = localStorage.getItem('acelera_auth');
     if (!authStr) {
       return { isAuthenticated: false, user: null };
     }

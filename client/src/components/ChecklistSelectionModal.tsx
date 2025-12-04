@@ -44,7 +44,7 @@ export default function ChecklistSelectionModal({
     setIsLoading(true);
     try {
       const baseUrl = getApiBaseUrl();
-      const token = localStorage.getItem("opus_clean_token");
+      const token = localStorage.getItem("acelera_token");
       
       const response = await fetch(
         `${baseUrl}/api/customers/${customerId}/checklist-templates?module=${module}`,

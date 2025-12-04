@@ -190,7 +190,7 @@ export default function MobileQrScanner() {
       }
 
       // MODO ONLINE: Buscar da API
-      const token = localStorage.getItem("opus_clean_token");
+      const token = localStorage.getItem("acelera_token");
       const headers: Record<string, string> = {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'

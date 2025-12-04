@@ -52,7 +52,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   });
 
   const getWebSocketUrl = useCallback(() => {
-    const token = localStorage.getItem('opus_clean_token');
+    const token = localStorage.getItem('acelera_token');
     if (!token) return null;
 
     try {
@@ -255,7 +255,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   // Reconnect when token changes
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'opus_clean_token') {
+      if (e.key === 'acelera_token') {
         console.log('[WS Client] 🔑 Token changed, reconnecting...');
         disconnect();
         if (enabled && e.newValue) {

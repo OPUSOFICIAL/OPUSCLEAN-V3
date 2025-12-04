@@ -40,7 +40,7 @@ export default function WorkOrderModal({ workOrderId, onClose }: WorkOrderModalP
   const queryClient = useQueryClient();
   
   // Get current user
-  const authStr = localStorage.getItem('opus_clean_auth');
+  const authStr = localStorage.getItem('acelera_auth');
   const currentUser = authStr ? JSON.parse(authStr).user : null;
 
   // Get work order details

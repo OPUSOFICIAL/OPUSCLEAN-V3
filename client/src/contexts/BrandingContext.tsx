@@ -77,7 +77,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       console.log('[BRANDING] 🔄 Carregando branding do cliente:', customerId);
       
       // Get token from localStorage
-      const token = localStorage.getItem('opus_clean_token');
+      const token = localStorage.getItem('acelera_token');
       if (!token) {
         console.warn('[BRANDING] Token não encontrado, tentando API pública');
         return false;

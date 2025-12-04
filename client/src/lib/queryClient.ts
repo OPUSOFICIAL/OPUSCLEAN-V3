@@ -50,7 +50,7 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   // Get token from localStorage
-  const token = localStorage.getItem("opus_clean_token");
+  const token = localStorage.getItem("acelera_token");
   
   const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
   if (token) {
@@ -83,7 +83,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     // Get token from localStorage
-    const token = localStorage.getItem("opus_clean_token");
+    const token = localStorage.getItem("acelera_token");
     
     const headers: Record<string, string> = {};
     if (token) {
