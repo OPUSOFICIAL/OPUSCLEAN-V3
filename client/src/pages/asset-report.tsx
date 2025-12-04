@@ -337,7 +337,13 @@ export default function AssetReport({ customerId }: AssetReportProps) {
       <div className={cn("flex-1 overflow-y-auto p-4 md:p-6 space-y-6", theme.gradients.section)}>
         {isLoadingEquipment ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 border-4 border-orange-100 border-t-orange-600 rounded-full animate-spin mx-auto"></div>
+            <div 
+              className="w-16 h-16 border-4 rounded-full animate-spin mx-auto"
+              style={{ 
+                borderColor: 'color-mix(in srgb, var(--module-primary) 20%, white)',
+                borderTopColor: 'var(--module-primary)'
+              }}
+            ></div>
             <p className="mt-4 text-gray-600">Carregando relatório...</p>
           </div>
         ) : reportData.siteTotals.length === 0 ? (
@@ -370,16 +376,23 @@ export default function AssetReport({ customerId }: AssetReportProps) {
                 <ModernCardContent>
                   <div className="space-y-4">
                     {site.zones.map((zone: any, zoneIndex: number) => (
-                      <div key={zoneIndex} className="border-l-4 border-orange-400 pl-4 py-2 bg-orange-50/50 rounded-r-lg">
+                      <div 
+                        key={zoneIndex} 
+                        className="border-l-4 pl-4 py-2 rounded-r-lg"
+                        style={{
+                          borderLeftColor: 'var(--module-primary)',
+                          backgroundColor: 'color-mix(in srgb, var(--module-primary) 5%, white)'
+                        }}
+                      >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-orange-600" />
+                            <MapPin className="w-4 h-4" style={{ color: 'var(--module-primary)' }} />
                             <h4 className="font-semibold text-gray-800">{zone.zoneName}</h4>
                             <Badge variant="outline" className="text-xs">
                               {zone.equipmentCount} item(ns)
                             </Badge>
                           </div>
-                          <span className="text-lg font-bold text-orange-600">
+                          <span className="text-lg font-bold" style={{ color: 'var(--module-primary)' }}>
                             {formatCurrency(zone.totalValue)}
                           </span>
                         </div>
