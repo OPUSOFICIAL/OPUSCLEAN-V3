@@ -621,14 +621,20 @@ export default function QrCodes() {
                         </button>
 
                         {/* Badge Tipo */}
-                        <Badge className={cn("absolute top-4 right-4", theme.backgrounds.primary)}>
+                        <Badge 
+                          className={cn("absolute top-4 right-4 text-white")}
+                          style={theme.backgrounds.primaryStyle}
+                        >
                           Execução
                         </Badge>
 
                         {/* QR Code com borda dinâmica */}
                         <div className="flex justify-center my-4">
                           <div className="relative">
-                            <div className={cn("p-4 rounded-2xl", theme.backgrounds.primary)}>
+                            <div 
+                              className="p-4 rounded-2xl"
+                              style={theme.backgrounds.primaryStyle}
+                            >
                               {qrCodeImages[point.id] && (
                                 <div className="bg-white p-2">
                                   <img 
@@ -644,8 +650,11 @@ export default function QrCodes() {
 
                         {/* Badge Execução */}
                         <div className="flex justify-center mb-3">
-                          <Badge className={cn(theme.badges.light, "px-4 py-1")}>
-                            ⚡ Execução
+                          <Badge 
+                            className="px-4 py-1"
+                            style={theme.badges.lightStyle}
+                          >
+                            Execução
                           </Badge>
                         </div>
 
