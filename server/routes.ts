@@ -6196,7 +6196,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create part
-  app.post("/api/parts", requirePermission('schedule_create'), async (req, res) => {
+  app.post("/api/parts", async (req, res, next) => {
+    console.log('[DEBUG PARTS] Authorization header:', req.headers.authorization ? 'Present' : 'Missing');
+    if (req.headers.authorization) {
+      console.log('[DEBUG PARTS] Token starts with:', req.headers.authorization.substring(0, 25));
+    }
+    next();
+  }, requirePermission('schedule_create'), async (req, res) => {
     try {
       const part = insertPartSchema.parse(req.body);
       const newPart = await storage.createPart(part);
