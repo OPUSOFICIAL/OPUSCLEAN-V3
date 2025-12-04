@@ -1325,7 +1325,10 @@ export const insertWorkOrderCommentSchema = createInsertSchema(workOrderComments
 
 // Maintenance insert schemas
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({ id: true }).extend({
-  value: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+  value: z.union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform(val => (val === null || val === undefined || val === '') ? null : String(val))
+    .optional()
+    .nullable(),
 });
 export const insertMaintenanceChecklistTemplateSchema = createInsertSchema(maintenanceChecklistTemplates).omit({ id: true });
 export const insertMaintenanceChecklistExecutionSchema = createInsertSchema(maintenanceChecklistExecutions).omit({ id: true });
