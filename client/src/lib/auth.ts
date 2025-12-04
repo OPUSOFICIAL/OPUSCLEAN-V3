@@ -51,6 +51,11 @@ export function getAuthState(): AuthState {
 }
 
 /**
+ * Custom event name for auth state changes
+ */
+export const AUTH_STATE_CHANGE_EVENT = 'acelera_auth_state_change';
+
+/**
  * Save authentication state to localStorage
  */
 export function setAuthState(user: User | null, token?: string): void {
@@ -62,6 +67,11 @@ export function setAuthState(user: User | null, token?: string): void {
       localStorage.removeItem(AUTH_STORAGE_KEY);
       localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
+    
+    // Dispatch custom event to notify all useAuth hooks immediately
+    window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGE_EVENT, { 
+      detail: { user, isAuthenticated: !!user } 
+    }));
   } catch (error) {
     console.error("Error saving auth state:", error);
   }

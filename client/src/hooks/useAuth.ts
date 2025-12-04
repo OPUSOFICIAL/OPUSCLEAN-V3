@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { AUTH_STATE_CHANGE_EVENT } from '@/lib/auth';
 
 export interface User {
   id: string;
@@ -67,20 +68,29 @@ export function getAuthState() {
 export function useAuth() {
   const [authState, setAuthState] = useState(() => getAuthState());
 
+  const updateAuthState = useCallback(() => {
+    const newState = getAuthState();
+    setAuthState(newState);
+  }, []);
+
   useEffect(() => {
-    const checkAuth = () => {
-      const newState = getAuthState();
-      if (newState.isAuthenticated !== authState.isAuthenticated ||
-          newState.user?.id !== authState.user?.id) {
-        setAuthState(newState);
-      }
+    // Listen for auth state change events (triggered by setAuthState in lib/auth.ts)
+    const handleAuthChange = () => {
+      console.log('[useAuth] Auth state change event received');
+      updateAuthState();
     };
 
-    // Verificar mudanças a cada 5 segundos
-    const interval = setInterval(checkAuth, 5000);
+    // Add event listener for immediate auth state changes
+    window.addEventListener(AUTH_STATE_CHANGE_EVENT, handleAuthChange);
     
-    return () => clearInterval(interval);
-  }, [authState]);
+    // Also check periodically as fallback
+    const interval = setInterval(updateAuthState, 5000);
+    
+    return () => {
+      window.removeEventListener(AUTH_STATE_CHANGE_EVENT, handleAuthChange);
+      clearInterval(interval);
+    };
+  }, [updateAuthState]);
 
   return {
     user: authState.user,
