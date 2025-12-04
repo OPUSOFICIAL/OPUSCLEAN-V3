@@ -11,6 +11,7 @@ interface BrandingConfig {
   sidebarLogoCollapsed: string | null;
   homeLogo: string | null;
   favicon: string | null;
+  modules: string[] | null;
   moduleColors: {
     clean?: {
       primary: string;
@@ -116,6 +117,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       sidebarLogoCollapsed: customerData.sidebarLogoCollapsed || null,
       homeLogo: customerData.homeLogo || null,
       favicon: customerData.favicon || null,
+      modules: customerData.modules || null,
       moduleColors: customerData.moduleColors || null,
     };
     

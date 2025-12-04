@@ -37,6 +37,28 @@ export default function Login() {
   const { branding, isLoading: isBrandingLoading } = useBranding();
   const { navigateTo } = useSubdomainNavigation();
 
+  // Determine the single module color if customer has only one module
+  const getSingleModuleColors = () => {
+    if (!branding?.modules || branding.modules.length !== 1) {
+      return null;
+    }
+    
+    const singleModule = branding.modules[0];
+    const colors = branding.moduleColors?.[singleModule as 'clean' | 'maintenance'];
+    
+    if (colors?.primary) {
+      return {
+        module: singleModule,
+        primary: colors.primary,
+        secondary: colors.secondary,
+        accent: colors.accent,
+      };
+    }
+    return null;
+  };
+  
+  const singleModuleColors = getSingleModuleColors();
+
   useEffect(() => {
     if (isMobile) {
       navigateTo("/login-mobile");
@@ -126,7 +148,9 @@ export default function Login() {
         <motion.div
           className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-10"
           style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
+            background: singleModuleColors 
+              ? `radial-gradient(circle, ${singleModuleColors.primary}66 0%, transparent 70%)`
+              : "radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1, 1.2, 1],
@@ -141,7 +165,9 @@ export default function Login() {
         <motion.div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-10"
           style={{
-            background: "radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
+            background: singleModuleColors 
+              ? `radial-gradient(circle, ${singleModuleColors.primary}4D 0%, transparent 70%)`
+              : "radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)",
           }}
           animate={{
             scale: [1.2, 1, 1.2],
@@ -199,7 +225,10 @@ export default function Login() {
                     type="text"
                     value={credentials.username}
                     onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                    className="pl-11 h-12 border-2 border-slate-300 focus:border-blue-500"
+                    className="pl-11 h-12 border-2 border-slate-300"
+                    style={singleModuleColors ? { 
+                      borderColor: credentials.username ? singleModuleColors.primary : undefined 
+                    } : undefined}
                     placeholder="seu@email.com"
                     required
                     data-testid="input-username"
@@ -217,7 +246,10 @@ export default function Login() {
                     type={showPassword ? "text" : "password"}
                     value={credentials.password}
                     onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                    className="pl-11 pr-11 h-12 border-2 border-slate-300 focus:border-blue-500"
+                    className="pl-11 pr-11 h-12 border-2 border-slate-300"
+                    style={singleModuleColors ? { 
+                      borderColor: credentials.password ? singleModuleColors.primary : undefined 
+                    } : undefined}
                     placeholder="••••••••"
                     required
                     data-testid="input-password"
@@ -250,7 +282,8 @@ export default function Login() {
                 </div>
                 <button
                   type="button"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+                  className="text-sm font-semibold"
+                  style={{ color: singleModuleColors?.primary || '#2563eb' }}
                   data-testid="link-forgot-password"
                 >
                   Esqueci minha senha
@@ -260,7 +293,14 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold text-base shadow-lg shadow-blue-200 hover:shadow-xl transition-all"
+                className="w-full h-12 text-white font-bold text-base shadow-lg hover:shadow-xl transition-all"
+                style={singleModuleColors ? {
+                  background: `linear-gradient(to right, ${singleModuleColors.primary}, ${singleModuleColors.secondary || singleModuleColors.primary})`,
+                  boxShadow: `0 10px 15px -3px ${singleModuleColors.primary}33`,
+                } : {
+                  background: 'linear-gradient(to right, #2563eb, #3b82f6)',
+                  boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)',
+                }}
                 data-testid="button-login"
               >
                 {isSubmitting ? (
@@ -282,7 +322,8 @@ export default function Login() {
               <p className="text-sm text-slate-600">
                 Não tem uma conta?{" "}
                 <button 
-                  className="text-blue-600 hover:text-blue-700 font-semibold"
+                  className="font-semibold"
+                  style={{ color: singleModuleColors?.primary || '#2563eb' }}
                   onClick={() => toast({ title: "Entre em contato com o administrador" })}
                   data-testid="link-signup"
                 >
