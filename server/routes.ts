@@ -5484,6 +5484,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================================
+  // MAINTENANCE MODULE - Equipment Categories (Types) Routes
+  // ============================================================================
+
+  // Get equipment categories by company
+  app.get("/api/companies/:companyId/equipment-categories", async (req, res) => {
+    try {
+      const module = req.query.module as 'clean' | 'maintenance' | undefined;
+      const categories = await storage.getEquipmentTypesByCompany(req.params.companyId, module);
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching equipment categories:", error);
+      res.status(500).json({ message: "Failed to fetch equipment categories" });
+    }
+  });
+
+  // Get single equipment category
+  app.get("/api/equipment-categories/:id", async (req, res) => {
+    try {
+      const category = await storage.getEquipmentType(req.params.id);
+      if (!category) {
+        return res.status(404).json({ message: "Equipment category not found" });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error("Error fetching equipment category:", error);
+      res.status(500).json({ message: "Failed to fetch equipment category" });
+    }
+  });
+
+  // Create equipment category
+  app.post("/api/equipment-categories", requirePermission('schedule_create'), async (req, res) => {
+    try {
+      const { companyId, name, description, module, isActive } = req.body;
+      
+      if (!companyId || !name) {
+        return res.status(400).json({ message: "companyId and name are required" });
+      }
+
+      const newCategory = await storage.createEquipmentType({
+        companyId,
+        name,
+        description: description || null,
+        module: module || 'maintenance',
+        isActive: isActive !== false,
+      });
+      
+      res.status(201).json(newCategory);
+    } catch (error) {
+      console.error("Error creating equipment category:", error);
+      res.status(500).json({ message: "Failed to create equipment category" });
+    }
+  });
+
+  // Update equipment category
+  app.put("/api/equipment-categories/:id", requirePermission('schedule_edit'), async (req, res) => {
+    try {
+      const { name, description, module, isActive } = req.body;
+      
+      const updatedCategory = await storage.updateEquipmentType(req.params.id, {
+        name,
+        description,
+        module,
+        isActive,
+      });
+      
+      if (!updatedCategory) {
+        return res.status(404).json({ message: "Equipment category not found" });
+      }
+      
+      res.json(updatedCategory);
+    } catch (error) {
+      console.error("Error updating equipment category:", error);
+      res.status(500).json({ message: "Failed to update equipment category" });
+    }
+  });
+
+  // Delete equipment category
+  app.delete("/api/equipment-categories/:id", requirePermission('schedule_delete'), async (req, res) => {
+    try {
+      await storage.deleteEquipmentType(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting equipment category:", error);
+      res.status(500).json({ message: "Failed to delete equipment category" });
+    }
+  });
+
+  // Seed default equipment categories for a company
+  app.post("/api/companies/:companyId/equipment-categories/seed-defaults", requirePermission('schedule_create'), async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const module = (req.body.module || 'maintenance') as 'clean' | 'maintenance';
+      
+      // Check if categories already exist
+      const existingCategories = await storage.getEquipmentTypesByCompany(companyId, module);
+      if (existingCategories.length > 0) {
+        return res.json({ message: "Categories already exist", categories: existingCategories });
+      }
+      
+      // Default categories for maintenance module
+      const defaultCategories = [
+        { name: "HVAC", description: "Sistemas de aquecimento, ventilação e ar condicionado" },
+        { name: "Elétrico", description: "Equipamentos e sistemas elétricos" },
+        { name: "Hidráulico", description: "Sistemas de água e encanamento" },
+        { name: "Elevadores", description: "Elevadores e equipamentos de transporte vertical" },
+        { name: "Segurança", description: "Sistemas de segurança e alarmes" },
+        { name: "Incêndio", description: "Sistemas de combate e prevenção de incêndio" },
+        { name: "Industrial", description: "Equipamentos industriais e de produção" },
+        { name: "TI/Telecom", description: "Equipamentos de tecnologia e telecomunicações" },
+        { name: "Outros", description: "Outros equipamentos não categorizados" },
+      ];
+      
+      const createdCategories = [];
+      for (const cat of defaultCategories) {
+        const newCat = await storage.createEquipmentType({
+          companyId,
+          name: cat.name,
+          description: cat.description,
+          module,
+          isActive: true,
+        });
+        createdCategories.push(newCat);
+      }
+      
+      res.status(201).json({ message: "Default categories created", categories: createdCategories });
+    } catch (error) {
+      console.error("Error seeding default equipment categories:", error);
+      res.status(500).json({ message: "Failed to seed default equipment categories" });
+    }
+  });
+
+  // ============================================================================
   // MAINTENANCE MODULE - Equipment Routes
   // ============================================================================
 
