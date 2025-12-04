@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBranding } from "@/contexts/BrandingContext";
 import aceleraLogo from "@assets/imagem_2025-11-10_010501695-Photoroom_1762805733799.png";
@@ -26,7 +27,8 @@ import {
   CalendarCheck,
   FileBarChart,
   Brain,
-  Package
+  Package,
+  AlertTriangle
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +39,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useClient } from "@/contexts/ClientContext";
 import { useModule, MODULE_CONFIGS } from "@/contexts/ModuleContext";
+import type { Part } from "@shared/schema";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -51,6 +54,13 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
   const { activeClientId, setActiveClientId, activeClient, customers } = useClient();
   const { currentModule, setModule, moduleConfig, allowedModules, hasMultipleModules } = useModule();
   const { branding } = useBranding();
+  
+  // Query para buscar peças com estoque baixo (apenas para módulo manutenção)
+  const { data: lowStockParts = [] } = useQuery<Part[]>({
+    queryKey: ['/api/customers', activeClientId, 'parts', 'low-stock'],
+    enabled: !!activeClientId && currentModule === 'maintenance'
+  });
+  const lowStockCount = lowStockParts.length;
   
   // Helper para obter cores de um módulo específico (com fallback para cores padrão)
   const getModulePalette = (moduleId: 'clean' | 'maintenance') => {
@@ -109,7 +119,13 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
     
     // OPUS Manutenção - Menu items específicos
     ...(currentModule === 'maintenance' && can.viewQRCodes(activeClientId) ? [{ path: "/equipment", label: "Equipamentos", icon: Wrench }] : []),
-    ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ path: "/parts-inventory", label: "Estoque de Peças", icon: Package }] : []),
+    ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ 
+      path: "/parts-inventory", 
+      label: "Estoque de Peças", 
+      icon: Package,
+      badge: lowStockCount > 0 ? lowStockCount : undefined,
+      badgeVariant: 'destructive' as const
+    }] : []),
     ...(currentModule === 'maintenance' && can.viewSchedule(activeClientId) ? [{ path: "/maintenance-plans", label: "Planos de Manutenção", icon: CalendarCheck }] : []),
     ...(currentModule === 'maintenance' && can.viewChecklists(activeClientId) ? [{ path: "/maintenance-checklist-templates", label: "Checklists", icon: List }] : []),
     ...(currentModule === 'maintenance' && can.viewReports(activeClientId) ? [{ path: "/asset-report", label: "Relatório de Patrimônio", icon: FileBarChart }] : []),
@@ -267,12 +283,14 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.path;
+          const itemBadge = (item as any).badge;
+          const badgeVariant = (item as any).badgeVariant || 'destructive';
           
           return (
             <Link key={item.path} href={item.path}>
               <Button
                 variant={isActive ? "default" : "ghost"}
-                className={`w-full ${isCollapsed ? 'justify-center px-0' : 'justify-start space-x-3'} transition-all duration-200 ${
+                className={`w-full ${isCollapsed ? 'justify-center px-0 relative' : 'justify-start'} transition-all duration-200 ${
                   isActive 
                     ? 'text-white shadow-md hover:shadow-lg'
                     : "hover:bg-slate-100 hover:text-slate-900"
@@ -281,10 +299,30 @@ export default function Sidebar({ isCollapsed, onToggleCollapse }: SidebarProps)
                   background: `linear-gradient(to right, var(--module-primary), var(--module-secondary))`
                 } : undefined}
                 data-testid={`nav-${item.path.slice(1) || 'dashboard'}`}
-                title={isCollapsed ? item.label : undefined}
+                title={isCollapsed ? (itemBadge ? `${item.label} (${itemBadge} alertas)` : item.label) : undefined}
               >
-                <Icon className="w-5 h-5" />
-                {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                <div className={`flex items-center ${isCollapsed ? '' : 'gap-3'} w-full`}>
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="font-medium flex-1 text-left">{item.label}</span>
+                      {itemBadge && (
+                        <Badge 
+                          variant={badgeVariant}
+                          className="flex items-center gap-1 text-xs px-1.5 py-0.5"
+                        >
+                          <AlertTriangle className="w-3 h-3" />
+                          {itemBadge}
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                  {isCollapsed && itemBadge && (
+                    <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                      {itemBadge > 9 ? '9+' : itemBadge}
+                    </span>
+                  )}
+                </div>
               </Button>
             </Link>
           );
